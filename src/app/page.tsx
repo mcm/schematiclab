@@ -1,36 +1,44 @@
 "use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@iamthemcmaster/ui";
-import { AppHeader } from "@/components/app-header";
+import Image from "next/image";
+import { Card, CardContent } from "@iamthemcmaster/ui";
+import schematiclabLogo from "../../public/schematiclab.png";
 
 export default function HomePage() {
   return (
-    <>
-      <AppHeader breadcrumbs={[{ label: "Home" }]} />
-      <main style={{ padding: "var(--space-6)" }}>
-        <div style={{ maxWidth: 720 }}>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-3xl)", margin: 0 }}>
-            Schematiclab
-          </h1>
-          <p style={{ color: "var(--text-secondary)", marginTop: "var(--space-2)" }}>
-            Convert between Minecraft schematic formats and update them across Minecraft versions.
-          </p>
+    <main
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        padding: "var(--space-6) var(--space-4)",
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 720,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "var(--space-6)",
+        }}
+      >
+        <Image
+          src={schematiclabLogo}
+          alt="Schematiclab"
+          priority
+          sizes="(max-width: 480px) 80vw, 400px"
+          style={{
+            width: "min(100%, 400px)",
+            height: "auto",
+          }}
+        />
 
-          <Card style={{ marginTop: "var(--space-6)" }}>
-            <CardHeader>
-              <CardTitle>Project scaffold</CardTitle>
-              <CardDescription>
-                The Next.js shell and schemlib port are in progress.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p style={{ color: "var(--text-secondary)", margin: 0 }}>
-                Once the schemlib port is far enough along, conversion and version-update workflows will land here.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </main>
-    </>
+        <Card style={{ width: "100%" }}>
+          <CardContent style={{ padding: "var(--space-6)" }} />
+        </Card>
+      </div>
+    </main>
   );
 }
