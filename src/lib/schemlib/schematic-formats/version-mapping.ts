@@ -24,6 +24,7 @@ export const KNOWN_VERSIONS: Record<string, MinecraftVersion> = {
   "1.12.2": { platform: "java", versionNumber: [1, 12, 2], dataVersion: 1343 },
   "1.13.1": { platform: "java", versionNumber: [1, 13, 1], dataVersion: 1628 },
   "1.16.2": { platform: "java", versionNumber: [1, 16, 2], dataVersion: 2578 },
+  "1.16.5": { platform: "java", versionNumber: [1, 16, 5], dataVersion: 2586 },
   "1.17.1": { platform: "java", versionNumber: [1, 17, 1], dataVersion: 2730 },
   "1.18.2": { platform: "java", versionNumber: [1, 18, 2], dataVersion: 2975 },
   "1.19.4": { platform: "java", versionNumber: [1, 19, 4], dataVersion: 3337 },

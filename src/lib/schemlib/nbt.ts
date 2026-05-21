@@ -579,6 +579,48 @@ export class IntArray extends _ArrayTag {
     view.setInt32(i * 4, Number(BigInt.asIntN(32, value)), false);
   }
 
+  /**
+   * Reinterpret the underlying big-endian byte storage as a sequence of
+   * 16-bit unsigned integers. Mirrors Python's
+   * `IntArray.asarray("uint16")`, which is used by the Structurize blueprint
+   * format to pack uint16 block-state indices inside a 32-bit IntArray.
+   */
+  asUint16Array(): number[] {
+    const out: number[] = [];
+    for (let i = 0; i + 1 < this.storage.length; i += 2) {
+      out.push((this.storage[i] << 8) | this.storage[i + 1]);
+    }
+    return out;
+  }
+
+  /**
+   * Pack a sequence of arbitrary-width unsigned integers (currently 8 or 16
+   * bits) into a new `IntArray`. Mirrors Python's `IntArray.pack_list(values,
+   * width=...)`. For `width=16`, every pair of values shares one 32-bit int
+   * cell, big-endian.
+   */
+  static packList(values: ReadonlyArray<number>, width: 8 | 16 = 16): IntArray {
+    if (width !== 16 && width !== 8) {
+      throw new Error(`IntArray.packList: unsupported width ${width}`);
+    }
+    const bytesPerValue = width / 8;
+    const totalBytes = values.length * bytesPerValue;
+    const padded = Math.ceil(totalBytes / 4) * 4;
+    const storage = new Uint8Array(padded);
+    if (width === 16) {
+      for (let i = 0; i < values.length; i++) {
+        const v = values[i] & 0xffff;
+        storage[i * 2] = (v >> 8) & 0xff;
+        storage[i * 2 + 1] = v & 0xff;
+      }
+    } else {
+      for (let i = 0; i < values.length; i++) {
+        storage[i] = values[i] & 0xff;
+      }
+    }
+    return new IntArray(storage);
+  }
+
   static fromReader(reader: BinaryReader): IntArray {
     const length = reader.readUint32();
     return new IntArray(reader.readBytes(length * 4));
