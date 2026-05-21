@@ -5,9 +5,48 @@ import Image from "next/image";
 import { Card, CardContent } from "@iamthemcmaster/ui";
 import schematiclabLogo from "../../public/schematiclab.png";
 import { FileDropzone } from "@/components/file-dropzone";
+import { FormatSelector } from "@/components/format-selector";
+import { SUPPORTED_FORMATS, type SchematicFormatId } from "@/lib/convert";
+import { detectInWorker } from "@/lib/convert-client";
+
+function asSchematicFormatId(value: string): SchematicFormatId | null {
+  return (SUPPORTED_FORMATS as readonly string[]).includes(value)
+    ? (value as SchematicFormatId)
+    : null;
+}
 
 export default function HomePage() {
   const [file, setFile] = React.useState<File | null>(null);
+  const [detectedFormat, setDetectedFormat] =
+    React.useState<SchematicFormatId | null>(null);
+  const [outputFormat, setOutputFormat] =
+    React.useState<SchematicFormatId | null>(null);
+
+  React.useEffect(() => {
+    if (!file) {
+      setDetectedFormat(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const buffer = await file.arrayBuffer();
+        const detected = await detectInWorker(new Uint8Array(buffer));
+        if (!cancelled) setDetectedFormat(asSchematicFormatId(detected));
+      } catch {
+        if (!cancelled) setDetectedFormat(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [file]);
+
+  React.useEffect(() => {
+    if (detectedFormat !== null && outputFormat === detectedFormat) {
+      setOutputFormat(null);
+    }
+  }, [detectedFormat, outputFormat]);
 
   return (
     <main
@@ -40,8 +79,20 @@ export default function HomePage() {
         />
 
         <Card style={{ width: "100%" }}>
-          <CardContent style={{ padding: "var(--space-6)" }}>
+          <CardContent
+            style={{
+              padding: "var(--space-6)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "var(--space-4)",
+            }}
+          >
             <FileDropzone file={file} onFileChange={setFile} />
+            <FormatSelector
+              value={outputFormat}
+              onChange={setOutputFormat}
+              excludedFormat={detectedFormat}
+            />
           </CardContent>
         </Card>
       </div>
