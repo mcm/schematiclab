@@ -6,6 +6,7 @@ import { Card, CardContent } from "@iamthemcmaster/ui";
 import schematiclabLogo from "../../public/schematiclab.png";
 import { FileDropzone } from "@/components/file-dropzone";
 import { FormatSelector } from "@/components/format-selector";
+import { VersionSelector } from "@/components/version-selector";
 import {
   DetectedFormatHint,
   type DetectionState,
@@ -26,6 +27,7 @@ export default function HomePage() {
   });
   const [outputFormat, setOutputFormat] =
     React.useState<SchematicFormatId | null>(null);
+  const [targetVersion, setTargetVersion] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (!file) {
@@ -102,6 +104,10 @@ export default function HomePage() {
               value={outputFormat}
               onChange={setOutputFormat}
               excludedFormat={detectedFormat}
+            />
+            <VersionSelector
+              value={targetVersion}
+              onChange={setTargetVersion}
             />
           </CardContent>
         </Card>
