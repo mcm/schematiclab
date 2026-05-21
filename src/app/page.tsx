@@ -1,10 +1,14 @@
 "use client";
 
+import * as React from "react";
 import Image from "next/image";
 import { Card, CardContent } from "@iamthemcmaster/ui";
 import schematiclabLogo from "../../public/schematiclab.png";
+import { FileDropzone } from "@/components/file-dropzone";
 
 export default function HomePage() {
+  const [file, setFile] = React.useState<File | null>(null);
+
   return (
     <main
       style={{
@@ -36,7 +40,9 @@ export default function HomePage() {
         />
 
         <Card style={{ width: "100%" }}>
-          <CardContent style={{ padding: "var(--space-6)" }} />
+          <CardContent style={{ padding: "var(--space-6)" }}>
+            <FileDropzone file={file} onFileChange={setFile} />
+          </CardContent>
         </Card>
       </div>
     </main>
