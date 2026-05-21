@@ -5,6 +5,8 @@ import { describe, it, expect } from "vitest";
 
 import { convertSchematic } from "../convert";
 import { detectSchematicType } from "../schemlib/schematic-formats";
+import { SpongeSchematicV2 } from "../schemlib/schematic-formats/sponge";
+import { KNOWN_VERSIONS } from "../schemlib/schematic-formats/version-mapping";
 
 const fixturePath = (filename: string): string =>
   path.resolve(__dirname, "../../../../schemlib/tests/schematics/", filename);
@@ -47,6 +49,25 @@ describe("convertSchematic", () => {
     if (result.ok) return;
     expect(result.error).toMatch(/detect/i);
     expect(result.cause).toBeDefined();
+  });
+
+  it("stamps the requested targetVersion's data version on the output", () => {
+    const input = loadBytes("one_stone_block.litematic");
+    const targetVersion = "1.20.1";
+    const expectedDataVersion = KNOWN_VERSIONS[targetVersion].dataVersion;
+
+    const result = convertSchematic({
+      bytes: input,
+      inputFilename: "one_stone_block.litematic",
+      outputFormat: "Sponge[v2]",
+      targetVersion,
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const reloaded = SpongeSchematicV2.schematicLoad(result.bytes);
+    expect(reloaded.DataVersion).toBe(expectedDataVersion);
   });
 
   it("derives the output filename from the input basename and target extension", () => {
