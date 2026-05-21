@@ -13,7 +13,7 @@ import {
 } from "@/components/detected-format-hint";
 import { SubmitButton } from "@/components/submit-button";
 import { SUPPORTED_FORMATS, type SchematicFormatId } from "@/lib/convert";
-import { convertInWorker, detectInWorker } from "@/lib/convert-client";
+import { cancel, convertInWorker, detectInWorker } from "@/lib/convert-client";
 
 function asSchematicFormatId(value: string): SchematicFormatId | null {
   return (SUPPORTED_FORMATS as readonly string[]).includes(value)
@@ -46,6 +46,7 @@ export default function HomePage() {
     React.useState<SchematicFormatId | null>(null);
   const [targetVersion, setTargetVersion] = React.useState<string | null>(null);
   const [isConverting, setIsConverting] = React.useState(false);
+  const cancelledRef = React.useRef(false);
 
   React.useEffect(() => {
     if (!file) {
@@ -79,6 +80,7 @@ export default function HomePage() {
 
   const handleSubmit = React.useCallback(async () => {
     if (!file || !outputFormat || isConverting) return;
+    cancelledRef.current = false;
     setIsConverting(true);
     try {
       const buffer = await file.arrayBuffer();
@@ -88,17 +90,26 @@ export default function HomePage() {
         targetVersion ?? undefined,
         file.name,
       );
+      if (cancelledRef.current) return;
       if (result.ok) {
         triggerDownload(result.bytes, result.filename, result.mimeType);
       } else {
         console.error("Conversion failed:", result.error);
       }
     } catch (err) {
-      console.error("Conversion failed:", err);
+      if (!cancelledRef.current) {
+        console.error("Conversion failed:", err);
+      }
     } finally {
       setIsConverting(false);
+      cancelledRef.current = false;
     }
   }, [file, outputFormat, targetVersion, isConverting]);
+
+  const handleCancel = React.useCallback(() => {
+    cancelledRef.current = true;
+    cancel();
+  }, []);
 
   return (
     <main
@@ -154,6 +165,7 @@ export default function HomePage() {
               disabled={!file || !outputFormat}
               isConverting={isConverting}
               onClick={handleSubmit}
+              onCancel={handleCancel}
             />
           </CardContent>
         </Card>
