@@ -5,8 +5,7 @@
 // (tag_type_id: int8, name: String, payload) until tag_type_id == 0 (TAG_End).
 // A "Named" tag wraps a single (name, Compound) at the root of an NBT file.
 
-import { gunzipSync, gzipSync } from "node:zlib";
-import { readFileSync } from "node:fs";
+import { gunzipSync, gzipSync } from "fflate";
 
 // ── Tag type IDs ───────────────────────────────────────────────────────────
 
@@ -896,7 +895,7 @@ export class Named extends Compound {
       .writeBytes(super.toBytes());
     const bytes = w.toBytes();
     if (opts.compress) {
-      return new Uint8Array(gzipSync(bytes, { level: 9 }));
+      return gzipSync(bytes, { level: 9 });
     }
     return bytes;
   }
@@ -957,12 +956,7 @@ const GZIP_MAGIC_1 = 0x8b;
 export function loadNbtFromBytes(bytes: Uint8Array): Named {
   let data = bytes;
   if (data.length >= 2 && data[0] === GZIP_MAGIC_0 && data[1] === GZIP_MAGIC_1) {
-    data = new Uint8Array(gunzipSync(data));
+    data = gunzipSync(data);
   }
   return Named.fromBytes(data) as Named;
-}
-
-export function loadNbtFromFile(path: string): Named {
-  const buf = readFileSync(path);
-  return loadNbtFromBytes(new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength));
 }

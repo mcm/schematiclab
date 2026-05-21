@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import * as path from "node:path";
+import { readFileSync } from "node:fs";
 
 import * as nbt from "../nbt";
 
@@ -130,13 +131,14 @@ describe("loadNbtFromBytes", () => {
   });
 });
 
-describe("loadNbtFromFile", () => {
+describe("loadNbtFromBytes (file fixture)", () => {
   it("reads the one_stone_block.litematic fixture", () => {
     const fixturePath = path.resolve(
       __dirname,
       "../../../../../schemlib/tests/schematics/one_stone_block.litematic",
     );
-    const named = nbt.loadNbtFromFile(fixturePath);
+    const buf = readFileSync(fixturePath);
+    const named = nbt.loadNbtFromBytes(new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength));
     const metadata = named.get("Metadata") as nbt.Compound | undefined;
     expect(metadata).toBeDefined();
     const name = metadata!.get("Name") as nbt.StringTag | undefined;

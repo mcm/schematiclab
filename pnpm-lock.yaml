@@ -14,6 +14,9 @@ importers:
       '@tabler/icons-react':
         specifier: ^3.40.0
         version: 3.44.0(react@19.2.6)
+      fflate:
+        specifier: ^0.8.3
+        version: 0.8.3
       next:
         specifier: ^16.1.6
         version: 16.2.6(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
@@ -1714,6 +1717,9 @@ packages:
   expect-type@1.3.0:
     resolution: {integrity: sha512-knvyeauYhqjOYvQ66MznSMs83wmHrCycNEN6Ao+2AeYEfxUIkuiVxdEa1qlGEPK+We3n0THiDciYSsCcgW/DoA==}
     engines: {node: '>=12.0.0'}
+
+  fflate@0.8.3:
+    resolution: {integrity: sha512-tbZNuJrLwGUp3zshBtdy4W+ORxZuIh8a5ilyIEQDC5rY1f3U20JMry0Ll3WBzU58EZKsEuJFXhb5gwv8CsPvgA==}
 
   foreground-child@3.3.1:
     resolution: {integrity: sha512-gIXjKqtFuWEgzFRJA9WCQeSJLZDjgJUOMCMzxtvFq/37KojM1BFGufqsCy0r4qSQmYLsZYMeyRqzIWOMup03sw==}
@@ -3738,6 +3744,8 @@ snapshots:
   eventemitter3@5.0.4: {}
 
   expect-type@1.3.0: {}
+
+  fflate@0.8.3: {}
 
   foreground-child@3.3.1:
     dependencies:
