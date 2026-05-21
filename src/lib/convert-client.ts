@@ -42,10 +42,12 @@ function createWorker(): Worker {
         ? (event as ErrorEvent).message
         : "Worker error";
     rejectAllPending(new Error(message));
+    discardWorker();
   });
 
   w.addEventListener("messageerror", () => {
     rejectAllPending(new Error("Worker message could not be deserialized"));
+    discardWorker();
   });
 
   return w;
@@ -61,6 +63,13 @@ function getWorker(): Worker {
 function rejectAllPending(reason: unknown): void {
   for (const entry of pending.values()) entry.reject(reason);
   pending.clear();
+}
+
+function discardWorker(): void {
+  if (worker !== null) {
+    worker.terminate();
+    worker = null;
+  }
 }
 
 function send<T>(

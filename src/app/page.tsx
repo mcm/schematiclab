@@ -12,8 +12,15 @@ import {
   type DetectionState,
 } from "@/components/detected-format-hint";
 import { SubmitButton } from "@/components/submit-button";
+import { InlineError } from "@/components/inline-error";
 import { SUPPORTED_FORMATS, type SchematicFormatId } from "@/lib/convert";
 import { cancel, convertInWorker, detectInWorker } from "@/lib/convert-client";
+
+const UNRECOGNIZED_INPUT_MESSAGE =
+  "We couldn't recognize this file as a supported schematic format.";
+const GENERIC_CONVERSION_ERROR =
+  "Something went wrong during conversion. Please try again.";
+const WORKER_CANCELLED_MESSAGE = "Worker cancelled";
 
 function asSchematicFormatId(value: string): SchematicFormatId | null {
   return (SUPPORTED_FORMATS as readonly string[]).includes(value)
@@ -46,7 +53,12 @@ export default function HomePage() {
     React.useState<SchematicFormatId | null>(null);
   const [targetVersion, setTargetVersion] = React.useState<string | null>(null);
   const [isConverting, setIsConverting] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
   const cancelledRef = React.useRef(false);
+
+  React.useEffect(() => {
+    setError(null);
+  }, [file, outputFormat, targetVersion]);
 
   React.useEffect(() => {
     if (!file) {
@@ -61,7 +73,10 @@ export default function HomePage() {
         const detected = await detectInWorker(new Uint8Array(buffer));
         if (!cancelled) setDetection({ status: "ok", formatId: detected });
       } catch {
-        if (!cancelled) setDetection({ status: "failed" });
+        if (!cancelled) {
+          setDetection({ status: "failed" });
+          setError(UNRECOGNIZED_INPUT_MESSAGE);
+        }
       }
     })();
     return () => {
@@ -81,6 +96,7 @@ export default function HomePage() {
   const handleSubmit = React.useCallback(async () => {
     if (!file || !outputFormat || isConverting) return;
     cancelledRef.current = false;
+    setError(null);
     setIsConverting(true);
     try {
       const buffer = await file.arrayBuffer();
@@ -94,12 +110,13 @@ export default function HomePage() {
       if (result.ok) {
         triggerDownload(result.bytes, result.filename, result.mimeType);
       } else {
-        console.error("Conversion failed:", result.error);
+        setError(result.error);
       }
     } catch (err) {
-      if (!cancelledRef.current) {
-        console.error("Conversion failed:", err);
-      }
+      if (cancelledRef.current) return;
+      const message = err instanceof Error ? err.message : String(err);
+      if (message === WORKER_CANCELLED_MESSAGE) return;
+      setError(GENERIC_CONVERSION_ERROR);
     } finally {
       setIsConverting(false);
       cancelledRef.current = false;
@@ -161,6 +178,7 @@ export default function HomePage() {
               value={targetVersion}
               onChange={setTargetVersion}
             />
+            <InlineError message={error} />
             <SubmitButton
               disabled={!file || !outputFormat}
               isConverting={isConverting}
