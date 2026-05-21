@@ -870,6 +870,43 @@ export class Named extends Compound {
   }
 }
 
+// ── modelToCompound ───────────────────────────────────────────────────────
+//
+// Python's `model_to_compound` (in nbt.py) converts pydantic models to
+// Compound tags. The simplest port: if the value has a `.toCompound()`
+// method, call it; otherwise iterate plain-object entries and recurse.
+
+export interface HasToCompound {
+  toCompound(): Compound;
+}
+
+function hasToCompound(value: unknown): value is HasToCompound {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as { toCompound?: unknown }).toCompound === "function"
+  );
+}
+
+export function modelToCompound(value: HasToCompound | Record<string, unknown>): Compound {
+  if (hasToCompound(value)) {
+    return value.toCompound();
+  }
+  const entries = new Map<string, NbtTag>();
+  for (const [k, v] of Object.entries(value)) {
+    if (v instanceof NbtTag) {
+      entries.set(k, v);
+    } else if (hasToCompound(v)) {
+      entries.set(k, v.toCompound());
+    } else if (typeof v === "object" && v !== null) {
+      entries.set(k, modelToCompound(v as Record<string, unknown>));
+    } else {
+      throw new TypeError(`Cannot convert value at key ${JSON.stringify(k)} to NBT tag`);
+    }
+  }
+  return new Compound(entries);
+}
+
 // ── File loading ──────────────────────────────────────────────────────────
 
 const GZIP_MAGIC_0 = 0x1f;
