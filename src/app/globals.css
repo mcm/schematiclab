@@ -32,3 +32,9 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-tertiary);
 }
+
+@keyframes schematiclab-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

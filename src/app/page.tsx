@@ -11,13 +11,30 @@ import {
   DetectedFormatHint,
   type DetectionState,
 } from "@/components/detected-format-hint";
+import { SubmitButton } from "@/components/submit-button";
 import { SUPPORTED_FORMATS, type SchematicFormatId } from "@/lib/convert";
-import { detectInWorker } from "@/lib/convert-client";
+import { convertInWorker, detectInWorker } from "@/lib/convert-client";
 
 function asSchematicFormatId(value: string): SchematicFormatId | null {
   return (SUPPORTED_FORMATS as readonly string[]).includes(value)
     ? (value as SchematicFormatId)
     : null;
+}
+
+function triggerDownload(
+  bytes: Uint8Array,
+  filename: string,
+  mimeType: string,
+): void {
+  const blob = new Blob([bytes as BlobPart], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 export default function HomePage() {
@@ -28,6 +45,7 @@ export default function HomePage() {
   const [outputFormat, setOutputFormat] =
     React.useState<SchematicFormatId | null>(null);
   const [targetVersion, setTargetVersion] = React.useState<string | null>(null);
+  const [isConverting, setIsConverting] = React.useState(false);
 
   React.useEffect(() => {
     if (!file) {
@@ -58,6 +76,29 @@ export default function HomePage() {
       setOutputFormat(null);
     }
   }, [detectedFormat, outputFormat]);
+
+  const handleSubmit = React.useCallback(async () => {
+    if (!file || !outputFormat || isConverting) return;
+    setIsConverting(true);
+    try {
+      const buffer = await file.arrayBuffer();
+      const result = await convertInWorker(
+        new Uint8Array(buffer),
+        outputFormat,
+        targetVersion ?? undefined,
+        file.name,
+      );
+      if (result.ok) {
+        triggerDownload(result.bytes, result.filename, result.mimeType);
+      } else {
+        console.error("Conversion failed:", result.error);
+      }
+    } catch (err) {
+      console.error("Conversion failed:", err);
+    } finally {
+      setIsConverting(false);
+    }
+  }, [file, outputFormat, targetVersion, isConverting]);
 
   return (
     <main
@@ -108,6 +149,11 @@ export default function HomePage() {
             <VersionSelector
               value={targetVersion}
               onChange={setTargetVersion}
+            />
+            <SubmitButton
+              disabled={!file || !outputFormat}
+              isConverting={isConverting}
+              onClick={handleSubmit}
             />
           </CardContent>
         </Card>
