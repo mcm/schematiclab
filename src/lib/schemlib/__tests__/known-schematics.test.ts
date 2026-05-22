@@ -45,7 +45,7 @@ const targetClasses: SchematicCtor[] = schematics
   .filter((cls) => cls !== (BuildingGadgetsV0Schematic as unknown as SchematicCtor));
 
 const fixturePath = (filename: string): string =>
-  path.resolve(__dirname, "../../../../../schemlib/tests/schematics/", filename);
+  path.resolve(__dirname, "../../__tests__/fixtures", filename);
 
 const loadBytes = (filename: string): Uint8Array =>
   new Uint8Array(readFileSync(fixturePath(filename)));

@@ -135,7 +135,7 @@ describe("loadNbtFromBytes (file fixture)", () => {
   it("reads the one_stone_block.litematic fixture", () => {
     const fixturePath = path.resolve(
       __dirname,
-      "../../../../../schemlib/tests/schematics/one_stone_block.litematic",
+      "../../__tests__/fixtures/one_stone_block.litematic",
     );
     const buf = readFileSync(fixturePath);
     const named = nbt.loadNbtFromBytes(new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength));

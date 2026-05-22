@@ -1,0 +1,21 @@
+{
+    "body": "H4sIAF5jjGcC/02OvRKCMBCE1+FnIIW+As9haY8WNGB3wjEwQuIkQR2e3gR0cKuv2L37BJAibMiSALATK0MgMpYsJwjPNDIOYy+51tTao7FKMgIIw7qnoZ9ZwydF8FAm9FfwjUDcMTWsE8Q02U5p7AvLT87yOidjWbvGTU2yMQFC96L0qxWrDa8/pHe5YbXhUoBzlYvrRXJWeMvsNKj67sz+XJNFMKrbVz/jA1LebRv+AAAA",
+    "header": {
+        "author": "Steve McMaster",
+        "bounding_box": {
+            "max_x": 0,
+            "max_y": 0,
+            "max_z": 0,
+            "min_x": 0,
+            "min_y": 0,
+            "min_z": 0
+        },
+        "material_list": {
+            "root_entry": [],
+            "root_type": "buildinggadgets:entries"
+        },
+        "mc_version": "1.17.1",
+        "name": "One Stone Block",
+        "version": "1.17.1"
+    }
+}

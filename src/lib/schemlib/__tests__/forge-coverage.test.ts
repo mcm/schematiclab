@@ -14,7 +14,7 @@ describe("forge 1.12 flatten coverage", () => {
   it("covers every BG0 fixture palette state", () => {
     const fp = path.resolve(
       __dirname,
-      "../../../../../schemlib/tests/schematics/example_bg0_schematic.txt",
+      "../../__tests__/fixtures/example_bg0_schematic.txt",
     );
     const s = BuildingGadgetsV0Schematic.schematicLoad(
       new Uint8Array(readFileSync(fp)),

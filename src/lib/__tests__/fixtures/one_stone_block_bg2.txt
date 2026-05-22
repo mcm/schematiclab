@@ -1,0 +1,1 @@
+{"name":"One Stone Block","statePosArrayList":"{blockstatemap: [{Name: \"minecraft:stone\"}], endpos: {X: 0, Y: 0, Z: 0}, startpos: {X: 0, Y: 0, Z: 0}, statelist: [I;0]}","requiredItems":{}}

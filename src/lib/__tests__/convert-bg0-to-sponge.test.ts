@@ -11,10 +11,7 @@ import { SpongeSchematicV2 } from "../schemlib/schematic-formats/sponge";
 
 describe("convert BG0 → Sponge v2 at 1.21.4", () => {
   it("produces post-flatten block names with no Forge artifacts", () => {
-    const fp = path.resolve(
-      __dirname,
-      "../../../../schemlib/tests/schematics/example_bg0_schematic.txt",
-    );
+    const fp = path.resolve(__dirname, "fixtures/example_bg0_schematic.txt");
     const bytes = new Uint8Array(readFileSync(fp));
 
     const result = convertSchematic({

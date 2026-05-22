@@ -1,0 +1,1 @@
+{stateIntArray:[I;1],dim:0,posIntArray:[I;0],startPos:{X:0,Y:0,Z:0},mapIntState:[{mapSlot:1s,mapState:{Properties:{variant:"stone"},Name:"minecraft:stone"}}],endPos:{X:0,Y:0,Z:0}}
