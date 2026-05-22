@@ -276,6 +276,10 @@ export class BuildingGadgetsV0Schematic
     return getVersion("1.12.2");
   }
 
+  getDataVersion(): number {
+    return this.getMinecraftVersion().dataVersion;
+  }
+
   static checkSize(_width: number, _height: number, _length: number): void {
     // No explicit size limit in Python.
   }

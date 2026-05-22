@@ -435,6 +435,10 @@ export class BuildingGadgetsV1Schematic
     }
   }
 
+  getDataVersion(): number {
+    return this.getMinecraftVersion().dataVersion;
+  }
+
   static checkSize(width: number, height: number, length: number): void {
     if (width > BuildingGadgetsV1Schematic.MAX_WIDTH) {
       throw new Error(

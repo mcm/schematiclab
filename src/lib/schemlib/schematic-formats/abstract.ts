@@ -9,6 +9,7 @@
 import { Block, BlockPos, BlockState } from "../blocks";
 import { Entity } from "../entities";
 import { MinecraftVersion, MinecraftVersionMapper } from "./version-mapping";
+import { fixupDoors } from "../data/translate";
 
 // ── AbstractRegion ────────────────────────────────────────────────────────
 
@@ -78,8 +79,9 @@ export abstract class AbstractRegion {
   }
 
   getTranslatedBlocks(targetVersion: MinecraftVersion): Block[] {
-    const mapper = new MinecraftVersionMapper(this.getBlockMatrix(), this.getMinecraftVersion());
-    return this.getBlocks().map((b) => mapper.mapBlock(b, targetVersion));
+    // Delegate through the matrix so we get the cross-block door fixup for
+    // free; iteration order matches the matrix.
+    return [...this.getTranslatedBlockMatrix(targetVersion).values()];
   }
 
   getTranslatedBlockMatrix(targetVersion: MinecraftVersion): Map<string, Block> {
@@ -88,6 +90,10 @@ export abstract class AbstractRegion {
     for (const [k, b] of this.getBlockMatrix()) {
       out.set(k, mapper.mapBlock(b, targetVersion));
     }
+    // Cross-block fixup for blocks whose state is split between neighbors
+    // (currently: doors, where lower-half facing/open and upper-half
+    // hinge/powered need to be copied across the boundary).
+    fixupDoors(out);
     return out;
   }
 
@@ -151,6 +157,17 @@ export abstract class AbstractSchematic {
   abstract schematicDump(): string | Uint8Array;
   abstract getMinecraftVersion(): MinecraftVersion;
   abstract getRegions(): AbstractRegion[];
+
+  /**
+   * The raw on-disk DataVersion of this schematic, if it has one. The default
+   * implementation derives it from getMinecraftVersion(), which is lossy for
+   * formats whose stored DataVersion isn't in `KNOWN_VERSIONS`. Subclasses
+   * that persist a `DataVersion` field SHOULD override this to return the raw
+   * int so cross-format conversion can round-trip future / unknown versions.
+   */
+  getDataVersion(): number {
+    return this.getMinecraftVersion().dataVersion;
+  }
 
   getRegion(idx: number): AbstractRegion {
     return this.getRegions()[idx];
