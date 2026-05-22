@@ -18,6 +18,7 @@ const FORMAT_OPTIONS: readonly FormatOption[] = [
   { id: "Litematic", label: "Litematic (.litematic)" },
   { id: "Sponge[v1]", label: "Sponge v1 (.schem)" },
   { id: "Sponge[v2]", label: "Sponge v2 (.schem)" },
+  { id: "Sponge[v3]", label: "Sponge v3 (.schem)" },
   { id: "Structure", label: "Structure (.nbt)" },
   { id: "BuildingGadgets[1.12]", label: "Building Gadgets 1.12 (.txt)" },
   {

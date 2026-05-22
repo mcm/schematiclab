@@ -230,7 +230,7 @@ export class StructureSchematic extends AbstractRegion {
       sourceEntities = region.getTranslatedEntities(targetVersion);
       sourceTileEntityMatrix = region.getTranslatedTileEntityMatrix(targetVersion);
     } else {
-      dataVersion = (targetVersion ?? region.getMinecraftVersion()).dataVersion;
+      dataVersion = targetVersion?.dataVersion ?? schematic.getDataVersion();
       sourcePalette = region.getPalette();
       sourceBlocks = region.getBlocks();
       sourceEntities = region.getEntities();
@@ -292,6 +292,10 @@ export class StructureSchematic extends AbstractRegion {
 
   getMinecraftVersion(): MinecraftVersion {
     return safeGetVersionFromDataVersion(this.dataVersion);
+  }
+
+  getDataVersion(): number {
+    return this.dataVersion;
   }
 
   // ── AbstractRegion surface ──────────────────────────────────────────────

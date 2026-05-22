@@ -7,8 +7,7 @@ export type DetectionState =
   | { status: "failed" };
 
 // Detection ids → human-readable names (no extension suffix). Mirrors the keys
-// in `format-selector.tsx::FORMAT_OPTIONS` but also includes `Sponge[v3]`,
-// which detection can return but isn't a supported conversion output.
+// in `format-selector.tsx::FORMAT_OPTIONS`.
 const FORMAT_LABELS: Record<string, string> = {
   Litematic: "Litematic",
   "Sponge[v1]": "Sponge v1",
