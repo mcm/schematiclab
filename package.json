@@ -8,7 +8,8 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "gen:translations": "node --experimental-strip-types scripts/generate-block-translations.mts && node --experimental-strip-types scripts/generate-forge-1.12-flatten.mts"
   },
   "dependencies": {
     "@iamthemcmaster/ui": "^0.3.0",

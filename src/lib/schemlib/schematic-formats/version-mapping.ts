@@ -1,16 +1,17 @@
 // Port of schemlib/schematic_formats/version_mapping.py (Python) -> TypeScript.
 //
-// Python uses PyMCTranslate's `Version` object and a `MinecraftVersionMapper`
-// that delegates to amulet-nbt / PyMCTranslate for actual block-state
-// translation between Minecraft versions. We do NOT have that infrastructure
-// in JS yet, so this module is a STUB: it defines the shape of a
-// `MinecraftVersion`, a hard-coded table of known versions, and a
-// `MinecraftVersionMapper` whose `mapBlock` is a no-op.
-//
-// A real implementation would need a block-state translation database
-// (prismarine-registry, minecraft-data, or a port of PyMCTranslate).
+// The Python original delegated block-state translation to PyMCTranslate
+// (non-OSS-friendly). Here we use a codegen'd diff chain built from
+// PrismarineJS/minecraft-data (1.12 ↔ 1.13 flatten table, 1.13 block schema)
+// and misode/mcmeta (per-release block schemas for 1.14+), with a small
+// hand-curated overrides file for renames. See:
+//   - scripts/generate-block-translations.mts (codegen)
+//   - src/lib/schemlib/data/translate.ts      (runtime)
+//   - src/lib/schemlib/data/manual-overrides.ts
 
 import { Block, AbstractPos } from "../blocks";
+import { KNOWN_VERSIONS } from "./known-versions";
+import { translateBlockState, type TranslateOptions } from "../data/translate";
 
 // ── MinecraftVersion ──────────────────────────────────────────────────────
 
@@ -20,16 +21,7 @@ export interface MinecraftVersion {
   readonly dataVersion: number;
 }
 
-export const KNOWN_VERSIONS: Record<string, MinecraftVersion> = {
-  "1.12.2": { platform: "java", versionNumber: [1, 12, 2], dataVersion: 1343 },
-  "1.13.1": { platform: "java", versionNumber: [1, 13, 1], dataVersion: 1628 },
-  "1.16.2": { platform: "java", versionNumber: [1, 16, 2], dataVersion: 2578 },
-  "1.16.5": { platform: "java", versionNumber: [1, 16, 5], dataVersion: 2586 },
-  "1.17.1": { platform: "java", versionNumber: [1, 17, 1], dataVersion: 2730 },
-  "1.18.2": { platform: "java", versionNumber: [1, 18, 2], dataVersion: 2975 },
-  "1.19.4": { platform: "java", versionNumber: [1, 19, 4], dataVersion: 3337 },
-  "1.20.1": { platform: "java", versionNumber: [1, 20, 1], dataVersion: 3465 },
-};
+export { KNOWN_VERSIONS };
 
 export function getVersion(versionString: string): MinecraftVersion {
   const v = KNOWN_VERSIONS[versionString];
@@ -70,14 +62,17 @@ export class MinecraftVersionMapper {
     return getVersion(versionString);
   }
 
-  /**
-   * Translate a block between Minecraft versions.
-   *
-   * STUB: a real implementation needs a Minecraft block-state translation
-   * database (prismarine-registry, minecraft-data, or a port of PyMCTranslate).
-   * For now this is a no-op that returns the block unchanged.
-   */
-  mapBlock(block: Block, _targetVersion: MinecraftVersion): Block {
-    return block;
+  mapBlock(
+    block: Block,
+    targetVersion: MinecraftVersion,
+    options?: TranslateOptions,
+  ): Block {
+    const translated = translateBlockState(
+      block.state,
+      this.sourceVersion,
+      targetVersion,
+      options,
+    );
+    return new Block(block.pos, translated);
   }
 }
