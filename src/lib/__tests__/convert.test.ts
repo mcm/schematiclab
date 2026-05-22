@@ -325,4 +325,57 @@ describe("convertSchematic", () => {
     expect(tePositions.get("minecraft:furnace")).toEqual([0, 0, 0]);
     expect(tePositions.get("minecraft:chest")).toEqual([1, 1, 2]);
   });
+
+  it("Sponge v2 dump emits BlockEntities in v2 wire shape (Id/Pos: IntArray)", () => {
+    // Regression: toCompound() used to emit chunk-shape (id/x/y/z) directly,
+    // which produced .schem files that other Sponge readers reject as
+    // malformed. Verify the raw NBT after a load → dump round trip uses the
+    // spec-required {Id, Pos: IntArray[3]} wire shape.
+    const palette = new Map<string, number>([
+      ["minecraft:air", 0],
+      ["minecraft:chest[facing=north,type=single,waterlogged=false]", 1],
+    ]);
+    const v2 = new SpongeSchematicV2({
+      Version: 2,
+      Metadata: new SpongeSchematicMetadata(),
+      Width: 2,
+      Height: 1,
+      Length: 2,
+      Offset: [0, 0, 0],
+      DataVersion: 3955,
+      PaletteMax: palette.size,
+      Palette: palette,
+      BlockData: [0, 1, 0, 0],
+      BlockEntities: [
+        (() => {
+          const c = new nbt.Compound();
+          c.set("id", new nbt.StringTag("minecraft:chest"));
+          c.set("x", new nbt.Int(1));
+          c.set("y", new nbt.Int(0));
+          c.set("z", new nbt.Int(0));
+          return new Entity(c);
+        })(),
+      ],
+    });
+
+    // Round trip the raw bytes so we exercise toCompound (write) → fromCompound (read).
+    const bytes = v2.schematicDump();
+    const named = nbt.loadNbtFromBytes(bytes);
+    const beList = named.get("BlockEntities");
+    expect(beList).toBeInstanceOf(nbt.NbtList);
+    if (!(beList instanceof nbt.NbtList)) return;
+    expect(beList.items.length).toBe(1);
+    const be = beList.items[0];
+    expect(be).toBeInstanceOf(nbt.Compound);
+    if (!(be instanceof nbt.Compound)) return;
+    // v2 wire shape: capitalized Id + Pos IntArray, no chunk-shape id/x/y/z.
+    expect(be.get("Id")).toBeInstanceOf(nbt.StringTag);
+    expect(be.get("Pos")).toBeInstanceOf(nbt.IntArray);
+    expect(be.get("id")).toBeUndefined();
+    expect(be.get("x")).toBeUndefined();
+    expect(be.get("y")).toBeUndefined();
+    expect(be.get("z")).toBeUndefined();
+    const pos = (be.get("Pos") as nbt.IntArray).toObject() as number[];
+    expect(pos).toEqual([1, 0, 0]);
+  });
 });
