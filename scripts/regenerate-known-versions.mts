@@ -1,17 +1,28 @@
 // Regenerate src/lib/schemlib/schematic-formats/known-versions.ts from
-// ~/projects/minecraft-data/data/pc/common/protocolVersions.json plus a
-// hand-curated pre-1.20 tail (minecraft-data's protocolVersions.json doesn't
-// include older releases). Re-run whenever minecraft-data is updated.
+// minecraft-data's data/pc/common/protocolVersions.json plus a hand-curated
+// pre-1.20 tail (minecraft-data's protocolVersions.json doesn't include older
+// releases). Re-run whenever minecraft-data is updated.
 //
-//   npx tsx scripts/regenerate-known-versions.mts
+// The script looks for protocolVersions.json in this order:
+//   1. CLI arg:  npx tsx scripts/regenerate-known-versions.mts <path>
+//   2. Env var:  MINECRAFT_DATA_PROTOCOL_VERSIONS=<path>
+//   3. Default:  ../minecraft-data/data/pc/common/protocolVersions.json
+//                (sibling checkout next to the schematiclab repo)
 
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(__dirname, "..");
+const DEFAULT_PROTOCOL_VERSIONS_PATH = path.resolve(
+  REPO_ROOT,
+  "../minecraft-data/data/pc/common/protocolVersions.json",
+);
 const PROTOCOL_VERSIONS_PATH =
-  "/home/coder/projects/minecraft-data/data/pc/common/protocolVersions.json";
+  process.argv[2] ??
+  process.env.MINECRAFT_DATA_PROTOCOL_VERSIONS ??
+  DEFAULT_PROTOCOL_VERSIONS_PATH;
 const OUTPUT_PATH = path.resolve(
   __dirname,
   "../src/lib/schemlib/schematic-formats/known-versions.ts",
