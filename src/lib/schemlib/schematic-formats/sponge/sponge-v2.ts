@@ -303,10 +303,20 @@ export class SpongeSchematicV2
     // they're optional, but in practice some Sponge readers (incl. the
     // reference implementation) bail with "Missing tag BlockEntities" when the
     // tag is absent. Empty NBT lists are cheap.
-    entries.set(
-      "BlockEntities",
-      new nbt.NbtList(this.BlockEntities.map((e) => e.toCompound())),
-    );
+    //
+    // BlockEntities are stored internally as chunk-shape (id/x/y/z) per the
+    // read-side normalization in fromCompound. Translate back to v2 wire shape
+    // (Id/Pos: IntArray + flat extras) on write so the output is spec-valid.
+    const blockEntityCompounds: nbt.Compound[] = [];
+    for (const e of this.BlockEntities) {
+      const c = e.toCompound();
+      const v2 = chunkShapeToV2BlockEntity(c);
+      // Fall back to the raw compound if translation fails (e.g. third-party
+      // input that didn't follow chunk-shape conventions). Better to surface
+      // a half-shaped TE than to drop it silently.
+      blockEntityCompounds.push(v2 ?? c);
+    }
+    entries.set("BlockEntities", new nbt.NbtList(blockEntityCompounds));
     entries.set(
       "Entities",
       new nbt.NbtList(this.Entities.map((e) => e.toCompound())),
@@ -510,13 +520,12 @@ export class SpongeSchematicV2
       palette.set(sourcePalette[i].toString(), i);
     }
 
-    // Translate chunk-shape tile entities (id/x/y/z + flat extras) into Sponge
-    // v2 BlockEntity shape (Id/Pos: IntArray + flat extras).
-    const blockEntities: Entity[] = [];
-    for (const e of sourceTileEntities) {
-      const v2 = chunkShapeToV2BlockEntity(e.toCompound());
-      if (v2) blockEntities.push(new Entity(v2));
-    }
+    // Tile entities from cross-format sources are already in chunk-shape
+    // (id/x/y/z + flat extras), which is also what fromCompound stores
+    // internally after read-side normalization. Keep them in that shape so the
+    // internal representation is consistent — toCompound handles translation
+    // to v2 wire shape (Id/Pos: IntArray) on dump.
+    const blockEntities: Entity[] = [...sourceTileEntities];
 
     return new SpongeSchematicV2({
       Version: 2,
