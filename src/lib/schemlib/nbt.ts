@@ -248,7 +248,7 @@ export abstract class NbtTag {
 // `typeof NbtTag` because concrete tag classes (e.g. `Byte(value)`) have
 // non-zero-arg constructors that don't satisfy `abstract new () => NbtTag`.
 // What we actually need from a registered class is `fromReader` + `tagTypeId`.
-export type TagClass = (new (...args: any[]) => NbtTag) & {
+export type TagClass = (new (...args: never[]) => NbtTag) & {
   fromReader(reader: BinaryReader): NbtTag;
   tagTypeId?: number;
 };

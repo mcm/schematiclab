@@ -1,0 +1,11 @@
+node_modules/
+.next/
+out/
+build/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+pnpm-lock.yaml
+semgrep-results.json
+.chief/
+.tessl/

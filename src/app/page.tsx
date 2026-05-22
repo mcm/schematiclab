@@ -56,16 +56,27 @@ export default function HomePage() {
   const [error, setError] = React.useState<string | null>(null);
   const cancelledRef = React.useRef(false);
 
-  React.useEffect(() => {
+  const handleFileChange = React.useCallback((next: File | null) => {
+    setFile(next);
     setError(null);
-  }, [file, outputFormat, targetVersion]);
+    setDetection(next ? { status: "detecting" } : { status: "idle" });
+  }, []);
+
+  const handleOutputFormatChange = React.useCallback(
+    (next: SchematicFormatId | null) => {
+      setOutputFormat(next);
+      setError(null);
+    },
+    [],
+  );
+
+  const handleTargetVersionChange = React.useCallback((next: string | null) => {
+    setTargetVersion(next);
+    setError(null);
+  }, []);
 
   React.useEffect(() => {
-    if (!file) {
-      setDetection({ status: "idle" });
-      return;
-    }
-    setDetection({ status: "detecting" });
+    if (!file) return;
     let cancelled = false;
     (async () => {
       try {
@@ -87,11 +98,15 @@ export default function HomePage() {
   const detectedFormat: SchematicFormatId | null =
     detection.status === "ok" ? asSchematicFormatId(detection.formatId) : null;
 
-  React.useEffect(() => {
+  // Adjust state during render when detected format collides with selected
+  // output format. See https://react.dev/learn/you-might-not-need-an-effect
+  const [prevDetected, setPrevDetected] = React.useState(detectedFormat);
+  if (prevDetected !== detectedFormat) {
+    setPrevDetected(detectedFormat);
     if (detectedFormat !== null && outputFormat === detectedFormat) {
       setOutputFormat(null);
     }
-  }, [detectedFormat, outputFormat]);
+  }
 
   const handleSubmit = React.useCallback(async () => {
     if (!file || !outputFormat || isConverting) return;
@@ -167,16 +182,16 @@ export default function HomePage() {
               gap: "var(--space-4)",
             }}
           >
-            <FileDropzone file={file} onFileChange={setFile} />
+            <FileDropzone file={file} onFileChange={handleFileChange} />
             <DetectedFormatHint state={detection} />
             <FormatSelector
               value={outputFormat}
-              onChange={setOutputFormat}
+              onChange={handleOutputFormatChange}
               excludedFormat={detectedFormat}
             />
             <VersionSelector
               value={targetVersion}
-              onChange={setTargetVersion}
+              onChange={handleTargetVersionChange}
             />
             <InlineError message={error} />
             <SubmitButton

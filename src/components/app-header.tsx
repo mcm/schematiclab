@@ -30,24 +30,41 @@ interface AppHeaderProps {
   breadcrumbs?: { label: string; href?: string }[];
 }
 
-function useTheme() {
-  const [theme, setTheme] = React.useState<"light" | "dark">("light");
+function subscribeTheme(callback: () => void): () => void {
+  const observer = new MutationObserver(callback);
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["data-theme"],
+  });
+  return () => observer.disconnect();
+}
 
-  // On mount, read what the bootstrap script set on <html>.
-  React.useEffect(() => {
-    const current = document.documentElement.getAttribute("data-theme");
-    setTheme(current === "dark" ? "dark" : "light");
-  }, []);
+function getThemeSnapshot(): "light" | "dark" {
+  return document.documentElement.getAttribute("data-theme") === "dark"
+    ? "dark"
+    : "light";
+}
+
+function getThemeServerSnapshot(): "light" | "dark" {
+  return "light";
+}
+
+function useTheme() {
+  const theme = React.useSyncExternalStore(
+    subscribeTheme,
+    getThemeSnapshot,
+    getThemeServerSnapshot,
+  );
 
   const toggle = React.useCallback(() => {
-    setTheme((prev) => {
-      const next = prev === "light" ? "dark" : "light";
-      document.documentElement.setAttribute("data-theme", next);
-      try {
-        localStorage.setItem("mcmaster-theme", next);
-      } catch (_) {}
-      return next;
-    });
+    const next =
+      document.documentElement.getAttribute("data-theme") === "dark"
+        ? "light"
+        : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    try {
+      localStorage.setItem("mcmaster-theme", next);
+    } catch {}
   }, []);
 
   return { theme, toggle };
