@@ -97,10 +97,7 @@ function send<T>(
 export function detectInWorker(bytes: Uint8Array): Promise<string> {
   const transfer: Transferable[] =
     bytes.buffer instanceof ArrayBuffer ? [bytes.buffer] : [];
-  return send<string>(
-    { type: "detect", payload: { bytes } },
-    transfer,
-  );
+  return send<string>({ type: "detect", payload: { bytes } }, transfer);
 }
 
 /**

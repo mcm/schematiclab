@@ -46,7 +46,11 @@ function readString(tag: nbt.NbtTag | undefined): string {
 
 function readBlockPosCompound(tag: nbt.NbtTag | undefined): BlockPos {
   if (!(tag instanceof nbt.Compound)) return BlockPos.ORIGIN;
-  return new BlockPos(readInt(tag.get("x")), readInt(tag.get("y")), readInt(tag.get("z")));
+  return new BlockPos(
+    readInt(tag.get("x")),
+    readInt(tag.get("y")),
+    readInt(tag.get("z")),
+  );
 }
 
 function blockStateFromCompound(c: nbt.Compound): BlockState {
@@ -70,7 +74,11 @@ function compoundListFrom(tag: nbt.NbtTag | undefined): nbt.Compound[] {
   return out;
 }
 
-function blockPosCompound(p: { x: number; y: number; z: number }): nbt.Compound {
+function blockPosCompound(p: {
+  x: number;
+  y: number;
+  z: number;
+}): nbt.Compound {
   return new nbt.Compound({
     x: new nbt.Int(p.x),
     y: new nbt.Int(p.y),
@@ -151,7 +159,9 @@ export class LitematicRegion extends AbstractRegion {
           const i = x + z * width + y * length * width;
           const stateIdx = Number(this.blockStates.readPackedUint(i, bits));
           if (stateIdx < 0 || stateIdx >= palette.length) {
-            throw new Error(`Block state index ${stateIdx} out of range (palette size ${palette.length}) at (${x}, ${y}, ${z}), i=${i}`);
+            throw new Error(
+              `Block state index ${stateIdx} out of range (palette size ${palette.length}) at (${x}, ${y}, ${z}), i=${i}`,
+            );
           }
           const state = palette[stateIdx];
           if (state.Name === "minecraft:air") continue;
@@ -200,12 +210,16 @@ export class LitematicRegion extends AbstractRegion {
     });
   }
 
-  static fromCompound(c: nbt.Compound, minecraftVersion: MinecraftVersion): LitematicRegion {
+  static fromCompound(
+    c: nbt.Compound,
+    minecraftVersion: MinecraftVersion,
+  ): LitematicRegion {
     const paletteTag = c.get("BlockStatePalette");
     const palette: BlockState[] = [];
     if (paletteTag instanceof nbt.NbtList) {
       for (const item of paletteTag.items) {
-        if (item instanceof nbt.Compound) palette.push(blockStateFromCompound(item));
+        if (item instanceof nbt.Compound)
+          palette.push(blockStateFromCompound(item));
       }
     }
     const blockStatesTag = c.get("BlockStates");
@@ -249,8 +263,14 @@ function metadataFromCompound(c: nbt.Compound): LitematicMetadata {
     Description: readString(c.get("Description")),
     Name: readString(c.get("Name")),
     RegionCount: readInt(c.get("RegionCount")),
-    TimeCreated: timeCreated instanceof nbt.Long ? timeCreated.value : BigInt(readInt(timeCreated)),
-    TimeModified: timeModified instanceof nbt.Long ? timeModified.value : BigInt(readInt(timeModified)),
+    TimeCreated:
+      timeCreated instanceof nbt.Long
+        ? timeCreated.value
+        : BigInt(readInt(timeCreated)),
+    TimeModified:
+      timeModified instanceof nbt.Long
+        ? timeModified.value
+        : BigInt(readInt(timeModified)),
     TotalBlocks: readInt(c.get("TotalBlocks")),
     TotalVolume: readInt(c.get("TotalVolume")),
     EnclosingSize: readBlockPosCompound(c.get("EnclosingSize")),
@@ -425,7 +445,10 @@ export class LitematicSchematic extends AbstractSchematic {
       let entities: Entity[];
       let tileEntities: Entity[];
       let palette: BlockState[];
-      if (targetVersion !== null && !versionsEqual(targetVersion, region.getMinecraftVersion())) {
+      if (
+        targetVersion !== null &&
+        !versionsEqual(targetVersion, region.getMinecraftVersion())
+      ) {
         blocks = region.getTranslatedBlocks(targetVersion);
         entities = region.getTranslatedEntities(targetVersion);
         tileEntities = region.getTranslatedTileEntities(targetVersion);
@@ -473,7 +496,9 @@ export class LitematicSchematic extends AbstractSchematic {
       const storage = new Uint8Array(longCount * 8);
       const blockStates = new nbt.LongArray(storage);
       for (let i = 0; i < volume; i++) {
-        const v = regionBlocks.has(i) ? (regionBlocks.get(i) as number) : airIdx;
+        const v = regionBlocks.has(i)
+          ? (regionBlocks.get(i) as number)
+          : airIdx;
         blockStates.writePackedUint(i, bits, v);
       }
 
@@ -482,7 +507,9 @@ export class LitematicSchematic extends AbstractSchematic {
       // We've already shifted blocks by `offset` (the bounding-box min) to put
       // them at [0..size]; tile entities must follow the same shift or they
       // land outside the region.
-      const entityCompounds: nbt.Compound[] = entities.map((e) => e.toCompound());
+      const entityCompounds: nbt.Compound[] = entities.map((e) =>
+        e.toCompound(),
+      );
       const tileEntityCompounds: nbt.Compound[] = tileEntities.map((e) => {
         const c = e.toCompound();
         if (offset.equals(BlockPos.ORIGIN)) return c;
@@ -522,8 +549,12 @@ export class LitematicSchematic extends AbstractSchematic {
     const outerLength = Math.abs(outerP2[2] - outerP1[2]) + 1;
 
     const now = BigInt(Date.now());
-    const sourceAuthor = typeof sourceMetadata.author === "string" ? sourceMetadata.author : "";
-    const sourceDate = typeof sourceMetadata.date === "number" ? BigInt(sourceMetadata.date) : null;
+    const sourceAuthor =
+      typeof sourceMetadata.author === "string" ? sourceMetadata.author : "";
+    const sourceDate =
+      typeof sourceMetadata.date === "number"
+        ? BigInt(sourceMetadata.date)
+        : null;
 
     const metadata: LitematicMetadata = {
       Name: schematic.getName() || "",

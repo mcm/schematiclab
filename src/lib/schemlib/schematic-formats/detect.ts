@@ -31,7 +31,11 @@ function has(parsed: Parsed, key: string): boolean {
 function tryParseJson(input: string): Record<string, unknown> | null {
   try {
     const parsed = JSON.parse(input) as unknown;
-    if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
+    if (
+      typeof parsed === "object" &&
+      parsed !== null &&
+      !Array.isArray(parsed)
+    ) {
       return parsed as Record<string, unknown>;
     }
     return null;
@@ -151,7 +155,11 @@ export function detectSchematicType(input: string | Uint8Array): string {
     }
   }
 
-  if (parsed.kind === "nbt" && has(parsed, "blocks") && has(parsed, "DataVersion")) {
+  if (
+    parsed.kind === "nbt" &&
+    has(parsed, "blocks") &&
+    has(parsed, "DataVersion")
+  ) {
     return "Structure";
   }
 

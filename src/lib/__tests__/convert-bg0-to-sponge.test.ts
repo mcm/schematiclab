@@ -35,7 +35,9 @@ describe("convert BG0 → Sponge v2 at 1.21.4", () => {
 
     // No more pre-flatten composite names (planks, log, wooden_slab, etc.).
     const stillUnflattened = [...names].filter((n) =>
-      /^minecraft:(planks|log|log2|leaves|leaves2|wooden_slab|stained_glass|carpet|wool|stone\[|sand\[)/.test(n),
+      /^minecraft:(planks|log|log2|leaves|leaves2|wooden_slab|stained_glass|carpet|wool|stone\[|sand\[)/.test(
+        n,
+      ),
     );
     expect(stillUnflattened).toEqual([]);
 

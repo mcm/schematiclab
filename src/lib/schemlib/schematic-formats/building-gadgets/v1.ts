@@ -16,11 +16,7 @@ import * as nbt from "../../nbt";
 import { Block, BlockPos, BlockState } from "../../blocks";
 import { Entity } from "../../entities";
 import { AbstractRegion, AbstractSchematic } from "../abstract";
-import {
-  MinecraftVersion,
-  getVersion,
-  posKey,
-} from "../version-mapping";
+import { MinecraftVersion, getVersion, posKey } from "../version-mapping";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -132,7 +128,9 @@ function bodyFromCompound(c: nbt.Compound): BuildingGadgetsV1Body {
       if (!(item instanceof nbt.Compound)) continue;
       const innerDataTag = item.get("data");
       const innerData =
-        innerDataTag instanceof nbt.Compound ? innerDataTag : new nbt.Compound();
+        innerDataTag instanceof nbt.Compound
+          ? innerDataTag
+          : new nbt.Compound();
       const stateTag = item.get("state");
       const state =
         stateTag instanceof nbt.Compound
@@ -179,9 +177,10 @@ function bodyFromCompound(c: nbt.Compound): BuildingGadgetsV1Body {
       bounds.maxZ = readInt(boundsTag.get("maxZ"));
     }
     header = {
-      author: headerTag.get("author") instanceof nbt.StringTag
-        ? (headerTag.get("author") as nbt.StringTag).value
-        : undefined,
+      author:
+        headerTag.get("author") instanceof nbt.StringTag
+          ? (headerTag.get("author") as nbt.StringTag).value
+          : undefined,
       bounds,
       name: readString(headerTag.get("name")),
     };
@@ -327,12 +326,13 @@ export class BuildingGadgetsV1Schematic
    * base64-encoded; the header is straight JSON.
    */
   schematicDump(): string {
-    const dataEntries = this.body.data.map((d) =>
-      new nbt.Compound({
-        data: d.data,
-        state: d.state.toCompound(),
-        serializer: new nbt.Int(d.serializer),
-      }),
+    const dataEntries = this.body.data.map(
+      (d) =>
+        new nbt.Compound({
+          data: d.data,
+          state: d.state.toCompound(),
+          serializer: new nbt.Int(d.serializer),
+        }),
     );
     const bodyCompound = new nbt.Compound({
       data: new nbt.NbtList(dataEntries),

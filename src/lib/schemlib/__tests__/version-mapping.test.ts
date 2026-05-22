@@ -5,7 +5,10 @@
 import { describe, it, expect } from "vitest";
 
 import { Block, BlockPos, BlockState } from "../blocks";
-import { MinecraftVersionMapper, posKey } from "../schematic-formats/version-mapping";
+import {
+  MinecraftVersionMapper,
+  posKey,
+} from "../schematic-formats/version-mapping";
 import { fixupDoors } from "../data/translate";
 
 const at = (name: string, props?: Record<string, string>) =>
@@ -19,7 +22,10 @@ describe("MinecraftVersionMapper", () => {
       MinecraftVersionMapper.getVersion("1.20.1"),
     );
 
-    const mapped = mapper.mapBlock(block, MinecraftVersionMapper.getVersion("1.20.1"));
+    const mapped = mapper.mapBlock(
+      block,
+      MinecraftVersionMapper.getVersion("1.20.1"),
+    );
     expect(mapped.state.equals(block.state)).toBe(true);
     expect(mapped.pos.equals(block.pos)).toBe(true);
   });
@@ -31,7 +37,10 @@ describe("MinecraftVersionMapper", () => {
       MinecraftVersionMapper.getVersion("1.13.1"),
     );
 
-    const mapped = mapper.mapBlock(block, MinecraftVersionMapper.getVersion("1.20.1"));
+    const mapped = mapper.mapBlock(
+      block,
+      MinecraftVersionMapper.getVersion("1.20.1"),
+    );
     expect(mapped.state.equals(block.state)).toBe(true);
   });
 
@@ -45,8 +54,13 @@ describe("MinecraftVersionMapper", () => {
       MinecraftVersionMapper.getVersion("1.12.2"),
     );
 
-    const mapped = mapper.mapBlock(block, MinecraftVersionMapper.getVersion("1.20.1"));
-    expect(mapped.state.equals(new BlockState({ Name: "minecraft:spruce_planks" }))).toBe(true);
+    const mapped = mapper.mapBlock(
+      block,
+      MinecraftVersionMapper.getVersion("1.20.1"),
+    );
+    expect(
+      mapped.state.equals(new BlockState({ Name: "minecraft:spruce_planks" })),
+    ).toBe(true);
   });
 
   it("renames grass_path → dirt_path across the 1.17 boundary", () => {
@@ -56,8 +70,13 @@ describe("MinecraftVersionMapper", () => {
       MinecraftVersionMapper.getVersion("1.16.5"),
     );
 
-    const mapped = mapper.mapBlock(block, MinecraftVersionMapper.getVersion("1.17.1"));
-    expect(mapped.state.equals(new BlockState({ Name: "minecraft:dirt_path" }))).toBe(true);
+    const mapped = mapper.mapBlock(
+      block,
+      MinecraftVersionMapper.getVersion("1.17.1"),
+    );
+    expect(
+      mapped.state.equals(new BlockState({ Name: "minecraft:dirt_path" })),
+    ).toBe(true);
   });
 
   it("renames sign → oak_sign across the 1.14 boundary", () => {
@@ -67,7 +86,10 @@ describe("MinecraftVersionMapper", () => {
       MinecraftVersionMapper.getVersion("1.13.1"),
     );
 
-    const mapped = mapper.mapBlock(block, MinecraftVersionMapper.getVersion("1.20.1"));
+    const mapped = mapper.mapBlock(
+      block,
+      MinecraftVersionMapper.getVersion("1.20.1"),
+    );
     expect(mapped.state.Name).toBe("minecraft:oak_sign");
   });
 
@@ -78,7 +100,10 @@ describe("MinecraftVersionMapper", () => {
       MinecraftVersionMapper.getVersion("1.17.1"),
     );
 
-    const mapped = mapper.mapBlock(block, MinecraftVersionMapper.getVersion("1.16.5"));
+    const mapped = mapper.mapBlock(
+      block,
+      MinecraftVersionMapper.getVersion("1.16.5"),
+    );
     expect(mapped.state.Name).toBe("minecraft:grass_path");
   });
 
@@ -112,14 +137,26 @@ describe("fixupDoors", () => {
       new BlockPos(0, 0, 0),
       new BlockState({
         Name: "minecraft:oak_door",
-        Properties: { half: "lower", facing: "south", open: "true", hinge: "right", powered: "false" },
+        Properties: {
+          half: "lower",
+          facing: "south",
+          open: "true",
+          hinge: "right",
+          powered: "false",
+        },
       }),
     );
     const upper = new Block(
       new BlockPos(0, 1, 0),
       new BlockState({
         Name: "minecraft:oak_door",
-        Properties: { half: "upper", facing: "east", open: "false", hinge: "left", powered: "true" },
+        Properties: {
+          half: "upper",
+          facing: "east",
+          open: "false",
+          hinge: "left",
+          powered: "true",
+        },
       }),
     );
     const matrix = new Map<string, Block>([
@@ -152,14 +189,22 @@ describe("fixupDoors", () => {
       new BlockPos(0, 0, 0),
       new BlockState({
         Name: "minecraft:oak_door",
-        Properties: { half: "lower", facing: "south", open: "false", hinge: "right", powered: "false" },
+        Properties: {
+          half: "lower",
+          facing: "south",
+          open: "false",
+          hinge: "right",
+          powered: "false",
+        },
       }),
     );
     const matrix = new Map([[posKey(lower.pos), lower]]);
 
     fixupDoors(matrix);
 
-    expect(matrix.get(posKey(lower.pos))!.state.Properties.get("hinge")).toBe("right");
+    expect(matrix.get(posKey(lower.pos))!.state.Properties.get("hinge")).toBe(
+      "right",
+    );
   });
 
   it("end-to-end: a 1.12 door at metadata (south+open, right-hinge) translates correctly", () => {
@@ -169,14 +214,26 @@ describe("fixupDoors", () => {
       new BlockPos(0, 0, 0),
       new BlockState({
         Name: "minecraft:wooden_door",
-        Properties: { facing: "south", half: "lower", open: "true", hinge: "left", powered: "false" },
+        Properties: {
+          facing: "south",
+          half: "lower",
+          open: "true",
+          hinge: "left",
+          powered: "false",
+        },
       }),
     );
     const upper = new Block(
       new BlockPos(0, 1, 0),
       new BlockState({
         Name: "minecraft:wooden_door",
-        Properties: { facing: "north", half: "upper", open: "false", hinge: "right", powered: "false" },
+        Properties: {
+          facing: "north",
+          half: "upper",
+          open: "false",
+          hinge: "right",
+          powered: "false",
+        },
       }),
     );
     const matrix = new Map<string, Block>([
@@ -190,7 +247,10 @@ describe("fixupDoors", () => {
     );
     const out = new Map<string, Block>();
     for (const [k, b] of matrix) {
-      out.set(k, mapper.mapBlock(b, MinecraftVersionMapper.getVersion("1.20.1")));
+      out.set(
+        k,
+        mapper.mapBlock(b, MinecraftVersionMapper.getVersion("1.20.1")),
+      );
     }
     fixupDoors(out);
 
@@ -200,9 +260,15 @@ describe("fixupDoors", () => {
     expect(fixedLower.state.Name).toBe("minecraft:oak_door");
     expect(fixedUpper.state.Name).toBe("minecraft:oak_door");
     // Both halves agree on hinge & facing & open.
-    expect(fixedLower.state.Properties.get("hinge")).toBe(fixedUpper.state.Properties.get("hinge"));
-    expect(fixedLower.state.Properties.get("facing")).toBe(fixedUpper.state.Properties.get("facing"));
-    expect(fixedLower.state.Properties.get("open")).toBe(fixedUpper.state.Properties.get("open"));
+    expect(fixedLower.state.Properties.get("hinge")).toBe(
+      fixedUpper.state.Properties.get("hinge"),
+    );
+    expect(fixedLower.state.Properties.get("facing")).toBe(
+      fixedUpper.state.Properties.get("facing"),
+    );
+    expect(fixedLower.state.Properties.get("open")).toBe(
+      fixedUpper.state.Properties.get("open"),
+    );
     // facing came from the lower's real metadata (south).
     expect(fixedLower.state.Properties.get("facing")).toBe("south");
     expect(fixedLower.state.Properties.get("open")).toBe("true");

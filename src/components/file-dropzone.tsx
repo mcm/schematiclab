@@ -56,7 +56,8 @@ export function FileDropzone({ file, onFileChange }: FileDropzoneProps) {
 
   const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
     // Ignore leaves that bubble from children — only clear when leaving the dropzone itself.
-    if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
+    if (event.currentTarget.contains(event.relatedTarget as Node | null))
+      return;
     setIsDragging(false);
   };
 

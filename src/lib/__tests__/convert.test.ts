@@ -165,7 +165,9 @@ describe("convertSchematic", () => {
       ["minecraft:furnace[facing=north,lit=false]", 2],
       ["minecraft:chest[facing=north,type=single,waterlogged=false]", 3],
     ]);
-    const width = 4, height = 1, length = 4;
+    const width = 4,
+      height = 1,
+      length = 4;
     const total = width * height * length;
     const blockData = new Array<number>(total).fill(0);
     // Place stone at (0,0,0), furnace at (2,0,1), chest at (3,0,3)
@@ -253,7 +255,9 @@ describe("convertSchematic", () => {
       ["minecraft:furnace[facing=north,lit=false]", 1],
       ["minecraft:chest[facing=north,type=single,waterlogged=false]", 2],
     ]);
-    const width = 5, height = 2, length = 5;
+    const width = 5,
+      height = 2,
+      length = 5;
     const total = width * height * length;
     const blockData = new Array<number>(total).fill(0);
     // Place furnace at (2,0,1) and chest at (3,1,3) in a 5×2×5 schematic with

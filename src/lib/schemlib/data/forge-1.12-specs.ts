@@ -15,7 +15,12 @@
 export type BlockSpec =
   | { kind: "stateless" }
   | { kind: "variants"; prop: string; values: readonly string[] }
-  | { kind: "variants_with_stage"; prop: string; values: readonly string[]; stageProp: string }
+  | {
+      kind: "variants_with_stage";
+      prop: string;
+      values: readonly string[];
+      stageProp: string;
+    }
   | { kind: "leaves"; variants: readonly string[] }
   | { kind: "double_plant" }
   | { kind: "connected" }
@@ -67,8 +72,22 @@ export const FORGE_1_12_SPECS: Record<string, BlockSpec> = (() => {
   const WOOD6 = [...WOOD4, "acacia", "dark_oak"] as const;
   const WOOD_LOG2 = ["acacia", "dark_oak"] as const;
   const COLORS16 = [
-    "white", "orange", "magenta", "light_blue", "yellow", "lime", "pink", "gray",
-    "silver", "cyan", "purple", "blue", "brown", "green", "red", "black",
+    "white",
+    "orange",
+    "magenta",
+    "light_blue",
+    "yellow",
+    "lime",
+    "pink",
+    "gray",
+    "silver",
+    "cyan",
+    "purple",
+    "blue",
+    "brown",
+    "green",
+    "red",
+    "black",
   ] as const;
 
   // Stairs share an encoding (facing 0-3 in low bits, half=top at bit 2).
@@ -86,45 +105,170 @@ export const FORGE_1_12_SPECS: Record<string, BlockSpec> = (() => {
 
   return {
     // ── Variant-only blocks ──────────────────────────────────────────────
-    stone: { kind: "variants", prop: "variant", values: ["stone", "granite", "smooth_granite", "diorite", "smooth_diorite", "andesite", "smooth_andesite"] },
-    dirt: { kind: "variants", prop: "variant", values: ["dirt", "coarse_dirt", "podzol"] },
+    stone: {
+      kind: "variants",
+      prop: "variant",
+      values: [
+        "stone",
+        "granite",
+        "smooth_granite",
+        "diorite",
+        "smooth_diorite",
+        "andesite",
+        "smooth_andesite",
+      ],
+    },
+    dirt: {
+      kind: "variants",
+      prop: "variant",
+      values: ["dirt", "coarse_dirt", "podzol"],
+    },
     sand: { kind: "variants", prop: "variant", values: ["sand", "red_sand"] },
-    sapling: { kind: "variants_with_stage", prop: "type", values: [...WOOD6], stageProp: "stage" }, // bit 3 = stage
+    sapling: {
+      kind: "variants_with_stage",
+      prop: "type",
+      values: [...WOOD6],
+      stageProp: "stage",
+    }, // bit 3 = stage
     planks: { kind: "variants", prop: "variant", values: [...WOOD6] },
     leaves: { kind: "leaves", variants: [...WOOD4] }, // bits 0-1 variant, bit 2 = decayable=false, bit 3 = check_decay=true
     leaves2: { kind: "leaves", variants: [...WOOD_LOG2] },
     sponge: { kind: "variants", prop: "wet", values: ["false", "true"] },
-    sandstone: { kind: "variants", prop: "type", values: ["sandstone", "chiseled_sandstone", "smooth_sandstone"] },
-    red_sandstone: { kind: "variants", prop: "type", values: ["red_sandstone", "chiseled_red_sandstone", "smooth_red_sandstone"] },
-    tallgrass: { kind: "variants", prop: "type", values: ["dead_bush", "tall_grass", "fern"] },
+    sandstone: {
+      kind: "variants",
+      prop: "type",
+      values: ["sandstone", "chiseled_sandstone", "smooth_sandstone"],
+    },
+    red_sandstone: {
+      kind: "variants",
+      prop: "type",
+      values: [
+        "red_sandstone",
+        "chiseled_red_sandstone",
+        "smooth_red_sandstone",
+      ],
+    },
+    tallgrass: {
+      kind: "variants",
+      prop: "type",
+      values: ["dead_bush", "tall_grass", "fern"],
+    },
     wool: { kind: "variants", prop: "color", values: [...COLORS16] },
     yellow_flower: { kind: "stateless" }, // dandelion only — type prop has 1 value
-    red_flower: { kind: "variants", prop: "type", values: ["poppy", "blue_orchid", "allium", "houstonia", "red_tulip", "orange_tulip", "white_tulip", "pink_tulip", "oxeye_daisy"] },
+    red_flower: {
+      kind: "variants",
+      prop: "type",
+      values: [
+        "poppy",
+        "blue_orchid",
+        "allium",
+        "houstonia",
+        "red_tulip",
+        "orange_tulip",
+        "white_tulip",
+        "pink_tulip",
+        "oxeye_daisy",
+      ],
+    },
     double_plant: { kind: "double_plant" }, // low bits = variant, bit 3 = upper half flag
     stained_glass: { kind: "variants", prop: "color", values: [...COLORS16] },
-    stained_glass_pane: { kind: "variants", prop: "color", values: [...COLORS16] },
-    stained_hardened_clay: { kind: "variants", prop: "color", values: [...COLORS16] },
+    stained_glass_pane: {
+      kind: "variants",
+      prop: "color",
+      values: [...COLORS16],
+    },
+    stained_hardened_clay: {
+      kind: "variants",
+      prop: "color",
+      values: [...COLORS16],
+    },
     carpet: { kind: "variants", prop: "color", values: [...COLORS16] },
     concrete: { kind: "variants", prop: "color", values: [...COLORS16] },
     concrete_powder: { kind: "variants", prop: "color", values: [...COLORS16] },
-    cobblestone_wall: { kind: "connected_variant", prop: "variant", values: ["cobblestone", "mossy_cobblestone"] },
-    prismarine: { kind: "variants", prop: "variant", values: ["prismarine", "prismarine_bricks", "dark_prismarine"] },
-    monster_egg: { kind: "variants", prop: "variant", values: ["stone", "cobblestone", "stone_brick", "mossy_brick", "cracked_brick", "chiseled_brick"] },
-    stonebrick: { kind: "variants", prop: "variant", values: ["stonebrick", "mossy_stonebrick", "cracked_stonebrick", "chiseled_stonebrick"] },
+    cobblestone_wall: {
+      kind: "connected_variant",
+      prop: "variant",
+      values: ["cobblestone", "mossy_cobblestone"],
+    },
+    prismarine: {
+      kind: "variants",
+      prop: "variant",
+      values: ["prismarine", "prismarine_bricks", "dark_prismarine"],
+    },
+    monster_egg: {
+      kind: "variants",
+      prop: "variant",
+      values: [
+        "stone",
+        "cobblestone",
+        "stone_brick",
+        "mossy_brick",
+        "cracked_brick",
+        "chiseled_brick",
+      ],
+    },
+    stonebrick: {
+      kind: "variants",
+      prop: "variant",
+      values: [
+        "stonebrick",
+        "mossy_stonebrick",
+        "cracked_stonebrick",
+        "chiseled_stonebrick",
+      ],
+    },
     quartz_block: { kind: "quartz_block" }, // 0/1 = block/chiseled (no axis), 2-4 = axis y/x/z (lines)
 
     // ── Slabs (variant + half) ───────────────────────────────────────────
     wooden_slab: { kind: "slab", prop: "variant", values: [...WOOD6] },
-    double_wooden_slab: { kind: "double_slab", prop: "variant", values: [...WOOD6] },
-    stone_slab: { kind: "slab_seamless", prop: "variant", values: ["stone", "sandstone", "wood_old", "cobblestone", "brick", "stone_brick", "nether_brick", "quartz"] },
-    double_stone_slab: { kind: "double_slab_seamless", prop: "variant", values: ["stone", "sandstone", "wood_old", "cobblestone", "brick", "stone_brick", "nether_brick", "quartz"] },
+    double_wooden_slab: {
+      kind: "double_slab",
+      prop: "variant",
+      values: [...WOOD6],
+    },
+    stone_slab: {
+      kind: "slab_seamless",
+      prop: "variant",
+      values: [
+        "stone",
+        "sandstone",
+        "wood_old",
+        "cobblestone",
+        "brick",
+        "stone_brick",
+        "nether_brick",
+        "quartz",
+      ],
+    },
+    double_stone_slab: {
+      kind: "double_slab_seamless",
+      prop: "variant",
+      values: [
+        "stone",
+        "sandstone",
+        "wood_old",
+        "cobblestone",
+        "brick",
+        "stone_brick",
+        "nether_brick",
+        "quartz",
+      ],
+    },
     stone_slab2: { kind: "slab", prop: "variant", values: ["red_sandstone"] },
-    double_stone_slab2: { kind: "double_slab", prop: "variant", values: ["red_sandstone"] },
+    double_stone_slab2: {
+      kind: "double_slab",
+      prop: "variant",
+      values: ["red_sandstone"],
+    },
     purpur_slab: { kind: "slab", prop: "variant", values: ["default"] },
-    purpur_double_slab: { kind: "double_slab", prop: "variant", values: ["default"] },
+    purpur_double_slab: {
+      kind: "double_slab",
+      prop: "variant",
+      values: ["default"],
+    },
 
     // ── Logs (variant + axis) ────────────────────────────────────────────
-    log: { kind: "log", variants: [...WOOD4] },   // ids 0-3 axis=y, 4-7 axis=x, 8-11 axis=z, 12-15 axis=none (bark)
+    log: { kind: "log", variants: [...WOOD4] }, // ids 0-3 axis=y, 4-7 axis=x, 8-11 axis=z, 12-15 axis=none (bark)
     log2: { kind: "log", variants: [...WOOD_LOG2] },
 
     // ── Stairs (all share the same metadata encoding) ────────────────────
@@ -176,9 +320,9 @@ export const FORGE_1_12_SPECS: Record<string, BlockSpec> = (() => {
     dark_oak_fence_gate: { kind: "fence_gate" },
 
     // ── Single-property facing blocks ────────────────────────────────────
-    ladder: { kind: "facing4" },          // 2-5 = N/S/W/E
-    wall_sign: { kind: "facing4" },       // 2-5
-    chest: { kind: "facing4" },           // 2-5
+    ladder: { kind: "facing4" }, // 2-5 = N/S/W/E
+    wall_sign: { kind: "facing4" }, // 2-5
+    chest: { kind: "facing4" }, // 2-5
     trapped_chest: { kind: "facing4" },
     ender_chest: { kind: "facing4" },
     furnace: { kind: "facing4" },
@@ -228,11 +372,11 @@ export const FORGE_1_12_SPECS: Record<string, BlockSpec> = (() => {
 
     // ── Misc directional ─────────────────────────────────────────────────
     end_portal_frame: { kind: "end_portal_frame" }, // facing 0-3 + eye=bit 2
-    end_rod: { kind: "facing6" },                   // 0-5
-    hopper: { kind: "hopper" },                     // 0-5 facing + enabled bit
-    dropper: { kind: "facing6_powered" },           // 0-5 facing + triggered bit 3
+    end_rod: { kind: "facing6" }, // 0-5
+    hopper: { kind: "hopper" }, // 0-5 facing + enabled bit
+    dropper: { kind: "facing6_powered" }, // 0-5 facing + triggered bit 3
     dispenser: { kind: "facing6_powered" },
-    observer: { kind: "facing6_powered" },          // 0-5 facing + powered bit 3
+    observer: { kind: "facing6_powered" }, // 0-5 facing + powered bit 3
     rail: { kind: "rail", powered: false, withDir6: true },
     golden_rail: { kind: "rail", powered: true, withDir6: false },
     detector_rail: { kind: "rail", powered: true, withDir6: false },
@@ -315,7 +459,10 @@ export const FORGE_1_12_SPECS: Record<string, BlockSpec> = (() => {
     mob_spawner: { kind: "stateless" },
     monster_spawner: { kind: "stateless" },
     noteblock: { kind: "stateless" },
-    jukebox: { kind: "variants", prop: "has_record", values: ["false", "true"] },
+    jukebox: {
+      kind: "variants",
+      prop: "has_record",
+      values: ["false", "true"],
+    },
   };
 })();
-

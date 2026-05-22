@@ -10,12 +10,8 @@ import {
   detectSchematicType,
   getVersion,
 } from "./schemlib/schematic-formats";
-import {
-  LitematicSchematic,
-} from "./schemlib/schematic-formats/litematic";
-import {
-  StructureSchematic,
-} from "./schemlib/schematic-formats/structure";
+import { LitematicSchematic } from "./schemlib/schematic-formats/litematic";
+import { StructureSchematic } from "./schemlib/schematic-formats/structure";
 import {
   SpongeSchematicV1,
   SpongeSchematicV2,
@@ -26,9 +22,7 @@ import {
   BuildingGadgetsV1Schematic,
   BuildingGadgetsV2Schematic,
 } from "./schemlib/schematic-formats/building-gadgets";
-import {
-  StructurizeBlueprint,
-} from "./schemlib/schematic-formats/structurize";
+import { StructurizeBlueprint } from "./schemlib/schematic-formats/structurize";
 import { IntermediateSchematic } from "./schemlib/schematic-formats/intermediate";
 
 // ── Public types ──────────────────────────────────────────────────────────

@@ -2,8 +2,15 @@ import { describe, it, expect } from "vitest";
 
 import { Block, BlockPos, BlockState } from "../blocks";
 import { Entity } from "../entities";
-import { AbstractRegion, AbstractSchematic } from "../schematic-formats/abstract";
-import { getVersion, MinecraftVersion, posKey } from "../schematic-formats/version-mapping";
+import {
+  AbstractRegion,
+  AbstractSchematic,
+} from "../schematic-formats/abstract";
+import {
+  getVersion,
+  MinecraftVersion,
+  posKey,
+} from "../schematic-formats/version-mapping";
 
 // ── fauxfactory replacement ────────────────────────────────────────────────
 const gen = (min: number, max: number): number =>
@@ -162,8 +169,16 @@ describe("AbstractSchematic", () => {
   });
 
   it("get_size for two random blocks", () => {
-    const p0: [number, number, number] = [gen(-128, 127), gen(-128, 127), gen(-128, 127)];
-    const p1: [number, number, number] = [gen(-128, 127), gen(-128, 127), gen(-128, 127)];
+    const p0: [number, number, number] = [
+      gen(-128, 127),
+      gen(-128, 127),
+      gen(-128, 127),
+    ];
+    const p1: [number, number, number] = [
+      gen(-128, 127),
+      gen(-128, 127),
+      gen(-128, 127),
+    ];
 
     const size: [number, number, number] = [
       Math.abs(p0[0] - p1[0]) + 1,
@@ -171,10 +186,18 @@ describe("AbstractSchematic", () => {
       Math.abs(p0[2] - p1[2]) + 1,
     ];
 
-    const b1 = new Block(new BlockPos(p0[0], p0[1], p0[2]), new BlockState({ Name: "minecraft:stone" }));
-    const b2 = new Block(new BlockPos(p1[0], p1[1], p1[2]), new BlockState({ Name: "minecraft:stone" }));
+    const b1 = new Block(
+      new BlockPos(p0[0], p0[1], p0[2]),
+      new BlockState({ Name: "minecraft:stone" }),
+    );
+    const b2 = new Block(
+      new BlockPos(p1[0], p1[1], p1[2]),
+      new BlockState({ Name: "minecraft:stone" }),
+    );
 
-    const schem = new SchematicWithGetRegions([new RegionWithGetBlocks([b1, b2])]);
+    const schem = new SchematicWithGetRegions([
+      new RegionWithGetBlocks([b1, b2]),
+    ]);
     expect(schem.getRegion(0).getSize()).toEqual(size);
   });
 
@@ -193,13 +216,29 @@ describe("AbstractSchematic", () => {
   });
 
   it("get_bounding_box for two random blocks", () => {
-    const p0: [number, number, number] = [gen(-128, 0), gen(-128, 0), gen(-128, 0)];
-    const p1: [number, number, number] = [gen(0, 127), gen(0, 127), gen(0, 127)];
+    const p0: [number, number, number] = [
+      gen(-128, 0),
+      gen(-128, 0),
+      gen(-128, 0),
+    ];
+    const p1: [number, number, number] = [
+      gen(0, 127),
+      gen(0, 127),
+      gen(0, 127),
+    ];
 
-    const b1 = new Block(new BlockPos(p0[0], p0[1], p0[2]), new BlockState({ Name: "minecraft:stone" }));
-    const b2 = new Block(new BlockPos(p1[0], p1[1], p1[2]), new BlockState({ Name: "minecraft:stone" }));
+    const b1 = new Block(
+      new BlockPos(p0[0], p0[1], p0[2]),
+      new BlockState({ Name: "minecraft:stone" }),
+    );
+    const b2 = new Block(
+      new BlockPos(p1[0], p1[1], p1[2]),
+      new BlockState({ Name: "minecraft:stone" }),
+    );
 
-    const schem = new SchematicWithGetRegions([new RegionWithGetBlocks([b1, b2])]);
+    const schem = new SchematicWithGetRegions([
+      new RegionWithGetBlocks([b1, b2]),
+    ]);
     const [a, b] = schem.getRegion(0).getBoundingBox();
     expect(a.equals(p0)).toBe(true);
     expect(b.equals(p1)).toBe(true);

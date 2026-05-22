@@ -13,7 +13,11 @@ export class EntityPos extends AbstractPos<number> {
   static ORIGIN: EntityPos;
 
   protected make(x: number, y: number, z: number): this {
-    return new (this.constructor as new (x: number, y: number, z: number) => this)(x, y, z);
+    return new (this.constructor as new (
+      x: number,
+      y: number,
+      z: number,
+    ) => this)(x, y, z);
   }
 
   static from(tuple: readonly [number, number, number]): EntityPos {

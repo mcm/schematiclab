@@ -391,1302 +391,2588 @@ export const FORGE_1_12_FLATTEN: Readonly<Record<string, string>> = {
   "minecraft:chest[facing=south]": "54:3",
   "minecraft:chest[facing=west]": "54:4",
   "minecraft:chest[facing=east]": "54:5",
-  "minecraft:redstone_wire[east=none,north=none,power=0,south=none,west=none]": "55:0",
-  "minecraft:redstone_wire[east=none,north=none,power=0,south=none,west=side]": "55:0",
-  "minecraft:redstone_wire[east=none,north=none,power=0,south=none,west=up]": "55:0",
-  "minecraft:redstone_wire[east=none,north=none,power=0,south=side,west=none]": "55:0",
-  "minecraft:redstone_wire[east=none,north=none,power=0,south=side,west=side]": "55:0",
-  "minecraft:redstone_wire[east=none,north=none,power=0,south=side,west=up]": "55:0",
-  "minecraft:redstone_wire[east=none,north=none,power=0,south=up,west=none]": "55:0",
-  "minecraft:redstone_wire[east=none,north=none,power=0,south=up,west=side]": "55:0",
-  "minecraft:redstone_wire[east=none,north=none,power=0,south=up,west=up]": "55:0",
-  "minecraft:redstone_wire[east=none,north=side,power=0,south=none,west=none]": "55:0",
-  "minecraft:redstone_wire[east=none,north=side,power=0,south=none,west=side]": "55:0",
-  "minecraft:redstone_wire[east=none,north=side,power=0,south=none,west=up]": "55:0",
-  "minecraft:redstone_wire[east=none,north=side,power=0,south=side,west=none]": "55:0",
-  "minecraft:redstone_wire[east=none,north=side,power=0,south=side,west=side]": "55:0",
-  "minecraft:redstone_wire[east=none,north=side,power=0,south=side,west=up]": "55:0",
-  "minecraft:redstone_wire[east=none,north=side,power=0,south=up,west=none]": "55:0",
-  "minecraft:redstone_wire[east=none,north=side,power=0,south=up,west=side]": "55:0",
-  "minecraft:redstone_wire[east=none,north=side,power=0,south=up,west=up]": "55:0",
-  "minecraft:redstone_wire[east=none,north=up,power=0,south=none,west=none]": "55:0",
-  "minecraft:redstone_wire[east=none,north=up,power=0,south=none,west=side]": "55:0",
-  "minecraft:redstone_wire[east=none,north=up,power=0,south=none,west=up]": "55:0",
-  "minecraft:redstone_wire[east=none,north=up,power=0,south=side,west=none]": "55:0",
-  "minecraft:redstone_wire[east=none,north=up,power=0,south=side,west=side]": "55:0",
-  "minecraft:redstone_wire[east=none,north=up,power=0,south=side,west=up]": "55:0",
-  "minecraft:redstone_wire[east=none,north=up,power=0,south=up,west=none]": "55:0",
-  "minecraft:redstone_wire[east=none,north=up,power=0,south=up,west=side]": "55:0",
-  "minecraft:redstone_wire[east=none,north=up,power=0,south=up,west=up]": "55:0",
-  "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=none]": "55:0",
-  "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]": "55:0",
-  "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=up]": "55:0",
-  "minecraft:redstone_wire[east=side,north=none,power=0,south=side,west=none]": "55:0",
-  "minecraft:redstone_wire[east=side,north=none,power=0,south=side,west=side]": "55:0",
-  "minecraft:redstone_wire[east=side,north=none,power=0,south=side,west=up]": "55:0",
-  "minecraft:redstone_wire[east=side,north=none,power=0,south=up,west=none]": "55:0",
-  "minecraft:redstone_wire[east=side,north=none,power=0,south=up,west=side]": "55:0",
-  "minecraft:redstone_wire[east=side,north=none,power=0,south=up,west=up]": "55:0",
-  "minecraft:redstone_wire[east=side,north=side,power=0,south=none,west=none]": "55:0",
-  "minecraft:redstone_wire[east=side,north=side,power=0,south=none,west=side]": "55:0",
-  "minecraft:redstone_wire[east=side,north=side,power=0,south=none,west=up]": "55:0",
-  "minecraft:redstone_wire[east=side,north=side,power=0,south=side,west=none]": "55:0",
-  "minecraft:redstone_wire[east=side,north=side,power=0,south=side,west=side]": "55:0",
-  "minecraft:redstone_wire[east=side,north=side,power=0,south=side,west=up]": "55:0",
-  "minecraft:redstone_wire[east=side,north=side,power=0,south=up,west=none]": "55:0",
-  "minecraft:redstone_wire[east=side,north=side,power=0,south=up,west=side]": "55:0",
-  "minecraft:redstone_wire[east=side,north=side,power=0,south=up,west=up]": "55:0",
-  "minecraft:redstone_wire[east=side,north=up,power=0,south=none,west=none]": "55:0",
-  "minecraft:redstone_wire[east=side,north=up,power=0,south=none,west=side]": "55:0",
-  "minecraft:redstone_wire[east=side,north=up,power=0,south=none,west=up]": "55:0",
-  "minecraft:redstone_wire[east=side,north=up,power=0,south=side,west=none]": "55:0",
-  "minecraft:redstone_wire[east=side,north=up,power=0,south=side,west=side]": "55:0",
-  "minecraft:redstone_wire[east=side,north=up,power=0,south=side,west=up]": "55:0",
-  "minecraft:redstone_wire[east=side,north=up,power=0,south=up,west=none]": "55:0",
-  "minecraft:redstone_wire[east=side,north=up,power=0,south=up,west=side]": "55:0",
-  "minecraft:redstone_wire[east=side,north=up,power=0,south=up,west=up]": "55:0",
-  "minecraft:redstone_wire[east=up,north=none,power=0,south=none,west=none]": "55:0",
-  "minecraft:redstone_wire[east=up,north=none,power=0,south=none,west=side]": "55:0",
-  "minecraft:redstone_wire[east=up,north=none,power=0,south=none,west=up]": "55:0",
-  "minecraft:redstone_wire[east=up,north=none,power=0,south=side,west=none]": "55:0",
-  "minecraft:redstone_wire[east=up,north=none,power=0,south=side,west=side]": "55:0",
-  "minecraft:redstone_wire[east=up,north=none,power=0,south=side,west=up]": "55:0",
-  "minecraft:redstone_wire[east=up,north=none,power=0,south=up,west=none]": "55:0",
-  "minecraft:redstone_wire[east=up,north=none,power=0,south=up,west=side]": "55:0",
-  "minecraft:redstone_wire[east=up,north=none,power=0,south=up,west=up]": "55:0",
-  "minecraft:redstone_wire[east=up,north=side,power=0,south=none,west=none]": "55:0",
-  "minecraft:redstone_wire[east=up,north=side,power=0,south=none,west=side]": "55:0",
-  "minecraft:redstone_wire[east=up,north=side,power=0,south=none,west=up]": "55:0",
-  "minecraft:redstone_wire[east=up,north=side,power=0,south=side,west=none]": "55:0",
-  "minecraft:redstone_wire[east=up,north=side,power=0,south=side,west=side]": "55:0",
-  "minecraft:redstone_wire[east=up,north=side,power=0,south=side,west=up]": "55:0",
-  "minecraft:redstone_wire[east=up,north=side,power=0,south=up,west=none]": "55:0",
-  "minecraft:redstone_wire[east=up,north=side,power=0,south=up,west=side]": "55:0",
-  "minecraft:redstone_wire[east=up,north=side,power=0,south=up,west=up]": "55:0",
-  "minecraft:redstone_wire[east=up,north=up,power=0,south=none,west=none]": "55:0",
-  "minecraft:redstone_wire[east=up,north=up,power=0,south=none,west=side]": "55:0",
-  "minecraft:redstone_wire[east=up,north=up,power=0,south=none,west=up]": "55:0",
-  "minecraft:redstone_wire[east=up,north=up,power=0,south=side,west=none]": "55:0",
-  "minecraft:redstone_wire[east=up,north=up,power=0,south=side,west=side]": "55:0",
-  "minecraft:redstone_wire[east=up,north=up,power=0,south=side,west=up]": "55:0",
-  "minecraft:redstone_wire[east=up,north=up,power=0,south=up,west=none]": "55:0",
-  "minecraft:redstone_wire[east=up,north=up,power=0,south=up,west=side]": "55:0",
+  "minecraft:redstone_wire[east=none,north=none,power=0,south=none,west=none]":
+    "55:0",
+  "minecraft:redstone_wire[east=none,north=none,power=0,south=none,west=side]":
+    "55:0",
+  "minecraft:redstone_wire[east=none,north=none,power=0,south=none,west=up]":
+    "55:0",
+  "minecraft:redstone_wire[east=none,north=none,power=0,south=side,west=none]":
+    "55:0",
+  "minecraft:redstone_wire[east=none,north=none,power=0,south=side,west=side]":
+    "55:0",
+  "minecraft:redstone_wire[east=none,north=none,power=0,south=side,west=up]":
+    "55:0",
+  "minecraft:redstone_wire[east=none,north=none,power=0,south=up,west=none]":
+    "55:0",
+  "minecraft:redstone_wire[east=none,north=none,power=0,south=up,west=side]":
+    "55:0",
+  "minecraft:redstone_wire[east=none,north=none,power=0,south=up,west=up]":
+    "55:0",
+  "minecraft:redstone_wire[east=none,north=side,power=0,south=none,west=none]":
+    "55:0",
+  "minecraft:redstone_wire[east=none,north=side,power=0,south=none,west=side]":
+    "55:0",
+  "minecraft:redstone_wire[east=none,north=side,power=0,south=none,west=up]":
+    "55:0",
+  "minecraft:redstone_wire[east=none,north=side,power=0,south=side,west=none]":
+    "55:0",
+  "minecraft:redstone_wire[east=none,north=side,power=0,south=side,west=side]":
+    "55:0",
+  "minecraft:redstone_wire[east=none,north=side,power=0,south=side,west=up]":
+    "55:0",
+  "minecraft:redstone_wire[east=none,north=side,power=0,south=up,west=none]":
+    "55:0",
+  "minecraft:redstone_wire[east=none,north=side,power=0,south=up,west=side]":
+    "55:0",
+  "minecraft:redstone_wire[east=none,north=side,power=0,south=up,west=up]":
+    "55:0",
+  "minecraft:redstone_wire[east=none,north=up,power=0,south=none,west=none]":
+    "55:0",
+  "minecraft:redstone_wire[east=none,north=up,power=0,south=none,west=side]":
+    "55:0",
+  "minecraft:redstone_wire[east=none,north=up,power=0,south=none,west=up]":
+    "55:0",
+  "minecraft:redstone_wire[east=none,north=up,power=0,south=side,west=none]":
+    "55:0",
+  "minecraft:redstone_wire[east=none,north=up,power=0,south=side,west=side]":
+    "55:0",
+  "minecraft:redstone_wire[east=none,north=up,power=0,south=side,west=up]":
+    "55:0",
+  "minecraft:redstone_wire[east=none,north=up,power=0,south=up,west=none]":
+    "55:0",
+  "minecraft:redstone_wire[east=none,north=up,power=0,south=up,west=side]":
+    "55:0",
+  "minecraft:redstone_wire[east=none,north=up,power=0,south=up,west=up]":
+    "55:0",
+  "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=none]":
+    "55:0",
+  "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]":
+    "55:0",
+  "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=up]":
+    "55:0",
+  "minecraft:redstone_wire[east=side,north=none,power=0,south=side,west=none]":
+    "55:0",
+  "minecraft:redstone_wire[east=side,north=none,power=0,south=side,west=side]":
+    "55:0",
+  "minecraft:redstone_wire[east=side,north=none,power=0,south=side,west=up]":
+    "55:0",
+  "minecraft:redstone_wire[east=side,north=none,power=0,south=up,west=none]":
+    "55:0",
+  "minecraft:redstone_wire[east=side,north=none,power=0,south=up,west=side]":
+    "55:0",
+  "minecraft:redstone_wire[east=side,north=none,power=0,south=up,west=up]":
+    "55:0",
+  "minecraft:redstone_wire[east=side,north=side,power=0,south=none,west=none]":
+    "55:0",
+  "minecraft:redstone_wire[east=side,north=side,power=0,south=none,west=side]":
+    "55:0",
+  "minecraft:redstone_wire[east=side,north=side,power=0,south=none,west=up]":
+    "55:0",
+  "minecraft:redstone_wire[east=side,north=side,power=0,south=side,west=none]":
+    "55:0",
+  "minecraft:redstone_wire[east=side,north=side,power=0,south=side,west=side]":
+    "55:0",
+  "minecraft:redstone_wire[east=side,north=side,power=0,south=side,west=up]":
+    "55:0",
+  "minecraft:redstone_wire[east=side,north=side,power=0,south=up,west=none]":
+    "55:0",
+  "minecraft:redstone_wire[east=side,north=side,power=0,south=up,west=side]":
+    "55:0",
+  "minecraft:redstone_wire[east=side,north=side,power=0,south=up,west=up]":
+    "55:0",
+  "minecraft:redstone_wire[east=side,north=up,power=0,south=none,west=none]":
+    "55:0",
+  "minecraft:redstone_wire[east=side,north=up,power=0,south=none,west=side]":
+    "55:0",
+  "minecraft:redstone_wire[east=side,north=up,power=0,south=none,west=up]":
+    "55:0",
+  "minecraft:redstone_wire[east=side,north=up,power=0,south=side,west=none]":
+    "55:0",
+  "minecraft:redstone_wire[east=side,north=up,power=0,south=side,west=side]":
+    "55:0",
+  "minecraft:redstone_wire[east=side,north=up,power=0,south=side,west=up]":
+    "55:0",
+  "minecraft:redstone_wire[east=side,north=up,power=0,south=up,west=none]":
+    "55:0",
+  "minecraft:redstone_wire[east=side,north=up,power=0,south=up,west=side]":
+    "55:0",
+  "minecraft:redstone_wire[east=side,north=up,power=0,south=up,west=up]":
+    "55:0",
+  "minecraft:redstone_wire[east=up,north=none,power=0,south=none,west=none]":
+    "55:0",
+  "minecraft:redstone_wire[east=up,north=none,power=0,south=none,west=side]":
+    "55:0",
+  "minecraft:redstone_wire[east=up,north=none,power=0,south=none,west=up]":
+    "55:0",
+  "minecraft:redstone_wire[east=up,north=none,power=0,south=side,west=none]":
+    "55:0",
+  "minecraft:redstone_wire[east=up,north=none,power=0,south=side,west=side]":
+    "55:0",
+  "minecraft:redstone_wire[east=up,north=none,power=0,south=side,west=up]":
+    "55:0",
+  "minecraft:redstone_wire[east=up,north=none,power=0,south=up,west=none]":
+    "55:0",
+  "minecraft:redstone_wire[east=up,north=none,power=0,south=up,west=side]":
+    "55:0",
+  "minecraft:redstone_wire[east=up,north=none,power=0,south=up,west=up]":
+    "55:0",
+  "minecraft:redstone_wire[east=up,north=side,power=0,south=none,west=none]":
+    "55:0",
+  "minecraft:redstone_wire[east=up,north=side,power=0,south=none,west=side]":
+    "55:0",
+  "minecraft:redstone_wire[east=up,north=side,power=0,south=none,west=up]":
+    "55:0",
+  "minecraft:redstone_wire[east=up,north=side,power=0,south=side,west=none]":
+    "55:0",
+  "minecraft:redstone_wire[east=up,north=side,power=0,south=side,west=side]":
+    "55:0",
+  "minecraft:redstone_wire[east=up,north=side,power=0,south=side,west=up]":
+    "55:0",
+  "minecraft:redstone_wire[east=up,north=side,power=0,south=up,west=none]":
+    "55:0",
+  "minecraft:redstone_wire[east=up,north=side,power=0,south=up,west=side]":
+    "55:0",
+  "minecraft:redstone_wire[east=up,north=side,power=0,south=up,west=up]":
+    "55:0",
+  "minecraft:redstone_wire[east=up,north=up,power=0,south=none,west=none]":
+    "55:0",
+  "minecraft:redstone_wire[east=up,north=up,power=0,south=none,west=side]":
+    "55:0",
+  "minecraft:redstone_wire[east=up,north=up,power=0,south=none,west=up]":
+    "55:0",
+  "minecraft:redstone_wire[east=up,north=up,power=0,south=side,west=none]":
+    "55:0",
+  "minecraft:redstone_wire[east=up,north=up,power=0,south=side,west=side]":
+    "55:0",
+  "minecraft:redstone_wire[east=up,north=up,power=0,south=side,west=up]":
+    "55:0",
+  "minecraft:redstone_wire[east=up,north=up,power=0,south=up,west=none]":
+    "55:0",
+  "minecraft:redstone_wire[east=up,north=up,power=0,south=up,west=side]":
+    "55:0",
   "minecraft:redstone_wire[east=up,north=up,power=0,south=up,west=up]": "55:0",
-  "minecraft:redstone_wire[east=none,north=none,power=1,south=none,west=none]": "55:1",
-  "minecraft:redstone_wire[east=none,north=none,power=1,south=none,west=side]": "55:1",
-  "minecraft:redstone_wire[east=none,north=none,power=1,south=none,west=up]": "55:1",
-  "minecraft:redstone_wire[east=none,north=none,power=1,south=side,west=none]": "55:1",
-  "minecraft:redstone_wire[east=none,north=none,power=1,south=side,west=side]": "55:1",
-  "minecraft:redstone_wire[east=none,north=none,power=1,south=side,west=up]": "55:1",
-  "minecraft:redstone_wire[east=none,north=none,power=1,south=up,west=none]": "55:1",
-  "minecraft:redstone_wire[east=none,north=none,power=1,south=up,west=side]": "55:1",
-  "minecraft:redstone_wire[east=none,north=none,power=1,south=up,west=up]": "55:1",
-  "minecraft:redstone_wire[east=none,north=side,power=1,south=none,west=none]": "55:1",
-  "minecraft:redstone_wire[east=none,north=side,power=1,south=none,west=side]": "55:1",
-  "minecraft:redstone_wire[east=none,north=side,power=1,south=none,west=up]": "55:1",
-  "minecraft:redstone_wire[east=none,north=side,power=1,south=side,west=none]": "55:1",
-  "minecraft:redstone_wire[east=none,north=side,power=1,south=side,west=side]": "55:1",
-  "minecraft:redstone_wire[east=none,north=side,power=1,south=side,west=up]": "55:1",
-  "minecraft:redstone_wire[east=none,north=side,power=1,south=up,west=none]": "55:1",
-  "minecraft:redstone_wire[east=none,north=side,power=1,south=up,west=side]": "55:1",
-  "minecraft:redstone_wire[east=none,north=side,power=1,south=up,west=up]": "55:1",
-  "minecraft:redstone_wire[east=none,north=up,power=1,south=none,west=none]": "55:1",
-  "minecraft:redstone_wire[east=none,north=up,power=1,south=none,west=side]": "55:1",
-  "minecraft:redstone_wire[east=none,north=up,power=1,south=none,west=up]": "55:1",
-  "minecraft:redstone_wire[east=none,north=up,power=1,south=side,west=none]": "55:1",
-  "minecraft:redstone_wire[east=none,north=up,power=1,south=side,west=side]": "55:1",
-  "minecraft:redstone_wire[east=none,north=up,power=1,south=side,west=up]": "55:1",
-  "minecraft:redstone_wire[east=none,north=up,power=1,south=up,west=none]": "55:1",
-  "minecraft:redstone_wire[east=none,north=up,power=1,south=up,west=side]": "55:1",
-  "minecraft:redstone_wire[east=none,north=up,power=1,south=up,west=up]": "55:1",
-  "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=none]": "55:1",
-  "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]": "55:1",
-  "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=up]": "55:1",
-  "minecraft:redstone_wire[east=side,north=none,power=1,south=side,west=none]": "55:1",
-  "minecraft:redstone_wire[east=side,north=none,power=1,south=side,west=side]": "55:1",
-  "minecraft:redstone_wire[east=side,north=none,power=1,south=side,west=up]": "55:1",
-  "minecraft:redstone_wire[east=side,north=none,power=1,south=up,west=none]": "55:1",
-  "minecraft:redstone_wire[east=side,north=none,power=1,south=up,west=side]": "55:1",
-  "minecraft:redstone_wire[east=side,north=none,power=1,south=up,west=up]": "55:1",
-  "minecraft:redstone_wire[east=side,north=side,power=1,south=none,west=none]": "55:1",
-  "minecraft:redstone_wire[east=side,north=side,power=1,south=none,west=side]": "55:1",
-  "minecraft:redstone_wire[east=side,north=side,power=1,south=none,west=up]": "55:1",
-  "minecraft:redstone_wire[east=side,north=side,power=1,south=side,west=none]": "55:1",
-  "minecraft:redstone_wire[east=side,north=side,power=1,south=side,west=side]": "55:1",
-  "minecraft:redstone_wire[east=side,north=side,power=1,south=side,west=up]": "55:1",
-  "minecraft:redstone_wire[east=side,north=side,power=1,south=up,west=none]": "55:1",
-  "minecraft:redstone_wire[east=side,north=side,power=1,south=up,west=side]": "55:1",
-  "minecraft:redstone_wire[east=side,north=side,power=1,south=up,west=up]": "55:1",
-  "minecraft:redstone_wire[east=side,north=up,power=1,south=none,west=none]": "55:1",
-  "minecraft:redstone_wire[east=side,north=up,power=1,south=none,west=side]": "55:1",
-  "minecraft:redstone_wire[east=side,north=up,power=1,south=none,west=up]": "55:1",
-  "minecraft:redstone_wire[east=side,north=up,power=1,south=side,west=none]": "55:1",
-  "minecraft:redstone_wire[east=side,north=up,power=1,south=side,west=side]": "55:1",
-  "minecraft:redstone_wire[east=side,north=up,power=1,south=side,west=up]": "55:1",
-  "minecraft:redstone_wire[east=side,north=up,power=1,south=up,west=none]": "55:1",
-  "minecraft:redstone_wire[east=side,north=up,power=1,south=up,west=side]": "55:1",
-  "minecraft:redstone_wire[east=side,north=up,power=1,south=up,west=up]": "55:1",
-  "minecraft:redstone_wire[east=up,north=none,power=1,south=none,west=none]": "55:1",
-  "minecraft:redstone_wire[east=up,north=none,power=1,south=none,west=side]": "55:1",
-  "minecraft:redstone_wire[east=up,north=none,power=1,south=none,west=up]": "55:1",
-  "minecraft:redstone_wire[east=up,north=none,power=1,south=side,west=none]": "55:1",
-  "minecraft:redstone_wire[east=up,north=none,power=1,south=side,west=side]": "55:1",
-  "minecraft:redstone_wire[east=up,north=none,power=1,south=side,west=up]": "55:1",
-  "minecraft:redstone_wire[east=up,north=none,power=1,south=up,west=none]": "55:1",
-  "minecraft:redstone_wire[east=up,north=none,power=1,south=up,west=side]": "55:1",
-  "minecraft:redstone_wire[east=up,north=none,power=1,south=up,west=up]": "55:1",
-  "minecraft:redstone_wire[east=up,north=side,power=1,south=none,west=none]": "55:1",
-  "minecraft:redstone_wire[east=up,north=side,power=1,south=none,west=side]": "55:1",
-  "minecraft:redstone_wire[east=up,north=side,power=1,south=none,west=up]": "55:1",
-  "minecraft:redstone_wire[east=up,north=side,power=1,south=side,west=none]": "55:1",
-  "minecraft:redstone_wire[east=up,north=side,power=1,south=side,west=side]": "55:1",
-  "minecraft:redstone_wire[east=up,north=side,power=1,south=side,west=up]": "55:1",
-  "minecraft:redstone_wire[east=up,north=side,power=1,south=up,west=none]": "55:1",
-  "minecraft:redstone_wire[east=up,north=side,power=1,south=up,west=side]": "55:1",
-  "minecraft:redstone_wire[east=up,north=side,power=1,south=up,west=up]": "55:1",
-  "minecraft:redstone_wire[east=up,north=up,power=1,south=none,west=none]": "55:1",
-  "minecraft:redstone_wire[east=up,north=up,power=1,south=none,west=side]": "55:1",
-  "minecraft:redstone_wire[east=up,north=up,power=1,south=none,west=up]": "55:1",
-  "minecraft:redstone_wire[east=up,north=up,power=1,south=side,west=none]": "55:1",
-  "minecraft:redstone_wire[east=up,north=up,power=1,south=side,west=side]": "55:1",
-  "minecraft:redstone_wire[east=up,north=up,power=1,south=side,west=up]": "55:1",
-  "minecraft:redstone_wire[east=up,north=up,power=1,south=up,west=none]": "55:1",
-  "minecraft:redstone_wire[east=up,north=up,power=1,south=up,west=side]": "55:1",
+  "minecraft:redstone_wire[east=none,north=none,power=1,south=none,west=none]":
+    "55:1",
+  "minecraft:redstone_wire[east=none,north=none,power=1,south=none,west=side]":
+    "55:1",
+  "minecraft:redstone_wire[east=none,north=none,power=1,south=none,west=up]":
+    "55:1",
+  "minecraft:redstone_wire[east=none,north=none,power=1,south=side,west=none]":
+    "55:1",
+  "minecraft:redstone_wire[east=none,north=none,power=1,south=side,west=side]":
+    "55:1",
+  "minecraft:redstone_wire[east=none,north=none,power=1,south=side,west=up]":
+    "55:1",
+  "minecraft:redstone_wire[east=none,north=none,power=1,south=up,west=none]":
+    "55:1",
+  "minecraft:redstone_wire[east=none,north=none,power=1,south=up,west=side]":
+    "55:1",
+  "minecraft:redstone_wire[east=none,north=none,power=1,south=up,west=up]":
+    "55:1",
+  "minecraft:redstone_wire[east=none,north=side,power=1,south=none,west=none]":
+    "55:1",
+  "minecraft:redstone_wire[east=none,north=side,power=1,south=none,west=side]":
+    "55:1",
+  "minecraft:redstone_wire[east=none,north=side,power=1,south=none,west=up]":
+    "55:1",
+  "minecraft:redstone_wire[east=none,north=side,power=1,south=side,west=none]":
+    "55:1",
+  "minecraft:redstone_wire[east=none,north=side,power=1,south=side,west=side]":
+    "55:1",
+  "minecraft:redstone_wire[east=none,north=side,power=1,south=side,west=up]":
+    "55:1",
+  "minecraft:redstone_wire[east=none,north=side,power=1,south=up,west=none]":
+    "55:1",
+  "minecraft:redstone_wire[east=none,north=side,power=1,south=up,west=side]":
+    "55:1",
+  "minecraft:redstone_wire[east=none,north=side,power=1,south=up,west=up]":
+    "55:1",
+  "minecraft:redstone_wire[east=none,north=up,power=1,south=none,west=none]":
+    "55:1",
+  "minecraft:redstone_wire[east=none,north=up,power=1,south=none,west=side]":
+    "55:1",
+  "minecraft:redstone_wire[east=none,north=up,power=1,south=none,west=up]":
+    "55:1",
+  "minecraft:redstone_wire[east=none,north=up,power=1,south=side,west=none]":
+    "55:1",
+  "minecraft:redstone_wire[east=none,north=up,power=1,south=side,west=side]":
+    "55:1",
+  "minecraft:redstone_wire[east=none,north=up,power=1,south=side,west=up]":
+    "55:1",
+  "minecraft:redstone_wire[east=none,north=up,power=1,south=up,west=none]":
+    "55:1",
+  "minecraft:redstone_wire[east=none,north=up,power=1,south=up,west=side]":
+    "55:1",
+  "minecraft:redstone_wire[east=none,north=up,power=1,south=up,west=up]":
+    "55:1",
+  "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=none]":
+    "55:1",
+  "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]":
+    "55:1",
+  "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=up]":
+    "55:1",
+  "minecraft:redstone_wire[east=side,north=none,power=1,south=side,west=none]":
+    "55:1",
+  "minecraft:redstone_wire[east=side,north=none,power=1,south=side,west=side]":
+    "55:1",
+  "minecraft:redstone_wire[east=side,north=none,power=1,south=side,west=up]":
+    "55:1",
+  "minecraft:redstone_wire[east=side,north=none,power=1,south=up,west=none]":
+    "55:1",
+  "minecraft:redstone_wire[east=side,north=none,power=1,south=up,west=side]":
+    "55:1",
+  "minecraft:redstone_wire[east=side,north=none,power=1,south=up,west=up]":
+    "55:1",
+  "minecraft:redstone_wire[east=side,north=side,power=1,south=none,west=none]":
+    "55:1",
+  "minecraft:redstone_wire[east=side,north=side,power=1,south=none,west=side]":
+    "55:1",
+  "minecraft:redstone_wire[east=side,north=side,power=1,south=none,west=up]":
+    "55:1",
+  "minecraft:redstone_wire[east=side,north=side,power=1,south=side,west=none]":
+    "55:1",
+  "minecraft:redstone_wire[east=side,north=side,power=1,south=side,west=side]":
+    "55:1",
+  "minecraft:redstone_wire[east=side,north=side,power=1,south=side,west=up]":
+    "55:1",
+  "minecraft:redstone_wire[east=side,north=side,power=1,south=up,west=none]":
+    "55:1",
+  "minecraft:redstone_wire[east=side,north=side,power=1,south=up,west=side]":
+    "55:1",
+  "minecraft:redstone_wire[east=side,north=side,power=1,south=up,west=up]":
+    "55:1",
+  "minecraft:redstone_wire[east=side,north=up,power=1,south=none,west=none]":
+    "55:1",
+  "minecraft:redstone_wire[east=side,north=up,power=1,south=none,west=side]":
+    "55:1",
+  "minecraft:redstone_wire[east=side,north=up,power=1,south=none,west=up]":
+    "55:1",
+  "minecraft:redstone_wire[east=side,north=up,power=1,south=side,west=none]":
+    "55:1",
+  "minecraft:redstone_wire[east=side,north=up,power=1,south=side,west=side]":
+    "55:1",
+  "minecraft:redstone_wire[east=side,north=up,power=1,south=side,west=up]":
+    "55:1",
+  "minecraft:redstone_wire[east=side,north=up,power=1,south=up,west=none]":
+    "55:1",
+  "minecraft:redstone_wire[east=side,north=up,power=1,south=up,west=side]":
+    "55:1",
+  "minecraft:redstone_wire[east=side,north=up,power=1,south=up,west=up]":
+    "55:1",
+  "minecraft:redstone_wire[east=up,north=none,power=1,south=none,west=none]":
+    "55:1",
+  "minecraft:redstone_wire[east=up,north=none,power=1,south=none,west=side]":
+    "55:1",
+  "minecraft:redstone_wire[east=up,north=none,power=1,south=none,west=up]":
+    "55:1",
+  "minecraft:redstone_wire[east=up,north=none,power=1,south=side,west=none]":
+    "55:1",
+  "minecraft:redstone_wire[east=up,north=none,power=1,south=side,west=side]":
+    "55:1",
+  "minecraft:redstone_wire[east=up,north=none,power=1,south=side,west=up]":
+    "55:1",
+  "minecraft:redstone_wire[east=up,north=none,power=1,south=up,west=none]":
+    "55:1",
+  "minecraft:redstone_wire[east=up,north=none,power=1,south=up,west=side]":
+    "55:1",
+  "minecraft:redstone_wire[east=up,north=none,power=1,south=up,west=up]":
+    "55:1",
+  "minecraft:redstone_wire[east=up,north=side,power=1,south=none,west=none]":
+    "55:1",
+  "minecraft:redstone_wire[east=up,north=side,power=1,south=none,west=side]":
+    "55:1",
+  "minecraft:redstone_wire[east=up,north=side,power=1,south=none,west=up]":
+    "55:1",
+  "minecraft:redstone_wire[east=up,north=side,power=1,south=side,west=none]":
+    "55:1",
+  "minecraft:redstone_wire[east=up,north=side,power=1,south=side,west=side]":
+    "55:1",
+  "minecraft:redstone_wire[east=up,north=side,power=1,south=side,west=up]":
+    "55:1",
+  "minecraft:redstone_wire[east=up,north=side,power=1,south=up,west=none]":
+    "55:1",
+  "minecraft:redstone_wire[east=up,north=side,power=1,south=up,west=side]":
+    "55:1",
+  "minecraft:redstone_wire[east=up,north=side,power=1,south=up,west=up]":
+    "55:1",
+  "minecraft:redstone_wire[east=up,north=up,power=1,south=none,west=none]":
+    "55:1",
+  "minecraft:redstone_wire[east=up,north=up,power=1,south=none,west=side]":
+    "55:1",
+  "minecraft:redstone_wire[east=up,north=up,power=1,south=none,west=up]":
+    "55:1",
+  "minecraft:redstone_wire[east=up,north=up,power=1,south=side,west=none]":
+    "55:1",
+  "minecraft:redstone_wire[east=up,north=up,power=1,south=side,west=side]":
+    "55:1",
+  "minecraft:redstone_wire[east=up,north=up,power=1,south=side,west=up]":
+    "55:1",
+  "minecraft:redstone_wire[east=up,north=up,power=1,south=up,west=none]":
+    "55:1",
+  "minecraft:redstone_wire[east=up,north=up,power=1,south=up,west=side]":
+    "55:1",
   "minecraft:redstone_wire[east=up,north=up,power=1,south=up,west=up]": "55:1",
-  "minecraft:redstone_wire[east=none,north=none,power=2,south=none,west=none]": "55:2",
-  "minecraft:redstone_wire[east=none,north=none,power=2,south=none,west=side]": "55:2",
-  "minecraft:redstone_wire[east=none,north=none,power=2,south=none,west=up]": "55:2",
-  "minecraft:redstone_wire[east=none,north=none,power=2,south=side,west=none]": "55:2",
-  "minecraft:redstone_wire[east=none,north=none,power=2,south=side,west=side]": "55:2",
-  "minecraft:redstone_wire[east=none,north=none,power=2,south=side,west=up]": "55:2",
-  "minecraft:redstone_wire[east=none,north=none,power=2,south=up,west=none]": "55:2",
-  "minecraft:redstone_wire[east=none,north=none,power=2,south=up,west=side]": "55:2",
-  "minecraft:redstone_wire[east=none,north=none,power=2,south=up,west=up]": "55:2",
-  "minecraft:redstone_wire[east=none,north=side,power=2,south=none,west=none]": "55:2",
-  "minecraft:redstone_wire[east=none,north=side,power=2,south=none,west=side]": "55:2",
-  "minecraft:redstone_wire[east=none,north=side,power=2,south=none,west=up]": "55:2",
-  "minecraft:redstone_wire[east=none,north=side,power=2,south=side,west=none]": "55:2",
-  "minecraft:redstone_wire[east=none,north=side,power=2,south=side,west=side]": "55:2",
-  "minecraft:redstone_wire[east=none,north=side,power=2,south=side,west=up]": "55:2",
-  "minecraft:redstone_wire[east=none,north=side,power=2,south=up,west=none]": "55:2",
-  "minecraft:redstone_wire[east=none,north=side,power=2,south=up,west=side]": "55:2",
-  "minecraft:redstone_wire[east=none,north=side,power=2,south=up,west=up]": "55:2",
-  "minecraft:redstone_wire[east=none,north=up,power=2,south=none,west=none]": "55:2",
-  "minecraft:redstone_wire[east=none,north=up,power=2,south=none,west=side]": "55:2",
-  "minecraft:redstone_wire[east=none,north=up,power=2,south=none,west=up]": "55:2",
-  "minecraft:redstone_wire[east=none,north=up,power=2,south=side,west=none]": "55:2",
-  "minecraft:redstone_wire[east=none,north=up,power=2,south=side,west=side]": "55:2",
-  "minecraft:redstone_wire[east=none,north=up,power=2,south=side,west=up]": "55:2",
-  "minecraft:redstone_wire[east=none,north=up,power=2,south=up,west=none]": "55:2",
-  "minecraft:redstone_wire[east=none,north=up,power=2,south=up,west=side]": "55:2",
-  "minecraft:redstone_wire[east=none,north=up,power=2,south=up,west=up]": "55:2",
-  "minecraft:redstone_wire[east=side,north=none,power=2,south=none,west=none]": "55:2",
-  "minecraft:redstone_wire[east=side,north=none,power=2,south=none,west=side]": "55:2",
-  "minecraft:redstone_wire[east=side,north=none,power=2,south=none,west=up]": "55:2",
-  "minecraft:redstone_wire[east=side,north=none,power=2,south=side,west=none]": "55:2",
-  "minecraft:redstone_wire[east=side,north=none,power=2,south=side,west=side]": "55:2",
-  "minecraft:redstone_wire[east=side,north=none,power=2,south=side,west=up]": "55:2",
-  "minecraft:redstone_wire[east=side,north=none,power=2,south=up,west=none]": "55:2",
-  "minecraft:redstone_wire[east=side,north=none,power=2,south=up,west=side]": "55:2",
-  "minecraft:redstone_wire[east=side,north=none,power=2,south=up,west=up]": "55:2",
-  "minecraft:redstone_wire[east=side,north=side,power=2,south=none,west=none]": "55:2",
-  "minecraft:redstone_wire[east=side,north=side,power=2,south=none,west=side]": "55:2",
-  "minecraft:redstone_wire[east=side,north=side,power=2,south=none,west=up]": "55:2",
-  "minecraft:redstone_wire[east=side,north=side,power=2,south=side,west=none]": "55:2",
-  "minecraft:redstone_wire[east=side,north=side,power=2,south=side,west=side]": "55:2",
-  "minecraft:redstone_wire[east=side,north=side,power=2,south=side,west=up]": "55:2",
-  "minecraft:redstone_wire[east=side,north=side,power=2,south=up,west=none]": "55:2",
-  "minecraft:redstone_wire[east=side,north=side,power=2,south=up,west=side]": "55:2",
-  "minecraft:redstone_wire[east=side,north=side,power=2,south=up,west=up]": "55:2",
-  "minecraft:redstone_wire[east=side,north=up,power=2,south=none,west=none]": "55:2",
-  "minecraft:redstone_wire[east=side,north=up,power=2,south=none,west=side]": "55:2",
-  "minecraft:redstone_wire[east=side,north=up,power=2,south=none,west=up]": "55:2",
-  "minecraft:redstone_wire[east=side,north=up,power=2,south=side,west=none]": "55:2",
-  "minecraft:redstone_wire[east=side,north=up,power=2,south=side,west=side]": "55:2",
-  "minecraft:redstone_wire[east=side,north=up,power=2,south=side,west=up]": "55:2",
-  "minecraft:redstone_wire[east=side,north=up,power=2,south=up,west=none]": "55:2",
-  "minecraft:redstone_wire[east=side,north=up,power=2,south=up,west=side]": "55:2",
-  "minecraft:redstone_wire[east=side,north=up,power=2,south=up,west=up]": "55:2",
-  "minecraft:redstone_wire[east=up,north=none,power=2,south=none,west=none]": "55:2",
-  "minecraft:redstone_wire[east=up,north=none,power=2,south=none,west=side]": "55:2",
-  "minecraft:redstone_wire[east=up,north=none,power=2,south=none,west=up]": "55:2",
-  "minecraft:redstone_wire[east=up,north=none,power=2,south=side,west=none]": "55:2",
-  "minecraft:redstone_wire[east=up,north=none,power=2,south=side,west=side]": "55:2",
-  "minecraft:redstone_wire[east=up,north=none,power=2,south=side,west=up]": "55:2",
-  "minecraft:redstone_wire[east=up,north=none,power=2,south=up,west=none]": "55:2",
-  "minecraft:redstone_wire[east=up,north=none,power=2,south=up,west=side]": "55:2",
-  "minecraft:redstone_wire[east=up,north=none,power=2,south=up,west=up]": "55:2",
-  "minecraft:redstone_wire[east=up,north=side,power=2,south=none,west=none]": "55:2",
-  "minecraft:redstone_wire[east=up,north=side,power=2,south=none,west=side]": "55:2",
-  "minecraft:redstone_wire[east=up,north=side,power=2,south=none,west=up]": "55:2",
-  "minecraft:redstone_wire[east=up,north=side,power=2,south=side,west=none]": "55:2",
-  "minecraft:redstone_wire[east=up,north=side,power=2,south=side,west=side]": "55:2",
-  "minecraft:redstone_wire[east=up,north=side,power=2,south=side,west=up]": "55:2",
-  "minecraft:redstone_wire[east=up,north=side,power=2,south=up,west=none]": "55:2",
-  "minecraft:redstone_wire[east=up,north=side,power=2,south=up,west=side]": "55:2",
-  "minecraft:redstone_wire[east=up,north=side,power=2,south=up,west=up]": "55:2",
-  "minecraft:redstone_wire[east=up,north=up,power=2,south=none,west=none]": "55:2",
-  "minecraft:redstone_wire[east=up,north=up,power=2,south=none,west=side]": "55:2",
-  "minecraft:redstone_wire[east=up,north=up,power=2,south=none,west=up]": "55:2",
-  "minecraft:redstone_wire[east=up,north=up,power=2,south=side,west=none]": "55:2",
-  "minecraft:redstone_wire[east=up,north=up,power=2,south=side,west=side]": "55:2",
-  "minecraft:redstone_wire[east=up,north=up,power=2,south=side,west=up]": "55:2",
-  "minecraft:redstone_wire[east=up,north=up,power=2,south=up,west=none]": "55:2",
-  "minecraft:redstone_wire[east=up,north=up,power=2,south=up,west=side]": "55:2",
+  "minecraft:redstone_wire[east=none,north=none,power=2,south=none,west=none]":
+    "55:2",
+  "minecraft:redstone_wire[east=none,north=none,power=2,south=none,west=side]":
+    "55:2",
+  "minecraft:redstone_wire[east=none,north=none,power=2,south=none,west=up]":
+    "55:2",
+  "minecraft:redstone_wire[east=none,north=none,power=2,south=side,west=none]":
+    "55:2",
+  "minecraft:redstone_wire[east=none,north=none,power=2,south=side,west=side]":
+    "55:2",
+  "minecraft:redstone_wire[east=none,north=none,power=2,south=side,west=up]":
+    "55:2",
+  "minecraft:redstone_wire[east=none,north=none,power=2,south=up,west=none]":
+    "55:2",
+  "minecraft:redstone_wire[east=none,north=none,power=2,south=up,west=side]":
+    "55:2",
+  "minecraft:redstone_wire[east=none,north=none,power=2,south=up,west=up]":
+    "55:2",
+  "minecraft:redstone_wire[east=none,north=side,power=2,south=none,west=none]":
+    "55:2",
+  "minecraft:redstone_wire[east=none,north=side,power=2,south=none,west=side]":
+    "55:2",
+  "minecraft:redstone_wire[east=none,north=side,power=2,south=none,west=up]":
+    "55:2",
+  "minecraft:redstone_wire[east=none,north=side,power=2,south=side,west=none]":
+    "55:2",
+  "minecraft:redstone_wire[east=none,north=side,power=2,south=side,west=side]":
+    "55:2",
+  "minecraft:redstone_wire[east=none,north=side,power=2,south=side,west=up]":
+    "55:2",
+  "minecraft:redstone_wire[east=none,north=side,power=2,south=up,west=none]":
+    "55:2",
+  "minecraft:redstone_wire[east=none,north=side,power=2,south=up,west=side]":
+    "55:2",
+  "minecraft:redstone_wire[east=none,north=side,power=2,south=up,west=up]":
+    "55:2",
+  "minecraft:redstone_wire[east=none,north=up,power=2,south=none,west=none]":
+    "55:2",
+  "minecraft:redstone_wire[east=none,north=up,power=2,south=none,west=side]":
+    "55:2",
+  "minecraft:redstone_wire[east=none,north=up,power=2,south=none,west=up]":
+    "55:2",
+  "minecraft:redstone_wire[east=none,north=up,power=2,south=side,west=none]":
+    "55:2",
+  "minecraft:redstone_wire[east=none,north=up,power=2,south=side,west=side]":
+    "55:2",
+  "minecraft:redstone_wire[east=none,north=up,power=2,south=side,west=up]":
+    "55:2",
+  "minecraft:redstone_wire[east=none,north=up,power=2,south=up,west=none]":
+    "55:2",
+  "minecraft:redstone_wire[east=none,north=up,power=2,south=up,west=side]":
+    "55:2",
+  "minecraft:redstone_wire[east=none,north=up,power=2,south=up,west=up]":
+    "55:2",
+  "minecraft:redstone_wire[east=side,north=none,power=2,south=none,west=none]":
+    "55:2",
+  "minecraft:redstone_wire[east=side,north=none,power=2,south=none,west=side]":
+    "55:2",
+  "minecraft:redstone_wire[east=side,north=none,power=2,south=none,west=up]":
+    "55:2",
+  "minecraft:redstone_wire[east=side,north=none,power=2,south=side,west=none]":
+    "55:2",
+  "minecraft:redstone_wire[east=side,north=none,power=2,south=side,west=side]":
+    "55:2",
+  "minecraft:redstone_wire[east=side,north=none,power=2,south=side,west=up]":
+    "55:2",
+  "minecraft:redstone_wire[east=side,north=none,power=2,south=up,west=none]":
+    "55:2",
+  "minecraft:redstone_wire[east=side,north=none,power=2,south=up,west=side]":
+    "55:2",
+  "minecraft:redstone_wire[east=side,north=none,power=2,south=up,west=up]":
+    "55:2",
+  "minecraft:redstone_wire[east=side,north=side,power=2,south=none,west=none]":
+    "55:2",
+  "minecraft:redstone_wire[east=side,north=side,power=2,south=none,west=side]":
+    "55:2",
+  "minecraft:redstone_wire[east=side,north=side,power=2,south=none,west=up]":
+    "55:2",
+  "minecraft:redstone_wire[east=side,north=side,power=2,south=side,west=none]":
+    "55:2",
+  "minecraft:redstone_wire[east=side,north=side,power=2,south=side,west=side]":
+    "55:2",
+  "minecraft:redstone_wire[east=side,north=side,power=2,south=side,west=up]":
+    "55:2",
+  "minecraft:redstone_wire[east=side,north=side,power=2,south=up,west=none]":
+    "55:2",
+  "minecraft:redstone_wire[east=side,north=side,power=2,south=up,west=side]":
+    "55:2",
+  "minecraft:redstone_wire[east=side,north=side,power=2,south=up,west=up]":
+    "55:2",
+  "minecraft:redstone_wire[east=side,north=up,power=2,south=none,west=none]":
+    "55:2",
+  "minecraft:redstone_wire[east=side,north=up,power=2,south=none,west=side]":
+    "55:2",
+  "minecraft:redstone_wire[east=side,north=up,power=2,south=none,west=up]":
+    "55:2",
+  "minecraft:redstone_wire[east=side,north=up,power=2,south=side,west=none]":
+    "55:2",
+  "minecraft:redstone_wire[east=side,north=up,power=2,south=side,west=side]":
+    "55:2",
+  "minecraft:redstone_wire[east=side,north=up,power=2,south=side,west=up]":
+    "55:2",
+  "minecraft:redstone_wire[east=side,north=up,power=2,south=up,west=none]":
+    "55:2",
+  "minecraft:redstone_wire[east=side,north=up,power=2,south=up,west=side]":
+    "55:2",
+  "minecraft:redstone_wire[east=side,north=up,power=2,south=up,west=up]":
+    "55:2",
+  "minecraft:redstone_wire[east=up,north=none,power=2,south=none,west=none]":
+    "55:2",
+  "minecraft:redstone_wire[east=up,north=none,power=2,south=none,west=side]":
+    "55:2",
+  "minecraft:redstone_wire[east=up,north=none,power=2,south=none,west=up]":
+    "55:2",
+  "minecraft:redstone_wire[east=up,north=none,power=2,south=side,west=none]":
+    "55:2",
+  "minecraft:redstone_wire[east=up,north=none,power=2,south=side,west=side]":
+    "55:2",
+  "minecraft:redstone_wire[east=up,north=none,power=2,south=side,west=up]":
+    "55:2",
+  "minecraft:redstone_wire[east=up,north=none,power=2,south=up,west=none]":
+    "55:2",
+  "minecraft:redstone_wire[east=up,north=none,power=2,south=up,west=side]":
+    "55:2",
+  "minecraft:redstone_wire[east=up,north=none,power=2,south=up,west=up]":
+    "55:2",
+  "minecraft:redstone_wire[east=up,north=side,power=2,south=none,west=none]":
+    "55:2",
+  "minecraft:redstone_wire[east=up,north=side,power=2,south=none,west=side]":
+    "55:2",
+  "minecraft:redstone_wire[east=up,north=side,power=2,south=none,west=up]":
+    "55:2",
+  "minecraft:redstone_wire[east=up,north=side,power=2,south=side,west=none]":
+    "55:2",
+  "minecraft:redstone_wire[east=up,north=side,power=2,south=side,west=side]":
+    "55:2",
+  "minecraft:redstone_wire[east=up,north=side,power=2,south=side,west=up]":
+    "55:2",
+  "minecraft:redstone_wire[east=up,north=side,power=2,south=up,west=none]":
+    "55:2",
+  "minecraft:redstone_wire[east=up,north=side,power=2,south=up,west=side]":
+    "55:2",
+  "minecraft:redstone_wire[east=up,north=side,power=2,south=up,west=up]":
+    "55:2",
+  "minecraft:redstone_wire[east=up,north=up,power=2,south=none,west=none]":
+    "55:2",
+  "minecraft:redstone_wire[east=up,north=up,power=2,south=none,west=side]":
+    "55:2",
+  "minecraft:redstone_wire[east=up,north=up,power=2,south=none,west=up]":
+    "55:2",
+  "minecraft:redstone_wire[east=up,north=up,power=2,south=side,west=none]":
+    "55:2",
+  "minecraft:redstone_wire[east=up,north=up,power=2,south=side,west=side]":
+    "55:2",
+  "minecraft:redstone_wire[east=up,north=up,power=2,south=side,west=up]":
+    "55:2",
+  "minecraft:redstone_wire[east=up,north=up,power=2,south=up,west=none]":
+    "55:2",
+  "minecraft:redstone_wire[east=up,north=up,power=2,south=up,west=side]":
+    "55:2",
   "minecraft:redstone_wire[east=up,north=up,power=2,south=up,west=up]": "55:2",
-  "minecraft:redstone_wire[east=none,north=none,power=3,south=none,west=none]": "55:3",
-  "minecraft:redstone_wire[east=none,north=none,power=3,south=none,west=side]": "55:3",
-  "minecraft:redstone_wire[east=none,north=none,power=3,south=none,west=up]": "55:3",
-  "minecraft:redstone_wire[east=none,north=none,power=3,south=side,west=none]": "55:3",
-  "minecraft:redstone_wire[east=none,north=none,power=3,south=side,west=side]": "55:3",
-  "minecraft:redstone_wire[east=none,north=none,power=3,south=side,west=up]": "55:3",
-  "minecraft:redstone_wire[east=none,north=none,power=3,south=up,west=none]": "55:3",
-  "minecraft:redstone_wire[east=none,north=none,power=3,south=up,west=side]": "55:3",
-  "minecraft:redstone_wire[east=none,north=none,power=3,south=up,west=up]": "55:3",
-  "minecraft:redstone_wire[east=none,north=side,power=3,south=none,west=none]": "55:3",
-  "minecraft:redstone_wire[east=none,north=side,power=3,south=none,west=side]": "55:3",
-  "minecraft:redstone_wire[east=none,north=side,power=3,south=none,west=up]": "55:3",
-  "minecraft:redstone_wire[east=none,north=side,power=3,south=side,west=none]": "55:3",
-  "minecraft:redstone_wire[east=none,north=side,power=3,south=side,west=side]": "55:3",
-  "minecraft:redstone_wire[east=none,north=side,power=3,south=side,west=up]": "55:3",
-  "minecraft:redstone_wire[east=none,north=side,power=3,south=up,west=none]": "55:3",
-  "minecraft:redstone_wire[east=none,north=side,power=3,south=up,west=side]": "55:3",
-  "minecraft:redstone_wire[east=none,north=side,power=3,south=up,west=up]": "55:3",
-  "minecraft:redstone_wire[east=none,north=up,power=3,south=none,west=none]": "55:3",
-  "minecraft:redstone_wire[east=none,north=up,power=3,south=none,west=side]": "55:3",
-  "minecraft:redstone_wire[east=none,north=up,power=3,south=none,west=up]": "55:3",
-  "minecraft:redstone_wire[east=none,north=up,power=3,south=side,west=none]": "55:3",
-  "minecraft:redstone_wire[east=none,north=up,power=3,south=side,west=side]": "55:3",
-  "minecraft:redstone_wire[east=none,north=up,power=3,south=side,west=up]": "55:3",
-  "minecraft:redstone_wire[east=none,north=up,power=3,south=up,west=none]": "55:3",
-  "minecraft:redstone_wire[east=none,north=up,power=3,south=up,west=side]": "55:3",
-  "minecraft:redstone_wire[east=none,north=up,power=3,south=up,west=up]": "55:3",
-  "minecraft:redstone_wire[east=side,north=none,power=3,south=none,west=none]": "55:3",
-  "minecraft:redstone_wire[east=side,north=none,power=3,south=none,west=side]": "55:3",
-  "minecraft:redstone_wire[east=side,north=none,power=3,south=none,west=up]": "55:3",
-  "minecraft:redstone_wire[east=side,north=none,power=3,south=side,west=none]": "55:3",
-  "minecraft:redstone_wire[east=side,north=none,power=3,south=side,west=side]": "55:3",
-  "minecraft:redstone_wire[east=side,north=none,power=3,south=side,west=up]": "55:3",
-  "minecraft:redstone_wire[east=side,north=none,power=3,south=up,west=none]": "55:3",
-  "minecraft:redstone_wire[east=side,north=none,power=3,south=up,west=side]": "55:3",
-  "minecraft:redstone_wire[east=side,north=none,power=3,south=up,west=up]": "55:3",
-  "minecraft:redstone_wire[east=side,north=side,power=3,south=none,west=none]": "55:3",
-  "minecraft:redstone_wire[east=side,north=side,power=3,south=none,west=side]": "55:3",
-  "minecraft:redstone_wire[east=side,north=side,power=3,south=none,west=up]": "55:3",
-  "minecraft:redstone_wire[east=side,north=side,power=3,south=side,west=none]": "55:3",
-  "minecraft:redstone_wire[east=side,north=side,power=3,south=side,west=side]": "55:3",
-  "minecraft:redstone_wire[east=side,north=side,power=3,south=side,west=up]": "55:3",
-  "minecraft:redstone_wire[east=side,north=side,power=3,south=up,west=none]": "55:3",
-  "minecraft:redstone_wire[east=side,north=side,power=3,south=up,west=side]": "55:3",
-  "minecraft:redstone_wire[east=side,north=side,power=3,south=up,west=up]": "55:3",
-  "minecraft:redstone_wire[east=side,north=up,power=3,south=none,west=none]": "55:3",
-  "minecraft:redstone_wire[east=side,north=up,power=3,south=none,west=side]": "55:3",
-  "minecraft:redstone_wire[east=side,north=up,power=3,south=none,west=up]": "55:3",
-  "minecraft:redstone_wire[east=side,north=up,power=3,south=side,west=none]": "55:3",
-  "minecraft:redstone_wire[east=side,north=up,power=3,south=side,west=side]": "55:3",
-  "minecraft:redstone_wire[east=side,north=up,power=3,south=side,west=up]": "55:3",
-  "minecraft:redstone_wire[east=side,north=up,power=3,south=up,west=none]": "55:3",
-  "minecraft:redstone_wire[east=side,north=up,power=3,south=up,west=side]": "55:3",
-  "minecraft:redstone_wire[east=side,north=up,power=3,south=up,west=up]": "55:3",
-  "minecraft:redstone_wire[east=up,north=none,power=3,south=none,west=none]": "55:3",
-  "minecraft:redstone_wire[east=up,north=none,power=3,south=none,west=side]": "55:3",
-  "minecraft:redstone_wire[east=up,north=none,power=3,south=none,west=up]": "55:3",
-  "minecraft:redstone_wire[east=up,north=none,power=3,south=side,west=none]": "55:3",
-  "minecraft:redstone_wire[east=up,north=none,power=3,south=side,west=side]": "55:3",
-  "minecraft:redstone_wire[east=up,north=none,power=3,south=side,west=up]": "55:3",
-  "minecraft:redstone_wire[east=up,north=none,power=3,south=up,west=none]": "55:3",
-  "minecraft:redstone_wire[east=up,north=none,power=3,south=up,west=side]": "55:3",
-  "minecraft:redstone_wire[east=up,north=none,power=3,south=up,west=up]": "55:3",
-  "minecraft:redstone_wire[east=up,north=side,power=3,south=none,west=none]": "55:3",
-  "minecraft:redstone_wire[east=up,north=side,power=3,south=none,west=side]": "55:3",
-  "minecraft:redstone_wire[east=up,north=side,power=3,south=none,west=up]": "55:3",
-  "minecraft:redstone_wire[east=up,north=side,power=3,south=side,west=none]": "55:3",
-  "minecraft:redstone_wire[east=up,north=side,power=3,south=side,west=side]": "55:3",
-  "minecraft:redstone_wire[east=up,north=side,power=3,south=side,west=up]": "55:3",
-  "minecraft:redstone_wire[east=up,north=side,power=3,south=up,west=none]": "55:3",
-  "minecraft:redstone_wire[east=up,north=side,power=3,south=up,west=side]": "55:3",
-  "minecraft:redstone_wire[east=up,north=side,power=3,south=up,west=up]": "55:3",
-  "minecraft:redstone_wire[east=up,north=up,power=3,south=none,west=none]": "55:3",
-  "minecraft:redstone_wire[east=up,north=up,power=3,south=none,west=side]": "55:3",
-  "minecraft:redstone_wire[east=up,north=up,power=3,south=none,west=up]": "55:3",
-  "minecraft:redstone_wire[east=up,north=up,power=3,south=side,west=none]": "55:3",
-  "minecraft:redstone_wire[east=up,north=up,power=3,south=side,west=side]": "55:3",
-  "minecraft:redstone_wire[east=up,north=up,power=3,south=side,west=up]": "55:3",
-  "minecraft:redstone_wire[east=up,north=up,power=3,south=up,west=none]": "55:3",
-  "minecraft:redstone_wire[east=up,north=up,power=3,south=up,west=side]": "55:3",
+  "minecraft:redstone_wire[east=none,north=none,power=3,south=none,west=none]":
+    "55:3",
+  "minecraft:redstone_wire[east=none,north=none,power=3,south=none,west=side]":
+    "55:3",
+  "minecraft:redstone_wire[east=none,north=none,power=3,south=none,west=up]":
+    "55:3",
+  "minecraft:redstone_wire[east=none,north=none,power=3,south=side,west=none]":
+    "55:3",
+  "minecraft:redstone_wire[east=none,north=none,power=3,south=side,west=side]":
+    "55:3",
+  "minecraft:redstone_wire[east=none,north=none,power=3,south=side,west=up]":
+    "55:3",
+  "minecraft:redstone_wire[east=none,north=none,power=3,south=up,west=none]":
+    "55:3",
+  "minecraft:redstone_wire[east=none,north=none,power=3,south=up,west=side]":
+    "55:3",
+  "minecraft:redstone_wire[east=none,north=none,power=3,south=up,west=up]":
+    "55:3",
+  "minecraft:redstone_wire[east=none,north=side,power=3,south=none,west=none]":
+    "55:3",
+  "minecraft:redstone_wire[east=none,north=side,power=3,south=none,west=side]":
+    "55:3",
+  "minecraft:redstone_wire[east=none,north=side,power=3,south=none,west=up]":
+    "55:3",
+  "minecraft:redstone_wire[east=none,north=side,power=3,south=side,west=none]":
+    "55:3",
+  "minecraft:redstone_wire[east=none,north=side,power=3,south=side,west=side]":
+    "55:3",
+  "minecraft:redstone_wire[east=none,north=side,power=3,south=side,west=up]":
+    "55:3",
+  "minecraft:redstone_wire[east=none,north=side,power=3,south=up,west=none]":
+    "55:3",
+  "minecraft:redstone_wire[east=none,north=side,power=3,south=up,west=side]":
+    "55:3",
+  "minecraft:redstone_wire[east=none,north=side,power=3,south=up,west=up]":
+    "55:3",
+  "minecraft:redstone_wire[east=none,north=up,power=3,south=none,west=none]":
+    "55:3",
+  "minecraft:redstone_wire[east=none,north=up,power=3,south=none,west=side]":
+    "55:3",
+  "minecraft:redstone_wire[east=none,north=up,power=3,south=none,west=up]":
+    "55:3",
+  "minecraft:redstone_wire[east=none,north=up,power=3,south=side,west=none]":
+    "55:3",
+  "minecraft:redstone_wire[east=none,north=up,power=3,south=side,west=side]":
+    "55:3",
+  "minecraft:redstone_wire[east=none,north=up,power=3,south=side,west=up]":
+    "55:3",
+  "minecraft:redstone_wire[east=none,north=up,power=3,south=up,west=none]":
+    "55:3",
+  "minecraft:redstone_wire[east=none,north=up,power=3,south=up,west=side]":
+    "55:3",
+  "minecraft:redstone_wire[east=none,north=up,power=3,south=up,west=up]":
+    "55:3",
+  "minecraft:redstone_wire[east=side,north=none,power=3,south=none,west=none]":
+    "55:3",
+  "minecraft:redstone_wire[east=side,north=none,power=3,south=none,west=side]":
+    "55:3",
+  "minecraft:redstone_wire[east=side,north=none,power=3,south=none,west=up]":
+    "55:3",
+  "minecraft:redstone_wire[east=side,north=none,power=3,south=side,west=none]":
+    "55:3",
+  "minecraft:redstone_wire[east=side,north=none,power=3,south=side,west=side]":
+    "55:3",
+  "minecraft:redstone_wire[east=side,north=none,power=3,south=side,west=up]":
+    "55:3",
+  "minecraft:redstone_wire[east=side,north=none,power=3,south=up,west=none]":
+    "55:3",
+  "minecraft:redstone_wire[east=side,north=none,power=3,south=up,west=side]":
+    "55:3",
+  "minecraft:redstone_wire[east=side,north=none,power=3,south=up,west=up]":
+    "55:3",
+  "minecraft:redstone_wire[east=side,north=side,power=3,south=none,west=none]":
+    "55:3",
+  "minecraft:redstone_wire[east=side,north=side,power=3,south=none,west=side]":
+    "55:3",
+  "minecraft:redstone_wire[east=side,north=side,power=3,south=none,west=up]":
+    "55:3",
+  "minecraft:redstone_wire[east=side,north=side,power=3,south=side,west=none]":
+    "55:3",
+  "minecraft:redstone_wire[east=side,north=side,power=3,south=side,west=side]":
+    "55:3",
+  "minecraft:redstone_wire[east=side,north=side,power=3,south=side,west=up]":
+    "55:3",
+  "minecraft:redstone_wire[east=side,north=side,power=3,south=up,west=none]":
+    "55:3",
+  "minecraft:redstone_wire[east=side,north=side,power=3,south=up,west=side]":
+    "55:3",
+  "minecraft:redstone_wire[east=side,north=side,power=3,south=up,west=up]":
+    "55:3",
+  "minecraft:redstone_wire[east=side,north=up,power=3,south=none,west=none]":
+    "55:3",
+  "minecraft:redstone_wire[east=side,north=up,power=3,south=none,west=side]":
+    "55:3",
+  "minecraft:redstone_wire[east=side,north=up,power=3,south=none,west=up]":
+    "55:3",
+  "minecraft:redstone_wire[east=side,north=up,power=3,south=side,west=none]":
+    "55:3",
+  "minecraft:redstone_wire[east=side,north=up,power=3,south=side,west=side]":
+    "55:3",
+  "minecraft:redstone_wire[east=side,north=up,power=3,south=side,west=up]":
+    "55:3",
+  "minecraft:redstone_wire[east=side,north=up,power=3,south=up,west=none]":
+    "55:3",
+  "minecraft:redstone_wire[east=side,north=up,power=3,south=up,west=side]":
+    "55:3",
+  "minecraft:redstone_wire[east=side,north=up,power=3,south=up,west=up]":
+    "55:3",
+  "minecraft:redstone_wire[east=up,north=none,power=3,south=none,west=none]":
+    "55:3",
+  "minecraft:redstone_wire[east=up,north=none,power=3,south=none,west=side]":
+    "55:3",
+  "minecraft:redstone_wire[east=up,north=none,power=3,south=none,west=up]":
+    "55:3",
+  "minecraft:redstone_wire[east=up,north=none,power=3,south=side,west=none]":
+    "55:3",
+  "minecraft:redstone_wire[east=up,north=none,power=3,south=side,west=side]":
+    "55:3",
+  "minecraft:redstone_wire[east=up,north=none,power=3,south=side,west=up]":
+    "55:3",
+  "minecraft:redstone_wire[east=up,north=none,power=3,south=up,west=none]":
+    "55:3",
+  "minecraft:redstone_wire[east=up,north=none,power=3,south=up,west=side]":
+    "55:3",
+  "minecraft:redstone_wire[east=up,north=none,power=3,south=up,west=up]":
+    "55:3",
+  "minecraft:redstone_wire[east=up,north=side,power=3,south=none,west=none]":
+    "55:3",
+  "minecraft:redstone_wire[east=up,north=side,power=3,south=none,west=side]":
+    "55:3",
+  "minecraft:redstone_wire[east=up,north=side,power=3,south=none,west=up]":
+    "55:3",
+  "minecraft:redstone_wire[east=up,north=side,power=3,south=side,west=none]":
+    "55:3",
+  "minecraft:redstone_wire[east=up,north=side,power=3,south=side,west=side]":
+    "55:3",
+  "minecraft:redstone_wire[east=up,north=side,power=3,south=side,west=up]":
+    "55:3",
+  "minecraft:redstone_wire[east=up,north=side,power=3,south=up,west=none]":
+    "55:3",
+  "minecraft:redstone_wire[east=up,north=side,power=3,south=up,west=side]":
+    "55:3",
+  "minecraft:redstone_wire[east=up,north=side,power=3,south=up,west=up]":
+    "55:3",
+  "minecraft:redstone_wire[east=up,north=up,power=3,south=none,west=none]":
+    "55:3",
+  "minecraft:redstone_wire[east=up,north=up,power=3,south=none,west=side]":
+    "55:3",
+  "minecraft:redstone_wire[east=up,north=up,power=3,south=none,west=up]":
+    "55:3",
+  "minecraft:redstone_wire[east=up,north=up,power=3,south=side,west=none]":
+    "55:3",
+  "minecraft:redstone_wire[east=up,north=up,power=3,south=side,west=side]":
+    "55:3",
+  "minecraft:redstone_wire[east=up,north=up,power=3,south=side,west=up]":
+    "55:3",
+  "minecraft:redstone_wire[east=up,north=up,power=3,south=up,west=none]":
+    "55:3",
+  "minecraft:redstone_wire[east=up,north=up,power=3,south=up,west=side]":
+    "55:3",
   "minecraft:redstone_wire[east=up,north=up,power=3,south=up,west=up]": "55:3",
-  "minecraft:redstone_wire[east=none,north=none,power=4,south=none,west=none]": "55:4",
-  "minecraft:redstone_wire[east=none,north=none,power=4,south=none,west=side]": "55:4",
-  "minecraft:redstone_wire[east=none,north=none,power=4,south=none,west=up]": "55:4",
-  "minecraft:redstone_wire[east=none,north=none,power=4,south=side,west=none]": "55:4",
-  "minecraft:redstone_wire[east=none,north=none,power=4,south=side,west=side]": "55:4",
-  "minecraft:redstone_wire[east=none,north=none,power=4,south=side,west=up]": "55:4",
-  "minecraft:redstone_wire[east=none,north=none,power=4,south=up,west=none]": "55:4",
-  "minecraft:redstone_wire[east=none,north=none,power=4,south=up,west=side]": "55:4",
-  "minecraft:redstone_wire[east=none,north=none,power=4,south=up,west=up]": "55:4",
-  "minecraft:redstone_wire[east=none,north=side,power=4,south=none,west=none]": "55:4",
-  "minecraft:redstone_wire[east=none,north=side,power=4,south=none,west=side]": "55:4",
-  "minecraft:redstone_wire[east=none,north=side,power=4,south=none,west=up]": "55:4",
-  "minecraft:redstone_wire[east=none,north=side,power=4,south=side,west=none]": "55:4",
-  "minecraft:redstone_wire[east=none,north=side,power=4,south=side,west=side]": "55:4",
-  "minecraft:redstone_wire[east=none,north=side,power=4,south=side,west=up]": "55:4",
-  "minecraft:redstone_wire[east=none,north=side,power=4,south=up,west=none]": "55:4",
-  "minecraft:redstone_wire[east=none,north=side,power=4,south=up,west=side]": "55:4",
-  "minecraft:redstone_wire[east=none,north=side,power=4,south=up,west=up]": "55:4",
-  "minecraft:redstone_wire[east=none,north=up,power=4,south=none,west=none]": "55:4",
-  "minecraft:redstone_wire[east=none,north=up,power=4,south=none,west=side]": "55:4",
-  "minecraft:redstone_wire[east=none,north=up,power=4,south=none,west=up]": "55:4",
-  "minecraft:redstone_wire[east=none,north=up,power=4,south=side,west=none]": "55:4",
-  "minecraft:redstone_wire[east=none,north=up,power=4,south=side,west=side]": "55:4",
-  "minecraft:redstone_wire[east=none,north=up,power=4,south=side,west=up]": "55:4",
-  "minecraft:redstone_wire[east=none,north=up,power=4,south=up,west=none]": "55:4",
-  "minecraft:redstone_wire[east=none,north=up,power=4,south=up,west=side]": "55:4",
-  "minecraft:redstone_wire[east=none,north=up,power=4,south=up,west=up]": "55:4",
-  "minecraft:redstone_wire[east=side,north=none,power=4,south=none,west=none]": "55:4",
-  "minecraft:redstone_wire[east=side,north=none,power=4,south=none,west=side]": "55:4",
-  "minecraft:redstone_wire[east=side,north=none,power=4,south=none,west=up]": "55:4",
-  "minecraft:redstone_wire[east=side,north=none,power=4,south=side,west=none]": "55:4",
-  "minecraft:redstone_wire[east=side,north=none,power=4,south=side,west=side]": "55:4",
-  "minecraft:redstone_wire[east=side,north=none,power=4,south=side,west=up]": "55:4",
-  "minecraft:redstone_wire[east=side,north=none,power=4,south=up,west=none]": "55:4",
-  "minecraft:redstone_wire[east=side,north=none,power=4,south=up,west=side]": "55:4",
-  "minecraft:redstone_wire[east=side,north=none,power=4,south=up,west=up]": "55:4",
-  "minecraft:redstone_wire[east=side,north=side,power=4,south=none,west=none]": "55:4",
-  "minecraft:redstone_wire[east=side,north=side,power=4,south=none,west=side]": "55:4",
-  "minecraft:redstone_wire[east=side,north=side,power=4,south=none,west=up]": "55:4",
-  "minecraft:redstone_wire[east=side,north=side,power=4,south=side,west=none]": "55:4",
-  "minecraft:redstone_wire[east=side,north=side,power=4,south=side,west=side]": "55:4",
-  "minecraft:redstone_wire[east=side,north=side,power=4,south=side,west=up]": "55:4",
-  "minecraft:redstone_wire[east=side,north=side,power=4,south=up,west=none]": "55:4",
-  "minecraft:redstone_wire[east=side,north=side,power=4,south=up,west=side]": "55:4",
-  "minecraft:redstone_wire[east=side,north=side,power=4,south=up,west=up]": "55:4",
-  "minecraft:redstone_wire[east=side,north=up,power=4,south=none,west=none]": "55:4",
-  "minecraft:redstone_wire[east=side,north=up,power=4,south=none,west=side]": "55:4",
-  "minecraft:redstone_wire[east=side,north=up,power=4,south=none,west=up]": "55:4",
-  "minecraft:redstone_wire[east=side,north=up,power=4,south=side,west=none]": "55:4",
-  "minecraft:redstone_wire[east=side,north=up,power=4,south=side,west=side]": "55:4",
-  "minecraft:redstone_wire[east=side,north=up,power=4,south=side,west=up]": "55:4",
-  "minecraft:redstone_wire[east=side,north=up,power=4,south=up,west=none]": "55:4",
-  "minecraft:redstone_wire[east=side,north=up,power=4,south=up,west=side]": "55:4",
-  "minecraft:redstone_wire[east=side,north=up,power=4,south=up,west=up]": "55:4",
-  "minecraft:redstone_wire[east=up,north=none,power=4,south=none,west=none]": "55:4",
-  "minecraft:redstone_wire[east=up,north=none,power=4,south=none,west=side]": "55:4",
-  "minecraft:redstone_wire[east=up,north=none,power=4,south=none,west=up]": "55:4",
-  "minecraft:redstone_wire[east=up,north=none,power=4,south=side,west=none]": "55:4",
-  "minecraft:redstone_wire[east=up,north=none,power=4,south=side,west=side]": "55:4",
-  "minecraft:redstone_wire[east=up,north=none,power=4,south=side,west=up]": "55:4",
-  "minecraft:redstone_wire[east=up,north=none,power=4,south=up,west=none]": "55:4",
-  "minecraft:redstone_wire[east=up,north=none,power=4,south=up,west=side]": "55:4",
-  "minecraft:redstone_wire[east=up,north=none,power=4,south=up,west=up]": "55:4",
-  "minecraft:redstone_wire[east=up,north=side,power=4,south=none,west=none]": "55:4",
-  "minecraft:redstone_wire[east=up,north=side,power=4,south=none,west=side]": "55:4",
-  "minecraft:redstone_wire[east=up,north=side,power=4,south=none,west=up]": "55:4",
-  "minecraft:redstone_wire[east=up,north=side,power=4,south=side,west=none]": "55:4",
-  "minecraft:redstone_wire[east=up,north=side,power=4,south=side,west=side]": "55:4",
-  "minecraft:redstone_wire[east=up,north=side,power=4,south=side,west=up]": "55:4",
-  "minecraft:redstone_wire[east=up,north=side,power=4,south=up,west=none]": "55:4",
-  "minecraft:redstone_wire[east=up,north=side,power=4,south=up,west=side]": "55:4",
-  "minecraft:redstone_wire[east=up,north=side,power=4,south=up,west=up]": "55:4",
-  "minecraft:redstone_wire[east=up,north=up,power=4,south=none,west=none]": "55:4",
-  "minecraft:redstone_wire[east=up,north=up,power=4,south=none,west=side]": "55:4",
-  "minecraft:redstone_wire[east=up,north=up,power=4,south=none,west=up]": "55:4",
-  "minecraft:redstone_wire[east=up,north=up,power=4,south=side,west=none]": "55:4",
-  "minecraft:redstone_wire[east=up,north=up,power=4,south=side,west=side]": "55:4",
-  "minecraft:redstone_wire[east=up,north=up,power=4,south=side,west=up]": "55:4",
-  "minecraft:redstone_wire[east=up,north=up,power=4,south=up,west=none]": "55:4",
-  "minecraft:redstone_wire[east=up,north=up,power=4,south=up,west=side]": "55:4",
+  "minecraft:redstone_wire[east=none,north=none,power=4,south=none,west=none]":
+    "55:4",
+  "minecraft:redstone_wire[east=none,north=none,power=4,south=none,west=side]":
+    "55:4",
+  "minecraft:redstone_wire[east=none,north=none,power=4,south=none,west=up]":
+    "55:4",
+  "minecraft:redstone_wire[east=none,north=none,power=4,south=side,west=none]":
+    "55:4",
+  "minecraft:redstone_wire[east=none,north=none,power=4,south=side,west=side]":
+    "55:4",
+  "minecraft:redstone_wire[east=none,north=none,power=4,south=side,west=up]":
+    "55:4",
+  "minecraft:redstone_wire[east=none,north=none,power=4,south=up,west=none]":
+    "55:4",
+  "minecraft:redstone_wire[east=none,north=none,power=4,south=up,west=side]":
+    "55:4",
+  "minecraft:redstone_wire[east=none,north=none,power=4,south=up,west=up]":
+    "55:4",
+  "minecraft:redstone_wire[east=none,north=side,power=4,south=none,west=none]":
+    "55:4",
+  "minecraft:redstone_wire[east=none,north=side,power=4,south=none,west=side]":
+    "55:4",
+  "minecraft:redstone_wire[east=none,north=side,power=4,south=none,west=up]":
+    "55:4",
+  "minecraft:redstone_wire[east=none,north=side,power=4,south=side,west=none]":
+    "55:4",
+  "minecraft:redstone_wire[east=none,north=side,power=4,south=side,west=side]":
+    "55:4",
+  "minecraft:redstone_wire[east=none,north=side,power=4,south=side,west=up]":
+    "55:4",
+  "minecraft:redstone_wire[east=none,north=side,power=4,south=up,west=none]":
+    "55:4",
+  "minecraft:redstone_wire[east=none,north=side,power=4,south=up,west=side]":
+    "55:4",
+  "minecraft:redstone_wire[east=none,north=side,power=4,south=up,west=up]":
+    "55:4",
+  "minecraft:redstone_wire[east=none,north=up,power=4,south=none,west=none]":
+    "55:4",
+  "minecraft:redstone_wire[east=none,north=up,power=4,south=none,west=side]":
+    "55:4",
+  "minecraft:redstone_wire[east=none,north=up,power=4,south=none,west=up]":
+    "55:4",
+  "minecraft:redstone_wire[east=none,north=up,power=4,south=side,west=none]":
+    "55:4",
+  "minecraft:redstone_wire[east=none,north=up,power=4,south=side,west=side]":
+    "55:4",
+  "minecraft:redstone_wire[east=none,north=up,power=4,south=side,west=up]":
+    "55:4",
+  "minecraft:redstone_wire[east=none,north=up,power=4,south=up,west=none]":
+    "55:4",
+  "minecraft:redstone_wire[east=none,north=up,power=4,south=up,west=side]":
+    "55:4",
+  "minecraft:redstone_wire[east=none,north=up,power=4,south=up,west=up]":
+    "55:4",
+  "minecraft:redstone_wire[east=side,north=none,power=4,south=none,west=none]":
+    "55:4",
+  "minecraft:redstone_wire[east=side,north=none,power=4,south=none,west=side]":
+    "55:4",
+  "minecraft:redstone_wire[east=side,north=none,power=4,south=none,west=up]":
+    "55:4",
+  "minecraft:redstone_wire[east=side,north=none,power=4,south=side,west=none]":
+    "55:4",
+  "minecraft:redstone_wire[east=side,north=none,power=4,south=side,west=side]":
+    "55:4",
+  "minecraft:redstone_wire[east=side,north=none,power=4,south=side,west=up]":
+    "55:4",
+  "minecraft:redstone_wire[east=side,north=none,power=4,south=up,west=none]":
+    "55:4",
+  "minecraft:redstone_wire[east=side,north=none,power=4,south=up,west=side]":
+    "55:4",
+  "minecraft:redstone_wire[east=side,north=none,power=4,south=up,west=up]":
+    "55:4",
+  "minecraft:redstone_wire[east=side,north=side,power=4,south=none,west=none]":
+    "55:4",
+  "minecraft:redstone_wire[east=side,north=side,power=4,south=none,west=side]":
+    "55:4",
+  "minecraft:redstone_wire[east=side,north=side,power=4,south=none,west=up]":
+    "55:4",
+  "minecraft:redstone_wire[east=side,north=side,power=4,south=side,west=none]":
+    "55:4",
+  "minecraft:redstone_wire[east=side,north=side,power=4,south=side,west=side]":
+    "55:4",
+  "minecraft:redstone_wire[east=side,north=side,power=4,south=side,west=up]":
+    "55:4",
+  "minecraft:redstone_wire[east=side,north=side,power=4,south=up,west=none]":
+    "55:4",
+  "minecraft:redstone_wire[east=side,north=side,power=4,south=up,west=side]":
+    "55:4",
+  "minecraft:redstone_wire[east=side,north=side,power=4,south=up,west=up]":
+    "55:4",
+  "minecraft:redstone_wire[east=side,north=up,power=4,south=none,west=none]":
+    "55:4",
+  "minecraft:redstone_wire[east=side,north=up,power=4,south=none,west=side]":
+    "55:4",
+  "minecraft:redstone_wire[east=side,north=up,power=4,south=none,west=up]":
+    "55:4",
+  "minecraft:redstone_wire[east=side,north=up,power=4,south=side,west=none]":
+    "55:4",
+  "minecraft:redstone_wire[east=side,north=up,power=4,south=side,west=side]":
+    "55:4",
+  "minecraft:redstone_wire[east=side,north=up,power=4,south=side,west=up]":
+    "55:4",
+  "minecraft:redstone_wire[east=side,north=up,power=4,south=up,west=none]":
+    "55:4",
+  "minecraft:redstone_wire[east=side,north=up,power=4,south=up,west=side]":
+    "55:4",
+  "minecraft:redstone_wire[east=side,north=up,power=4,south=up,west=up]":
+    "55:4",
+  "minecraft:redstone_wire[east=up,north=none,power=4,south=none,west=none]":
+    "55:4",
+  "minecraft:redstone_wire[east=up,north=none,power=4,south=none,west=side]":
+    "55:4",
+  "minecraft:redstone_wire[east=up,north=none,power=4,south=none,west=up]":
+    "55:4",
+  "minecraft:redstone_wire[east=up,north=none,power=4,south=side,west=none]":
+    "55:4",
+  "minecraft:redstone_wire[east=up,north=none,power=4,south=side,west=side]":
+    "55:4",
+  "minecraft:redstone_wire[east=up,north=none,power=4,south=side,west=up]":
+    "55:4",
+  "minecraft:redstone_wire[east=up,north=none,power=4,south=up,west=none]":
+    "55:4",
+  "minecraft:redstone_wire[east=up,north=none,power=4,south=up,west=side]":
+    "55:4",
+  "minecraft:redstone_wire[east=up,north=none,power=4,south=up,west=up]":
+    "55:4",
+  "minecraft:redstone_wire[east=up,north=side,power=4,south=none,west=none]":
+    "55:4",
+  "minecraft:redstone_wire[east=up,north=side,power=4,south=none,west=side]":
+    "55:4",
+  "minecraft:redstone_wire[east=up,north=side,power=4,south=none,west=up]":
+    "55:4",
+  "minecraft:redstone_wire[east=up,north=side,power=4,south=side,west=none]":
+    "55:4",
+  "minecraft:redstone_wire[east=up,north=side,power=4,south=side,west=side]":
+    "55:4",
+  "minecraft:redstone_wire[east=up,north=side,power=4,south=side,west=up]":
+    "55:4",
+  "minecraft:redstone_wire[east=up,north=side,power=4,south=up,west=none]":
+    "55:4",
+  "minecraft:redstone_wire[east=up,north=side,power=4,south=up,west=side]":
+    "55:4",
+  "minecraft:redstone_wire[east=up,north=side,power=4,south=up,west=up]":
+    "55:4",
+  "minecraft:redstone_wire[east=up,north=up,power=4,south=none,west=none]":
+    "55:4",
+  "minecraft:redstone_wire[east=up,north=up,power=4,south=none,west=side]":
+    "55:4",
+  "minecraft:redstone_wire[east=up,north=up,power=4,south=none,west=up]":
+    "55:4",
+  "minecraft:redstone_wire[east=up,north=up,power=4,south=side,west=none]":
+    "55:4",
+  "minecraft:redstone_wire[east=up,north=up,power=4,south=side,west=side]":
+    "55:4",
+  "minecraft:redstone_wire[east=up,north=up,power=4,south=side,west=up]":
+    "55:4",
+  "minecraft:redstone_wire[east=up,north=up,power=4,south=up,west=none]":
+    "55:4",
+  "minecraft:redstone_wire[east=up,north=up,power=4,south=up,west=side]":
+    "55:4",
   "minecraft:redstone_wire[east=up,north=up,power=4,south=up,west=up]": "55:4",
-  "minecraft:redstone_wire[east=none,north=none,power=5,south=none,west=none]": "55:5",
-  "minecraft:redstone_wire[east=none,north=none,power=5,south=none,west=side]": "55:5",
-  "minecraft:redstone_wire[east=none,north=none,power=5,south=none,west=up]": "55:5",
-  "minecraft:redstone_wire[east=none,north=none,power=5,south=side,west=none]": "55:5",
-  "minecraft:redstone_wire[east=none,north=none,power=5,south=side,west=side]": "55:5",
-  "minecraft:redstone_wire[east=none,north=none,power=5,south=side,west=up]": "55:5",
-  "minecraft:redstone_wire[east=none,north=none,power=5,south=up,west=none]": "55:5",
-  "minecraft:redstone_wire[east=none,north=none,power=5,south=up,west=side]": "55:5",
-  "minecraft:redstone_wire[east=none,north=none,power=5,south=up,west=up]": "55:5",
-  "minecraft:redstone_wire[east=none,north=side,power=5,south=none,west=none]": "55:5",
-  "minecraft:redstone_wire[east=none,north=side,power=5,south=none,west=side]": "55:5",
-  "minecraft:redstone_wire[east=none,north=side,power=5,south=none,west=up]": "55:5",
-  "minecraft:redstone_wire[east=none,north=side,power=5,south=side,west=none]": "55:5",
-  "minecraft:redstone_wire[east=none,north=side,power=5,south=side,west=side]": "55:5",
-  "minecraft:redstone_wire[east=none,north=side,power=5,south=side,west=up]": "55:5",
-  "minecraft:redstone_wire[east=none,north=side,power=5,south=up,west=none]": "55:5",
-  "minecraft:redstone_wire[east=none,north=side,power=5,south=up,west=side]": "55:5",
-  "minecraft:redstone_wire[east=none,north=side,power=5,south=up,west=up]": "55:5",
-  "minecraft:redstone_wire[east=none,north=up,power=5,south=none,west=none]": "55:5",
-  "minecraft:redstone_wire[east=none,north=up,power=5,south=none,west=side]": "55:5",
-  "minecraft:redstone_wire[east=none,north=up,power=5,south=none,west=up]": "55:5",
-  "minecraft:redstone_wire[east=none,north=up,power=5,south=side,west=none]": "55:5",
-  "minecraft:redstone_wire[east=none,north=up,power=5,south=side,west=side]": "55:5",
-  "minecraft:redstone_wire[east=none,north=up,power=5,south=side,west=up]": "55:5",
-  "minecraft:redstone_wire[east=none,north=up,power=5,south=up,west=none]": "55:5",
-  "minecraft:redstone_wire[east=none,north=up,power=5,south=up,west=side]": "55:5",
-  "minecraft:redstone_wire[east=none,north=up,power=5,south=up,west=up]": "55:5",
-  "minecraft:redstone_wire[east=side,north=none,power=5,south=none,west=none]": "55:5",
-  "minecraft:redstone_wire[east=side,north=none,power=5,south=none,west=side]": "55:5",
-  "minecraft:redstone_wire[east=side,north=none,power=5,south=none,west=up]": "55:5",
-  "minecraft:redstone_wire[east=side,north=none,power=5,south=side,west=none]": "55:5",
-  "minecraft:redstone_wire[east=side,north=none,power=5,south=side,west=side]": "55:5",
-  "minecraft:redstone_wire[east=side,north=none,power=5,south=side,west=up]": "55:5",
-  "minecraft:redstone_wire[east=side,north=none,power=5,south=up,west=none]": "55:5",
-  "minecraft:redstone_wire[east=side,north=none,power=5,south=up,west=side]": "55:5",
-  "minecraft:redstone_wire[east=side,north=none,power=5,south=up,west=up]": "55:5",
-  "minecraft:redstone_wire[east=side,north=side,power=5,south=none,west=none]": "55:5",
-  "minecraft:redstone_wire[east=side,north=side,power=5,south=none,west=side]": "55:5",
-  "minecraft:redstone_wire[east=side,north=side,power=5,south=none,west=up]": "55:5",
-  "minecraft:redstone_wire[east=side,north=side,power=5,south=side,west=none]": "55:5",
-  "minecraft:redstone_wire[east=side,north=side,power=5,south=side,west=side]": "55:5",
-  "minecraft:redstone_wire[east=side,north=side,power=5,south=side,west=up]": "55:5",
-  "minecraft:redstone_wire[east=side,north=side,power=5,south=up,west=none]": "55:5",
-  "minecraft:redstone_wire[east=side,north=side,power=5,south=up,west=side]": "55:5",
-  "minecraft:redstone_wire[east=side,north=side,power=5,south=up,west=up]": "55:5",
-  "minecraft:redstone_wire[east=side,north=up,power=5,south=none,west=none]": "55:5",
-  "minecraft:redstone_wire[east=side,north=up,power=5,south=none,west=side]": "55:5",
-  "minecraft:redstone_wire[east=side,north=up,power=5,south=none,west=up]": "55:5",
-  "minecraft:redstone_wire[east=side,north=up,power=5,south=side,west=none]": "55:5",
-  "minecraft:redstone_wire[east=side,north=up,power=5,south=side,west=side]": "55:5",
-  "minecraft:redstone_wire[east=side,north=up,power=5,south=side,west=up]": "55:5",
-  "minecraft:redstone_wire[east=side,north=up,power=5,south=up,west=none]": "55:5",
-  "minecraft:redstone_wire[east=side,north=up,power=5,south=up,west=side]": "55:5",
-  "minecraft:redstone_wire[east=side,north=up,power=5,south=up,west=up]": "55:5",
-  "minecraft:redstone_wire[east=up,north=none,power=5,south=none,west=none]": "55:5",
-  "minecraft:redstone_wire[east=up,north=none,power=5,south=none,west=side]": "55:5",
-  "minecraft:redstone_wire[east=up,north=none,power=5,south=none,west=up]": "55:5",
-  "minecraft:redstone_wire[east=up,north=none,power=5,south=side,west=none]": "55:5",
-  "minecraft:redstone_wire[east=up,north=none,power=5,south=side,west=side]": "55:5",
-  "minecraft:redstone_wire[east=up,north=none,power=5,south=side,west=up]": "55:5",
-  "minecraft:redstone_wire[east=up,north=none,power=5,south=up,west=none]": "55:5",
-  "minecraft:redstone_wire[east=up,north=none,power=5,south=up,west=side]": "55:5",
-  "minecraft:redstone_wire[east=up,north=none,power=5,south=up,west=up]": "55:5",
-  "minecraft:redstone_wire[east=up,north=side,power=5,south=none,west=none]": "55:5",
-  "minecraft:redstone_wire[east=up,north=side,power=5,south=none,west=side]": "55:5",
-  "minecraft:redstone_wire[east=up,north=side,power=5,south=none,west=up]": "55:5",
-  "minecraft:redstone_wire[east=up,north=side,power=5,south=side,west=none]": "55:5",
-  "minecraft:redstone_wire[east=up,north=side,power=5,south=side,west=side]": "55:5",
-  "minecraft:redstone_wire[east=up,north=side,power=5,south=side,west=up]": "55:5",
-  "minecraft:redstone_wire[east=up,north=side,power=5,south=up,west=none]": "55:5",
-  "minecraft:redstone_wire[east=up,north=side,power=5,south=up,west=side]": "55:5",
-  "minecraft:redstone_wire[east=up,north=side,power=5,south=up,west=up]": "55:5",
-  "minecraft:redstone_wire[east=up,north=up,power=5,south=none,west=none]": "55:5",
-  "minecraft:redstone_wire[east=up,north=up,power=5,south=none,west=side]": "55:5",
-  "minecraft:redstone_wire[east=up,north=up,power=5,south=none,west=up]": "55:5",
-  "minecraft:redstone_wire[east=up,north=up,power=5,south=side,west=none]": "55:5",
-  "minecraft:redstone_wire[east=up,north=up,power=5,south=side,west=side]": "55:5",
-  "minecraft:redstone_wire[east=up,north=up,power=5,south=side,west=up]": "55:5",
-  "minecraft:redstone_wire[east=up,north=up,power=5,south=up,west=none]": "55:5",
-  "minecraft:redstone_wire[east=up,north=up,power=5,south=up,west=side]": "55:5",
+  "minecraft:redstone_wire[east=none,north=none,power=5,south=none,west=none]":
+    "55:5",
+  "minecraft:redstone_wire[east=none,north=none,power=5,south=none,west=side]":
+    "55:5",
+  "minecraft:redstone_wire[east=none,north=none,power=5,south=none,west=up]":
+    "55:5",
+  "minecraft:redstone_wire[east=none,north=none,power=5,south=side,west=none]":
+    "55:5",
+  "minecraft:redstone_wire[east=none,north=none,power=5,south=side,west=side]":
+    "55:5",
+  "minecraft:redstone_wire[east=none,north=none,power=5,south=side,west=up]":
+    "55:5",
+  "minecraft:redstone_wire[east=none,north=none,power=5,south=up,west=none]":
+    "55:5",
+  "minecraft:redstone_wire[east=none,north=none,power=5,south=up,west=side]":
+    "55:5",
+  "minecraft:redstone_wire[east=none,north=none,power=5,south=up,west=up]":
+    "55:5",
+  "minecraft:redstone_wire[east=none,north=side,power=5,south=none,west=none]":
+    "55:5",
+  "minecraft:redstone_wire[east=none,north=side,power=5,south=none,west=side]":
+    "55:5",
+  "minecraft:redstone_wire[east=none,north=side,power=5,south=none,west=up]":
+    "55:5",
+  "minecraft:redstone_wire[east=none,north=side,power=5,south=side,west=none]":
+    "55:5",
+  "minecraft:redstone_wire[east=none,north=side,power=5,south=side,west=side]":
+    "55:5",
+  "minecraft:redstone_wire[east=none,north=side,power=5,south=side,west=up]":
+    "55:5",
+  "minecraft:redstone_wire[east=none,north=side,power=5,south=up,west=none]":
+    "55:5",
+  "minecraft:redstone_wire[east=none,north=side,power=5,south=up,west=side]":
+    "55:5",
+  "minecraft:redstone_wire[east=none,north=side,power=5,south=up,west=up]":
+    "55:5",
+  "minecraft:redstone_wire[east=none,north=up,power=5,south=none,west=none]":
+    "55:5",
+  "minecraft:redstone_wire[east=none,north=up,power=5,south=none,west=side]":
+    "55:5",
+  "minecraft:redstone_wire[east=none,north=up,power=5,south=none,west=up]":
+    "55:5",
+  "minecraft:redstone_wire[east=none,north=up,power=5,south=side,west=none]":
+    "55:5",
+  "minecraft:redstone_wire[east=none,north=up,power=5,south=side,west=side]":
+    "55:5",
+  "minecraft:redstone_wire[east=none,north=up,power=5,south=side,west=up]":
+    "55:5",
+  "minecraft:redstone_wire[east=none,north=up,power=5,south=up,west=none]":
+    "55:5",
+  "minecraft:redstone_wire[east=none,north=up,power=5,south=up,west=side]":
+    "55:5",
+  "minecraft:redstone_wire[east=none,north=up,power=5,south=up,west=up]":
+    "55:5",
+  "minecraft:redstone_wire[east=side,north=none,power=5,south=none,west=none]":
+    "55:5",
+  "minecraft:redstone_wire[east=side,north=none,power=5,south=none,west=side]":
+    "55:5",
+  "minecraft:redstone_wire[east=side,north=none,power=5,south=none,west=up]":
+    "55:5",
+  "minecraft:redstone_wire[east=side,north=none,power=5,south=side,west=none]":
+    "55:5",
+  "minecraft:redstone_wire[east=side,north=none,power=5,south=side,west=side]":
+    "55:5",
+  "minecraft:redstone_wire[east=side,north=none,power=5,south=side,west=up]":
+    "55:5",
+  "minecraft:redstone_wire[east=side,north=none,power=5,south=up,west=none]":
+    "55:5",
+  "minecraft:redstone_wire[east=side,north=none,power=5,south=up,west=side]":
+    "55:5",
+  "minecraft:redstone_wire[east=side,north=none,power=5,south=up,west=up]":
+    "55:5",
+  "minecraft:redstone_wire[east=side,north=side,power=5,south=none,west=none]":
+    "55:5",
+  "minecraft:redstone_wire[east=side,north=side,power=5,south=none,west=side]":
+    "55:5",
+  "minecraft:redstone_wire[east=side,north=side,power=5,south=none,west=up]":
+    "55:5",
+  "minecraft:redstone_wire[east=side,north=side,power=5,south=side,west=none]":
+    "55:5",
+  "minecraft:redstone_wire[east=side,north=side,power=5,south=side,west=side]":
+    "55:5",
+  "minecraft:redstone_wire[east=side,north=side,power=5,south=side,west=up]":
+    "55:5",
+  "minecraft:redstone_wire[east=side,north=side,power=5,south=up,west=none]":
+    "55:5",
+  "minecraft:redstone_wire[east=side,north=side,power=5,south=up,west=side]":
+    "55:5",
+  "minecraft:redstone_wire[east=side,north=side,power=5,south=up,west=up]":
+    "55:5",
+  "minecraft:redstone_wire[east=side,north=up,power=5,south=none,west=none]":
+    "55:5",
+  "minecraft:redstone_wire[east=side,north=up,power=5,south=none,west=side]":
+    "55:5",
+  "minecraft:redstone_wire[east=side,north=up,power=5,south=none,west=up]":
+    "55:5",
+  "minecraft:redstone_wire[east=side,north=up,power=5,south=side,west=none]":
+    "55:5",
+  "minecraft:redstone_wire[east=side,north=up,power=5,south=side,west=side]":
+    "55:5",
+  "minecraft:redstone_wire[east=side,north=up,power=5,south=side,west=up]":
+    "55:5",
+  "minecraft:redstone_wire[east=side,north=up,power=5,south=up,west=none]":
+    "55:5",
+  "minecraft:redstone_wire[east=side,north=up,power=5,south=up,west=side]":
+    "55:5",
+  "minecraft:redstone_wire[east=side,north=up,power=5,south=up,west=up]":
+    "55:5",
+  "minecraft:redstone_wire[east=up,north=none,power=5,south=none,west=none]":
+    "55:5",
+  "minecraft:redstone_wire[east=up,north=none,power=5,south=none,west=side]":
+    "55:5",
+  "minecraft:redstone_wire[east=up,north=none,power=5,south=none,west=up]":
+    "55:5",
+  "minecraft:redstone_wire[east=up,north=none,power=5,south=side,west=none]":
+    "55:5",
+  "minecraft:redstone_wire[east=up,north=none,power=5,south=side,west=side]":
+    "55:5",
+  "minecraft:redstone_wire[east=up,north=none,power=5,south=side,west=up]":
+    "55:5",
+  "minecraft:redstone_wire[east=up,north=none,power=5,south=up,west=none]":
+    "55:5",
+  "minecraft:redstone_wire[east=up,north=none,power=5,south=up,west=side]":
+    "55:5",
+  "minecraft:redstone_wire[east=up,north=none,power=5,south=up,west=up]":
+    "55:5",
+  "minecraft:redstone_wire[east=up,north=side,power=5,south=none,west=none]":
+    "55:5",
+  "minecraft:redstone_wire[east=up,north=side,power=5,south=none,west=side]":
+    "55:5",
+  "minecraft:redstone_wire[east=up,north=side,power=5,south=none,west=up]":
+    "55:5",
+  "minecraft:redstone_wire[east=up,north=side,power=5,south=side,west=none]":
+    "55:5",
+  "minecraft:redstone_wire[east=up,north=side,power=5,south=side,west=side]":
+    "55:5",
+  "minecraft:redstone_wire[east=up,north=side,power=5,south=side,west=up]":
+    "55:5",
+  "minecraft:redstone_wire[east=up,north=side,power=5,south=up,west=none]":
+    "55:5",
+  "minecraft:redstone_wire[east=up,north=side,power=5,south=up,west=side]":
+    "55:5",
+  "minecraft:redstone_wire[east=up,north=side,power=5,south=up,west=up]":
+    "55:5",
+  "minecraft:redstone_wire[east=up,north=up,power=5,south=none,west=none]":
+    "55:5",
+  "minecraft:redstone_wire[east=up,north=up,power=5,south=none,west=side]":
+    "55:5",
+  "minecraft:redstone_wire[east=up,north=up,power=5,south=none,west=up]":
+    "55:5",
+  "minecraft:redstone_wire[east=up,north=up,power=5,south=side,west=none]":
+    "55:5",
+  "minecraft:redstone_wire[east=up,north=up,power=5,south=side,west=side]":
+    "55:5",
+  "minecraft:redstone_wire[east=up,north=up,power=5,south=side,west=up]":
+    "55:5",
+  "minecraft:redstone_wire[east=up,north=up,power=5,south=up,west=none]":
+    "55:5",
+  "minecraft:redstone_wire[east=up,north=up,power=5,south=up,west=side]":
+    "55:5",
   "minecraft:redstone_wire[east=up,north=up,power=5,south=up,west=up]": "55:5",
-  "minecraft:redstone_wire[east=none,north=none,power=6,south=none,west=none]": "55:6",
-  "minecraft:redstone_wire[east=none,north=none,power=6,south=none,west=side]": "55:6",
-  "minecraft:redstone_wire[east=none,north=none,power=6,south=none,west=up]": "55:6",
-  "minecraft:redstone_wire[east=none,north=none,power=6,south=side,west=none]": "55:6",
-  "minecraft:redstone_wire[east=none,north=none,power=6,south=side,west=side]": "55:6",
-  "minecraft:redstone_wire[east=none,north=none,power=6,south=side,west=up]": "55:6",
-  "minecraft:redstone_wire[east=none,north=none,power=6,south=up,west=none]": "55:6",
-  "minecraft:redstone_wire[east=none,north=none,power=6,south=up,west=side]": "55:6",
-  "minecraft:redstone_wire[east=none,north=none,power=6,south=up,west=up]": "55:6",
-  "minecraft:redstone_wire[east=none,north=side,power=6,south=none,west=none]": "55:6",
-  "minecraft:redstone_wire[east=none,north=side,power=6,south=none,west=side]": "55:6",
-  "minecraft:redstone_wire[east=none,north=side,power=6,south=none,west=up]": "55:6",
-  "minecraft:redstone_wire[east=none,north=side,power=6,south=side,west=none]": "55:6",
-  "minecraft:redstone_wire[east=none,north=side,power=6,south=side,west=side]": "55:6",
-  "minecraft:redstone_wire[east=none,north=side,power=6,south=side,west=up]": "55:6",
-  "minecraft:redstone_wire[east=none,north=side,power=6,south=up,west=none]": "55:6",
-  "minecraft:redstone_wire[east=none,north=side,power=6,south=up,west=side]": "55:6",
-  "minecraft:redstone_wire[east=none,north=side,power=6,south=up,west=up]": "55:6",
-  "minecraft:redstone_wire[east=none,north=up,power=6,south=none,west=none]": "55:6",
-  "minecraft:redstone_wire[east=none,north=up,power=6,south=none,west=side]": "55:6",
-  "minecraft:redstone_wire[east=none,north=up,power=6,south=none,west=up]": "55:6",
-  "minecraft:redstone_wire[east=none,north=up,power=6,south=side,west=none]": "55:6",
-  "minecraft:redstone_wire[east=none,north=up,power=6,south=side,west=side]": "55:6",
-  "minecraft:redstone_wire[east=none,north=up,power=6,south=side,west=up]": "55:6",
-  "minecraft:redstone_wire[east=none,north=up,power=6,south=up,west=none]": "55:6",
-  "minecraft:redstone_wire[east=none,north=up,power=6,south=up,west=side]": "55:6",
-  "minecraft:redstone_wire[east=none,north=up,power=6,south=up,west=up]": "55:6",
-  "minecraft:redstone_wire[east=side,north=none,power=6,south=none,west=none]": "55:6",
-  "minecraft:redstone_wire[east=side,north=none,power=6,south=none,west=side]": "55:6",
-  "minecraft:redstone_wire[east=side,north=none,power=6,south=none,west=up]": "55:6",
-  "minecraft:redstone_wire[east=side,north=none,power=6,south=side,west=none]": "55:6",
-  "minecraft:redstone_wire[east=side,north=none,power=6,south=side,west=side]": "55:6",
-  "minecraft:redstone_wire[east=side,north=none,power=6,south=side,west=up]": "55:6",
-  "minecraft:redstone_wire[east=side,north=none,power=6,south=up,west=none]": "55:6",
-  "minecraft:redstone_wire[east=side,north=none,power=6,south=up,west=side]": "55:6",
-  "minecraft:redstone_wire[east=side,north=none,power=6,south=up,west=up]": "55:6",
-  "minecraft:redstone_wire[east=side,north=side,power=6,south=none,west=none]": "55:6",
-  "minecraft:redstone_wire[east=side,north=side,power=6,south=none,west=side]": "55:6",
-  "minecraft:redstone_wire[east=side,north=side,power=6,south=none,west=up]": "55:6",
-  "minecraft:redstone_wire[east=side,north=side,power=6,south=side,west=none]": "55:6",
-  "minecraft:redstone_wire[east=side,north=side,power=6,south=side,west=side]": "55:6",
-  "minecraft:redstone_wire[east=side,north=side,power=6,south=side,west=up]": "55:6",
-  "minecraft:redstone_wire[east=side,north=side,power=6,south=up,west=none]": "55:6",
-  "minecraft:redstone_wire[east=side,north=side,power=6,south=up,west=side]": "55:6",
-  "minecraft:redstone_wire[east=side,north=side,power=6,south=up,west=up]": "55:6",
-  "minecraft:redstone_wire[east=side,north=up,power=6,south=none,west=none]": "55:6",
-  "minecraft:redstone_wire[east=side,north=up,power=6,south=none,west=side]": "55:6",
-  "minecraft:redstone_wire[east=side,north=up,power=6,south=none,west=up]": "55:6",
-  "minecraft:redstone_wire[east=side,north=up,power=6,south=side,west=none]": "55:6",
-  "minecraft:redstone_wire[east=side,north=up,power=6,south=side,west=side]": "55:6",
-  "minecraft:redstone_wire[east=side,north=up,power=6,south=side,west=up]": "55:6",
-  "minecraft:redstone_wire[east=side,north=up,power=6,south=up,west=none]": "55:6",
-  "minecraft:redstone_wire[east=side,north=up,power=6,south=up,west=side]": "55:6",
-  "minecraft:redstone_wire[east=side,north=up,power=6,south=up,west=up]": "55:6",
-  "minecraft:redstone_wire[east=up,north=none,power=6,south=none,west=none]": "55:6",
-  "minecraft:redstone_wire[east=up,north=none,power=6,south=none,west=side]": "55:6",
-  "minecraft:redstone_wire[east=up,north=none,power=6,south=none,west=up]": "55:6",
-  "minecraft:redstone_wire[east=up,north=none,power=6,south=side,west=none]": "55:6",
-  "minecraft:redstone_wire[east=up,north=none,power=6,south=side,west=side]": "55:6",
-  "minecraft:redstone_wire[east=up,north=none,power=6,south=side,west=up]": "55:6",
-  "minecraft:redstone_wire[east=up,north=none,power=6,south=up,west=none]": "55:6",
-  "minecraft:redstone_wire[east=up,north=none,power=6,south=up,west=side]": "55:6",
-  "minecraft:redstone_wire[east=up,north=none,power=6,south=up,west=up]": "55:6",
-  "minecraft:redstone_wire[east=up,north=side,power=6,south=none,west=none]": "55:6",
-  "minecraft:redstone_wire[east=up,north=side,power=6,south=none,west=side]": "55:6",
-  "minecraft:redstone_wire[east=up,north=side,power=6,south=none,west=up]": "55:6",
-  "minecraft:redstone_wire[east=up,north=side,power=6,south=side,west=none]": "55:6",
-  "minecraft:redstone_wire[east=up,north=side,power=6,south=side,west=side]": "55:6",
-  "minecraft:redstone_wire[east=up,north=side,power=6,south=side,west=up]": "55:6",
-  "minecraft:redstone_wire[east=up,north=side,power=6,south=up,west=none]": "55:6",
-  "minecraft:redstone_wire[east=up,north=side,power=6,south=up,west=side]": "55:6",
-  "minecraft:redstone_wire[east=up,north=side,power=6,south=up,west=up]": "55:6",
-  "minecraft:redstone_wire[east=up,north=up,power=6,south=none,west=none]": "55:6",
-  "minecraft:redstone_wire[east=up,north=up,power=6,south=none,west=side]": "55:6",
-  "minecraft:redstone_wire[east=up,north=up,power=6,south=none,west=up]": "55:6",
-  "minecraft:redstone_wire[east=up,north=up,power=6,south=side,west=none]": "55:6",
-  "minecraft:redstone_wire[east=up,north=up,power=6,south=side,west=side]": "55:6",
-  "minecraft:redstone_wire[east=up,north=up,power=6,south=side,west=up]": "55:6",
-  "minecraft:redstone_wire[east=up,north=up,power=6,south=up,west=none]": "55:6",
-  "minecraft:redstone_wire[east=up,north=up,power=6,south=up,west=side]": "55:6",
+  "minecraft:redstone_wire[east=none,north=none,power=6,south=none,west=none]":
+    "55:6",
+  "minecraft:redstone_wire[east=none,north=none,power=6,south=none,west=side]":
+    "55:6",
+  "minecraft:redstone_wire[east=none,north=none,power=6,south=none,west=up]":
+    "55:6",
+  "minecraft:redstone_wire[east=none,north=none,power=6,south=side,west=none]":
+    "55:6",
+  "minecraft:redstone_wire[east=none,north=none,power=6,south=side,west=side]":
+    "55:6",
+  "minecraft:redstone_wire[east=none,north=none,power=6,south=side,west=up]":
+    "55:6",
+  "minecraft:redstone_wire[east=none,north=none,power=6,south=up,west=none]":
+    "55:6",
+  "minecraft:redstone_wire[east=none,north=none,power=6,south=up,west=side]":
+    "55:6",
+  "minecraft:redstone_wire[east=none,north=none,power=6,south=up,west=up]":
+    "55:6",
+  "minecraft:redstone_wire[east=none,north=side,power=6,south=none,west=none]":
+    "55:6",
+  "minecraft:redstone_wire[east=none,north=side,power=6,south=none,west=side]":
+    "55:6",
+  "minecraft:redstone_wire[east=none,north=side,power=6,south=none,west=up]":
+    "55:6",
+  "minecraft:redstone_wire[east=none,north=side,power=6,south=side,west=none]":
+    "55:6",
+  "minecraft:redstone_wire[east=none,north=side,power=6,south=side,west=side]":
+    "55:6",
+  "minecraft:redstone_wire[east=none,north=side,power=6,south=side,west=up]":
+    "55:6",
+  "minecraft:redstone_wire[east=none,north=side,power=6,south=up,west=none]":
+    "55:6",
+  "minecraft:redstone_wire[east=none,north=side,power=6,south=up,west=side]":
+    "55:6",
+  "minecraft:redstone_wire[east=none,north=side,power=6,south=up,west=up]":
+    "55:6",
+  "minecraft:redstone_wire[east=none,north=up,power=6,south=none,west=none]":
+    "55:6",
+  "minecraft:redstone_wire[east=none,north=up,power=6,south=none,west=side]":
+    "55:6",
+  "minecraft:redstone_wire[east=none,north=up,power=6,south=none,west=up]":
+    "55:6",
+  "minecraft:redstone_wire[east=none,north=up,power=6,south=side,west=none]":
+    "55:6",
+  "minecraft:redstone_wire[east=none,north=up,power=6,south=side,west=side]":
+    "55:6",
+  "minecraft:redstone_wire[east=none,north=up,power=6,south=side,west=up]":
+    "55:6",
+  "minecraft:redstone_wire[east=none,north=up,power=6,south=up,west=none]":
+    "55:6",
+  "minecraft:redstone_wire[east=none,north=up,power=6,south=up,west=side]":
+    "55:6",
+  "minecraft:redstone_wire[east=none,north=up,power=6,south=up,west=up]":
+    "55:6",
+  "minecraft:redstone_wire[east=side,north=none,power=6,south=none,west=none]":
+    "55:6",
+  "minecraft:redstone_wire[east=side,north=none,power=6,south=none,west=side]":
+    "55:6",
+  "minecraft:redstone_wire[east=side,north=none,power=6,south=none,west=up]":
+    "55:6",
+  "minecraft:redstone_wire[east=side,north=none,power=6,south=side,west=none]":
+    "55:6",
+  "minecraft:redstone_wire[east=side,north=none,power=6,south=side,west=side]":
+    "55:6",
+  "minecraft:redstone_wire[east=side,north=none,power=6,south=side,west=up]":
+    "55:6",
+  "minecraft:redstone_wire[east=side,north=none,power=6,south=up,west=none]":
+    "55:6",
+  "minecraft:redstone_wire[east=side,north=none,power=6,south=up,west=side]":
+    "55:6",
+  "minecraft:redstone_wire[east=side,north=none,power=6,south=up,west=up]":
+    "55:6",
+  "minecraft:redstone_wire[east=side,north=side,power=6,south=none,west=none]":
+    "55:6",
+  "minecraft:redstone_wire[east=side,north=side,power=6,south=none,west=side]":
+    "55:6",
+  "minecraft:redstone_wire[east=side,north=side,power=6,south=none,west=up]":
+    "55:6",
+  "minecraft:redstone_wire[east=side,north=side,power=6,south=side,west=none]":
+    "55:6",
+  "minecraft:redstone_wire[east=side,north=side,power=6,south=side,west=side]":
+    "55:6",
+  "minecraft:redstone_wire[east=side,north=side,power=6,south=side,west=up]":
+    "55:6",
+  "minecraft:redstone_wire[east=side,north=side,power=6,south=up,west=none]":
+    "55:6",
+  "minecraft:redstone_wire[east=side,north=side,power=6,south=up,west=side]":
+    "55:6",
+  "minecraft:redstone_wire[east=side,north=side,power=6,south=up,west=up]":
+    "55:6",
+  "minecraft:redstone_wire[east=side,north=up,power=6,south=none,west=none]":
+    "55:6",
+  "minecraft:redstone_wire[east=side,north=up,power=6,south=none,west=side]":
+    "55:6",
+  "minecraft:redstone_wire[east=side,north=up,power=6,south=none,west=up]":
+    "55:6",
+  "minecraft:redstone_wire[east=side,north=up,power=6,south=side,west=none]":
+    "55:6",
+  "minecraft:redstone_wire[east=side,north=up,power=6,south=side,west=side]":
+    "55:6",
+  "minecraft:redstone_wire[east=side,north=up,power=6,south=side,west=up]":
+    "55:6",
+  "minecraft:redstone_wire[east=side,north=up,power=6,south=up,west=none]":
+    "55:6",
+  "minecraft:redstone_wire[east=side,north=up,power=6,south=up,west=side]":
+    "55:6",
+  "minecraft:redstone_wire[east=side,north=up,power=6,south=up,west=up]":
+    "55:6",
+  "minecraft:redstone_wire[east=up,north=none,power=6,south=none,west=none]":
+    "55:6",
+  "minecraft:redstone_wire[east=up,north=none,power=6,south=none,west=side]":
+    "55:6",
+  "minecraft:redstone_wire[east=up,north=none,power=6,south=none,west=up]":
+    "55:6",
+  "minecraft:redstone_wire[east=up,north=none,power=6,south=side,west=none]":
+    "55:6",
+  "minecraft:redstone_wire[east=up,north=none,power=6,south=side,west=side]":
+    "55:6",
+  "minecraft:redstone_wire[east=up,north=none,power=6,south=side,west=up]":
+    "55:6",
+  "minecraft:redstone_wire[east=up,north=none,power=6,south=up,west=none]":
+    "55:6",
+  "minecraft:redstone_wire[east=up,north=none,power=6,south=up,west=side]":
+    "55:6",
+  "minecraft:redstone_wire[east=up,north=none,power=6,south=up,west=up]":
+    "55:6",
+  "minecraft:redstone_wire[east=up,north=side,power=6,south=none,west=none]":
+    "55:6",
+  "minecraft:redstone_wire[east=up,north=side,power=6,south=none,west=side]":
+    "55:6",
+  "minecraft:redstone_wire[east=up,north=side,power=6,south=none,west=up]":
+    "55:6",
+  "minecraft:redstone_wire[east=up,north=side,power=6,south=side,west=none]":
+    "55:6",
+  "minecraft:redstone_wire[east=up,north=side,power=6,south=side,west=side]":
+    "55:6",
+  "minecraft:redstone_wire[east=up,north=side,power=6,south=side,west=up]":
+    "55:6",
+  "minecraft:redstone_wire[east=up,north=side,power=6,south=up,west=none]":
+    "55:6",
+  "minecraft:redstone_wire[east=up,north=side,power=6,south=up,west=side]":
+    "55:6",
+  "minecraft:redstone_wire[east=up,north=side,power=6,south=up,west=up]":
+    "55:6",
+  "minecraft:redstone_wire[east=up,north=up,power=6,south=none,west=none]":
+    "55:6",
+  "minecraft:redstone_wire[east=up,north=up,power=6,south=none,west=side]":
+    "55:6",
+  "minecraft:redstone_wire[east=up,north=up,power=6,south=none,west=up]":
+    "55:6",
+  "minecraft:redstone_wire[east=up,north=up,power=6,south=side,west=none]":
+    "55:6",
+  "minecraft:redstone_wire[east=up,north=up,power=6,south=side,west=side]":
+    "55:6",
+  "minecraft:redstone_wire[east=up,north=up,power=6,south=side,west=up]":
+    "55:6",
+  "minecraft:redstone_wire[east=up,north=up,power=6,south=up,west=none]":
+    "55:6",
+  "minecraft:redstone_wire[east=up,north=up,power=6,south=up,west=side]":
+    "55:6",
   "minecraft:redstone_wire[east=up,north=up,power=6,south=up,west=up]": "55:6",
-  "minecraft:redstone_wire[east=none,north=none,power=7,south=none,west=none]": "55:7",
-  "minecraft:redstone_wire[east=none,north=none,power=7,south=none,west=side]": "55:7",
-  "minecraft:redstone_wire[east=none,north=none,power=7,south=none,west=up]": "55:7",
-  "minecraft:redstone_wire[east=none,north=none,power=7,south=side,west=none]": "55:7",
-  "minecraft:redstone_wire[east=none,north=none,power=7,south=side,west=side]": "55:7",
-  "minecraft:redstone_wire[east=none,north=none,power=7,south=side,west=up]": "55:7",
-  "minecraft:redstone_wire[east=none,north=none,power=7,south=up,west=none]": "55:7",
-  "minecraft:redstone_wire[east=none,north=none,power=7,south=up,west=side]": "55:7",
-  "minecraft:redstone_wire[east=none,north=none,power=7,south=up,west=up]": "55:7",
-  "minecraft:redstone_wire[east=none,north=side,power=7,south=none,west=none]": "55:7",
-  "minecraft:redstone_wire[east=none,north=side,power=7,south=none,west=side]": "55:7",
-  "minecraft:redstone_wire[east=none,north=side,power=7,south=none,west=up]": "55:7",
-  "minecraft:redstone_wire[east=none,north=side,power=7,south=side,west=none]": "55:7",
-  "minecraft:redstone_wire[east=none,north=side,power=7,south=side,west=side]": "55:7",
-  "minecraft:redstone_wire[east=none,north=side,power=7,south=side,west=up]": "55:7",
-  "minecraft:redstone_wire[east=none,north=side,power=7,south=up,west=none]": "55:7",
-  "minecraft:redstone_wire[east=none,north=side,power=7,south=up,west=side]": "55:7",
-  "minecraft:redstone_wire[east=none,north=side,power=7,south=up,west=up]": "55:7",
-  "minecraft:redstone_wire[east=none,north=up,power=7,south=none,west=none]": "55:7",
-  "minecraft:redstone_wire[east=none,north=up,power=7,south=none,west=side]": "55:7",
-  "minecraft:redstone_wire[east=none,north=up,power=7,south=none,west=up]": "55:7",
-  "minecraft:redstone_wire[east=none,north=up,power=7,south=side,west=none]": "55:7",
-  "minecraft:redstone_wire[east=none,north=up,power=7,south=side,west=side]": "55:7",
-  "minecraft:redstone_wire[east=none,north=up,power=7,south=side,west=up]": "55:7",
-  "minecraft:redstone_wire[east=none,north=up,power=7,south=up,west=none]": "55:7",
-  "minecraft:redstone_wire[east=none,north=up,power=7,south=up,west=side]": "55:7",
-  "minecraft:redstone_wire[east=none,north=up,power=7,south=up,west=up]": "55:7",
-  "minecraft:redstone_wire[east=side,north=none,power=7,south=none,west=none]": "55:7",
-  "minecraft:redstone_wire[east=side,north=none,power=7,south=none,west=side]": "55:7",
-  "minecraft:redstone_wire[east=side,north=none,power=7,south=none,west=up]": "55:7",
-  "minecraft:redstone_wire[east=side,north=none,power=7,south=side,west=none]": "55:7",
-  "minecraft:redstone_wire[east=side,north=none,power=7,south=side,west=side]": "55:7",
-  "minecraft:redstone_wire[east=side,north=none,power=7,south=side,west=up]": "55:7",
-  "minecraft:redstone_wire[east=side,north=none,power=7,south=up,west=none]": "55:7",
-  "minecraft:redstone_wire[east=side,north=none,power=7,south=up,west=side]": "55:7",
-  "minecraft:redstone_wire[east=side,north=none,power=7,south=up,west=up]": "55:7",
-  "minecraft:redstone_wire[east=side,north=side,power=7,south=none,west=none]": "55:7",
-  "minecraft:redstone_wire[east=side,north=side,power=7,south=none,west=side]": "55:7",
-  "minecraft:redstone_wire[east=side,north=side,power=7,south=none,west=up]": "55:7",
-  "minecraft:redstone_wire[east=side,north=side,power=7,south=side,west=none]": "55:7",
-  "minecraft:redstone_wire[east=side,north=side,power=7,south=side,west=side]": "55:7",
-  "minecraft:redstone_wire[east=side,north=side,power=7,south=side,west=up]": "55:7",
-  "minecraft:redstone_wire[east=side,north=side,power=7,south=up,west=none]": "55:7",
-  "minecraft:redstone_wire[east=side,north=side,power=7,south=up,west=side]": "55:7",
-  "minecraft:redstone_wire[east=side,north=side,power=7,south=up,west=up]": "55:7",
-  "minecraft:redstone_wire[east=side,north=up,power=7,south=none,west=none]": "55:7",
-  "minecraft:redstone_wire[east=side,north=up,power=7,south=none,west=side]": "55:7",
-  "minecraft:redstone_wire[east=side,north=up,power=7,south=none,west=up]": "55:7",
-  "minecraft:redstone_wire[east=side,north=up,power=7,south=side,west=none]": "55:7",
-  "minecraft:redstone_wire[east=side,north=up,power=7,south=side,west=side]": "55:7",
-  "minecraft:redstone_wire[east=side,north=up,power=7,south=side,west=up]": "55:7",
-  "minecraft:redstone_wire[east=side,north=up,power=7,south=up,west=none]": "55:7",
-  "minecraft:redstone_wire[east=side,north=up,power=7,south=up,west=side]": "55:7",
-  "minecraft:redstone_wire[east=side,north=up,power=7,south=up,west=up]": "55:7",
-  "minecraft:redstone_wire[east=up,north=none,power=7,south=none,west=none]": "55:7",
-  "minecraft:redstone_wire[east=up,north=none,power=7,south=none,west=side]": "55:7",
-  "minecraft:redstone_wire[east=up,north=none,power=7,south=none,west=up]": "55:7",
-  "minecraft:redstone_wire[east=up,north=none,power=7,south=side,west=none]": "55:7",
-  "minecraft:redstone_wire[east=up,north=none,power=7,south=side,west=side]": "55:7",
-  "minecraft:redstone_wire[east=up,north=none,power=7,south=side,west=up]": "55:7",
-  "minecraft:redstone_wire[east=up,north=none,power=7,south=up,west=none]": "55:7",
-  "minecraft:redstone_wire[east=up,north=none,power=7,south=up,west=side]": "55:7",
-  "minecraft:redstone_wire[east=up,north=none,power=7,south=up,west=up]": "55:7",
-  "minecraft:redstone_wire[east=up,north=side,power=7,south=none,west=none]": "55:7",
-  "minecraft:redstone_wire[east=up,north=side,power=7,south=none,west=side]": "55:7",
-  "minecraft:redstone_wire[east=up,north=side,power=7,south=none,west=up]": "55:7",
-  "minecraft:redstone_wire[east=up,north=side,power=7,south=side,west=none]": "55:7",
-  "minecraft:redstone_wire[east=up,north=side,power=7,south=side,west=side]": "55:7",
-  "minecraft:redstone_wire[east=up,north=side,power=7,south=side,west=up]": "55:7",
-  "minecraft:redstone_wire[east=up,north=side,power=7,south=up,west=none]": "55:7",
-  "minecraft:redstone_wire[east=up,north=side,power=7,south=up,west=side]": "55:7",
-  "minecraft:redstone_wire[east=up,north=side,power=7,south=up,west=up]": "55:7",
-  "minecraft:redstone_wire[east=up,north=up,power=7,south=none,west=none]": "55:7",
-  "minecraft:redstone_wire[east=up,north=up,power=7,south=none,west=side]": "55:7",
-  "minecraft:redstone_wire[east=up,north=up,power=7,south=none,west=up]": "55:7",
-  "minecraft:redstone_wire[east=up,north=up,power=7,south=side,west=none]": "55:7",
-  "minecraft:redstone_wire[east=up,north=up,power=7,south=side,west=side]": "55:7",
-  "minecraft:redstone_wire[east=up,north=up,power=7,south=side,west=up]": "55:7",
-  "minecraft:redstone_wire[east=up,north=up,power=7,south=up,west=none]": "55:7",
-  "minecraft:redstone_wire[east=up,north=up,power=7,south=up,west=side]": "55:7",
+  "minecraft:redstone_wire[east=none,north=none,power=7,south=none,west=none]":
+    "55:7",
+  "minecraft:redstone_wire[east=none,north=none,power=7,south=none,west=side]":
+    "55:7",
+  "minecraft:redstone_wire[east=none,north=none,power=7,south=none,west=up]":
+    "55:7",
+  "minecraft:redstone_wire[east=none,north=none,power=7,south=side,west=none]":
+    "55:7",
+  "minecraft:redstone_wire[east=none,north=none,power=7,south=side,west=side]":
+    "55:7",
+  "minecraft:redstone_wire[east=none,north=none,power=7,south=side,west=up]":
+    "55:7",
+  "minecraft:redstone_wire[east=none,north=none,power=7,south=up,west=none]":
+    "55:7",
+  "minecraft:redstone_wire[east=none,north=none,power=7,south=up,west=side]":
+    "55:7",
+  "minecraft:redstone_wire[east=none,north=none,power=7,south=up,west=up]":
+    "55:7",
+  "minecraft:redstone_wire[east=none,north=side,power=7,south=none,west=none]":
+    "55:7",
+  "minecraft:redstone_wire[east=none,north=side,power=7,south=none,west=side]":
+    "55:7",
+  "minecraft:redstone_wire[east=none,north=side,power=7,south=none,west=up]":
+    "55:7",
+  "minecraft:redstone_wire[east=none,north=side,power=7,south=side,west=none]":
+    "55:7",
+  "minecraft:redstone_wire[east=none,north=side,power=7,south=side,west=side]":
+    "55:7",
+  "minecraft:redstone_wire[east=none,north=side,power=7,south=side,west=up]":
+    "55:7",
+  "minecraft:redstone_wire[east=none,north=side,power=7,south=up,west=none]":
+    "55:7",
+  "minecraft:redstone_wire[east=none,north=side,power=7,south=up,west=side]":
+    "55:7",
+  "minecraft:redstone_wire[east=none,north=side,power=7,south=up,west=up]":
+    "55:7",
+  "minecraft:redstone_wire[east=none,north=up,power=7,south=none,west=none]":
+    "55:7",
+  "minecraft:redstone_wire[east=none,north=up,power=7,south=none,west=side]":
+    "55:7",
+  "minecraft:redstone_wire[east=none,north=up,power=7,south=none,west=up]":
+    "55:7",
+  "minecraft:redstone_wire[east=none,north=up,power=7,south=side,west=none]":
+    "55:7",
+  "minecraft:redstone_wire[east=none,north=up,power=7,south=side,west=side]":
+    "55:7",
+  "minecraft:redstone_wire[east=none,north=up,power=7,south=side,west=up]":
+    "55:7",
+  "minecraft:redstone_wire[east=none,north=up,power=7,south=up,west=none]":
+    "55:7",
+  "minecraft:redstone_wire[east=none,north=up,power=7,south=up,west=side]":
+    "55:7",
+  "minecraft:redstone_wire[east=none,north=up,power=7,south=up,west=up]":
+    "55:7",
+  "minecraft:redstone_wire[east=side,north=none,power=7,south=none,west=none]":
+    "55:7",
+  "minecraft:redstone_wire[east=side,north=none,power=7,south=none,west=side]":
+    "55:7",
+  "minecraft:redstone_wire[east=side,north=none,power=7,south=none,west=up]":
+    "55:7",
+  "minecraft:redstone_wire[east=side,north=none,power=7,south=side,west=none]":
+    "55:7",
+  "minecraft:redstone_wire[east=side,north=none,power=7,south=side,west=side]":
+    "55:7",
+  "minecraft:redstone_wire[east=side,north=none,power=7,south=side,west=up]":
+    "55:7",
+  "minecraft:redstone_wire[east=side,north=none,power=7,south=up,west=none]":
+    "55:7",
+  "minecraft:redstone_wire[east=side,north=none,power=7,south=up,west=side]":
+    "55:7",
+  "minecraft:redstone_wire[east=side,north=none,power=7,south=up,west=up]":
+    "55:7",
+  "minecraft:redstone_wire[east=side,north=side,power=7,south=none,west=none]":
+    "55:7",
+  "minecraft:redstone_wire[east=side,north=side,power=7,south=none,west=side]":
+    "55:7",
+  "minecraft:redstone_wire[east=side,north=side,power=7,south=none,west=up]":
+    "55:7",
+  "minecraft:redstone_wire[east=side,north=side,power=7,south=side,west=none]":
+    "55:7",
+  "minecraft:redstone_wire[east=side,north=side,power=7,south=side,west=side]":
+    "55:7",
+  "minecraft:redstone_wire[east=side,north=side,power=7,south=side,west=up]":
+    "55:7",
+  "minecraft:redstone_wire[east=side,north=side,power=7,south=up,west=none]":
+    "55:7",
+  "minecraft:redstone_wire[east=side,north=side,power=7,south=up,west=side]":
+    "55:7",
+  "minecraft:redstone_wire[east=side,north=side,power=7,south=up,west=up]":
+    "55:7",
+  "minecraft:redstone_wire[east=side,north=up,power=7,south=none,west=none]":
+    "55:7",
+  "minecraft:redstone_wire[east=side,north=up,power=7,south=none,west=side]":
+    "55:7",
+  "minecraft:redstone_wire[east=side,north=up,power=7,south=none,west=up]":
+    "55:7",
+  "minecraft:redstone_wire[east=side,north=up,power=7,south=side,west=none]":
+    "55:7",
+  "minecraft:redstone_wire[east=side,north=up,power=7,south=side,west=side]":
+    "55:7",
+  "minecraft:redstone_wire[east=side,north=up,power=7,south=side,west=up]":
+    "55:7",
+  "minecraft:redstone_wire[east=side,north=up,power=7,south=up,west=none]":
+    "55:7",
+  "minecraft:redstone_wire[east=side,north=up,power=7,south=up,west=side]":
+    "55:7",
+  "minecraft:redstone_wire[east=side,north=up,power=7,south=up,west=up]":
+    "55:7",
+  "minecraft:redstone_wire[east=up,north=none,power=7,south=none,west=none]":
+    "55:7",
+  "minecraft:redstone_wire[east=up,north=none,power=7,south=none,west=side]":
+    "55:7",
+  "minecraft:redstone_wire[east=up,north=none,power=7,south=none,west=up]":
+    "55:7",
+  "minecraft:redstone_wire[east=up,north=none,power=7,south=side,west=none]":
+    "55:7",
+  "minecraft:redstone_wire[east=up,north=none,power=7,south=side,west=side]":
+    "55:7",
+  "minecraft:redstone_wire[east=up,north=none,power=7,south=side,west=up]":
+    "55:7",
+  "minecraft:redstone_wire[east=up,north=none,power=7,south=up,west=none]":
+    "55:7",
+  "minecraft:redstone_wire[east=up,north=none,power=7,south=up,west=side]":
+    "55:7",
+  "minecraft:redstone_wire[east=up,north=none,power=7,south=up,west=up]":
+    "55:7",
+  "minecraft:redstone_wire[east=up,north=side,power=7,south=none,west=none]":
+    "55:7",
+  "minecraft:redstone_wire[east=up,north=side,power=7,south=none,west=side]":
+    "55:7",
+  "minecraft:redstone_wire[east=up,north=side,power=7,south=none,west=up]":
+    "55:7",
+  "minecraft:redstone_wire[east=up,north=side,power=7,south=side,west=none]":
+    "55:7",
+  "minecraft:redstone_wire[east=up,north=side,power=7,south=side,west=side]":
+    "55:7",
+  "minecraft:redstone_wire[east=up,north=side,power=7,south=side,west=up]":
+    "55:7",
+  "minecraft:redstone_wire[east=up,north=side,power=7,south=up,west=none]":
+    "55:7",
+  "minecraft:redstone_wire[east=up,north=side,power=7,south=up,west=side]":
+    "55:7",
+  "minecraft:redstone_wire[east=up,north=side,power=7,south=up,west=up]":
+    "55:7",
+  "minecraft:redstone_wire[east=up,north=up,power=7,south=none,west=none]":
+    "55:7",
+  "minecraft:redstone_wire[east=up,north=up,power=7,south=none,west=side]":
+    "55:7",
+  "minecraft:redstone_wire[east=up,north=up,power=7,south=none,west=up]":
+    "55:7",
+  "minecraft:redstone_wire[east=up,north=up,power=7,south=side,west=none]":
+    "55:7",
+  "minecraft:redstone_wire[east=up,north=up,power=7,south=side,west=side]":
+    "55:7",
+  "minecraft:redstone_wire[east=up,north=up,power=7,south=side,west=up]":
+    "55:7",
+  "minecraft:redstone_wire[east=up,north=up,power=7,south=up,west=none]":
+    "55:7",
+  "minecraft:redstone_wire[east=up,north=up,power=7,south=up,west=side]":
+    "55:7",
   "minecraft:redstone_wire[east=up,north=up,power=7,south=up,west=up]": "55:7",
-  "minecraft:redstone_wire[east=none,north=none,power=8,south=none,west=none]": "55:8",
-  "minecraft:redstone_wire[east=none,north=none,power=8,south=none,west=side]": "55:8",
-  "minecraft:redstone_wire[east=none,north=none,power=8,south=none,west=up]": "55:8",
-  "minecraft:redstone_wire[east=none,north=none,power=8,south=side,west=none]": "55:8",
-  "minecraft:redstone_wire[east=none,north=none,power=8,south=side,west=side]": "55:8",
-  "minecraft:redstone_wire[east=none,north=none,power=8,south=side,west=up]": "55:8",
-  "minecraft:redstone_wire[east=none,north=none,power=8,south=up,west=none]": "55:8",
-  "minecraft:redstone_wire[east=none,north=none,power=8,south=up,west=side]": "55:8",
-  "minecraft:redstone_wire[east=none,north=none,power=8,south=up,west=up]": "55:8",
-  "minecraft:redstone_wire[east=none,north=side,power=8,south=none,west=none]": "55:8",
-  "minecraft:redstone_wire[east=none,north=side,power=8,south=none,west=side]": "55:8",
-  "minecraft:redstone_wire[east=none,north=side,power=8,south=none,west=up]": "55:8",
-  "minecraft:redstone_wire[east=none,north=side,power=8,south=side,west=none]": "55:8",
-  "minecraft:redstone_wire[east=none,north=side,power=8,south=side,west=side]": "55:8",
-  "minecraft:redstone_wire[east=none,north=side,power=8,south=side,west=up]": "55:8",
-  "minecraft:redstone_wire[east=none,north=side,power=8,south=up,west=none]": "55:8",
-  "minecraft:redstone_wire[east=none,north=side,power=8,south=up,west=side]": "55:8",
-  "minecraft:redstone_wire[east=none,north=side,power=8,south=up,west=up]": "55:8",
-  "minecraft:redstone_wire[east=none,north=up,power=8,south=none,west=none]": "55:8",
-  "minecraft:redstone_wire[east=none,north=up,power=8,south=none,west=side]": "55:8",
-  "minecraft:redstone_wire[east=none,north=up,power=8,south=none,west=up]": "55:8",
-  "minecraft:redstone_wire[east=none,north=up,power=8,south=side,west=none]": "55:8",
-  "minecraft:redstone_wire[east=none,north=up,power=8,south=side,west=side]": "55:8",
-  "minecraft:redstone_wire[east=none,north=up,power=8,south=side,west=up]": "55:8",
-  "minecraft:redstone_wire[east=none,north=up,power=8,south=up,west=none]": "55:8",
-  "minecraft:redstone_wire[east=none,north=up,power=8,south=up,west=side]": "55:8",
-  "minecraft:redstone_wire[east=none,north=up,power=8,south=up,west=up]": "55:8",
-  "minecraft:redstone_wire[east=side,north=none,power=8,south=none,west=none]": "55:8",
-  "minecraft:redstone_wire[east=side,north=none,power=8,south=none,west=side]": "55:8",
-  "minecraft:redstone_wire[east=side,north=none,power=8,south=none,west=up]": "55:8",
-  "minecraft:redstone_wire[east=side,north=none,power=8,south=side,west=none]": "55:8",
-  "minecraft:redstone_wire[east=side,north=none,power=8,south=side,west=side]": "55:8",
-  "minecraft:redstone_wire[east=side,north=none,power=8,south=side,west=up]": "55:8",
-  "minecraft:redstone_wire[east=side,north=none,power=8,south=up,west=none]": "55:8",
-  "minecraft:redstone_wire[east=side,north=none,power=8,south=up,west=side]": "55:8",
-  "minecraft:redstone_wire[east=side,north=none,power=8,south=up,west=up]": "55:8",
-  "minecraft:redstone_wire[east=side,north=side,power=8,south=none,west=none]": "55:8",
-  "minecraft:redstone_wire[east=side,north=side,power=8,south=none,west=side]": "55:8",
-  "minecraft:redstone_wire[east=side,north=side,power=8,south=none,west=up]": "55:8",
-  "minecraft:redstone_wire[east=side,north=side,power=8,south=side,west=none]": "55:8",
-  "minecraft:redstone_wire[east=side,north=side,power=8,south=side,west=side]": "55:8",
-  "minecraft:redstone_wire[east=side,north=side,power=8,south=side,west=up]": "55:8",
-  "minecraft:redstone_wire[east=side,north=side,power=8,south=up,west=none]": "55:8",
-  "minecraft:redstone_wire[east=side,north=side,power=8,south=up,west=side]": "55:8",
-  "minecraft:redstone_wire[east=side,north=side,power=8,south=up,west=up]": "55:8",
-  "minecraft:redstone_wire[east=side,north=up,power=8,south=none,west=none]": "55:8",
-  "minecraft:redstone_wire[east=side,north=up,power=8,south=none,west=side]": "55:8",
-  "minecraft:redstone_wire[east=side,north=up,power=8,south=none,west=up]": "55:8",
-  "minecraft:redstone_wire[east=side,north=up,power=8,south=side,west=none]": "55:8",
-  "minecraft:redstone_wire[east=side,north=up,power=8,south=side,west=side]": "55:8",
-  "minecraft:redstone_wire[east=side,north=up,power=8,south=side,west=up]": "55:8",
-  "minecraft:redstone_wire[east=side,north=up,power=8,south=up,west=none]": "55:8",
-  "minecraft:redstone_wire[east=side,north=up,power=8,south=up,west=side]": "55:8",
-  "minecraft:redstone_wire[east=side,north=up,power=8,south=up,west=up]": "55:8",
-  "minecraft:redstone_wire[east=up,north=none,power=8,south=none,west=none]": "55:8",
-  "minecraft:redstone_wire[east=up,north=none,power=8,south=none,west=side]": "55:8",
-  "minecraft:redstone_wire[east=up,north=none,power=8,south=none,west=up]": "55:8",
-  "minecraft:redstone_wire[east=up,north=none,power=8,south=side,west=none]": "55:8",
-  "minecraft:redstone_wire[east=up,north=none,power=8,south=side,west=side]": "55:8",
-  "minecraft:redstone_wire[east=up,north=none,power=8,south=side,west=up]": "55:8",
-  "minecraft:redstone_wire[east=up,north=none,power=8,south=up,west=none]": "55:8",
-  "minecraft:redstone_wire[east=up,north=none,power=8,south=up,west=side]": "55:8",
-  "minecraft:redstone_wire[east=up,north=none,power=8,south=up,west=up]": "55:8",
-  "minecraft:redstone_wire[east=up,north=side,power=8,south=none,west=none]": "55:8",
-  "minecraft:redstone_wire[east=up,north=side,power=8,south=none,west=side]": "55:8",
-  "minecraft:redstone_wire[east=up,north=side,power=8,south=none,west=up]": "55:8",
-  "minecraft:redstone_wire[east=up,north=side,power=8,south=side,west=none]": "55:8",
-  "minecraft:redstone_wire[east=up,north=side,power=8,south=side,west=side]": "55:8",
-  "minecraft:redstone_wire[east=up,north=side,power=8,south=side,west=up]": "55:8",
-  "minecraft:redstone_wire[east=up,north=side,power=8,south=up,west=none]": "55:8",
-  "minecraft:redstone_wire[east=up,north=side,power=8,south=up,west=side]": "55:8",
-  "minecraft:redstone_wire[east=up,north=side,power=8,south=up,west=up]": "55:8",
-  "minecraft:redstone_wire[east=up,north=up,power=8,south=none,west=none]": "55:8",
-  "minecraft:redstone_wire[east=up,north=up,power=8,south=none,west=side]": "55:8",
-  "minecraft:redstone_wire[east=up,north=up,power=8,south=none,west=up]": "55:8",
-  "minecraft:redstone_wire[east=up,north=up,power=8,south=side,west=none]": "55:8",
-  "minecraft:redstone_wire[east=up,north=up,power=8,south=side,west=side]": "55:8",
-  "minecraft:redstone_wire[east=up,north=up,power=8,south=side,west=up]": "55:8",
-  "minecraft:redstone_wire[east=up,north=up,power=8,south=up,west=none]": "55:8",
-  "minecraft:redstone_wire[east=up,north=up,power=8,south=up,west=side]": "55:8",
+  "minecraft:redstone_wire[east=none,north=none,power=8,south=none,west=none]":
+    "55:8",
+  "minecraft:redstone_wire[east=none,north=none,power=8,south=none,west=side]":
+    "55:8",
+  "minecraft:redstone_wire[east=none,north=none,power=8,south=none,west=up]":
+    "55:8",
+  "minecraft:redstone_wire[east=none,north=none,power=8,south=side,west=none]":
+    "55:8",
+  "minecraft:redstone_wire[east=none,north=none,power=8,south=side,west=side]":
+    "55:8",
+  "minecraft:redstone_wire[east=none,north=none,power=8,south=side,west=up]":
+    "55:8",
+  "minecraft:redstone_wire[east=none,north=none,power=8,south=up,west=none]":
+    "55:8",
+  "minecraft:redstone_wire[east=none,north=none,power=8,south=up,west=side]":
+    "55:8",
+  "minecraft:redstone_wire[east=none,north=none,power=8,south=up,west=up]":
+    "55:8",
+  "minecraft:redstone_wire[east=none,north=side,power=8,south=none,west=none]":
+    "55:8",
+  "minecraft:redstone_wire[east=none,north=side,power=8,south=none,west=side]":
+    "55:8",
+  "minecraft:redstone_wire[east=none,north=side,power=8,south=none,west=up]":
+    "55:8",
+  "minecraft:redstone_wire[east=none,north=side,power=8,south=side,west=none]":
+    "55:8",
+  "minecraft:redstone_wire[east=none,north=side,power=8,south=side,west=side]":
+    "55:8",
+  "minecraft:redstone_wire[east=none,north=side,power=8,south=side,west=up]":
+    "55:8",
+  "minecraft:redstone_wire[east=none,north=side,power=8,south=up,west=none]":
+    "55:8",
+  "minecraft:redstone_wire[east=none,north=side,power=8,south=up,west=side]":
+    "55:8",
+  "minecraft:redstone_wire[east=none,north=side,power=8,south=up,west=up]":
+    "55:8",
+  "minecraft:redstone_wire[east=none,north=up,power=8,south=none,west=none]":
+    "55:8",
+  "minecraft:redstone_wire[east=none,north=up,power=8,south=none,west=side]":
+    "55:8",
+  "minecraft:redstone_wire[east=none,north=up,power=8,south=none,west=up]":
+    "55:8",
+  "minecraft:redstone_wire[east=none,north=up,power=8,south=side,west=none]":
+    "55:8",
+  "minecraft:redstone_wire[east=none,north=up,power=8,south=side,west=side]":
+    "55:8",
+  "minecraft:redstone_wire[east=none,north=up,power=8,south=side,west=up]":
+    "55:8",
+  "minecraft:redstone_wire[east=none,north=up,power=8,south=up,west=none]":
+    "55:8",
+  "minecraft:redstone_wire[east=none,north=up,power=8,south=up,west=side]":
+    "55:8",
+  "minecraft:redstone_wire[east=none,north=up,power=8,south=up,west=up]":
+    "55:8",
+  "minecraft:redstone_wire[east=side,north=none,power=8,south=none,west=none]":
+    "55:8",
+  "minecraft:redstone_wire[east=side,north=none,power=8,south=none,west=side]":
+    "55:8",
+  "minecraft:redstone_wire[east=side,north=none,power=8,south=none,west=up]":
+    "55:8",
+  "minecraft:redstone_wire[east=side,north=none,power=8,south=side,west=none]":
+    "55:8",
+  "minecraft:redstone_wire[east=side,north=none,power=8,south=side,west=side]":
+    "55:8",
+  "minecraft:redstone_wire[east=side,north=none,power=8,south=side,west=up]":
+    "55:8",
+  "minecraft:redstone_wire[east=side,north=none,power=8,south=up,west=none]":
+    "55:8",
+  "minecraft:redstone_wire[east=side,north=none,power=8,south=up,west=side]":
+    "55:8",
+  "minecraft:redstone_wire[east=side,north=none,power=8,south=up,west=up]":
+    "55:8",
+  "minecraft:redstone_wire[east=side,north=side,power=8,south=none,west=none]":
+    "55:8",
+  "minecraft:redstone_wire[east=side,north=side,power=8,south=none,west=side]":
+    "55:8",
+  "minecraft:redstone_wire[east=side,north=side,power=8,south=none,west=up]":
+    "55:8",
+  "minecraft:redstone_wire[east=side,north=side,power=8,south=side,west=none]":
+    "55:8",
+  "minecraft:redstone_wire[east=side,north=side,power=8,south=side,west=side]":
+    "55:8",
+  "minecraft:redstone_wire[east=side,north=side,power=8,south=side,west=up]":
+    "55:8",
+  "minecraft:redstone_wire[east=side,north=side,power=8,south=up,west=none]":
+    "55:8",
+  "minecraft:redstone_wire[east=side,north=side,power=8,south=up,west=side]":
+    "55:8",
+  "minecraft:redstone_wire[east=side,north=side,power=8,south=up,west=up]":
+    "55:8",
+  "minecraft:redstone_wire[east=side,north=up,power=8,south=none,west=none]":
+    "55:8",
+  "minecraft:redstone_wire[east=side,north=up,power=8,south=none,west=side]":
+    "55:8",
+  "minecraft:redstone_wire[east=side,north=up,power=8,south=none,west=up]":
+    "55:8",
+  "minecraft:redstone_wire[east=side,north=up,power=8,south=side,west=none]":
+    "55:8",
+  "minecraft:redstone_wire[east=side,north=up,power=8,south=side,west=side]":
+    "55:8",
+  "minecraft:redstone_wire[east=side,north=up,power=8,south=side,west=up]":
+    "55:8",
+  "minecraft:redstone_wire[east=side,north=up,power=8,south=up,west=none]":
+    "55:8",
+  "minecraft:redstone_wire[east=side,north=up,power=8,south=up,west=side]":
+    "55:8",
+  "minecraft:redstone_wire[east=side,north=up,power=8,south=up,west=up]":
+    "55:8",
+  "minecraft:redstone_wire[east=up,north=none,power=8,south=none,west=none]":
+    "55:8",
+  "minecraft:redstone_wire[east=up,north=none,power=8,south=none,west=side]":
+    "55:8",
+  "minecraft:redstone_wire[east=up,north=none,power=8,south=none,west=up]":
+    "55:8",
+  "minecraft:redstone_wire[east=up,north=none,power=8,south=side,west=none]":
+    "55:8",
+  "minecraft:redstone_wire[east=up,north=none,power=8,south=side,west=side]":
+    "55:8",
+  "minecraft:redstone_wire[east=up,north=none,power=8,south=side,west=up]":
+    "55:8",
+  "minecraft:redstone_wire[east=up,north=none,power=8,south=up,west=none]":
+    "55:8",
+  "minecraft:redstone_wire[east=up,north=none,power=8,south=up,west=side]":
+    "55:8",
+  "minecraft:redstone_wire[east=up,north=none,power=8,south=up,west=up]":
+    "55:8",
+  "minecraft:redstone_wire[east=up,north=side,power=8,south=none,west=none]":
+    "55:8",
+  "minecraft:redstone_wire[east=up,north=side,power=8,south=none,west=side]":
+    "55:8",
+  "minecraft:redstone_wire[east=up,north=side,power=8,south=none,west=up]":
+    "55:8",
+  "minecraft:redstone_wire[east=up,north=side,power=8,south=side,west=none]":
+    "55:8",
+  "minecraft:redstone_wire[east=up,north=side,power=8,south=side,west=side]":
+    "55:8",
+  "minecraft:redstone_wire[east=up,north=side,power=8,south=side,west=up]":
+    "55:8",
+  "minecraft:redstone_wire[east=up,north=side,power=8,south=up,west=none]":
+    "55:8",
+  "minecraft:redstone_wire[east=up,north=side,power=8,south=up,west=side]":
+    "55:8",
+  "minecraft:redstone_wire[east=up,north=side,power=8,south=up,west=up]":
+    "55:8",
+  "minecraft:redstone_wire[east=up,north=up,power=8,south=none,west=none]":
+    "55:8",
+  "minecraft:redstone_wire[east=up,north=up,power=8,south=none,west=side]":
+    "55:8",
+  "minecraft:redstone_wire[east=up,north=up,power=8,south=none,west=up]":
+    "55:8",
+  "minecraft:redstone_wire[east=up,north=up,power=8,south=side,west=none]":
+    "55:8",
+  "minecraft:redstone_wire[east=up,north=up,power=8,south=side,west=side]":
+    "55:8",
+  "minecraft:redstone_wire[east=up,north=up,power=8,south=side,west=up]":
+    "55:8",
+  "minecraft:redstone_wire[east=up,north=up,power=8,south=up,west=none]":
+    "55:8",
+  "minecraft:redstone_wire[east=up,north=up,power=8,south=up,west=side]":
+    "55:8",
   "minecraft:redstone_wire[east=up,north=up,power=8,south=up,west=up]": "55:8",
-  "minecraft:redstone_wire[east=none,north=none,power=9,south=none,west=none]": "55:9",
-  "minecraft:redstone_wire[east=none,north=none,power=9,south=none,west=side]": "55:9",
-  "minecraft:redstone_wire[east=none,north=none,power=9,south=none,west=up]": "55:9",
-  "minecraft:redstone_wire[east=none,north=none,power=9,south=side,west=none]": "55:9",
-  "minecraft:redstone_wire[east=none,north=none,power=9,south=side,west=side]": "55:9",
-  "minecraft:redstone_wire[east=none,north=none,power=9,south=side,west=up]": "55:9",
-  "minecraft:redstone_wire[east=none,north=none,power=9,south=up,west=none]": "55:9",
-  "minecraft:redstone_wire[east=none,north=none,power=9,south=up,west=side]": "55:9",
-  "minecraft:redstone_wire[east=none,north=none,power=9,south=up,west=up]": "55:9",
-  "minecraft:redstone_wire[east=none,north=side,power=9,south=none,west=none]": "55:9",
-  "minecraft:redstone_wire[east=none,north=side,power=9,south=none,west=side]": "55:9",
-  "minecraft:redstone_wire[east=none,north=side,power=9,south=none,west=up]": "55:9",
-  "minecraft:redstone_wire[east=none,north=side,power=9,south=side,west=none]": "55:9",
-  "minecraft:redstone_wire[east=none,north=side,power=9,south=side,west=side]": "55:9",
-  "minecraft:redstone_wire[east=none,north=side,power=9,south=side,west=up]": "55:9",
-  "minecraft:redstone_wire[east=none,north=side,power=9,south=up,west=none]": "55:9",
-  "minecraft:redstone_wire[east=none,north=side,power=9,south=up,west=side]": "55:9",
-  "minecraft:redstone_wire[east=none,north=side,power=9,south=up,west=up]": "55:9",
-  "minecraft:redstone_wire[east=none,north=up,power=9,south=none,west=none]": "55:9",
-  "minecraft:redstone_wire[east=none,north=up,power=9,south=none,west=side]": "55:9",
-  "minecraft:redstone_wire[east=none,north=up,power=9,south=none,west=up]": "55:9",
-  "minecraft:redstone_wire[east=none,north=up,power=9,south=side,west=none]": "55:9",
-  "minecraft:redstone_wire[east=none,north=up,power=9,south=side,west=side]": "55:9",
-  "minecraft:redstone_wire[east=none,north=up,power=9,south=side,west=up]": "55:9",
-  "minecraft:redstone_wire[east=none,north=up,power=9,south=up,west=none]": "55:9",
-  "minecraft:redstone_wire[east=none,north=up,power=9,south=up,west=side]": "55:9",
-  "minecraft:redstone_wire[east=none,north=up,power=9,south=up,west=up]": "55:9",
-  "minecraft:redstone_wire[east=side,north=none,power=9,south=none,west=none]": "55:9",
-  "minecraft:redstone_wire[east=side,north=none,power=9,south=none,west=side]": "55:9",
-  "minecraft:redstone_wire[east=side,north=none,power=9,south=none,west=up]": "55:9",
-  "minecraft:redstone_wire[east=side,north=none,power=9,south=side,west=none]": "55:9",
-  "minecraft:redstone_wire[east=side,north=none,power=9,south=side,west=side]": "55:9",
-  "minecraft:redstone_wire[east=side,north=none,power=9,south=side,west=up]": "55:9",
-  "minecraft:redstone_wire[east=side,north=none,power=9,south=up,west=none]": "55:9",
-  "minecraft:redstone_wire[east=side,north=none,power=9,south=up,west=side]": "55:9",
-  "minecraft:redstone_wire[east=side,north=none,power=9,south=up,west=up]": "55:9",
-  "minecraft:redstone_wire[east=side,north=side,power=9,south=none,west=none]": "55:9",
-  "minecraft:redstone_wire[east=side,north=side,power=9,south=none,west=side]": "55:9",
-  "minecraft:redstone_wire[east=side,north=side,power=9,south=none,west=up]": "55:9",
-  "minecraft:redstone_wire[east=side,north=side,power=9,south=side,west=none]": "55:9",
-  "minecraft:redstone_wire[east=side,north=side,power=9,south=side,west=side]": "55:9",
-  "minecraft:redstone_wire[east=side,north=side,power=9,south=side,west=up]": "55:9",
-  "minecraft:redstone_wire[east=side,north=side,power=9,south=up,west=none]": "55:9",
-  "minecraft:redstone_wire[east=side,north=side,power=9,south=up,west=side]": "55:9",
-  "minecraft:redstone_wire[east=side,north=side,power=9,south=up,west=up]": "55:9",
-  "minecraft:redstone_wire[east=side,north=up,power=9,south=none,west=none]": "55:9",
-  "minecraft:redstone_wire[east=side,north=up,power=9,south=none,west=side]": "55:9",
-  "minecraft:redstone_wire[east=side,north=up,power=9,south=none,west=up]": "55:9",
-  "minecraft:redstone_wire[east=side,north=up,power=9,south=side,west=none]": "55:9",
-  "minecraft:redstone_wire[east=side,north=up,power=9,south=side,west=side]": "55:9",
-  "minecraft:redstone_wire[east=side,north=up,power=9,south=side,west=up]": "55:9",
-  "minecraft:redstone_wire[east=side,north=up,power=9,south=up,west=none]": "55:9",
-  "minecraft:redstone_wire[east=side,north=up,power=9,south=up,west=side]": "55:9",
-  "minecraft:redstone_wire[east=side,north=up,power=9,south=up,west=up]": "55:9",
-  "minecraft:redstone_wire[east=up,north=none,power=9,south=none,west=none]": "55:9",
-  "minecraft:redstone_wire[east=up,north=none,power=9,south=none,west=side]": "55:9",
-  "minecraft:redstone_wire[east=up,north=none,power=9,south=none,west=up]": "55:9",
-  "minecraft:redstone_wire[east=up,north=none,power=9,south=side,west=none]": "55:9",
-  "minecraft:redstone_wire[east=up,north=none,power=9,south=side,west=side]": "55:9",
-  "minecraft:redstone_wire[east=up,north=none,power=9,south=side,west=up]": "55:9",
-  "minecraft:redstone_wire[east=up,north=none,power=9,south=up,west=none]": "55:9",
-  "minecraft:redstone_wire[east=up,north=none,power=9,south=up,west=side]": "55:9",
-  "minecraft:redstone_wire[east=up,north=none,power=9,south=up,west=up]": "55:9",
-  "minecraft:redstone_wire[east=up,north=side,power=9,south=none,west=none]": "55:9",
-  "minecraft:redstone_wire[east=up,north=side,power=9,south=none,west=side]": "55:9",
-  "minecraft:redstone_wire[east=up,north=side,power=9,south=none,west=up]": "55:9",
-  "minecraft:redstone_wire[east=up,north=side,power=9,south=side,west=none]": "55:9",
-  "minecraft:redstone_wire[east=up,north=side,power=9,south=side,west=side]": "55:9",
-  "minecraft:redstone_wire[east=up,north=side,power=9,south=side,west=up]": "55:9",
-  "minecraft:redstone_wire[east=up,north=side,power=9,south=up,west=none]": "55:9",
-  "minecraft:redstone_wire[east=up,north=side,power=9,south=up,west=side]": "55:9",
-  "minecraft:redstone_wire[east=up,north=side,power=9,south=up,west=up]": "55:9",
-  "minecraft:redstone_wire[east=up,north=up,power=9,south=none,west=none]": "55:9",
-  "minecraft:redstone_wire[east=up,north=up,power=9,south=none,west=side]": "55:9",
-  "minecraft:redstone_wire[east=up,north=up,power=9,south=none,west=up]": "55:9",
-  "minecraft:redstone_wire[east=up,north=up,power=9,south=side,west=none]": "55:9",
-  "minecraft:redstone_wire[east=up,north=up,power=9,south=side,west=side]": "55:9",
-  "minecraft:redstone_wire[east=up,north=up,power=9,south=side,west=up]": "55:9",
-  "minecraft:redstone_wire[east=up,north=up,power=9,south=up,west=none]": "55:9",
-  "minecraft:redstone_wire[east=up,north=up,power=9,south=up,west=side]": "55:9",
+  "minecraft:redstone_wire[east=none,north=none,power=9,south=none,west=none]":
+    "55:9",
+  "minecraft:redstone_wire[east=none,north=none,power=9,south=none,west=side]":
+    "55:9",
+  "minecraft:redstone_wire[east=none,north=none,power=9,south=none,west=up]":
+    "55:9",
+  "minecraft:redstone_wire[east=none,north=none,power=9,south=side,west=none]":
+    "55:9",
+  "minecraft:redstone_wire[east=none,north=none,power=9,south=side,west=side]":
+    "55:9",
+  "minecraft:redstone_wire[east=none,north=none,power=9,south=side,west=up]":
+    "55:9",
+  "minecraft:redstone_wire[east=none,north=none,power=9,south=up,west=none]":
+    "55:9",
+  "minecraft:redstone_wire[east=none,north=none,power=9,south=up,west=side]":
+    "55:9",
+  "minecraft:redstone_wire[east=none,north=none,power=9,south=up,west=up]":
+    "55:9",
+  "minecraft:redstone_wire[east=none,north=side,power=9,south=none,west=none]":
+    "55:9",
+  "minecraft:redstone_wire[east=none,north=side,power=9,south=none,west=side]":
+    "55:9",
+  "minecraft:redstone_wire[east=none,north=side,power=9,south=none,west=up]":
+    "55:9",
+  "minecraft:redstone_wire[east=none,north=side,power=9,south=side,west=none]":
+    "55:9",
+  "minecraft:redstone_wire[east=none,north=side,power=9,south=side,west=side]":
+    "55:9",
+  "minecraft:redstone_wire[east=none,north=side,power=9,south=side,west=up]":
+    "55:9",
+  "minecraft:redstone_wire[east=none,north=side,power=9,south=up,west=none]":
+    "55:9",
+  "minecraft:redstone_wire[east=none,north=side,power=9,south=up,west=side]":
+    "55:9",
+  "minecraft:redstone_wire[east=none,north=side,power=9,south=up,west=up]":
+    "55:9",
+  "minecraft:redstone_wire[east=none,north=up,power=9,south=none,west=none]":
+    "55:9",
+  "minecraft:redstone_wire[east=none,north=up,power=9,south=none,west=side]":
+    "55:9",
+  "minecraft:redstone_wire[east=none,north=up,power=9,south=none,west=up]":
+    "55:9",
+  "minecraft:redstone_wire[east=none,north=up,power=9,south=side,west=none]":
+    "55:9",
+  "minecraft:redstone_wire[east=none,north=up,power=9,south=side,west=side]":
+    "55:9",
+  "minecraft:redstone_wire[east=none,north=up,power=9,south=side,west=up]":
+    "55:9",
+  "minecraft:redstone_wire[east=none,north=up,power=9,south=up,west=none]":
+    "55:9",
+  "minecraft:redstone_wire[east=none,north=up,power=9,south=up,west=side]":
+    "55:9",
+  "minecraft:redstone_wire[east=none,north=up,power=9,south=up,west=up]":
+    "55:9",
+  "minecraft:redstone_wire[east=side,north=none,power=9,south=none,west=none]":
+    "55:9",
+  "minecraft:redstone_wire[east=side,north=none,power=9,south=none,west=side]":
+    "55:9",
+  "minecraft:redstone_wire[east=side,north=none,power=9,south=none,west=up]":
+    "55:9",
+  "minecraft:redstone_wire[east=side,north=none,power=9,south=side,west=none]":
+    "55:9",
+  "minecraft:redstone_wire[east=side,north=none,power=9,south=side,west=side]":
+    "55:9",
+  "minecraft:redstone_wire[east=side,north=none,power=9,south=side,west=up]":
+    "55:9",
+  "minecraft:redstone_wire[east=side,north=none,power=9,south=up,west=none]":
+    "55:9",
+  "minecraft:redstone_wire[east=side,north=none,power=9,south=up,west=side]":
+    "55:9",
+  "minecraft:redstone_wire[east=side,north=none,power=9,south=up,west=up]":
+    "55:9",
+  "minecraft:redstone_wire[east=side,north=side,power=9,south=none,west=none]":
+    "55:9",
+  "minecraft:redstone_wire[east=side,north=side,power=9,south=none,west=side]":
+    "55:9",
+  "minecraft:redstone_wire[east=side,north=side,power=9,south=none,west=up]":
+    "55:9",
+  "minecraft:redstone_wire[east=side,north=side,power=9,south=side,west=none]":
+    "55:9",
+  "minecraft:redstone_wire[east=side,north=side,power=9,south=side,west=side]":
+    "55:9",
+  "minecraft:redstone_wire[east=side,north=side,power=9,south=side,west=up]":
+    "55:9",
+  "minecraft:redstone_wire[east=side,north=side,power=9,south=up,west=none]":
+    "55:9",
+  "minecraft:redstone_wire[east=side,north=side,power=9,south=up,west=side]":
+    "55:9",
+  "minecraft:redstone_wire[east=side,north=side,power=9,south=up,west=up]":
+    "55:9",
+  "minecraft:redstone_wire[east=side,north=up,power=9,south=none,west=none]":
+    "55:9",
+  "minecraft:redstone_wire[east=side,north=up,power=9,south=none,west=side]":
+    "55:9",
+  "minecraft:redstone_wire[east=side,north=up,power=9,south=none,west=up]":
+    "55:9",
+  "minecraft:redstone_wire[east=side,north=up,power=9,south=side,west=none]":
+    "55:9",
+  "minecraft:redstone_wire[east=side,north=up,power=9,south=side,west=side]":
+    "55:9",
+  "minecraft:redstone_wire[east=side,north=up,power=9,south=side,west=up]":
+    "55:9",
+  "minecraft:redstone_wire[east=side,north=up,power=9,south=up,west=none]":
+    "55:9",
+  "minecraft:redstone_wire[east=side,north=up,power=9,south=up,west=side]":
+    "55:9",
+  "minecraft:redstone_wire[east=side,north=up,power=9,south=up,west=up]":
+    "55:9",
+  "minecraft:redstone_wire[east=up,north=none,power=9,south=none,west=none]":
+    "55:9",
+  "minecraft:redstone_wire[east=up,north=none,power=9,south=none,west=side]":
+    "55:9",
+  "minecraft:redstone_wire[east=up,north=none,power=9,south=none,west=up]":
+    "55:9",
+  "minecraft:redstone_wire[east=up,north=none,power=9,south=side,west=none]":
+    "55:9",
+  "minecraft:redstone_wire[east=up,north=none,power=9,south=side,west=side]":
+    "55:9",
+  "minecraft:redstone_wire[east=up,north=none,power=9,south=side,west=up]":
+    "55:9",
+  "minecraft:redstone_wire[east=up,north=none,power=9,south=up,west=none]":
+    "55:9",
+  "minecraft:redstone_wire[east=up,north=none,power=9,south=up,west=side]":
+    "55:9",
+  "minecraft:redstone_wire[east=up,north=none,power=9,south=up,west=up]":
+    "55:9",
+  "minecraft:redstone_wire[east=up,north=side,power=9,south=none,west=none]":
+    "55:9",
+  "minecraft:redstone_wire[east=up,north=side,power=9,south=none,west=side]":
+    "55:9",
+  "minecraft:redstone_wire[east=up,north=side,power=9,south=none,west=up]":
+    "55:9",
+  "minecraft:redstone_wire[east=up,north=side,power=9,south=side,west=none]":
+    "55:9",
+  "minecraft:redstone_wire[east=up,north=side,power=9,south=side,west=side]":
+    "55:9",
+  "minecraft:redstone_wire[east=up,north=side,power=9,south=side,west=up]":
+    "55:9",
+  "minecraft:redstone_wire[east=up,north=side,power=9,south=up,west=none]":
+    "55:9",
+  "minecraft:redstone_wire[east=up,north=side,power=9,south=up,west=side]":
+    "55:9",
+  "minecraft:redstone_wire[east=up,north=side,power=9,south=up,west=up]":
+    "55:9",
+  "minecraft:redstone_wire[east=up,north=up,power=9,south=none,west=none]":
+    "55:9",
+  "minecraft:redstone_wire[east=up,north=up,power=9,south=none,west=side]":
+    "55:9",
+  "minecraft:redstone_wire[east=up,north=up,power=9,south=none,west=up]":
+    "55:9",
+  "minecraft:redstone_wire[east=up,north=up,power=9,south=side,west=none]":
+    "55:9",
+  "minecraft:redstone_wire[east=up,north=up,power=9,south=side,west=side]":
+    "55:9",
+  "minecraft:redstone_wire[east=up,north=up,power=9,south=side,west=up]":
+    "55:9",
+  "minecraft:redstone_wire[east=up,north=up,power=9,south=up,west=none]":
+    "55:9",
+  "minecraft:redstone_wire[east=up,north=up,power=9,south=up,west=side]":
+    "55:9",
   "minecraft:redstone_wire[east=up,north=up,power=9,south=up,west=up]": "55:9",
-  "minecraft:redstone_wire[east=none,north=none,power=10,south=none,west=none]": "55:10",
-  "minecraft:redstone_wire[east=none,north=none,power=10,south=none,west=side]": "55:10",
-  "minecraft:redstone_wire[east=none,north=none,power=10,south=none,west=up]": "55:10",
-  "minecraft:redstone_wire[east=none,north=none,power=10,south=side,west=none]": "55:10",
-  "minecraft:redstone_wire[east=none,north=none,power=10,south=side,west=side]": "55:10",
-  "minecraft:redstone_wire[east=none,north=none,power=10,south=side,west=up]": "55:10",
-  "minecraft:redstone_wire[east=none,north=none,power=10,south=up,west=none]": "55:10",
-  "minecraft:redstone_wire[east=none,north=none,power=10,south=up,west=side]": "55:10",
-  "minecraft:redstone_wire[east=none,north=none,power=10,south=up,west=up]": "55:10",
-  "minecraft:redstone_wire[east=none,north=side,power=10,south=none,west=none]": "55:10",
-  "minecraft:redstone_wire[east=none,north=side,power=10,south=none,west=side]": "55:10",
-  "minecraft:redstone_wire[east=none,north=side,power=10,south=none,west=up]": "55:10",
-  "minecraft:redstone_wire[east=none,north=side,power=10,south=side,west=none]": "55:10",
-  "minecraft:redstone_wire[east=none,north=side,power=10,south=side,west=side]": "55:10",
-  "minecraft:redstone_wire[east=none,north=side,power=10,south=side,west=up]": "55:10",
-  "minecraft:redstone_wire[east=none,north=side,power=10,south=up,west=none]": "55:10",
-  "minecraft:redstone_wire[east=none,north=side,power=10,south=up,west=side]": "55:10",
-  "minecraft:redstone_wire[east=none,north=side,power=10,south=up,west=up]": "55:10",
-  "minecraft:redstone_wire[east=none,north=up,power=10,south=none,west=none]": "55:10",
-  "minecraft:redstone_wire[east=none,north=up,power=10,south=none,west=side]": "55:10",
-  "minecraft:redstone_wire[east=none,north=up,power=10,south=none,west=up]": "55:10",
-  "minecraft:redstone_wire[east=none,north=up,power=10,south=side,west=none]": "55:10",
-  "minecraft:redstone_wire[east=none,north=up,power=10,south=side,west=side]": "55:10",
-  "minecraft:redstone_wire[east=none,north=up,power=10,south=side,west=up]": "55:10",
-  "minecraft:redstone_wire[east=none,north=up,power=10,south=up,west=none]": "55:10",
-  "minecraft:redstone_wire[east=none,north=up,power=10,south=up,west=side]": "55:10",
-  "minecraft:redstone_wire[east=none,north=up,power=10,south=up,west=up]": "55:10",
-  "minecraft:redstone_wire[east=side,north=none,power=10,south=none,west=none]": "55:10",
-  "minecraft:redstone_wire[east=side,north=none,power=10,south=none,west=side]": "55:10",
-  "minecraft:redstone_wire[east=side,north=none,power=10,south=none,west=up]": "55:10",
-  "minecraft:redstone_wire[east=side,north=none,power=10,south=side,west=none]": "55:10",
-  "minecraft:redstone_wire[east=side,north=none,power=10,south=side,west=side]": "55:10",
-  "minecraft:redstone_wire[east=side,north=none,power=10,south=side,west=up]": "55:10",
-  "minecraft:redstone_wire[east=side,north=none,power=10,south=up,west=none]": "55:10",
-  "minecraft:redstone_wire[east=side,north=none,power=10,south=up,west=side]": "55:10",
-  "minecraft:redstone_wire[east=side,north=none,power=10,south=up,west=up]": "55:10",
-  "minecraft:redstone_wire[east=side,north=side,power=10,south=none,west=none]": "55:10",
-  "minecraft:redstone_wire[east=side,north=side,power=10,south=none,west=side]": "55:10",
-  "minecraft:redstone_wire[east=side,north=side,power=10,south=none,west=up]": "55:10",
-  "minecraft:redstone_wire[east=side,north=side,power=10,south=side,west=none]": "55:10",
-  "minecraft:redstone_wire[east=side,north=side,power=10,south=side,west=side]": "55:10",
-  "minecraft:redstone_wire[east=side,north=side,power=10,south=side,west=up]": "55:10",
-  "minecraft:redstone_wire[east=side,north=side,power=10,south=up,west=none]": "55:10",
-  "minecraft:redstone_wire[east=side,north=side,power=10,south=up,west=side]": "55:10",
-  "minecraft:redstone_wire[east=side,north=side,power=10,south=up,west=up]": "55:10",
-  "minecraft:redstone_wire[east=side,north=up,power=10,south=none,west=none]": "55:10",
-  "minecraft:redstone_wire[east=side,north=up,power=10,south=none,west=side]": "55:10",
-  "minecraft:redstone_wire[east=side,north=up,power=10,south=none,west=up]": "55:10",
-  "minecraft:redstone_wire[east=side,north=up,power=10,south=side,west=none]": "55:10",
-  "minecraft:redstone_wire[east=side,north=up,power=10,south=side,west=side]": "55:10",
-  "minecraft:redstone_wire[east=side,north=up,power=10,south=side,west=up]": "55:10",
-  "minecraft:redstone_wire[east=side,north=up,power=10,south=up,west=none]": "55:10",
-  "minecraft:redstone_wire[east=side,north=up,power=10,south=up,west=side]": "55:10",
-  "minecraft:redstone_wire[east=side,north=up,power=10,south=up,west=up]": "55:10",
-  "minecraft:redstone_wire[east=up,north=none,power=10,south=none,west=none]": "55:10",
-  "minecraft:redstone_wire[east=up,north=none,power=10,south=none,west=side]": "55:10",
-  "minecraft:redstone_wire[east=up,north=none,power=10,south=none,west=up]": "55:10",
-  "minecraft:redstone_wire[east=up,north=none,power=10,south=side,west=none]": "55:10",
-  "minecraft:redstone_wire[east=up,north=none,power=10,south=side,west=side]": "55:10",
-  "minecraft:redstone_wire[east=up,north=none,power=10,south=side,west=up]": "55:10",
-  "minecraft:redstone_wire[east=up,north=none,power=10,south=up,west=none]": "55:10",
-  "minecraft:redstone_wire[east=up,north=none,power=10,south=up,west=side]": "55:10",
-  "minecraft:redstone_wire[east=up,north=none,power=10,south=up,west=up]": "55:10",
-  "minecraft:redstone_wire[east=up,north=side,power=10,south=none,west=none]": "55:10",
-  "minecraft:redstone_wire[east=up,north=side,power=10,south=none,west=side]": "55:10",
-  "minecraft:redstone_wire[east=up,north=side,power=10,south=none,west=up]": "55:10",
-  "minecraft:redstone_wire[east=up,north=side,power=10,south=side,west=none]": "55:10",
-  "minecraft:redstone_wire[east=up,north=side,power=10,south=side,west=side]": "55:10",
-  "minecraft:redstone_wire[east=up,north=side,power=10,south=side,west=up]": "55:10",
-  "minecraft:redstone_wire[east=up,north=side,power=10,south=up,west=none]": "55:10",
-  "minecraft:redstone_wire[east=up,north=side,power=10,south=up,west=side]": "55:10",
-  "minecraft:redstone_wire[east=up,north=side,power=10,south=up,west=up]": "55:10",
-  "minecraft:redstone_wire[east=up,north=up,power=10,south=none,west=none]": "55:10",
-  "minecraft:redstone_wire[east=up,north=up,power=10,south=none,west=side]": "55:10",
-  "minecraft:redstone_wire[east=up,north=up,power=10,south=none,west=up]": "55:10",
-  "minecraft:redstone_wire[east=up,north=up,power=10,south=side,west=none]": "55:10",
-  "minecraft:redstone_wire[east=up,north=up,power=10,south=side,west=side]": "55:10",
-  "minecraft:redstone_wire[east=up,north=up,power=10,south=side,west=up]": "55:10",
-  "minecraft:redstone_wire[east=up,north=up,power=10,south=up,west=none]": "55:10",
-  "minecraft:redstone_wire[east=up,north=up,power=10,south=up,west=side]": "55:10",
-  "minecraft:redstone_wire[east=up,north=up,power=10,south=up,west=up]": "55:10",
-  "minecraft:redstone_wire[east=none,north=none,power=11,south=none,west=none]": "55:11",
-  "minecraft:redstone_wire[east=none,north=none,power=11,south=none,west=side]": "55:11",
-  "minecraft:redstone_wire[east=none,north=none,power=11,south=none,west=up]": "55:11",
-  "minecraft:redstone_wire[east=none,north=none,power=11,south=side,west=none]": "55:11",
-  "minecraft:redstone_wire[east=none,north=none,power=11,south=side,west=side]": "55:11",
-  "minecraft:redstone_wire[east=none,north=none,power=11,south=side,west=up]": "55:11",
-  "minecraft:redstone_wire[east=none,north=none,power=11,south=up,west=none]": "55:11",
-  "minecraft:redstone_wire[east=none,north=none,power=11,south=up,west=side]": "55:11",
-  "minecraft:redstone_wire[east=none,north=none,power=11,south=up,west=up]": "55:11",
-  "minecraft:redstone_wire[east=none,north=side,power=11,south=none,west=none]": "55:11",
-  "minecraft:redstone_wire[east=none,north=side,power=11,south=none,west=side]": "55:11",
-  "minecraft:redstone_wire[east=none,north=side,power=11,south=none,west=up]": "55:11",
-  "minecraft:redstone_wire[east=none,north=side,power=11,south=side,west=none]": "55:11",
-  "minecraft:redstone_wire[east=none,north=side,power=11,south=side,west=side]": "55:11",
-  "minecraft:redstone_wire[east=none,north=side,power=11,south=side,west=up]": "55:11",
-  "minecraft:redstone_wire[east=none,north=side,power=11,south=up,west=none]": "55:11",
-  "minecraft:redstone_wire[east=none,north=side,power=11,south=up,west=side]": "55:11",
-  "minecraft:redstone_wire[east=none,north=side,power=11,south=up,west=up]": "55:11",
-  "minecraft:redstone_wire[east=none,north=up,power=11,south=none,west=none]": "55:11",
-  "minecraft:redstone_wire[east=none,north=up,power=11,south=none,west=side]": "55:11",
-  "minecraft:redstone_wire[east=none,north=up,power=11,south=none,west=up]": "55:11",
-  "minecraft:redstone_wire[east=none,north=up,power=11,south=side,west=none]": "55:11",
-  "minecraft:redstone_wire[east=none,north=up,power=11,south=side,west=side]": "55:11",
-  "minecraft:redstone_wire[east=none,north=up,power=11,south=side,west=up]": "55:11",
-  "minecraft:redstone_wire[east=none,north=up,power=11,south=up,west=none]": "55:11",
-  "minecraft:redstone_wire[east=none,north=up,power=11,south=up,west=side]": "55:11",
-  "minecraft:redstone_wire[east=none,north=up,power=11,south=up,west=up]": "55:11",
-  "minecraft:redstone_wire[east=side,north=none,power=11,south=none,west=none]": "55:11",
-  "minecraft:redstone_wire[east=side,north=none,power=11,south=none,west=side]": "55:11",
-  "minecraft:redstone_wire[east=side,north=none,power=11,south=none,west=up]": "55:11",
-  "minecraft:redstone_wire[east=side,north=none,power=11,south=side,west=none]": "55:11",
-  "minecraft:redstone_wire[east=side,north=none,power=11,south=side,west=side]": "55:11",
-  "minecraft:redstone_wire[east=side,north=none,power=11,south=side,west=up]": "55:11",
-  "minecraft:redstone_wire[east=side,north=none,power=11,south=up,west=none]": "55:11",
-  "minecraft:redstone_wire[east=side,north=none,power=11,south=up,west=side]": "55:11",
-  "minecraft:redstone_wire[east=side,north=none,power=11,south=up,west=up]": "55:11",
-  "minecraft:redstone_wire[east=side,north=side,power=11,south=none,west=none]": "55:11",
-  "minecraft:redstone_wire[east=side,north=side,power=11,south=none,west=side]": "55:11",
-  "minecraft:redstone_wire[east=side,north=side,power=11,south=none,west=up]": "55:11",
-  "minecraft:redstone_wire[east=side,north=side,power=11,south=side,west=none]": "55:11",
-  "minecraft:redstone_wire[east=side,north=side,power=11,south=side,west=side]": "55:11",
-  "minecraft:redstone_wire[east=side,north=side,power=11,south=side,west=up]": "55:11",
-  "minecraft:redstone_wire[east=side,north=side,power=11,south=up,west=none]": "55:11",
-  "minecraft:redstone_wire[east=side,north=side,power=11,south=up,west=side]": "55:11",
-  "minecraft:redstone_wire[east=side,north=side,power=11,south=up,west=up]": "55:11",
-  "minecraft:redstone_wire[east=side,north=up,power=11,south=none,west=none]": "55:11",
-  "minecraft:redstone_wire[east=side,north=up,power=11,south=none,west=side]": "55:11",
-  "minecraft:redstone_wire[east=side,north=up,power=11,south=none,west=up]": "55:11",
-  "minecraft:redstone_wire[east=side,north=up,power=11,south=side,west=none]": "55:11",
-  "minecraft:redstone_wire[east=side,north=up,power=11,south=side,west=side]": "55:11",
-  "minecraft:redstone_wire[east=side,north=up,power=11,south=side,west=up]": "55:11",
-  "minecraft:redstone_wire[east=side,north=up,power=11,south=up,west=none]": "55:11",
-  "minecraft:redstone_wire[east=side,north=up,power=11,south=up,west=side]": "55:11",
-  "minecraft:redstone_wire[east=side,north=up,power=11,south=up,west=up]": "55:11",
-  "minecraft:redstone_wire[east=up,north=none,power=11,south=none,west=none]": "55:11",
-  "minecraft:redstone_wire[east=up,north=none,power=11,south=none,west=side]": "55:11",
-  "minecraft:redstone_wire[east=up,north=none,power=11,south=none,west=up]": "55:11",
-  "minecraft:redstone_wire[east=up,north=none,power=11,south=side,west=none]": "55:11",
-  "minecraft:redstone_wire[east=up,north=none,power=11,south=side,west=side]": "55:11",
-  "minecraft:redstone_wire[east=up,north=none,power=11,south=side,west=up]": "55:11",
-  "minecraft:redstone_wire[east=up,north=none,power=11,south=up,west=none]": "55:11",
-  "minecraft:redstone_wire[east=up,north=none,power=11,south=up,west=side]": "55:11",
-  "minecraft:redstone_wire[east=up,north=none,power=11,south=up,west=up]": "55:11",
-  "minecraft:redstone_wire[east=up,north=side,power=11,south=none,west=none]": "55:11",
-  "minecraft:redstone_wire[east=up,north=side,power=11,south=none,west=side]": "55:11",
-  "minecraft:redstone_wire[east=up,north=side,power=11,south=none,west=up]": "55:11",
-  "minecraft:redstone_wire[east=up,north=side,power=11,south=side,west=none]": "55:11",
-  "minecraft:redstone_wire[east=up,north=side,power=11,south=side,west=side]": "55:11",
-  "minecraft:redstone_wire[east=up,north=side,power=11,south=side,west=up]": "55:11",
-  "minecraft:redstone_wire[east=up,north=side,power=11,south=up,west=none]": "55:11",
-  "minecraft:redstone_wire[east=up,north=side,power=11,south=up,west=side]": "55:11",
-  "minecraft:redstone_wire[east=up,north=side,power=11,south=up,west=up]": "55:11",
-  "minecraft:redstone_wire[east=up,north=up,power=11,south=none,west=none]": "55:11",
-  "minecraft:redstone_wire[east=up,north=up,power=11,south=none,west=side]": "55:11",
-  "minecraft:redstone_wire[east=up,north=up,power=11,south=none,west=up]": "55:11",
-  "minecraft:redstone_wire[east=up,north=up,power=11,south=side,west=none]": "55:11",
-  "minecraft:redstone_wire[east=up,north=up,power=11,south=side,west=side]": "55:11",
-  "minecraft:redstone_wire[east=up,north=up,power=11,south=side,west=up]": "55:11",
-  "minecraft:redstone_wire[east=up,north=up,power=11,south=up,west=none]": "55:11",
-  "minecraft:redstone_wire[east=up,north=up,power=11,south=up,west=side]": "55:11",
-  "minecraft:redstone_wire[east=up,north=up,power=11,south=up,west=up]": "55:11",
-  "minecraft:redstone_wire[east=none,north=none,power=12,south=none,west=none]": "55:12",
-  "minecraft:redstone_wire[east=none,north=none,power=12,south=none,west=side]": "55:12",
-  "minecraft:redstone_wire[east=none,north=none,power=12,south=none,west=up]": "55:12",
-  "minecraft:redstone_wire[east=none,north=none,power=12,south=side,west=none]": "55:12",
-  "minecraft:redstone_wire[east=none,north=none,power=12,south=side,west=side]": "55:12",
-  "minecraft:redstone_wire[east=none,north=none,power=12,south=side,west=up]": "55:12",
-  "minecraft:redstone_wire[east=none,north=none,power=12,south=up,west=none]": "55:12",
-  "minecraft:redstone_wire[east=none,north=none,power=12,south=up,west=side]": "55:12",
-  "minecraft:redstone_wire[east=none,north=none,power=12,south=up,west=up]": "55:12",
-  "minecraft:redstone_wire[east=none,north=side,power=12,south=none,west=none]": "55:12",
-  "minecraft:redstone_wire[east=none,north=side,power=12,south=none,west=side]": "55:12",
-  "minecraft:redstone_wire[east=none,north=side,power=12,south=none,west=up]": "55:12",
-  "minecraft:redstone_wire[east=none,north=side,power=12,south=side,west=none]": "55:12",
-  "minecraft:redstone_wire[east=none,north=side,power=12,south=side,west=side]": "55:12",
-  "minecraft:redstone_wire[east=none,north=side,power=12,south=side,west=up]": "55:12",
-  "minecraft:redstone_wire[east=none,north=side,power=12,south=up,west=none]": "55:12",
-  "minecraft:redstone_wire[east=none,north=side,power=12,south=up,west=side]": "55:12",
-  "minecraft:redstone_wire[east=none,north=side,power=12,south=up,west=up]": "55:12",
-  "minecraft:redstone_wire[east=none,north=up,power=12,south=none,west=none]": "55:12",
-  "minecraft:redstone_wire[east=none,north=up,power=12,south=none,west=side]": "55:12",
-  "minecraft:redstone_wire[east=none,north=up,power=12,south=none,west=up]": "55:12",
-  "minecraft:redstone_wire[east=none,north=up,power=12,south=side,west=none]": "55:12",
-  "minecraft:redstone_wire[east=none,north=up,power=12,south=side,west=side]": "55:12",
-  "minecraft:redstone_wire[east=none,north=up,power=12,south=side,west=up]": "55:12",
-  "minecraft:redstone_wire[east=none,north=up,power=12,south=up,west=none]": "55:12",
-  "minecraft:redstone_wire[east=none,north=up,power=12,south=up,west=side]": "55:12",
-  "minecraft:redstone_wire[east=none,north=up,power=12,south=up,west=up]": "55:12",
-  "minecraft:redstone_wire[east=side,north=none,power=12,south=none,west=none]": "55:12",
-  "minecraft:redstone_wire[east=side,north=none,power=12,south=none,west=side]": "55:12",
-  "minecraft:redstone_wire[east=side,north=none,power=12,south=none,west=up]": "55:12",
-  "minecraft:redstone_wire[east=side,north=none,power=12,south=side,west=none]": "55:12",
-  "minecraft:redstone_wire[east=side,north=none,power=12,south=side,west=side]": "55:12",
-  "minecraft:redstone_wire[east=side,north=none,power=12,south=side,west=up]": "55:12",
-  "minecraft:redstone_wire[east=side,north=none,power=12,south=up,west=none]": "55:12",
-  "minecraft:redstone_wire[east=side,north=none,power=12,south=up,west=side]": "55:12",
-  "minecraft:redstone_wire[east=side,north=none,power=12,south=up,west=up]": "55:12",
-  "minecraft:redstone_wire[east=side,north=side,power=12,south=none,west=none]": "55:12",
-  "minecraft:redstone_wire[east=side,north=side,power=12,south=none,west=side]": "55:12",
-  "minecraft:redstone_wire[east=side,north=side,power=12,south=none,west=up]": "55:12",
-  "minecraft:redstone_wire[east=side,north=side,power=12,south=side,west=none]": "55:12",
-  "minecraft:redstone_wire[east=side,north=side,power=12,south=side,west=side]": "55:12",
-  "minecraft:redstone_wire[east=side,north=side,power=12,south=side,west=up]": "55:12",
-  "minecraft:redstone_wire[east=side,north=side,power=12,south=up,west=none]": "55:12",
-  "minecraft:redstone_wire[east=side,north=side,power=12,south=up,west=side]": "55:12",
-  "minecraft:redstone_wire[east=side,north=side,power=12,south=up,west=up]": "55:12",
-  "minecraft:redstone_wire[east=side,north=up,power=12,south=none,west=none]": "55:12",
-  "minecraft:redstone_wire[east=side,north=up,power=12,south=none,west=side]": "55:12",
-  "minecraft:redstone_wire[east=side,north=up,power=12,south=none,west=up]": "55:12",
-  "minecraft:redstone_wire[east=side,north=up,power=12,south=side,west=none]": "55:12",
-  "minecraft:redstone_wire[east=side,north=up,power=12,south=side,west=side]": "55:12",
-  "minecraft:redstone_wire[east=side,north=up,power=12,south=side,west=up]": "55:12",
-  "minecraft:redstone_wire[east=side,north=up,power=12,south=up,west=none]": "55:12",
-  "minecraft:redstone_wire[east=side,north=up,power=12,south=up,west=side]": "55:12",
-  "minecraft:redstone_wire[east=side,north=up,power=12,south=up,west=up]": "55:12",
-  "minecraft:redstone_wire[east=up,north=none,power=12,south=none,west=none]": "55:12",
-  "minecraft:redstone_wire[east=up,north=none,power=12,south=none,west=side]": "55:12",
-  "minecraft:redstone_wire[east=up,north=none,power=12,south=none,west=up]": "55:12",
-  "minecraft:redstone_wire[east=up,north=none,power=12,south=side,west=none]": "55:12",
-  "minecraft:redstone_wire[east=up,north=none,power=12,south=side,west=side]": "55:12",
-  "minecraft:redstone_wire[east=up,north=none,power=12,south=side,west=up]": "55:12",
-  "minecraft:redstone_wire[east=up,north=none,power=12,south=up,west=none]": "55:12",
-  "minecraft:redstone_wire[east=up,north=none,power=12,south=up,west=side]": "55:12",
-  "minecraft:redstone_wire[east=up,north=none,power=12,south=up,west=up]": "55:12",
-  "minecraft:redstone_wire[east=up,north=side,power=12,south=none,west=none]": "55:12",
-  "minecraft:redstone_wire[east=up,north=side,power=12,south=none,west=side]": "55:12",
-  "minecraft:redstone_wire[east=up,north=side,power=12,south=none,west=up]": "55:12",
-  "minecraft:redstone_wire[east=up,north=side,power=12,south=side,west=none]": "55:12",
-  "minecraft:redstone_wire[east=up,north=side,power=12,south=side,west=side]": "55:12",
-  "minecraft:redstone_wire[east=up,north=side,power=12,south=side,west=up]": "55:12",
-  "minecraft:redstone_wire[east=up,north=side,power=12,south=up,west=none]": "55:12",
-  "minecraft:redstone_wire[east=up,north=side,power=12,south=up,west=side]": "55:12",
-  "minecraft:redstone_wire[east=up,north=side,power=12,south=up,west=up]": "55:12",
-  "minecraft:redstone_wire[east=up,north=up,power=12,south=none,west=none]": "55:12",
-  "minecraft:redstone_wire[east=up,north=up,power=12,south=none,west=side]": "55:12",
-  "minecraft:redstone_wire[east=up,north=up,power=12,south=none,west=up]": "55:12",
-  "minecraft:redstone_wire[east=up,north=up,power=12,south=side,west=none]": "55:12",
-  "minecraft:redstone_wire[east=up,north=up,power=12,south=side,west=side]": "55:12",
-  "minecraft:redstone_wire[east=up,north=up,power=12,south=side,west=up]": "55:12",
-  "minecraft:redstone_wire[east=up,north=up,power=12,south=up,west=none]": "55:12",
-  "minecraft:redstone_wire[east=up,north=up,power=12,south=up,west=side]": "55:12",
-  "minecraft:redstone_wire[east=up,north=up,power=12,south=up,west=up]": "55:12",
-  "minecraft:redstone_wire[east=none,north=none,power=13,south=none,west=none]": "55:13",
-  "minecraft:redstone_wire[east=none,north=none,power=13,south=none,west=side]": "55:13",
-  "minecraft:redstone_wire[east=none,north=none,power=13,south=none,west=up]": "55:13",
-  "minecraft:redstone_wire[east=none,north=none,power=13,south=side,west=none]": "55:13",
-  "minecraft:redstone_wire[east=none,north=none,power=13,south=side,west=side]": "55:13",
-  "minecraft:redstone_wire[east=none,north=none,power=13,south=side,west=up]": "55:13",
-  "minecraft:redstone_wire[east=none,north=none,power=13,south=up,west=none]": "55:13",
-  "minecraft:redstone_wire[east=none,north=none,power=13,south=up,west=side]": "55:13",
-  "minecraft:redstone_wire[east=none,north=none,power=13,south=up,west=up]": "55:13",
-  "minecraft:redstone_wire[east=none,north=side,power=13,south=none,west=none]": "55:13",
-  "minecraft:redstone_wire[east=none,north=side,power=13,south=none,west=side]": "55:13",
-  "minecraft:redstone_wire[east=none,north=side,power=13,south=none,west=up]": "55:13",
-  "minecraft:redstone_wire[east=none,north=side,power=13,south=side,west=none]": "55:13",
-  "minecraft:redstone_wire[east=none,north=side,power=13,south=side,west=side]": "55:13",
-  "minecraft:redstone_wire[east=none,north=side,power=13,south=side,west=up]": "55:13",
-  "minecraft:redstone_wire[east=none,north=side,power=13,south=up,west=none]": "55:13",
-  "minecraft:redstone_wire[east=none,north=side,power=13,south=up,west=side]": "55:13",
-  "minecraft:redstone_wire[east=none,north=side,power=13,south=up,west=up]": "55:13",
-  "minecraft:redstone_wire[east=none,north=up,power=13,south=none,west=none]": "55:13",
-  "minecraft:redstone_wire[east=none,north=up,power=13,south=none,west=side]": "55:13",
-  "minecraft:redstone_wire[east=none,north=up,power=13,south=none,west=up]": "55:13",
-  "minecraft:redstone_wire[east=none,north=up,power=13,south=side,west=none]": "55:13",
-  "minecraft:redstone_wire[east=none,north=up,power=13,south=side,west=side]": "55:13",
-  "minecraft:redstone_wire[east=none,north=up,power=13,south=side,west=up]": "55:13",
-  "minecraft:redstone_wire[east=none,north=up,power=13,south=up,west=none]": "55:13",
-  "minecraft:redstone_wire[east=none,north=up,power=13,south=up,west=side]": "55:13",
-  "minecraft:redstone_wire[east=none,north=up,power=13,south=up,west=up]": "55:13",
-  "minecraft:redstone_wire[east=side,north=none,power=13,south=none,west=none]": "55:13",
-  "minecraft:redstone_wire[east=side,north=none,power=13,south=none,west=side]": "55:13",
-  "minecraft:redstone_wire[east=side,north=none,power=13,south=none,west=up]": "55:13",
-  "minecraft:redstone_wire[east=side,north=none,power=13,south=side,west=none]": "55:13",
-  "minecraft:redstone_wire[east=side,north=none,power=13,south=side,west=side]": "55:13",
-  "minecraft:redstone_wire[east=side,north=none,power=13,south=side,west=up]": "55:13",
-  "minecraft:redstone_wire[east=side,north=none,power=13,south=up,west=none]": "55:13",
-  "minecraft:redstone_wire[east=side,north=none,power=13,south=up,west=side]": "55:13",
-  "minecraft:redstone_wire[east=side,north=none,power=13,south=up,west=up]": "55:13",
-  "minecraft:redstone_wire[east=side,north=side,power=13,south=none,west=none]": "55:13",
-  "minecraft:redstone_wire[east=side,north=side,power=13,south=none,west=side]": "55:13",
-  "minecraft:redstone_wire[east=side,north=side,power=13,south=none,west=up]": "55:13",
-  "minecraft:redstone_wire[east=side,north=side,power=13,south=side,west=none]": "55:13",
-  "minecraft:redstone_wire[east=side,north=side,power=13,south=side,west=side]": "55:13",
-  "minecraft:redstone_wire[east=side,north=side,power=13,south=side,west=up]": "55:13",
-  "minecraft:redstone_wire[east=side,north=side,power=13,south=up,west=none]": "55:13",
-  "minecraft:redstone_wire[east=side,north=side,power=13,south=up,west=side]": "55:13",
-  "minecraft:redstone_wire[east=side,north=side,power=13,south=up,west=up]": "55:13",
-  "minecraft:redstone_wire[east=side,north=up,power=13,south=none,west=none]": "55:13",
-  "minecraft:redstone_wire[east=side,north=up,power=13,south=none,west=side]": "55:13",
-  "minecraft:redstone_wire[east=side,north=up,power=13,south=none,west=up]": "55:13",
-  "minecraft:redstone_wire[east=side,north=up,power=13,south=side,west=none]": "55:13",
-  "minecraft:redstone_wire[east=side,north=up,power=13,south=side,west=side]": "55:13",
-  "minecraft:redstone_wire[east=side,north=up,power=13,south=side,west=up]": "55:13",
-  "minecraft:redstone_wire[east=side,north=up,power=13,south=up,west=none]": "55:13",
-  "minecraft:redstone_wire[east=side,north=up,power=13,south=up,west=side]": "55:13",
-  "minecraft:redstone_wire[east=side,north=up,power=13,south=up,west=up]": "55:13",
-  "minecraft:redstone_wire[east=up,north=none,power=13,south=none,west=none]": "55:13",
-  "minecraft:redstone_wire[east=up,north=none,power=13,south=none,west=side]": "55:13",
-  "minecraft:redstone_wire[east=up,north=none,power=13,south=none,west=up]": "55:13",
-  "minecraft:redstone_wire[east=up,north=none,power=13,south=side,west=none]": "55:13",
-  "minecraft:redstone_wire[east=up,north=none,power=13,south=side,west=side]": "55:13",
-  "minecraft:redstone_wire[east=up,north=none,power=13,south=side,west=up]": "55:13",
-  "minecraft:redstone_wire[east=up,north=none,power=13,south=up,west=none]": "55:13",
-  "minecraft:redstone_wire[east=up,north=none,power=13,south=up,west=side]": "55:13",
-  "minecraft:redstone_wire[east=up,north=none,power=13,south=up,west=up]": "55:13",
-  "minecraft:redstone_wire[east=up,north=side,power=13,south=none,west=none]": "55:13",
-  "minecraft:redstone_wire[east=up,north=side,power=13,south=none,west=side]": "55:13",
-  "minecraft:redstone_wire[east=up,north=side,power=13,south=none,west=up]": "55:13",
-  "minecraft:redstone_wire[east=up,north=side,power=13,south=side,west=none]": "55:13",
-  "minecraft:redstone_wire[east=up,north=side,power=13,south=side,west=side]": "55:13",
-  "minecraft:redstone_wire[east=up,north=side,power=13,south=side,west=up]": "55:13",
-  "minecraft:redstone_wire[east=up,north=side,power=13,south=up,west=none]": "55:13",
-  "minecraft:redstone_wire[east=up,north=side,power=13,south=up,west=side]": "55:13",
-  "minecraft:redstone_wire[east=up,north=side,power=13,south=up,west=up]": "55:13",
-  "minecraft:redstone_wire[east=up,north=up,power=13,south=none,west=none]": "55:13",
-  "minecraft:redstone_wire[east=up,north=up,power=13,south=none,west=side]": "55:13",
-  "minecraft:redstone_wire[east=up,north=up,power=13,south=none,west=up]": "55:13",
-  "minecraft:redstone_wire[east=up,north=up,power=13,south=side,west=none]": "55:13",
-  "minecraft:redstone_wire[east=up,north=up,power=13,south=side,west=side]": "55:13",
-  "minecraft:redstone_wire[east=up,north=up,power=13,south=side,west=up]": "55:13",
-  "minecraft:redstone_wire[east=up,north=up,power=13,south=up,west=none]": "55:13",
-  "minecraft:redstone_wire[east=up,north=up,power=13,south=up,west=side]": "55:13",
-  "minecraft:redstone_wire[east=up,north=up,power=13,south=up,west=up]": "55:13",
-  "minecraft:redstone_wire[east=none,north=none,power=14,south=none,west=none]": "55:14",
-  "minecraft:redstone_wire[east=none,north=none,power=14,south=none,west=side]": "55:14",
-  "minecraft:redstone_wire[east=none,north=none,power=14,south=none,west=up]": "55:14",
-  "minecraft:redstone_wire[east=none,north=none,power=14,south=side,west=none]": "55:14",
-  "minecraft:redstone_wire[east=none,north=none,power=14,south=side,west=side]": "55:14",
-  "minecraft:redstone_wire[east=none,north=none,power=14,south=side,west=up]": "55:14",
-  "minecraft:redstone_wire[east=none,north=none,power=14,south=up,west=none]": "55:14",
-  "minecraft:redstone_wire[east=none,north=none,power=14,south=up,west=side]": "55:14",
-  "minecraft:redstone_wire[east=none,north=none,power=14,south=up,west=up]": "55:14",
-  "minecraft:redstone_wire[east=none,north=side,power=14,south=none,west=none]": "55:14",
-  "minecraft:redstone_wire[east=none,north=side,power=14,south=none,west=side]": "55:14",
-  "minecraft:redstone_wire[east=none,north=side,power=14,south=none,west=up]": "55:14",
-  "minecraft:redstone_wire[east=none,north=side,power=14,south=side,west=none]": "55:14",
-  "minecraft:redstone_wire[east=none,north=side,power=14,south=side,west=side]": "55:14",
-  "minecraft:redstone_wire[east=none,north=side,power=14,south=side,west=up]": "55:14",
-  "minecraft:redstone_wire[east=none,north=side,power=14,south=up,west=none]": "55:14",
-  "minecraft:redstone_wire[east=none,north=side,power=14,south=up,west=side]": "55:14",
-  "minecraft:redstone_wire[east=none,north=side,power=14,south=up,west=up]": "55:14",
-  "minecraft:redstone_wire[east=none,north=up,power=14,south=none,west=none]": "55:14",
-  "minecraft:redstone_wire[east=none,north=up,power=14,south=none,west=side]": "55:14",
-  "minecraft:redstone_wire[east=none,north=up,power=14,south=none,west=up]": "55:14",
-  "minecraft:redstone_wire[east=none,north=up,power=14,south=side,west=none]": "55:14",
-  "minecraft:redstone_wire[east=none,north=up,power=14,south=side,west=side]": "55:14",
-  "minecraft:redstone_wire[east=none,north=up,power=14,south=side,west=up]": "55:14",
-  "minecraft:redstone_wire[east=none,north=up,power=14,south=up,west=none]": "55:14",
-  "minecraft:redstone_wire[east=none,north=up,power=14,south=up,west=side]": "55:14",
-  "minecraft:redstone_wire[east=none,north=up,power=14,south=up,west=up]": "55:14",
-  "minecraft:redstone_wire[east=side,north=none,power=14,south=none,west=none]": "55:14",
-  "minecraft:redstone_wire[east=side,north=none,power=14,south=none,west=side]": "55:14",
-  "minecraft:redstone_wire[east=side,north=none,power=14,south=none,west=up]": "55:14",
-  "minecraft:redstone_wire[east=side,north=none,power=14,south=side,west=none]": "55:14",
-  "minecraft:redstone_wire[east=side,north=none,power=14,south=side,west=side]": "55:14",
-  "minecraft:redstone_wire[east=side,north=none,power=14,south=side,west=up]": "55:14",
-  "minecraft:redstone_wire[east=side,north=none,power=14,south=up,west=none]": "55:14",
-  "minecraft:redstone_wire[east=side,north=none,power=14,south=up,west=side]": "55:14",
-  "minecraft:redstone_wire[east=side,north=none,power=14,south=up,west=up]": "55:14",
-  "minecraft:redstone_wire[east=side,north=side,power=14,south=none,west=none]": "55:14",
-  "minecraft:redstone_wire[east=side,north=side,power=14,south=none,west=side]": "55:14",
-  "minecraft:redstone_wire[east=side,north=side,power=14,south=none,west=up]": "55:14",
-  "minecraft:redstone_wire[east=side,north=side,power=14,south=side,west=none]": "55:14",
-  "minecraft:redstone_wire[east=side,north=side,power=14,south=side,west=side]": "55:14",
-  "minecraft:redstone_wire[east=side,north=side,power=14,south=side,west=up]": "55:14",
-  "minecraft:redstone_wire[east=side,north=side,power=14,south=up,west=none]": "55:14",
-  "minecraft:redstone_wire[east=side,north=side,power=14,south=up,west=side]": "55:14",
-  "minecraft:redstone_wire[east=side,north=side,power=14,south=up,west=up]": "55:14",
-  "minecraft:redstone_wire[east=side,north=up,power=14,south=none,west=none]": "55:14",
-  "minecraft:redstone_wire[east=side,north=up,power=14,south=none,west=side]": "55:14",
-  "minecraft:redstone_wire[east=side,north=up,power=14,south=none,west=up]": "55:14",
-  "minecraft:redstone_wire[east=side,north=up,power=14,south=side,west=none]": "55:14",
-  "minecraft:redstone_wire[east=side,north=up,power=14,south=side,west=side]": "55:14",
-  "minecraft:redstone_wire[east=side,north=up,power=14,south=side,west=up]": "55:14",
-  "minecraft:redstone_wire[east=side,north=up,power=14,south=up,west=none]": "55:14",
-  "minecraft:redstone_wire[east=side,north=up,power=14,south=up,west=side]": "55:14",
-  "minecraft:redstone_wire[east=side,north=up,power=14,south=up,west=up]": "55:14",
-  "minecraft:redstone_wire[east=up,north=none,power=14,south=none,west=none]": "55:14",
-  "minecraft:redstone_wire[east=up,north=none,power=14,south=none,west=side]": "55:14",
-  "minecraft:redstone_wire[east=up,north=none,power=14,south=none,west=up]": "55:14",
-  "minecraft:redstone_wire[east=up,north=none,power=14,south=side,west=none]": "55:14",
-  "minecraft:redstone_wire[east=up,north=none,power=14,south=side,west=side]": "55:14",
-  "minecraft:redstone_wire[east=up,north=none,power=14,south=side,west=up]": "55:14",
-  "minecraft:redstone_wire[east=up,north=none,power=14,south=up,west=none]": "55:14",
-  "minecraft:redstone_wire[east=up,north=none,power=14,south=up,west=side]": "55:14",
-  "minecraft:redstone_wire[east=up,north=none,power=14,south=up,west=up]": "55:14",
-  "minecraft:redstone_wire[east=up,north=side,power=14,south=none,west=none]": "55:14",
-  "minecraft:redstone_wire[east=up,north=side,power=14,south=none,west=side]": "55:14",
-  "minecraft:redstone_wire[east=up,north=side,power=14,south=none,west=up]": "55:14",
-  "minecraft:redstone_wire[east=up,north=side,power=14,south=side,west=none]": "55:14",
-  "minecraft:redstone_wire[east=up,north=side,power=14,south=side,west=side]": "55:14",
-  "minecraft:redstone_wire[east=up,north=side,power=14,south=side,west=up]": "55:14",
-  "minecraft:redstone_wire[east=up,north=side,power=14,south=up,west=none]": "55:14",
-  "minecraft:redstone_wire[east=up,north=side,power=14,south=up,west=side]": "55:14",
-  "minecraft:redstone_wire[east=up,north=side,power=14,south=up,west=up]": "55:14",
-  "minecraft:redstone_wire[east=up,north=up,power=14,south=none,west=none]": "55:14",
-  "minecraft:redstone_wire[east=up,north=up,power=14,south=none,west=side]": "55:14",
-  "minecraft:redstone_wire[east=up,north=up,power=14,south=none,west=up]": "55:14",
-  "minecraft:redstone_wire[east=up,north=up,power=14,south=side,west=none]": "55:14",
-  "minecraft:redstone_wire[east=up,north=up,power=14,south=side,west=side]": "55:14",
-  "minecraft:redstone_wire[east=up,north=up,power=14,south=side,west=up]": "55:14",
-  "minecraft:redstone_wire[east=up,north=up,power=14,south=up,west=none]": "55:14",
-  "minecraft:redstone_wire[east=up,north=up,power=14,south=up,west=side]": "55:14",
-  "minecraft:redstone_wire[east=up,north=up,power=14,south=up,west=up]": "55:14",
-  "minecraft:redstone_wire[east=none,north=none,power=15,south=none,west=none]": "55:15",
-  "minecraft:redstone_wire[east=none,north=none,power=15,south=none,west=side]": "55:15",
-  "minecraft:redstone_wire[east=none,north=none,power=15,south=none,west=up]": "55:15",
-  "minecraft:redstone_wire[east=none,north=none,power=15,south=side,west=none]": "55:15",
-  "minecraft:redstone_wire[east=none,north=none,power=15,south=side,west=side]": "55:15",
-  "minecraft:redstone_wire[east=none,north=none,power=15,south=side,west=up]": "55:15",
-  "minecraft:redstone_wire[east=none,north=none,power=15,south=up,west=none]": "55:15",
-  "minecraft:redstone_wire[east=none,north=none,power=15,south=up,west=side]": "55:15",
-  "minecraft:redstone_wire[east=none,north=none,power=15,south=up,west=up]": "55:15",
-  "minecraft:redstone_wire[east=none,north=side,power=15,south=none,west=none]": "55:15",
-  "minecraft:redstone_wire[east=none,north=side,power=15,south=none,west=side]": "55:15",
-  "minecraft:redstone_wire[east=none,north=side,power=15,south=none,west=up]": "55:15",
-  "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]": "55:15",
-  "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=side]": "55:15",
-  "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=up]": "55:15",
-  "minecraft:redstone_wire[east=none,north=side,power=15,south=up,west=none]": "55:15",
-  "minecraft:redstone_wire[east=none,north=side,power=15,south=up,west=side]": "55:15",
-  "minecraft:redstone_wire[east=none,north=side,power=15,south=up,west=up]": "55:15",
-  "minecraft:redstone_wire[east=none,north=up,power=15,south=none,west=none]": "55:15",
-  "minecraft:redstone_wire[east=none,north=up,power=15,south=none,west=side]": "55:15",
-  "minecraft:redstone_wire[east=none,north=up,power=15,south=none,west=up]": "55:15",
-  "minecraft:redstone_wire[east=none,north=up,power=15,south=side,west=none]": "55:15",
-  "minecraft:redstone_wire[east=none,north=up,power=15,south=side,west=side]": "55:15",
-  "minecraft:redstone_wire[east=none,north=up,power=15,south=side,west=up]": "55:15",
-  "minecraft:redstone_wire[east=none,north=up,power=15,south=up,west=none]": "55:15",
-  "minecraft:redstone_wire[east=none,north=up,power=15,south=up,west=side]": "55:15",
-  "minecraft:redstone_wire[east=none,north=up,power=15,south=up,west=up]": "55:15",
-  "minecraft:redstone_wire[east=side,north=none,power=15,south=none,west=none]": "55:15",
-  "minecraft:redstone_wire[east=side,north=none,power=15,south=none,west=side]": "55:15",
-  "minecraft:redstone_wire[east=side,north=none,power=15,south=none,west=up]": "55:15",
-  "minecraft:redstone_wire[east=side,north=none,power=15,south=side,west=none]": "55:15",
-  "minecraft:redstone_wire[east=side,north=none,power=15,south=side,west=side]": "55:15",
-  "minecraft:redstone_wire[east=side,north=none,power=15,south=side,west=up]": "55:15",
-  "minecraft:redstone_wire[east=side,north=none,power=15,south=up,west=none]": "55:15",
-  "minecraft:redstone_wire[east=side,north=none,power=15,south=up,west=side]": "55:15",
-  "minecraft:redstone_wire[east=side,north=none,power=15,south=up,west=up]": "55:15",
-  "minecraft:redstone_wire[east=side,north=side,power=15,south=none,west=none]": "55:15",
-  "minecraft:redstone_wire[east=side,north=side,power=15,south=none,west=side]": "55:15",
-  "minecraft:redstone_wire[east=side,north=side,power=15,south=none,west=up]": "55:15",
-  "minecraft:redstone_wire[east=side,north=side,power=15,south=side,west=none]": "55:15",
-  "minecraft:redstone_wire[east=side,north=side,power=15,south=side,west=side]": "55:15",
-  "minecraft:redstone_wire[east=side,north=side,power=15,south=side,west=up]": "55:15",
-  "minecraft:redstone_wire[east=side,north=side,power=15,south=up,west=none]": "55:15",
-  "minecraft:redstone_wire[east=side,north=side,power=15,south=up,west=side]": "55:15",
-  "minecraft:redstone_wire[east=side,north=side,power=15,south=up,west=up]": "55:15",
-  "minecraft:redstone_wire[east=side,north=up,power=15,south=none,west=none]": "55:15",
-  "minecraft:redstone_wire[east=side,north=up,power=15,south=none,west=side]": "55:15",
-  "minecraft:redstone_wire[east=side,north=up,power=15,south=none,west=up]": "55:15",
-  "minecraft:redstone_wire[east=side,north=up,power=15,south=side,west=none]": "55:15",
-  "minecraft:redstone_wire[east=side,north=up,power=15,south=side,west=side]": "55:15",
-  "minecraft:redstone_wire[east=side,north=up,power=15,south=side,west=up]": "55:15",
-  "minecraft:redstone_wire[east=side,north=up,power=15,south=up,west=none]": "55:15",
-  "minecraft:redstone_wire[east=side,north=up,power=15,south=up,west=side]": "55:15",
-  "minecraft:redstone_wire[east=side,north=up,power=15,south=up,west=up]": "55:15",
-  "minecraft:redstone_wire[east=up,north=none,power=15,south=none,west=none]": "55:15",
-  "minecraft:redstone_wire[east=up,north=none,power=15,south=none,west=side]": "55:15",
-  "minecraft:redstone_wire[east=up,north=none,power=15,south=none,west=up]": "55:15",
-  "minecraft:redstone_wire[east=up,north=none,power=15,south=side,west=none]": "55:15",
-  "minecraft:redstone_wire[east=up,north=none,power=15,south=side,west=side]": "55:15",
-  "minecraft:redstone_wire[east=up,north=none,power=15,south=side,west=up]": "55:15",
-  "minecraft:redstone_wire[east=up,north=none,power=15,south=up,west=none]": "55:15",
-  "minecraft:redstone_wire[east=up,north=none,power=15,south=up,west=side]": "55:15",
-  "minecraft:redstone_wire[east=up,north=none,power=15,south=up,west=up]": "55:15",
-  "minecraft:redstone_wire[east=up,north=side,power=15,south=none,west=none]": "55:15",
-  "minecraft:redstone_wire[east=up,north=side,power=15,south=none,west=side]": "55:15",
-  "minecraft:redstone_wire[east=up,north=side,power=15,south=none,west=up]": "55:15",
-  "minecraft:redstone_wire[east=up,north=side,power=15,south=side,west=none]": "55:15",
-  "minecraft:redstone_wire[east=up,north=side,power=15,south=side,west=side]": "55:15",
-  "minecraft:redstone_wire[east=up,north=side,power=15,south=side,west=up]": "55:15",
-  "minecraft:redstone_wire[east=up,north=side,power=15,south=up,west=none]": "55:15",
-  "minecraft:redstone_wire[east=up,north=side,power=15,south=up,west=side]": "55:15",
-  "minecraft:redstone_wire[east=up,north=side,power=15,south=up,west=up]": "55:15",
-  "minecraft:redstone_wire[east=up,north=up,power=15,south=none,west=none]": "55:15",
-  "minecraft:redstone_wire[east=up,north=up,power=15,south=none,west=side]": "55:15",
-  "minecraft:redstone_wire[east=up,north=up,power=15,south=none,west=up]": "55:15",
-  "minecraft:redstone_wire[east=up,north=up,power=15,south=side,west=none]": "55:15",
-  "minecraft:redstone_wire[east=up,north=up,power=15,south=side,west=side]": "55:15",
-  "minecraft:redstone_wire[east=up,north=up,power=15,south=side,west=up]": "55:15",
-  "minecraft:redstone_wire[east=up,north=up,power=15,south=up,west=none]": "55:15",
-  "minecraft:redstone_wire[east=up,north=up,power=15,south=up,west=side]": "55:15",
-  "minecraft:redstone_wire[east=up,north=up,power=15,south=up,west=up]": "55:15",
+  "minecraft:redstone_wire[east=none,north=none,power=10,south=none,west=none]":
+    "55:10",
+  "minecraft:redstone_wire[east=none,north=none,power=10,south=none,west=side]":
+    "55:10",
+  "minecraft:redstone_wire[east=none,north=none,power=10,south=none,west=up]":
+    "55:10",
+  "minecraft:redstone_wire[east=none,north=none,power=10,south=side,west=none]":
+    "55:10",
+  "minecraft:redstone_wire[east=none,north=none,power=10,south=side,west=side]":
+    "55:10",
+  "minecraft:redstone_wire[east=none,north=none,power=10,south=side,west=up]":
+    "55:10",
+  "minecraft:redstone_wire[east=none,north=none,power=10,south=up,west=none]":
+    "55:10",
+  "minecraft:redstone_wire[east=none,north=none,power=10,south=up,west=side]":
+    "55:10",
+  "minecraft:redstone_wire[east=none,north=none,power=10,south=up,west=up]":
+    "55:10",
+  "minecraft:redstone_wire[east=none,north=side,power=10,south=none,west=none]":
+    "55:10",
+  "minecraft:redstone_wire[east=none,north=side,power=10,south=none,west=side]":
+    "55:10",
+  "minecraft:redstone_wire[east=none,north=side,power=10,south=none,west=up]":
+    "55:10",
+  "minecraft:redstone_wire[east=none,north=side,power=10,south=side,west=none]":
+    "55:10",
+  "minecraft:redstone_wire[east=none,north=side,power=10,south=side,west=side]":
+    "55:10",
+  "minecraft:redstone_wire[east=none,north=side,power=10,south=side,west=up]":
+    "55:10",
+  "minecraft:redstone_wire[east=none,north=side,power=10,south=up,west=none]":
+    "55:10",
+  "minecraft:redstone_wire[east=none,north=side,power=10,south=up,west=side]":
+    "55:10",
+  "minecraft:redstone_wire[east=none,north=side,power=10,south=up,west=up]":
+    "55:10",
+  "minecraft:redstone_wire[east=none,north=up,power=10,south=none,west=none]":
+    "55:10",
+  "minecraft:redstone_wire[east=none,north=up,power=10,south=none,west=side]":
+    "55:10",
+  "minecraft:redstone_wire[east=none,north=up,power=10,south=none,west=up]":
+    "55:10",
+  "minecraft:redstone_wire[east=none,north=up,power=10,south=side,west=none]":
+    "55:10",
+  "minecraft:redstone_wire[east=none,north=up,power=10,south=side,west=side]":
+    "55:10",
+  "minecraft:redstone_wire[east=none,north=up,power=10,south=side,west=up]":
+    "55:10",
+  "minecraft:redstone_wire[east=none,north=up,power=10,south=up,west=none]":
+    "55:10",
+  "minecraft:redstone_wire[east=none,north=up,power=10,south=up,west=side]":
+    "55:10",
+  "minecraft:redstone_wire[east=none,north=up,power=10,south=up,west=up]":
+    "55:10",
+  "minecraft:redstone_wire[east=side,north=none,power=10,south=none,west=none]":
+    "55:10",
+  "minecraft:redstone_wire[east=side,north=none,power=10,south=none,west=side]":
+    "55:10",
+  "minecraft:redstone_wire[east=side,north=none,power=10,south=none,west=up]":
+    "55:10",
+  "minecraft:redstone_wire[east=side,north=none,power=10,south=side,west=none]":
+    "55:10",
+  "minecraft:redstone_wire[east=side,north=none,power=10,south=side,west=side]":
+    "55:10",
+  "minecraft:redstone_wire[east=side,north=none,power=10,south=side,west=up]":
+    "55:10",
+  "minecraft:redstone_wire[east=side,north=none,power=10,south=up,west=none]":
+    "55:10",
+  "minecraft:redstone_wire[east=side,north=none,power=10,south=up,west=side]":
+    "55:10",
+  "minecraft:redstone_wire[east=side,north=none,power=10,south=up,west=up]":
+    "55:10",
+  "minecraft:redstone_wire[east=side,north=side,power=10,south=none,west=none]":
+    "55:10",
+  "minecraft:redstone_wire[east=side,north=side,power=10,south=none,west=side]":
+    "55:10",
+  "minecraft:redstone_wire[east=side,north=side,power=10,south=none,west=up]":
+    "55:10",
+  "minecraft:redstone_wire[east=side,north=side,power=10,south=side,west=none]":
+    "55:10",
+  "minecraft:redstone_wire[east=side,north=side,power=10,south=side,west=side]":
+    "55:10",
+  "minecraft:redstone_wire[east=side,north=side,power=10,south=side,west=up]":
+    "55:10",
+  "minecraft:redstone_wire[east=side,north=side,power=10,south=up,west=none]":
+    "55:10",
+  "minecraft:redstone_wire[east=side,north=side,power=10,south=up,west=side]":
+    "55:10",
+  "minecraft:redstone_wire[east=side,north=side,power=10,south=up,west=up]":
+    "55:10",
+  "minecraft:redstone_wire[east=side,north=up,power=10,south=none,west=none]":
+    "55:10",
+  "minecraft:redstone_wire[east=side,north=up,power=10,south=none,west=side]":
+    "55:10",
+  "minecraft:redstone_wire[east=side,north=up,power=10,south=none,west=up]":
+    "55:10",
+  "minecraft:redstone_wire[east=side,north=up,power=10,south=side,west=none]":
+    "55:10",
+  "minecraft:redstone_wire[east=side,north=up,power=10,south=side,west=side]":
+    "55:10",
+  "minecraft:redstone_wire[east=side,north=up,power=10,south=side,west=up]":
+    "55:10",
+  "minecraft:redstone_wire[east=side,north=up,power=10,south=up,west=none]":
+    "55:10",
+  "minecraft:redstone_wire[east=side,north=up,power=10,south=up,west=side]":
+    "55:10",
+  "minecraft:redstone_wire[east=side,north=up,power=10,south=up,west=up]":
+    "55:10",
+  "minecraft:redstone_wire[east=up,north=none,power=10,south=none,west=none]":
+    "55:10",
+  "minecraft:redstone_wire[east=up,north=none,power=10,south=none,west=side]":
+    "55:10",
+  "minecraft:redstone_wire[east=up,north=none,power=10,south=none,west=up]":
+    "55:10",
+  "minecraft:redstone_wire[east=up,north=none,power=10,south=side,west=none]":
+    "55:10",
+  "minecraft:redstone_wire[east=up,north=none,power=10,south=side,west=side]":
+    "55:10",
+  "minecraft:redstone_wire[east=up,north=none,power=10,south=side,west=up]":
+    "55:10",
+  "minecraft:redstone_wire[east=up,north=none,power=10,south=up,west=none]":
+    "55:10",
+  "minecraft:redstone_wire[east=up,north=none,power=10,south=up,west=side]":
+    "55:10",
+  "minecraft:redstone_wire[east=up,north=none,power=10,south=up,west=up]":
+    "55:10",
+  "minecraft:redstone_wire[east=up,north=side,power=10,south=none,west=none]":
+    "55:10",
+  "minecraft:redstone_wire[east=up,north=side,power=10,south=none,west=side]":
+    "55:10",
+  "minecraft:redstone_wire[east=up,north=side,power=10,south=none,west=up]":
+    "55:10",
+  "minecraft:redstone_wire[east=up,north=side,power=10,south=side,west=none]":
+    "55:10",
+  "minecraft:redstone_wire[east=up,north=side,power=10,south=side,west=side]":
+    "55:10",
+  "minecraft:redstone_wire[east=up,north=side,power=10,south=side,west=up]":
+    "55:10",
+  "minecraft:redstone_wire[east=up,north=side,power=10,south=up,west=none]":
+    "55:10",
+  "minecraft:redstone_wire[east=up,north=side,power=10,south=up,west=side]":
+    "55:10",
+  "minecraft:redstone_wire[east=up,north=side,power=10,south=up,west=up]":
+    "55:10",
+  "minecraft:redstone_wire[east=up,north=up,power=10,south=none,west=none]":
+    "55:10",
+  "minecraft:redstone_wire[east=up,north=up,power=10,south=none,west=side]":
+    "55:10",
+  "minecraft:redstone_wire[east=up,north=up,power=10,south=none,west=up]":
+    "55:10",
+  "minecraft:redstone_wire[east=up,north=up,power=10,south=side,west=none]":
+    "55:10",
+  "minecraft:redstone_wire[east=up,north=up,power=10,south=side,west=side]":
+    "55:10",
+  "minecraft:redstone_wire[east=up,north=up,power=10,south=side,west=up]":
+    "55:10",
+  "minecraft:redstone_wire[east=up,north=up,power=10,south=up,west=none]":
+    "55:10",
+  "minecraft:redstone_wire[east=up,north=up,power=10,south=up,west=side]":
+    "55:10",
+  "minecraft:redstone_wire[east=up,north=up,power=10,south=up,west=up]":
+    "55:10",
+  "minecraft:redstone_wire[east=none,north=none,power=11,south=none,west=none]":
+    "55:11",
+  "minecraft:redstone_wire[east=none,north=none,power=11,south=none,west=side]":
+    "55:11",
+  "minecraft:redstone_wire[east=none,north=none,power=11,south=none,west=up]":
+    "55:11",
+  "minecraft:redstone_wire[east=none,north=none,power=11,south=side,west=none]":
+    "55:11",
+  "minecraft:redstone_wire[east=none,north=none,power=11,south=side,west=side]":
+    "55:11",
+  "minecraft:redstone_wire[east=none,north=none,power=11,south=side,west=up]":
+    "55:11",
+  "minecraft:redstone_wire[east=none,north=none,power=11,south=up,west=none]":
+    "55:11",
+  "minecraft:redstone_wire[east=none,north=none,power=11,south=up,west=side]":
+    "55:11",
+  "minecraft:redstone_wire[east=none,north=none,power=11,south=up,west=up]":
+    "55:11",
+  "minecraft:redstone_wire[east=none,north=side,power=11,south=none,west=none]":
+    "55:11",
+  "minecraft:redstone_wire[east=none,north=side,power=11,south=none,west=side]":
+    "55:11",
+  "minecraft:redstone_wire[east=none,north=side,power=11,south=none,west=up]":
+    "55:11",
+  "minecraft:redstone_wire[east=none,north=side,power=11,south=side,west=none]":
+    "55:11",
+  "minecraft:redstone_wire[east=none,north=side,power=11,south=side,west=side]":
+    "55:11",
+  "minecraft:redstone_wire[east=none,north=side,power=11,south=side,west=up]":
+    "55:11",
+  "minecraft:redstone_wire[east=none,north=side,power=11,south=up,west=none]":
+    "55:11",
+  "minecraft:redstone_wire[east=none,north=side,power=11,south=up,west=side]":
+    "55:11",
+  "minecraft:redstone_wire[east=none,north=side,power=11,south=up,west=up]":
+    "55:11",
+  "minecraft:redstone_wire[east=none,north=up,power=11,south=none,west=none]":
+    "55:11",
+  "minecraft:redstone_wire[east=none,north=up,power=11,south=none,west=side]":
+    "55:11",
+  "minecraft:redstone_wire[east=none,north=up,power=11,south=none,west=up]":
+    "55:11",
+  "minecraft:redstone_wire[east=none,north=up,power=11,south=side,west=none]":
+    "55:11",
+  "minecraft:redstone_wire[east=none,north=up,power=11,south=side,west=side]":
+    "55:11",
+  "minecraft:redstone_wire[east=none,north=up,power=11,south=side,west=up]":
+    "55:11",
+  "minecraft:redstone_wire[east=none,north=up,power=11,south=up,west=none]":
+    "55:11",
+  "minecraft:redstone_wire[east=none,north=up,power=11,south=up,west=side]":
+    "55:11",
+  "minecraft:redstone_wire[east=none,north=up,power=11,south=up,west=up]":
+    "55:11",
+  "minecraft:redstone_wire[east=side,north=none,power=11,south=none,west=none]":
+    "55:11",
+  "minecraft:redstone_wire[east=side,north=none,power=11,south=none,west=side]":
+    "55:11",
+  "minecraft:redstone_wire[east=side,north=none,power=11,south=none,west=up]":
+    "55:11",
+  "minecraft:redstone_wire[east=side,north=none,power=11,south=side,west=none]":
+    "55:11",
+  "minecraft:redstone_wire[east=side,north=none,power=11,south=side,west=side]":
+    "55:11",
+  "minecraft:redstone_wire[east=side,north=none,power=11,south=side,west=up]":
+    "55:11",
+  "minecraft:redstone_wire[east=side,north=none,power=11,south=up,west=none]":
+    "55:11",
+  "minecraft:redstone_wire[east=side,north=none,power=11,south=up,west=side]":
+    "55:11",
+  "minecraft:redstone_wire[east=side,north=none,power=11,south=up,west=up]":
+    "55:11",
+  "minecraft:redstone_wire[east=side,north=side,power=11,south=none,west=none]":
+    "55:11",
+  "minecraft:redstone_wire[east=side,north=side,power=11,south=none,west=side]":
+    "55:11",
+  "minecraft:redstone_wire[east=side,north=side,power=11,south=none,west=up]":
+    "55:11",
+  "minecraft:redstone_wire[east=side,north=side,power=11,south=side,west=none]":
+    "55:11",
+  "minecraft:redstone_wire[east=side,north=side,power=11,south=side,west=side]":
+    "55:11",
+  "minecraft:redstone_wire[east=side,north=side,power=11,south=side,west=up]":
+    "55:11",
+  "minecraft:redstone_wire[east=side,north=side,power=11,south=up,west=none]":
+    "55:11",
+  "minecraft:redstone_wire[east=side,north=side,power=11,south=up,west=side]":
+    "55:11",
+  "minecraft:redstone_wire[east=side,north=side,power=11,south=up,west=up]":
+    "55:11",
+  "minecraft:redstone_wire[east=side,north=up,power=11,south=none,west=none]":
+    "55:11",
+  "minecraft:redstone_wire[east=side,north=up,power=11,south=none,west=side]":
+    "55:11",
+  "minecraft:redstone_wire[east=side,north=up,power=11,south=none,west=up]":
+    "55:11",
+  "minecraft:redstone_wire[east=side,north=up,power=11,south=side,west=none]":
+    "55:11",
+  "minecraft:redstone_wire[east=side,north=up,power=11,south=side,west=side]":
+    "55:11",
+  "minecraft:redstone_wire[east=side,north=up,power=11,south=side,west=up]":
+    "55:11",
+  "minecraft:redstone_wire[east=side,north=up,power=11,south=up,west=none]":
+    "55:11",
+  "minecraft:redstone_wire[east=side,north=up,power=11,south=up,west=side]":
+    "55:11",
+  "minecraft:redstone_wire[east=side,north=up,power=11,south=up,west=up]":
+    "55:11",
+  "minecraft:redstone_wire[east=up,north=none,power=11,south=none,west=none]":
+    "55:11",
+  "minecraft:redstone_wire[east=up,north=none,power=11,south=none,west=side]":
+    "55:11",
+  "minecraft:redstone_wire[east=up,north=none,power=11,south=none,west=up]":
+    "55:11",
+  "minecraft:redstone_wire[east=up,north=none,power=11,south=side,west=none]":
+    "55:11",
+  "minecraft:redstone_wire[east=up,north=none,power=11,south=side,west=side]":
+    "55:11",
+  "minecraft:redstone_wire[east=up,north=none,power=11,south=side,west=up]":
+    "55:11",
+  "minecraft:redstone_wire[east=up,north=none,power=11,south=up,west=none]":
+    "55:11",
+  "minecraft:redstone_wire[east=up,north=none,power=11,south=up,west=side]":
+    "55:11",
+  "minecraft:redstone_wire[east=up,north=none,power=11,south=up,west=up]":
+    "55:11",
+  "minecraft:redstone_wire[east=up,north=side,power=11,south=none,west=none]":
+    "55:11",
+  "minecraft:redstone_wire[east=up,north=side,power=11,south=none,west=side]":
+    "55:11",
+  "minecraft:redstone_wire[east=up,north=side,power=11,south=none,west=up]":
+    "55:11",
+  "minecraft:redstone_wire[east=up,north=side,power=11,south=side,west=none]":
+    "55:11",
+  "minecraft:redstone_wire[east=up,north=side,power=11,south=side,west=side]":
+    "55:11",
+  "minecraft:redstone_wire[east=up,north=side,power=11,south=side,west=up]":
+    "55:11",
+  "minecraft:redstone_wire[east=up,north=side,power=11,south=up,west=none]":
+    "55:11",
+  "minecraft:redstone_wire[east=up,north=side,power=11,south=up,west=side]":
+    "55:11",
+  "minecraft:redstone_wire[east=up,north=side,power=11,south=up,west=up]":
+    "55:11",
+  "minecraft:redstone_wire[east=up,north=up,power=11,south=none,west=none]":
+    "55:11",
+  "minecraft:redstone_wire[east=up,north=up,power=11,south=none,west=side]":
+    "55:11",
+  "minecraft:redstone_wire[east=up,north=up,power=11,south=none,west=up]":
+    "55:11",
+  "minecraft:redstone_wire[east=up,north=up,power=11,south=side,west=none]":
+    "55:11",
+  "minecraft:redstone_wire[east=up,north=up,power=11,south=side,west=side]":
+    "55:11",
+  "minecraft:redstone_wire[east=up,north=up,power=11,south=side,west=up]":
+    "55:11",
+  "minecraft:redstone_wire[east=up,north=up,power=11,south=up,west=none]":
+    "55:11",
+  "minecraft:redstone_wire[east=up,north=up,power=11,south=up,west=side]":
+    "55:11",
+  "minecraft:redstone_wire[east=up,north=up,power=11,south=up,west=up]":
+    "55:11",
+  "minecraft:redstone_wire[east=none,north=none,power=12,south=none,west=none]":
+    "55:12",
+  "minecraft:redstone_wire[east=none,north=none,power=12,south=none,west=side]":
+    "55:12",
+  "minecraft:redstone_wire[east=none,north=none,power=12,south=none,west=up]":
+    "55:12",
+  "minecraft:redstone_wire[east=none,north=none,power=12,south=side,west=none]":
+    "55:12",
+  "minecraft:redstone_wire[east=none,north=none,power=12,south=side,west=side]":
+    "55:12",
+  "minecraft:redstone_wire[east=none,north=none,power=12,south=side,west=up]":
+    "55:12",
+  "minecraft:redstone_wire[east=none,north=none,power=12,south=up,west=none]":
+    "55:12",
+  "minecraft:redstone_wire[east=none,north=none,power=12,south=up,west=side]":
+    "55:12",
+  "minecraft:redstone_wire[east=none,north=none,power=12,south=up,west=up]":
+    "55:12",
+  "minecraft:redstone_wire[east=none,north=side,power=12,south=none,west=none]":
+    "55:12",
+  "minecraft:redstone_wire[east=none,north=side,power=12,south=none,west=side]":
+    "55:12",
+  "minecraft:redstone_wire[east=none,north=side,power=12,south=none,west=up]":
+    "55:12",
+  "minecraft:redstone_wire[east=none,north=side,power=12,south=side,west=none]":
+    "55:12",
+  "minecraft:redstone_wire[east=none,north=side,power=12,south=side,west=side]":
+    "55:12",
+  "minecraft:redstone_wire[east=none,north=side,power=12,south=side,west=up]":
+    "55:12",
+  "minecraft:redstone_wire[east=none,north=side,power=12,south=up,west=none]":
+    "55:12",
+  "minecraft:redstone_wire[east=none,north=side,power=12,south=up,west=side]":
+    "55:12",
+  "minecraft:redstone_wire[east=none,north=side,power=12,south=up,west=up]":
+    "55:12",
+  "minecraft:redstone_wire[east=none,north=up,power=12,south=none,west=none]":
+    "55:12",
+  "minecraft:redstone_wire[east=none,north=up,power=12,south=none,west=side]":
+    "55:12",
+  "minecraft:redstone_wire[east=none,north=up,power=12,south=none,west=up]":
+    "55:12",
+  "minecraft:redstone_wire[east=none,north=up,power=12,south=side,west=none]":
+    "55:12",
+  "minecraft:redstone_wire[east=none,north=up,power=12,south=side,west=side]":
+    "55:12",
+  "minecraft:redstone_wire[east=none,north=up,power=12,south=side,west=up]":
+    "55:12",
+  "minecraft:redstone_wire[east=none,north=up,power=12,south=up,west=none]":
+    "55:12",
+  "minecraft:redstone_wire[east=none,north=up,power=12,south=up,west=side]":
+    "55:12",
+  "minecraft:redstone_wire[east=none,north=up,power=12,south=up,west=up]":
+    "55:12",
+  "minecraft:redstone_wire[east=side,north=none,power=12,south=none,west=none]":
+    "55:12",
+  "minecraft:redstone_wire[east=side,north=none,power=12,south=none,west=side]":
+    "55:12",
+  "minecraft:redstone_wire[east=side,north=none,power=12,south=none,west=up]":
+    "55:12",
+  "minecraft:redstone_wire[east=side,north=none,power=12,south=side,west=none]":
+    "55:12",
+  "minecraft:redstone_wire[east=side,north=none,power=12,south=side,west=side]":
+    "55:12",
+  "minecraft:redstone_wire[east=side,north=none,power=12,south=side,west=up]":
+    "55:12",
+  "minecraft:redstone_wire[east=side,north=none,power=12,south=up,west=none]":
+    "55:12",
+  "minecraft:redstone_wire[east=side,north=none,power=12,south=up,west=side]":
+    "55:12",
+  "minecraft:redstone_wire[east=side,north=none,power=12,south=up,west=up]":
+    "55:12",
+  "minecraft:redstone_wire[east=side,north=side,power=12,south=none,west=none]":
+    "55:12",
+  "minecraft:redstone_wire[east=side,north=side,power=12,south=none,west=side]":
+    "55:12",
+  "minecraft:redstone_wire[east=side,north=side,power=12,south=none,west=up]":
+    "55:12",
+  "minecraft:redstone_wire[east=side,north=side,power=12,south=side,west=none]":
+    "55:12",
+  "minecraft:redstone_wire[east=side,north=side,power=12,south=side,west=side]":
+    "55:12",
+  "minecraft:redstone_wire[east=side,north=side,power=12,south=side,west=up]":
+    "55:12",
+  "minecraft:redstone_wire[east=side,north=side,power=12,south=up,west=none]":
+    "55:12",
+  "minecraft:redstone_wire[east=side,north=side,power=12,south=up,west=side]":
+    "55:12",
+  "minecraft:redstone_wire[east=side,north=side,power=12,south=up,west=up]":
+    "55:12",
+  "minecraft:redstone_wire[east=side,north=up,power=12,south=none,west=none]":
+    "55:12",
+  "minecraft:redstone_wire[east=side,north=up,power=12,south=none,west=side]":
+    "55:12",
+  "minecraft:redstone_wire[east=side,north=up,power=12,south=none,west=up]":
+    "55:12",
+  "minecraft:redstone_wire[east=side,north=up,power=12,south=side,west=none]":
+    "55:12",
+  "minecraft:redstone_wire[east=side,north=up,power=12,south=side,west=side]":
+    "55:12",
+  "minecraft:redstone_wire[east=side,north=up,power=12,south=side,west=up]":
+    "55:12",
+  "minecraft:redstone_wire[east=side,north=up,power=12,south=up,west=none]":
+    "55:12",
+  "minecraft:redstone_wire[east=side,north=up,power=12,south=up,west=side]":
+    "55:12",
+  "minecraft:redstone_wire[east=side,north=up,power=12,south=up,west=up]":
+    "55:12",
+  "minecraft:redstone_wire[east=up,north=none,power=12,south=none,west=none]":
+    "55:12",
+  "minecraft:redstone_wire[east=up,north=none,power=12,south=none,west=side]":
+    "55:12",
+  "minecraft:redstone_wire[east=up,north=none,power=12,south=none,west=up]":
+    "55:12",
+  "minecraft:redstone_wire[east=up,north=none,power=12,south=side,west=none]":
+    "55:12",
+  "minecraft:redstone_wire[east=up,north=none,power=12,south=side,west=side]":
+    "55:12",
+  "minecraft:redstone_wire[east=up,north=none,power=12,south=side,west=up]":
+    "55:12",
+  "minecraft:redstone_wire[east=up,north=none,power=12,south=up,west=none]":
+    "55:12",
+  "minecraft:redstone_wire[east=up,north=none,power=12,south=up,west=side]":
+    "55:12",
+  "minecraft:redstone_wire[east=up,north=none,power=12,south=up,west=up]":
+    "55:12",
+  "minecraft:redstone_wire[east=up,north=side,power=12,south=none,west=none]":
+    "55:12",
+  "minecraft:redstone_wire[east=up,north=side,power=12,south=none,west=side]":
+    "55:12",
+  "minecraft:redstone_wire[east=up,north=side,power=12,south=none,west=up]":
+    "55:12",
+  "minecraft:redstone_wire[east=up,north=side,power=12,south=side,west=none]":
+    "55:12",
+  "minecraft:redstone_wire[east=up,north=side,power=12,south=side,west=side]":
+    "55:12",
+  "minecraft:redstone_wire[east=up,north=side,power=12,south=side,west=up]":
+    "55:12",
+  "minecraft:redstone_wire[east=up,north=side,power=12,south=up,west=none]":
+    "55:12",
+  "minecraft:redstone_wire[east=up,north=side,power=12,south=up,west=side]":
+    "55:12",
+  "minecraft:redstone_wire[east=up,north=side,power=12,south=up,west=up]":
+    "55:12",
+  "minecraft:redstone_wire[east=up,north=up,power=12,south=none,west=none]":
+    "55:12",
+  "minecraft:redstone_wire[east=up,north=up,power=12,south=none,west=side]":
+    "55:12",
+  "minecraft:redstone_wire[east=up,north=up,power=12,south=none,west=up]":
+    "55:12",
+  "minecraft:redstone_wire[east=up,north=up,power=12,south=side,west=none]":
+    "55:12",
+  "minecraft:redstone_wire[east=up,north=up,power=12,south=side,west=side]":
+    "55:12",
+  "minecraft:redstone_wire[east=up,north=up,power=12,south=side,west=up]":
+    "55:12",
+  "minecraft:redstone_wire[east=up,north=up,power=12,south=up,west=none]":
+    "55:12",
+  "minecraft:redstone_wire[east=up,north=up,power=12,south=up,west=side]":
+    "55:12",
+  "minecraft:redstone_wire[east=up,north=up,power=12,south=up,west=up]":
+    "55:12",
+  "minecraft:redstone_wire[east=none,north=none,power=13,south=none,west=none]":
+    "55:13",
+  "minecraft:redstone_wire[east=none,north=none,power=13,south=none,west=side]":
+    "55:13",
+  "minecraft:redstone_wire[east=none,north=none,power=13,south=none,west=up]":
+    "55:13",
+  "minecraft:redstone_wire[east=none,north=none,power=13,south=side,west=none]":
+    "55:13",
+  "minecraft:redstone_wire[east=none,north=none,power=13,south=side,west=side]":
+    "55:13",
+  "minecraft:redstone_wire[east=none,north=none,power=13,south=side,west=up]":
+    "55:13",
+  "minecraft:redstone_wire[east=none,north=none,power=13,south=up,west=none]":
+    "55:13",
+  "minecraft:redstone_wire[east=none,north=none,power=13,south=up,west=side]":
+    "55:13",
+  "minecraft:redstone_wire[east=none,north=none,power=13,south=up,west=up]":
+    "55:13",
+  "minecraft:redstone_wire[east=none,north=side,power=13,south=none,west=none]":
+    "55:13",
+  "minecraft:redstone_wire[east=none,north=side,power=13,south=none,west=side]":
+    "55:13",
+  "minecraft:redstone_wire[east=none,north=side,power=13,south=none,west=up]":
+    "55:13",
+  "minecraft:redstone_wire[east=none,north=side,power=13,south=side,west=none]":
+    "55:13",
+  "minecraft:redstone_wire[east=none,north=side,power=13,south=side,west=side]":
+    "55:13",
+  "minecraft:redstone_wire[east=none,north=side,power=13,south=side,west=up]":
+    "55:13",
+  "minecraft:redstone_wire[east=none,north=side,power=13,south=up,west=none]":
+    "55:13",
+  "minecraft:redstone_wire[east=none,north=side,power=13,south=up,west=side]":
+    "55:13",
+  "minecraft:redstone_wire[east=none,north=side,power=13,south=up,west=up]":
+    "55:13",
+  "minecraft:redstone_wire[east=none,north=up,power=13,south=none,west=none]":
+    "55:13",
+  "minecraft:redstone_wire[east=none,north=up,power=13,south=none,west=side]":
+    "55:13",
+  "minecraft:redstone_wire[east=none,north=up,power=13,south=none,west=up]":
+    "55:13",
+  "minecraft:redstone_wire[east=none,north=up,power=13,south=side,west=none]":
+    "55:13",
+  "minecraft:redstone_wire[east=none,north=up,power=13,south=side,west=side]":
+    "55:13",
+  "minecraft:redstone_wire[east=none,north=up,power=13,south=side,west=up]":
+    "55:13",
+  "minecraft:redstone_wire[east=none,north=up,power=13,south=up,west=none]":
+    "55:13",
+  "minecraft:redstone_wire[east=none,north=up,power=13,south=up,west=side]":
+    "55:13",
+  "minecraft:redstone_wire[east=none,north=up,power=13,south=up,west=up]":
+    "55:13",
+  "minecraft:redstone_wire[east=side,north=none,power=13,south=none,west=none]":
+    "55:13",
+  "minecraft:redstone_wire[east=side,north=none,power=13,south=none,west=side]":
+    "55:13",
+  "minecraft:redstone_wire[east=side,north=none,power=13,south=none,west=up]":
+    "55:13",
+  "minecraft:redstone_wire[east=side,north=none,power=13,south=side,west=none]":
+    "55:13",
+  "minecraft:redstone_wire[east=side,north=none,power=13,south=side,west=side]":
+    "55:13",
+  "minecraft:redstone_wire[east=side,north=none,power=13,south=side,west=up]":
+    "55:13",
+  "minecraft:redstone_wire[east=side,north=none,power=13,south=up,west=none]":
+    "55:13",
+  "minecraft:redstone_wire[east=side,north=none,power=13,south=up,west=side]":
+    "55:13",
+  "minecraft:redstone_wire[east=side,north=none,power=13,south=up,west=up]":
+    "55:13",
+  "minecraft:redstone_wire[east=side,north=side,power=13,south=none,west=none]":
+    "55:13",
+  "minecraft:redstone_wire[east=side,north=side,power=13,south=none,west=side]":
+    "55:13",
+  "minecraft:redstone_wire[east=side,north=side,power=13,south=none,west=up]":
+    "55:13",
+  "minecraft:redstone_wire[east=side,north=side,power=13,south=side,west=none]":
+    "55:13",
+  "minecraft:redstone_wire[east=side,north=side,power=13,south=side,west=side]":
+    "55:13",
+  "minecraft:redstone_wire[east=side,north=side,power=13,south=side,west=up]":
+    "55:13",
+  "minecraft:redstone_wire[east=side,north=side,power=13,south=up,west=none]":
+    "55:13",
+  "minecraft:redstone_wire[east=side,north=side,power=13,south=up,west=side]":
+    "55:13",
+  "minecraft:redstone_wire[east=side,north=side,power=13,south=up,west=up]":
+    "55:13",
+  "minecraft:redstone_wire[east=side,north=up,power=13,south=none,west=none]":
+    "55:13",
+  "minecraft:redstone_wire[east=side,north=up,power=13,south=none,west=side]":
+    "55:13",
+  "minecraft:redstone_wire[east=side,north=up,power=13,south=none,west=up]":
+    "55:13",
+  "minecraft:redstone_wire[east=side,north=up,power=13,south=side,west=none]":
+    "55:13",
+  "minecraft:redstone_wire[east=side,north=up,power=13,south=side,west=side]":
+    "55:13",
+  "minecraft:redstone_wire[east=side,north=up,power=13,south=side,west=up]":
+    "55:13",
+  "minecraft:redstone_wire[east=side,north=up,power=13,south=up,west=none]":
+    "55:13",
+  "minecraft:redstone_wire[east=side,north=up,power=13,south=up,west=side]":
+    "55:13",
+  "minecraft:redstone_wire[east=side,north=up,power=13,south=up,west=up]":
+    "55:13",
+  "minecraft:redstone_wire[east=up,north=none,power=13,south=none,west=none]":
+    "55:13",
+  "minecraft:redstone_wire[east=up,north=none,power=13,south=none,west=side]":
+    "55:13",
+  "minecraft:redstone_wire[east=up,north=none,power=13,south=none,west=up]":
+    "55:13",
+  "minecraft:redstone_wire[east=up,north=none,power=13,south=side,west=none]":
+    "55:13",
+  "minecraft:redstone_wire[east=up,north=none,power=13,south=side,west=side]":
+    "55:13",
+  "minecraft:redstone_wire[east=up,north=none,power=13,south=side,west=up]":
+    "55:13",
+  "minecraft:redstone_wire[east=up,north=none,power=13,south=up,west=none]":
+    "55:13",
+  "minecraft:redstone_wire[east=up,north=none,power=13,south=up,west=side]":
+    "55:13",
+  "minecraft:redstone_wire[east=up,north=none,power=13,south=up,west=up]":
+    "55:13",
+  "minecraft:redstone_wire[east=up,north=side,power=13,south=none,west=none]":
+    "55:13",
+  "minecraft:redstone_wire[east=up,north=side,power=13,south=none,west=side]":
+    "55:13",
+  "minecraft:redstone_wire[east=up,north=side,power=13,south=none,west=up]":
+    "55:13",
+  "minecraft:redstone_wire[east=up,north=side,power=13,south=side,west=none]":
+    "55:13",
+  "minecraft:redstone_wire[east=up,north=side,power=13,south=side,west=side]":
+    "55:13",
+  "minecraft:redstone_wire[east=up,north=side,power=13,south=side,west=up]":
+    "55:13",
+  "minecraft:redstone_wire[east=up,north=side,power=13,south=up,west=none]":
+    "55:13",
+  "minecraft:redstone_wire[east=up,north=side,power=13,south=up,west=side]":
+    "55:13",
+  "minecraft:redstone_wire[east=up,north=side,power=13,south=up,west=up]":
+    "55:13",
+  "minecraft:redstone_wire[east=up,north=up,power=13,south=none,west=none]":
+    "55:13",
+  "minecraft:redstone_wire[east=up,north=up,power=13,south=none,west=side]":
+    "55:13",
+  "minecraft:redstone_wire[east=up,north=up,power=13,south=none,west=up]":
+    "55:13",
+  "minecraft:redstone_wire[east=up,north=up,power=13,south=side,west=none]":
+    "55:13",
+  "minecraft:redstone_wire[east=up,north=up,power=13,south=side,west=side]":
+    "55:13",
+  "minecraft:redstone_wire[east=up,north=up,power=13,south=side,west=up]":
+    "55:13",
+  "minecraft:redstone_wire[east=up,north=up,power=13,south=up,west=none]":
+    "55:13",
+  "minecraft:redstone_wire[east=up,north=up,power=13,south=up,west=side]":
+    "55:13",
+  "minecraft:redstone_wire[east=up,north=up,power=13,south=up,west=up]":
+    "55:13",
+  "minecraft:redstone_wire[east=none,north=none,power=14,south=none,west=none]":
+    "55:14",
+  "minecraft:redstone_wire[east=none,north=none,power=14,south=none,west=side]":
+    "55:14",
+  "minecraft:redstone_wire[east=none,north=none,power=14,south=none,west=up]":
+    "55:14",
+  "minecraft:redstone_wire[east=none,north=none,power=14,south=side,west=none]":
+    "55:14",
+  "minecraft:redstone_wire[east=none,north=none,power=14,south=side,west=side]":
+    "55:14",
+  "minecraft:redstone_wire[east=none,north=none,power=14,south=side,west=up]":
+    "55:14",
+  "minecraft:redstone_wire[east=none,north=none,power=14,south=up,west=none]":
+    "55:14",
+  "minecraft:redstone_wire[east=none,north=none,power=14,south=up,west=side]":
+    "55:14",
+  "minecraft:redstone_wire[east=none,north=none,power=14,south=up,west=up]":
+    "55:14",
+  "minecraft:redstone_wire[east=none,north=side,power=14,south=none,west=none]":
+    "55:14",
+  "minecraft:redstone_wire[east=none,north=side,power=14,south=none,west=side]":
+    "55:14",
+  "minecraft:redstone_wire[east=none,north=side,power=14,south=none,west=up]":
+    "55:14",
+  "minecraft:redstone_wire[east=none,north=side,power=14,south=side,west=none]":
+    "55:14",
+  "minecraft:redstone_wire[east=none,north=side,power=14,south=side,west=side]":
+    "55:14",
+  "minecraft:redstone_wire[east=none,north=side,power=14,south=side,west=up]":
+    "55:14",
+  "minecraft:redstone_wire[east=none,north=side,power=14,south=up,west=none]":
+    "55:14",
+  "minecraft:redstone_wire[east=none,north=side,power=14,south=up,west=side]":
+    "55:14",
+  "minecraft:redstone_wire[east=none,north=side,power=14,south=up,west=up]":
+    "55:14",
+  "minecraft:redstone_wire[east=none,north=up,power=14,south=none,west=none]":
+    "55:14",
+  "minecraft:redstone_wire[east=none,north=up,power=14,south=none,west=side]":
+    "55:14",
+  "minecraft:redstone_wire[east=none,north=up,power=14,south=none,west=up]":
+    "55:14",
+  "minecraft:redstone_wire[east=none,north=up,power=14,south=side,west=none]":
+    "55:14",
+  "minecraft:redstone_wire[east=none,north=up,power=14,south=side,west=side]":
+    "55:14",
+  "minecraft:redstone_wire[east=none,north=up,power=14,south=side,west=up]":
+    "55:14",
+  "minecraft:redstone_wire[east=none,north=up,power=14,south=up,west=none]":
+    "55:14",
+  "minecraft:redstone_wire[east=none,north=up,power=14,south=up,west=side]":
+    "55:14",
+  "minecraft:redstone_wire[east=none,north=up,power=14,south=up,west=up]":
+    "55:14",
+  "minecraft:redstone_wire[east=side,north=none,power=14,south=none,west=none]":
+    "55:14",
+  "minecraft:redstone_wire[east=side,north=none,power=14,south=none,west=side]":
+    "55:14",
+  "minecraft:redstone_wire[east=side,north=none,power=14,south=none,west=up]":
+    "55:14",
+  "minecraft:redstone_wire[east=side,north=none,power=14,south=side,west=none]":
+    "55:14",
+  "minecraft:redstone_wire[east=side,north=none,power=14,south=side,west=side]":
+    "55:14",
+  "minecraft:redstone_wire[east=side,north=none,power=14,south=side,west=up]":
+    "55:14",
+  "minecraft:redstone_wire[east=side,north=none,power=14,south=up,west=none]":
+    "55:14",
+  "minecraft:redstone_wire[east=side,north=none,power=14,south=up,west=side]":
+    "55:14",
+  "minecraft:redstone_wire[east=side,north=none,power=14,south=up,west=up]":
+    "55:14",
+  "minecraft:redstone_wire[east=side,north=side,power=14,south=none,west=none]":
+    "55:14",
+  "minecraft:redstone_wire[east=side,north=side,power=14,south=none,west=side]":
+    "55:14",
+  "minecraft:redstone_wire[east=side,north=side,power=14,south=none,west=up]":
+    "55:14",
+  "minecraft:redstone_wire[east=side,north=side,power=14,south=side,west=none]":
+    "55:14",
+  "minecraft:redstone_wire[east=side,north=side,power=14,south=side,west=side]":
+    "55:14",
+  "minecraft:redstone_wire[east=side,north=side,power=14,south=side,west=up]":
+    "55:14",
+  "minecraft:redstone_wire[east=side,north=side,power=14,south=up,west=none]":
+    "55:14",
+  "minecraft:redstone_wire[east=side,north=side,power=14,south=up,west=side]":
+    "55:14",
+  "minecraft:redstone_wire[east=side,north=side,power=14,south=up,west=up]":
+    "55:14",
+  "minecraft:redstone_wire[east=side,north=up,power=14,south=none,west=none]":
+    "55:14",
+  "minecraft:redstone_wire[east=side,north=up,power=14,south=none,west=side]":
+    "55:14",
+  "minecraft:redstone_wire[east=side,north=up,power=14,south=none,west=up]":
+    "55:14",
+  "minecraft:redstone_wire[east=side,north=up,power=14,south=side,west=none]":
+    "55:14",
+  "minecraft:redstone_wire[east=side,north=up,power=14,south=side,west=side]":
+    "55:14",
+  "minecraft:redstone_wire[east=side,north=up,power=14,south=side,west=up]":
+    "55:14",
+  "minecraft:redstone_wire[east=side,north=up,power=14,south=up,west=none]":
+    "55:14",
+  "minecraft:redstone_wire[east=side,north=up,power=14,south=up,west=side]":
+    "55:14",
+  "minecraft:redstone_wire[east=side,north=up,power=14,south=up,west=up]":
+    "55:14",
+  "minecraft:redstone_wire[east=up,north=none,power=14,south=none,west=none]":
+    "55:14",
+  "minecraft:redstone_wire[east=up,north=none,power=14,south=none,west=side]":
+    "55:14",
+  "minecraft:redstone_wire[east=up,north=none,power=14,south=none,west=up]":
+    "55:14",
+  "minecraft:redstone_wire[east=up,north=none,power=14,south=side,west=none]":
+    "55:14",
+  "minecraft:redstone_wire[east=up,north=none,power=14,south=side,west=side]":
+    "55:14",
+  "minecraft:redstone_wire[east=up,north=none,power=14,south=side,west=up]":
+    "55:14",
+  "minecraft:redstone_wire[east=up,north=none,power=14,south=up,west=none]":
+    "55:14",
+  "minecraft:redstone_wire[east=up,north=none,power=14,south=up,west=side]":
+    "55:14",
+  "minecraft:redstone_wire[east=up,north=none,power=14,south=up,west=up]":
+    "55:14",
+  "minecraft:redstone_wire[east=up,north=side,power=14,south=none,west=none]":
+    "55:14",
+  "minecraft:redstone_wire[east=up,north=side,power=14,south=none,west=side]":
+    "55:14",
+  "minecraft:redstone_wire[east=up,north=side,power=14,south=none,west=up]":
+    "55:14",
+  "minecraft:redstone_wire[east=up,north=side,power=14,south=side,west=none]":
+    "55:14",
+  "minecraft:redstone_wire[east=up,north=side,power=14,south=side,west=side]":
+    "55:14",
+  "minecraft:redstone_wire[east=up,north=side,power=14,south=side,west=up]":
+    "55:14",
+  "minecraft:redstone_wire[east=up,north=side,power=14,south=up,west=none]":
+    "55:14",
+  "minecraft:redstone_wire[east=up,north=side,power=14,south=up,west=side]":
+    "55:14",
+  "minecraft:redstone_wire[east=up,north=side,power=14,south=up,west=up]":
+    "55:14",
+  "minecraft:redstone_wire[east=up,north=up,power=14,south=none,west=none]":
+    "55:14",
+  "minecraft:redstone_wire[east=up,north=up,power=14,south=none,west=side]":
+    "55:14",
+  "minecraft:redstone_wire[east=up,north=up,power=14,south=none,west=up]":
+    "55:14",
+  "minecraft:redstone_wire[east=up,north=up,power=14,south=side,west=none]":
+    "55:14",
+  "minecraft:redstone_wire[east=up,north=up,power=14,south=side,west=side]":
+    "55:14",
+  "minecraft:redstone_wire[east=up,north=up,power=14,south=side,west=up]":
+    "55:14",
+  "minecraft:redstone_wire[east=up,north=up,power=14,south=up,west=none]":
+    "55:14",
+  "minecraft:redstone_wire[east=up,north=up,power=14,south=up,west=side]":
+    "55:14",
+  "minecraft:redstone_wire[east=up,north=up,power=14,south=up,west=up]":
+    "55:14",
+  "minecraft:redstone_wire[east=none,north=none,power=15,south=none,west=none]":
+    "55:15",
+  "minecraft:redstone_wire[east=none,north=none,power=15,south=none,west=side]":
+    "55:15",
+  "minecraft:redstone_wire[east=none,north=none,power=15,south=none,west=up]":
+    "55:15",
+  "minecraft:redstone_wire[east=none,north=none,power=15,south=side,west=none]":
+    "55:15",
+  "minecraft:redstone_wire[east=none,north=none,power=15,south=side,west=side]":
+    "55:15",
+  "minecraft:redstone_wire[east=none,north=none,power=15,south=side,west=up]":
+    "55:15",
+  "minecraft:redstone_wire[east=none,north=none,power=15,south=up,west=none]":
+    "55:15",
+  "minecraft:redstone_wire[east=none,north=none,power=15,south=up,west=side]":
+    "55:15",
+  "minecraft:redstone_wire[east=none,north=none,power=15,south=up,west=up]":
+    "55:15",
+  "minecraft:redstone_wire[east=none,north=side,power=15,south=none,west=none]":
+    "55:15",
+  "minecraft:redstone_wire[east=none,north=side,power=15,south=none,west=side]":
+    "55:15",
+  "minecraft:redstone_wire[east=none,north=side,power=15,south=none,west=up]":
+    "55:15",
+  "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=none]":
+    "55:15",
+  "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=side]":
+    "55:15",
+  "minecraft:redstone_wire[east=none,north=side,power=15,south=side,west=up]":
+    "55:15",
+  "minecraft:redstone_wire[east=none,north=side,power=15,south=up,west=none]":
+    "55:15",
+  "minecraft:redstone_wire[east=none,north=side,power=15,south=up,west=side]":
+    "55:15",
+  "minecraft:redstone_wire[east=none,north=side,power=15,south=up,west=up]":
+    "55:15",
+  "minecraft:redstone_wire[east=none,north=up,power=15,south=none,west=none]":
+    "55:15",
+  "minecraft:redstone_wire[east=none,north=up,power=15,south=none,west=side]":
+    "55:15",
+  "minecraft:redstone_wire[east=none,north=up,power=15,south=none,west=up]":
+    "55:15",
+  "minecraft:redstone_wire[east=none,north=up,power=15,south=side,west=none]":
+    "55:15",
+  "minecraft:redstone_wire[east=none,north=up,power=15,south=side,west=side]":
+    "55:15",
+  "minecraft:redstone_wire[east=none,north=up,power=15,south=side,west=up]":
+    "55:15",
+  "minecraft:redstone_wire[east=none,north=up,power=15,south=up,west=none]":
+    "55:15",
+  "minecraft:redstone_wire[east=none,north=up,power=15,south=up,west=side]":
+    "55:15",
+  "minecraft:redstone_wire[east=none,north=up,power=15,south=up,west=up]":
+    "55:15",
+  "minecraft:redstone_wire[east=side,north=none,power=15,south=none,west=none]":
+    "55:15",
+  "minecraft:redstone_wire[east=side,north=none,power=15,south=none,west=side]":
+    "55:15",
+  "minecraft:redstone_wire[east=side,north=none,power=15,south=none,west=up]":
+    "55:15",
+  "minecraft:redstone_wire[east=side,north=none,power=15,south=side,west=none]":
+    "55:15",
+  "minecraft:redstone_wire[east=side,north=none,power=15,south=side,west=side]":
+    "55:15",
+  "minecraft:redstone_wire[east=side,north=none,power=15,south=side,west=up]":
+    "55:15",
+  "minecraft:redstone_wire[east=side,north=none,power=15,south=up,west=none]":
+    "55:15",
+  "minecraft:redstone_wire[east=side,north=none,power=15,south=up,west=side]":
+    "55:15",
+  "minecraft:redstone_wire[east=side,north=none,power=15,south=up,west=up]":
+    "55:15",
+  "minecraft:redstone_wire[east=side,north=side,power=15,south=none,west=none]":
+    "55:15",
+  "minecraft:redstone_wire[east=side,north=side,power=15,south=none,west=side]":
+    "55:15",
+  "minecraft:redstone_wire[east=side,north=side,power=15,south=none,west=up]":
+    "55:15",
+  "minecraft:redstone_wire[east=side,north=side,power=15,south=side,west=none]":
+    "55:15",
+  "minecraft:redstone_wire[east=side,north=side,power=15,south=side,west=side]":
+    "55:15",
+  "minecraft:redstone_wire[east=side,north=side,power=15,south=side,west=up]":
+    "55:15",
+  "minecraft:redstone_wire[east=side,north=side,power=15,south=up,west=none]":
+    "55:15",
+  "minecraft:redstone_wire[east=side,north=side,power=15,south=up,west=side]":
+    "55:15",
+  "minecraft:redstone_wire[east=side,north=side,power=15,south=up,west=up]":
+    "55:15",
+  "minecraft:redstone_wire[east=side,north=up,power=15,south=none,west=none]":
+    "55:15",
+  "minecraft:redstone_wire[east=side,north=up,power=15,south=none,west=side]":
+    "55:15",
+  "minecraft:redstone_wire[east=side,north=up,power=15,south=none,west=up]":
+    "55:15",
+  "minecraft:redstone_wire[east=side,north=up,power=15,south=side,west=none]":
+    "55:15",
+  "minecraft:redstone_wire[east=side,north=up,power=15,south=side,west=side]":
+    "55:15",
+  "minecraft:redstone_wire[east=side,north=up,power=15,south=side,west=up]":
+    "55:15",
+  "minecraft:redstone_wire[east=side,north=up,power=15,south=up,west=none]":
+    "55:15",
+  "minecraft:redstone_wire[east=side,north=up,power=15,south=up,west=side]":
+    "55:15",
+  "minecraft:redstone_wire[east=side,north=up,power=15,south=up,west=up]":
+    "55:15",
+  "minecraft:redstone_wire[east=up,north=none,power=15,south=none,west=none]":
+    "55:15",
+  "minecraft:redstone_wire[east=up,north=none,power=15,south=none,west=side]":
+    "55:15",
+  "minecraft:redstone_wire[east=up,north=none,power=15,south=none,west=up]":
+    "55:15",
+  "minecraft:redstone_wire[east=up,north=none,power=15,south=side,west=none]":
+    "55:15",
+  "minecraft:redstone_wire[east=up,north=none,power=15,south=side,west=side]":
+    "55:15",
+  "minecraft:redstone_wire[east=up,north=none,power=15,south=side,west=up]":
+    "55:15",
+  "minecraft:redstone_wire[east=up,north=none,power=15,south=up,west=none]":
+    "55:15",
+  "minecraft:redstone_wire[east=up,north=none,power=15,south=up,west=side]":
+    "55:15",
+  "minecraft:redstone_wire[east=up,north=none,power=15,south=up,west=up]":
+    "55:15",
+  "minecraft:redstone_wire[east=up,north=side,power=15,south=none,west=none]":
+    "55:15",
+  "minecraft:redstone_wire[east=up,north=side,power=15,south=none,west=side]":
+    "55:15",
+  "minecraft:redstone_wire[east=up,north=side,power=15,south=none,west=up]":
+    "55:15",
+  "minecraft:redstone_wire[east=up,north=side,power=15,south=side,west=none]":
+    "55:15",
+  "minecraft:redstone_wire[east=up,north=side,power=15,south=side,west=side]":
+    "55:15",
+  "minecraft:redstone_wire[east=up,north=side,power=15,south=side,west=up]":
+    "55:15",
+  "minecraft:redstone_wire[east=up,north=side,power=15,south=up,west=none]":
+    "55:15",
+  "minecraft:redstone_wire[east=up,north=side,power=15,south=up,west=side]":
+    "55:15",
+  "minecraft:redstone_wire[east=up,north=side,power=15,south=up,west=up]":
+    "55:15",
+  "minecraft:redstone_wire[east=up,north=up,power=15,south=none,west=none]":
+    "55:15",
+  "minecraft:redstone_wire[east=up,north=up,power=15,south=none,west=side]":
+    "55:15",
+  "minecraft:redstone_wire[east=up,north=up,power=15,south=none,west=up]":
+    "55:15",
+  "minecraft:redstone_wire[east=up,north=up,power=15,south=side,west=none]":
+    "55:15",
+  "minecraft:redstone_wire[east=up,north=up,power=15,south=side,west=side]":
+    "55:15",
+  "minecraft:redstone_wire[east=up,north=up,power=15,south=side,west=up]":
+    "55:15",
+  "minecraft:redstone_wire[east=up,north=up,power=15,south=up,west=none]":
+    "55:15",
+  "minecraft:redstone_wire[east=up,north=up,power=15,south=up,west=side]":
+    "55:15",
+  "minecraft:redstone_wire[east=up,north=up,power=15,south=up,west=up]":
+    "55:15",
   "minecraft:diamond_ore": "56:0",
   "minecraft:diamond_block": "57:0",
   "minecraft:crafting_table": "58:0",
@@ -1730,16 +3016,26 @@ export const FORGE_1_12_FLATTEN: Readonly<Record<string, string>> = {
   "minecraft:standing_sign[rotation=13]": "63:13",
   "minecraft:standing_sign[rotation=14]": "63:14",
   "minecraft:standing_sign[rotation=15]": "63:15",
-  "minecraft:wooden_door[facing=east,half=lower,hinge=left,open=false,powered=false]": "64:0",
-  "minecraft:wooden_door[facing=south,half=lower,hinge=left,open=false,powered=false]": "64:1",
-  "minecraft:wooden_door[facing=west,half=lower,hinge=left,open=false,powered=false]": "64:2",
-  "minecraft:wooden_door[facing=north,half=lower,hinge=left,open=false,powered=false]": "64:3",
-  "minecraft:wooden_door[facing=east,half=lower,hinge=left,open=true,powered=false]": "64:4",
-  "minecraft:wooden_door[facing=south,half=lower,hinge=left,open=true,powered=false]": "64:5",
-  "minecraft:wooden_door[facing=west,half=lower,hinge=left,open=true,powered=false]": "64:6",
-  "minecraft:wooden_door[facing=north,half=lower,hinge=left,open=true,powered=false]": "64:7",
-  "minecraft:wooden_door[facing=north,half=upper,hinge=left,open=false,powered=false]": "64:8",
-  "minecraft:wooden_door[facing=north,half=upper,hinge=right,open=false,powered=false]": "64:9",
+  "minecraft:wooden_door[facing=east,half=lower,hinge=left,open=false,powered=false]":
+    "64:0",
+  "minecraft:wooden_door[facing=south,half=lower,hinge=left,open=false,powered=false]":
+    "64:1",
+  "minecraft:wooden_door[facing=west,half=lower,hinge=left,open=false,powered=false]":
+    "64:2",
+  "minecraft:wooden_door[facing=north,half=lower,hinge=left,open=false,powered=false]":
+    "64:3",
+  "minecraft:wooden_door[facing=east,half=lower,hinge=left,open=true,powered=false]":
+    "64:4",
+  "minecraft:wooden_door[facing=south,half=lower,hinge=left,open=true,powered=false]":
+    "64:5",
+  "minecraft:wooden_door[facing=west,half=lower,hinge=left,open=true,powered=false]":
+    "64:6",
+  "minecraft:wooden_door[facing=north,half=lower,hinge=left,open=true,powered=false]":
+    "64:7",
+  "minecraft:wooden_door[facing=north,half=upper,hinge=left,open=false,powered=false]":
+    "64:8",
+  "minecraft:wooden_door[facing=north,half=upper,hinge=right,open=false,powered=false]":
+    "64:9",
   "minecraft:ladder[facing=north]": "65:2",
   "minecraft:ladder[facing=south]": "65:3",
   "minecraft:ladder[facing=west]": "65:4",
@@ -1816,16 +3112,26 @@ export const FORGE_1_12_FLATTEN: Readonly<Record<string, string>> = {
   "minecraft:lever[face=ceiling,facing=east,powered=true]": "69:15",
   "minecraft:stone_pressure_plate[powered=false]": "70:0",
   "minecraft:stone_pressure_plate[powered=true]": "70:1",
-  "minecraft:iron_door[facing=east,half=lower,hinge=left,open=false,powered=false]": "71:0",
-  "minecraft:iron_door[facing=south,half=lower,hinge=left,open=false,powered=false]": "71:1",
-  "minecraft:iron_door[facing=west,half=lower,hinge=left,open=false,powered=false]": "71:2",
-  "minecraft:iron_door[facing=north,half=lower,hinge=left,open=false,powered=false]": "71:3",
-  "minecraft:iron_door[facing=east,half=lower,hinge=left,open=true,powered=false]": "71:4",
-  "minecraft:iron_door[facing=south,half=lower,hinge=left,open=true,powered=false]": "71:5",
-  "minecraft:iron_door[facing=west,half=lower,hinge=left,open=true,powered=false]": "71:6",
-  "minecraft:iron_door[facing=north,half=lower,hinge=left,open=true,powered=false]": "71:7",
-  "minecraft:iron_door[facing=north,half=upper,hinge=left,open=false,powered=false]": "71:8",
-  "minecraft:iron_door[facing=north,half=upper,hinge=right,open=false,powered=false]": "71:9",
+  "minecraft:iron_door[facing=east,half=lower,hinge=left,open=false,powered=false]":
+    "71:0",
+  "minecraft:iron_door[facing=south,half=lower,hinge=left,open=false,powered=false]":
+    "71:1",
+  "minecraft:iron_door[facing=west,half=lower,hinge=left,open=false,powered=false]":
+    "71:2",
+  "minecraft:iron_door[facing=north,half=lower,hinge=left,open=false,powered=false]":
+    "71:3",
+  "minecraft:iron_door[facing=east,half=lower,hinge=left,open=true,powered=false]":
+    "71:4",
+  "minecraft:iron_door[facing=south,half=lower,hinge=left,open=true,powered=false]":
+    "71:5",
+  "minecraft:iron_door[facing=west,half=lower,hinge=left,open=true,powered=false]":
+    "71:6",
+  "minecraft:iron_door[facing=north,half=lower,hinge=left,open=true,powered=false]":
+    "71:7",
+  "minecraft:iron_door[facing=north,half=upper,hinge=left,open=false,powered=false]":
+    "71:8",
+  "minecraft:iron_door[facing=north,half=upper,hinge=right,open=false,powered=false]":
+    "71:9",
   "minecraft:wooden_pressure_plate[powered=false]": "72:0",
   "minecraft:wooden_pressure_plate[powered=true]": "72:1",
   "minecraft:redstone_ore": "73:0",
@@ -1918,38 +3224,70 @@ export const FORGE_1_12_FLATTEN: Readonly<Record<string, string>> = {
   "minecraft:cake[bites=4]": "92:4",
   "minecraft:cake[bites=5]": "92:5",
   "minecraft:cake[bites=6]": "92:6",
-  "minecraft:unpowered_repeater[delay=1,facing=south,locked=false,powered=false]": "93:0",
-  "minecraft:unpowered_repeater[delay=1,facing=west,locked=false,powered=false]": "93:1",
-  "minecraft:unpowered_repeater[delay=1,facing=north,locked=false,powered=false]": "93:2",
-  "minecraft:unpowered_repeater[delay=1,facing=east,locked=false,powered=false]": "93:3",
-  "minecraft:unpowered_repeater[delay=2,facing=south,locked=false,powered=false]": "93:4",
-  "minecraft:unpowered_repeater[delay=2,facing=west,locked=false,powered=false]": "93:5",
-  "minecraft:unpowered_repeater[delay=2,facing=north,locked=false,powered=false]": "93:6",
-  "minecraft:unpowered_repeater[delay=2,facing=east,locked=false,powered=false]": "93:7",
-  "minecraft:unpowered_repeater[delay=3,facing=south,locked=false,powered=false]": "93:8",
-  "minecraft:unpowered_repeater[delay=3,facing=west,locked=false,powered=false]": "93:9",
-  "minecraft:unpowered_repeater[delay=3,facing=north,locked=false,powered=false]": "93:10",
-  "minecraft:unpowered_repeater[delay=3,facing=east,locked=false,powered=false]": "93:11",
-  "minecraft:unpowered_repeater[delay=4,facing=south,locked=false,powered=false]": "93:12",
-  "minecraft:unpowered_repeater[delay=4,facing=west,locked=false,powered=false]": "93:13",
-  "minecraft:unpowered_repeater[delay=4,facing=north,locked=false,powered=false]": "93:14",
-  "minecraft:unpowered_repeater[delay=4,facing=east,locked=false,powered=false]": "93:15",
-  "minecraft:powered_repeater[delay=1,facing=south,locked=false,powered=true]": "94:0",
-  "minecraft:powered_repeater[delay=1,facing=west,locked=false,powered=true]": "94:1",
-  "minecraft:powered_repeater[delay=1,facing=north,locked=false,powered=true]": "94:2",
-  "minecraft:powered_repeater[delay=1,facing=east,locked=false,powered=true]": "94:3",
-  "minecraft:powered_repeater[delay=2,facing=south,locked=false,powered=true]": "94:4",
-  "minecraft:powered_repeater[delay=2,facing=west,locked=false,powered=true]": "94:5",
-  "minecraft:powered_repeater[delay=2,facing=north,locked=false,powered=true]": "94:6",
-  "minecraft:powered_repeater[delay=2,facing=east,locked=false,powered=true]": "94:7",
-  "minecraft:powered_repeater[delay=3,facing=south,locked=false,powered=true]": "94:8",
-  "minecraft:powered_repeater[delay=3,facing=west,locked=false,powered=true]": "94:9",
-  "minecraft:powered_repeater[delay=3,facing=north,locked=false,powered=true]": "94:10",
-  "minecraft:powered_repeater[delay=3,facing=east,locked=false,powered=true]": "94:11",
-  "minecraft:powered_repeater[delay=4,facing=south,locked=false,powered=true]": "94:12",
-  "minecraft:powered_repeater[delay=4,facing=west,locked=false,powered=true]": "94:13",
-  "minecraft:powered_repeater[delay=4,facing=north,locked=false,powered=true]": "94:14",
-  "minecraft:powered_repeater[delay=4,facing=east,locked=false,powered=true]": "94:15",
+  "minecraft:unpowered_repeater[delay=1,facing=south,locked=false,powered=false]":
+    "93:0",
+  "minecraft:unpowered_repeater[delay=1,facing=west,locked=false,powered=false]":
+    "93:1",
+  "minecraft:unpowered_repeater[delay=1,facing=north,locked=false,powered=false]":
+    "93:2",
+  "minecraft:unpowered_repeater[delay=1,facing=east,locked=false,powered=false]":
+    "93:3",
+  "minecraft:unpowered_repeater[delay=2,facing=south,locked=false,powered=false]":
+    "93:4",
+  "minecraft:unpowered_repeater[delay=2,facing=west,locked=false,powered=false]":
+    "93:5",
+  "minecraft:unpowered_repeater[delay=2,facing=north,locked=false,powered=false]":
+    "93:6",
+  "minecraft:unpowered_repeater[delay=2,facing=east,locked=false,powered=false]":
+    "93:7",
+  "minecraft:unpowered_repeater[delay=3,facing=south,locked=false,powered=false]":
+    "93:8",
+  "minecraft:unpowered_repeater[delay=3,facing=west,locked=false,powered=false]":
+    "93:9",
+  "minecraft:unpowered_repeater[delay=3,facing=north,locked=false,powered=false]":
+    "93:10",
+  "minecraft:unpowered_repeater[delay=3,facing=east,locked=false,powered=false]":
+    "93:11",
+  "minecraft:unpowered_repeater[delay=4,facing=south,locked=false,powered=false]":
+    "93:12",
+  "minecraft:unpowered_repeater[delay=4,facing=west,locked=false,powered=false]":
+    "93:13",
+  "minecraft:unpowered_repeater[delay=4,facing=north,locked=false,powered=false]":
+    "93:14",
+  "minecraft:unpowered_repeater[delay=4,facing=east,locked=false,powered=false]":
+    "93:15",
+  "minecraft:powered_repeater[delay=1,facing=south,locked=false,powered=true]":
+    "94:0",
+  "minecraft:powered_repeater[delay=1,facing=west,locked=false,powered=true]":
+    "94:1",
+  "minecraft:powered_repeater[delay=1,facing=north,locked=false,powered=true]":
+    "94:2",
+  "minecraft:powered_repeater[delay=1,facing=east,locked=false,powered=true]":
+    "94:3",
+  "minecraft:powered_repeater[delay=2,facing=south,locked=false,powered=true]":
+    "94:4",
+  "minecraft:powered_repeater[delay=2,facing=west,locked=false,powered=true]":
+    "94:5",
+  "minecraft:powered_repeater[delay=2,facing=north,locked=false,powered=true]":
+    "94:6",
+  "minecraft:powered_repeater[delay=2,facing=east,locked=false,powered=true]":
+    "94:7",
+  "minecraft:powered_repeater[delay=3,facing=south,locked=false,powered=true]":
+    "94:8",
+  "minecraft:powered_repeater[delay=3,facing=west,locked=false,powered=true]":
+    "94:9",
+  "minecraft:powered_repeater[delay=3,facing=north,locked=false,powered=true]":
+    "94:10",
+  "minecraft:powered_repeater[delay=3,facing=east,locked=false,powered=true]":
+    "94:11",
+  "minecraft:powered_repeater[delay=4,facing=south,locked=false,powered=true]":
+    "94:12",
+  "minecraft:powered_repeater[delay=4,facing=west,locked=false,powered=true]":
+    "94:13",
+  "minecraft:powered_repeater[delay=4,facing=north,locked=false,powered=true]":
+    "94:14",
+  "minecraft:powered_repeater[delay=4,facing=east,locked=false,powered=true]":
+    "94:15",
   "minecraft:stained_glass[color=white]": "95:0",
   "minecraft:stained_glass[color=orange]": "95:1",
   "minecraft:stained_glass[color=magenta]": "95:2",
@@ -2010,7 +3348,8 @@ export const FORGE_1_12_FLATTEN: Readonly<Record<string, string>> = {
   "minecraft:iron_bars[east=true,north=true,south=false,west=true]": "101:0",
   "minecraft:iron_bars[east=true,north=true,south=true,west=false]": "101:0",
   "minecraft:iron_bars[east=true,north=true,south=true,west=true]": "101:0",
-  "minecraft:glass_pane[east=false,north=false,south=false,west=false]": "102:0",
+  "minecraft:glass_pane[east=false,north=false,south=false,west=false]":
+    "102:0",
   "minecraft:glass_pane[east=false,north=false,south=false,west=true]": "102:0",
   "minecraft:glass_pane[east=false,north=false,south=true,west=false]": "102:0",
   "minecraft:glass_pane[east=false,north=false,south=true,west=true]": "102:0",
@@ -2043,30 +3382,54 @@ export const FORGE_1_12_FLATTEN: Readonly<Record<string, string>> = {
   "minecraft:melon_stem[age=5]": "105:5",
   "minecraft:melon_stem[age=6]": "105:6",
   "minecraft:melon_stem[age=7]": "105:7",
-  "minecraft:vine[east=false,north=false,south=false,up=false,west=false]": "106:0",
-  "minecraft:vine[east=false,north=false,south=true,up=false,west=false]": "106:1",
-  "minecraft:vine[east=false,north=false,south=false,up=false,west=true]": "106:2",
-  "minecraft:vine[east=false,north=false,south=true,up=false,west=true]": "106:3",
-  "minecraft:vine[east=false,north=true,south=false,up=false,west=false]": "106:4",
-  "minecraft:vine[east=false,north=true,south=true,up=false,west=false]": "106:5",
-  "minecraft:vine[east=false,north=true,south=false,up=false,west=true]": "106:6",
-  "minecraft:vine[east=false,north=true,south=true,up=false,west=true]": "106:7",
-  "minecraft:vine[east=true,north=false,south=false,up=false,west=false]": "106:8",
-  "minecraft:vine[east=true,north=false,south=true,up=false,west=false]": "106:9",
-  "minecraft:vine[east=true,north=false,south=false,up=false,west=true]": "106:10",
-  "minecraft:vine[east=true,north=false,south=true,up=false,west=true]": "106:11",
-  "minecraft:vine[east=true,north=true,south=false,up=false,west=false]": "106:12",
-  "minecraft:vine[east=true,north=true,south=true,up=false,west=false]": "106:13",
-  "minecraft:vine[east=true,north=true,south=false,up=false,west=true]": "106:14",
-  "minecraft:vine[east=true,north=true,south=true,up=false,west=true]": "106:15",
-  "minecraft:fence_gate[facing=south,in_wall=false,open=false,powered=false]": "107:0",
-  "minecraft:fence_gate[facing=west,in_wall=false,open=false,powered=false]": "107:1",
-  "minecraft:fence_gate[facing=north,in_wall=false,open=false,powered=false]": "107:2",
-  "minecraft:fence_gate[facing=east,in_wall=false,open=false,powered=false]": "107:3",
-  "minecraft:fence_gate[facing=south,in_wall=false,open=true,powered=false]": "107:4",
-  "minecraft:fence_gate[facing=west,in_wall=false,open=true,powered=false]": "107:5",
-  "minecraft:fence_gate[facing=north,in_wall=false,open=true,powered=false]": "107:6",
-  "minecraft:fence_gate[facing=east,in_wall=false,open=true,powered=false]": "107:7",
+  "minecraft:vine[east=false,north=false,south=false,up=false,west=false]":
+    "106:0",
+  "minecraft:vine[east=false,north=false,south=true,up=false,west=false]":
+    "106:1",
+  "minecraft:vine[east=false,north=false,south=false,up=false,west=true]":
+    "106:2",
+  "minecraft:vine[east=false,north=false,south=true,up=false,west=true]":
+    "106:3",
+  "minecraft:vine[east=false,north=true,south=false,up=false,west=false]":
+    "106:4",
+  "minecraft:vine[east=false,north=true,south=true,up=false,west=false]":
+    "106:5",
+  "minecraft:vine[east=false,north=true,south=false,up=false,west=true]":
+    "106:6",
+  "minecraft:vine[east=false,north=true,south=true,up=false,west=true]":
+    "106:7",
+  "minecraft:vine[east=true,north=false,south=false,up=false,west=false]":
+    "106:8",
+  "minecraft:vine[east=true,north=false,south=true,up=false,west=false]":
+    "106:9",
+  "minecraft:vine[east=true,north=false,south=false,up=false,west=true]":
+    "106:10",
+  "minecraft:vine[east=true,north=false,south=true,up=false,west=true]":
+    "106:11",
+  "minecraft:vine[east=true,north=true,south=false,up=false,west=false]":
+    "106:12",
+  "minecraft:vine[east=true,north=true,south=true,up=false,west=false]":
+    "106:13",
+  "minecraft:vine[east=true,north=true,south=false,up=false,west=true]":
+    "106:14",
+  "minecraft:vine[east=true,north=true,south=true,up=false,west=true]":
+    "106:15",
+  "minecraft:fence_gate[facing=south,in_wall=false,open=false,powered=false]":
+    "107:0",
+  "minecraft:fence_gate[facing=west,in_wall=false,open=false,powered=false]":
+    "107:1",
+  "minecraft:fence_gate[facing=north,in_wall=false,open=false,powered=false]":
+    "107:2",
+  "minecraft:fence_gate[facing=east,in_wall=false,open=false,powered=false]":
+    "107:3",
+  "minecraft:fence_gate[facing=south,in_wall=false,open=true,powered=false]":
+    "107:4",
+  "minecraft:fence_gate[facing=west,in_wall=false,open=true,powered=false]":
+    "107:5",
+  "minecraft:fence_gate[facing=north,in_wall=false,open=true,powered=false]":
+    "107:6",
+  "minecraft:fence_gate[facing=east,in_wall=false,open=true,powered=false]":
+    "107:7",
   "minecraft:brick_stairs[facing=east,half=bottom,shape=straight]": "108:0",
   "minecraft:brick_stairs[facing=east,half=bottom,shape=inner_left]": "108:0",
   "minecraft:brick_stairs[facing=east,half=bottom,shape=inner_right]": "108:0",
@@ -2107,119 +3470,217 @@ export const FORGE_1_12_FLATTEN: Readonly<Record<string, string>> = {
   "minecraft:brick_stairs[facing=north,half=top,shape=inner_right]": "108:7",
   "minecraft:brick_stairs[facing=north,half=top,shape=outer_left]": "108:7",
   "minecraft:brick_stairs[facing=north,half=top,shape=outer_right]": "108:7",
-  "minecraft:stone_brick_stairs[facing=east,half=bottom,shape=straight]": "109:0",
-  "minecraft:stone_brick_stairs[facing=east,half=bottom,shape=inner_left]": "109:0",
-  "minecraft:stone_brick_stairs[facing=east,half=bottom,shape=inner_right]": "109:0",
-  "minecraft:stone_brick_stairs[facing=east,half=bottom,shape=outer_left]": "109:0",
-  "minecraft:stone_brick_stairs[facing=east,half=bottom,shape=outer_right]": "109:0",
-  "minecraft:stone_brick_stairs[facing=west,half=bottom,shape=straight]": "109:1",
-  "minecraft:stone_brick_stairs[facing=west,half=bottom,shape=inner_left]": "109:1",
-  "minecraft:stone_brick_stairs[facing=west,half=bottom,shape=inner_right]": "109:1",
-  "minecraft:stone_brick_stairs[facing=west,half=bottom,shape=outer_left]": "109:1",
-  "minecraft:stone_brick_stairs[facing=west,half=bottom,shape=outer_right]": "109:1",
-  "minecraft:stone_brick_stairs[facing=south,half=bottom,shape=straight]": "109:2",
-  "minecraft:stone_brick_stairs[facing=south,half=bottom,shape=inner_left]": "109:2",
-  "minecraft:stone_brick_stairs[facing=south,half=bottom,shape=inner_right]": "109:2",
-  "minecraft:stone_brick_stairs[facing=south,half=bottom,shape=outer_left]": "109:2",
-  "minecraft:stone_brick_stairs[facing=south,half=bottom,shape=outer_right]": "109:2",
-  "minecraft:stone_brick_stairs[facing=north,half=bottom,shape=straight]": "109:3",
-  "minecraft:stone_brick_stairs[facing=north,half=bottom,shape=inner_left]": "109:3",
-  "minecraft:stone_brick_stairs[facing=north,half=bottom,shape=inner_right]": "109:3",
-  "minecraft:stone_brick_stairs[facing=north,half=bottom,shape=outer_left]": "109:3",
-  "minecraft:stone_brick_stairs[facing=north,half=bottom,shape=outer_right]": "109:3",
+  "minecraft:stone_brick_stairs[facing=east,half=bottom,shape=straight]":
+    "109:0",
+  "minecraft:stone_brick_stairs[facing=east,half=bottom,shape=inner_left]":
+    "109:0",
+  "minecraft:stone_brick_stairs[facing=east,half=bottom,shape=inner_right]":
+    "109:0",
+  "minecraft:stone_brick_stairs[facing=east,half=bottom,shape=outer_left]":
+    "109:0",
+  "minecraft:stone_brick_stairs[facing=east,half=bottom,shape=outer_right]":
+    "109:0",
+  "minecraft:stone_brick_stairs[facing=west,half=bottom,shape=straight]":
+    "109:1",
+  "minecraft:stone_brick_stairs[facing=west,half=bottom,shape=inner_left]":
+    "109:1",
+  "minecraft:stone_brick_stairs[facing=west,half=bottom,shape=inner_right]":
+    "109:1",
+  "minecraft:stone_brick_stairs[facing=west,half=bottom,shape=outer_left]":
+    "109:1",
+  "minecraft:stone_brick_stairs[facing=west,half=bottom,shape=outer_right]":
+    "109:1",
+  "minecraft:stone_brick_stairs[facing=south,half=bottom,shape=straight]":
+    "109:2",
+  "minecraft:stone_brick_stairs[facing=south,half=bottom,shape=inner_left]":
+    "109:2",
+  "minecraft:stone_brick_stairs[facing=south,half=bottom,shape=inner_right]":
+    "109:2",
+  "minecraft:stone_brick_stairs[facing=south,half=bottom,shape=outer_left]":
+    "109:2",
+  "minecraft:stone_brick_stairs[facing=south,half=bottom,shape=outer_right]":
+    "109:2",
+  "minecraft:stone_brick_stairs[facing=north,half=bottom,shape=straight]":
+    "109:3",
+  "minecraft:stone_brick_stairs[facing=north,half=bottom,shape=inner_left]":
+    "109:3",
+  "minecraft:stone_brick_stairs[facing=north,half=bottom,shape=inner_right]":
+    "109:3",
+  "minecraft:stone_brick_stairs[facing=north,half=bottom,shape=outer_left]":
+    "109:3",
+  "minecraft:stone_brick_stairs[facing=north,half=bottom,shape=outer_right]":
+    "109:3",
   "minecraft:stone_brick_stairs[facing=east,half=top,shape=straight]": "109:4",
-  "minecraft:stone_brick_stairs[facing=east,half=top,shape=inner_left]": "109:4",
-  "minecraft:stone_brick_stairs[facing=east,half=top,shape=inner_right]": "109:4",
-  "minecraft:stone_brick_stairs[facing=east,half=top,shape=outer_left]": "109:4",
-  "minecraft:stone_brick_stairs[facing=east,half=top,shape=outer_right]": "109:4",
+  "minecraft:stone_brick_stairs[facing=east,half=top,shape=inner_left]":
+    "109:4",
+  "minecraft:stone_brick_stairs[facing=east,half=top,shape=inner_right]":
+    "109:4",
+  "minecraft:stone_brick_stairs[facing=east,half=top,shape=outer_left]":
+    "109:4",
+  "minecraft:stone_brick_stairs[facing=east,half=top,shape=outer_right]":
+    "109:4",
   "minecraft:stone_brick_stairs[facing=west,half=top,shape=straight]": "109:5",
-  "minecraft:stone_brick_stairs[facing=west,half=top,shape=inner_left]": "109:5",
-  "minecraft:stone_brick_stairs[facing=west,half=top,shape=inner_right]": "109:5",
-  "minecraft:stone_brick_stairs[facing=west,half=top,shape=outer_left]": "109:5",
-  "minecraft:stone_brick_stairs[facing=west,half=top,shape=outer_right]": "109:5",
+  "minecraft:stone_brick_stairs[facing=west,half=top,shape=inner_left]":
+    "109:5",
+  "minecraft:stone_brick_stairs[facing=west,half=top,shape=inner_right]":
+    "109:5",
+  "minecraft:stone_brick_stairs[facing=west,half=top,shape=outer_left]":
+    "109:5",
+  "minecraft:stone_brick_stairs[facing=west,half=top,shape=outer_right]":
+    "109:5",
   "minecraft:stone_brick_stairs[facing=south,half=top,shape=straight]": "109:6",
-  "minecraft:stone_brick_stairs[facing=south,half=top,shape=inner_left]": "109:6",
-  "minecraft:stone_brick_stairs[facing=south,half=top,shape=inner_right]": "109:6",
-  "minecraft:stone_brick_stairs[facing=south,half=top,shape=outer_left]": "109:6",
-  "minecraft:stone_brick_stairs[facing=south,half=top,shape=outer_right]": "109:6",
+  "minecraft:stone_brick_stairs[facing=south,half=top,shape=inner_left]":
+    "109:6",
+  "minecraft:stone_brick_stairs[facing=south,half=top,shape=inner_right]":
+    "109:6",
+  "minecraft:stone_brick_stairs[facing=south,half=top,shape=outer_left]":
+    "109:6",
+  "minecraft:stone_brick_stairs[facing=south,half=top,shape=outer_right]":
+    "109:6",
   "minecraft:stone_brick_stairs[facing=north,half=top,shape=straight]": "109:7",
-  "minecraft:stone_brick_stairs[facing=north,half=top,shape=inner_left]": "109:7",
-  "minecraft:stone_brick_stairs[facing=north,half=top,shape=inner_right]": "109:7",
-  "minecraft:stone_brick_stairs[facing=north,half=top,shape=outer_left]": "109:7",
-  "minecraft:stone_brick_stairs[facing=north,half=top,shape=outer_right]": "109:7",
+  "minecraft:stone_brick_stairs[facing=north,half=top,shape=inner_left]":
+    "109:7",
+  "minecraft:stone_brick_stairs[facing=north,half=top,shape=inner_right]":
+    "109:7",
+  "minecraft:stone_brick_stairs[facing=north,half=top,shape=outer_left]":
+    "109:7",
+  "minecraft:stone_brick_stairs[facing=north,half=top,shape=outer_right]":
+    "109:7",
   "minecraft:mycelium[snowy=false]": "110:0",
   "minecraft:mycelium[snowy=true]": "110:0",
   "minecraft:waterlily": "111:0",
   "minecraft:nether_brick": "112:0",
-  "minecraft:nether_brick_fence[east=false,north=false,south=false,west=false]": "113:0",
-  "minecraft:nether_brick_fence[east=false,north=false,south=false,west=true]": "113:0",
-  "minecraft:nether_brick_fence[east=false,north=false,south=true,west=false]": "113:0",
-  "minecraft:nether_brick_fence[east=false,north=false,south=true,west=true]": "113:0",
-  "minecraft:nether_brick_fence[east=false,north=true,south=false,west=false]": "113:0",
-  "minecraft:nether_brick_fence[east=false,north=true,south=false,west=true]": "113:0",
-  "minecraft:nether_brick_fence[east=false,north=true,south=true,west=false]": "113:0",
-  "minecraft:nether_brick_fence[east=false,north=true,south=true,west=true]": "113:0",
-  "minecraft:nether_brick_fence[east=true,north=false,south=false,west=false]": "113:0",
-  "minecraft:nether_brick_fence[east=true,north=false,south=false,west=true]": "113:0",
-  "minecraft:nether_brick_fence[east=true,north=false,south=true,west=false]": "113:0",
-  "minecraft:nether_brick_fence[east=true,north=false,south=true,west=true]": "113:0",
-  "minecraft:nether_brick_fence[east=true,north=true,south=false,west=false]": "113:0",
-  "minecraft:nether_brick_fence[east=true,north=true,south=false,west=true]": "113:0",
-  "minecraft:nether_brick_fence[east=true,north=true,south=true,west=false]": "113:0",
-  "minecraft:nether_brick_fence[east=true,north=true,south=true,west=true]": "113:0",
-  "minecraft:nether_brick_stairs[facing=east,half=bottom,shape=straight]": "114:0",
-  "minecraft:nether_brick_stairs[facing=east,half=bottom,shape=inner_left]": "114:0",
-  "minecraft:nether_brick_stairs[facing=east,half=bottom,shape=inner_right]": "114:0",
-  "minecraft:nether_brick_stairs[facing=east,half=bottom,shape=outer_left]": "114:0",
-  "minecraft:nether_brick_stairs[facing=east,half=bottom,shape=outer_right]": "114:0",
-  "minecraft:nether_brick_stairs[facing=west,half=bottom,shape=straight]": "114:1",
-  "minecraft:nether_brick_stairs[facing=west,half=bottom,shape=inner_left]": "114:1",
-  "minecraft:nether_brick_stairs[facing=west,half=bottom,shape=inner_right]": "114:1",
-  "minecraft:nether_brick_stairs[facing=west,half=bottom,shape=outer_left]": "114:1",
-  "minecraft:nether_brick_stairs[facing=west,half=bottom,shape=outer_right]": "114:1",
-  "minecraft:nether_brick_stairs[facing=south,half=bottom,shape=straight]": "114:2",
-  "minecraft:nether_brick_stairs[facing=south,half=bottom,shape=inner_left]": "114:2",
-  "minecraft:nether_brick_stairs[facing=south,half=bottom,shape=inner_right]": "114:2",
-  "minecraft:nether_brick_stairs[facing=south,half=bottom,shape=outer_left]": "114:2",
-  "minecraft:nether_brick_stairs[facing=south,half=bottom,shape=outer_right]": "114:2",
-  "minecraft:nether_brick_stairs[facing=north,half=bottom,shape=straight]": "114:3",
-  "minecraft:nether_brick_stairs[facing=north,half=bottom,shape=inner_left]": "114:3",
-  "minecraft:nether_brick_stairs[facing=north,half=bottom,shape=inner_right]": "114:3",
-  "minecraft:nether_brick_stairs[facing=north,half=bottom,shape=outer_left]": "114:3",
-  "minecraft:nether_brick_stairs[facing=north,half=bottom,shape=outer_right]": "114:3",
+  "minecraft:nether_brick_fence[east=false,north=false,south=false,west=false]":
+    "113:0",
+  "minecraft:nether_brick_fence[east=false,north=false,south=false,west=true]":
+    "113:0",
+  "minecraft:nether_brick_fence[east=false,north=false,south=true,west=false]":
+    "113:0",
+  "minecraft:nether_brick_fence[east=false,north=false,south=true,west=true]":
+    "113:0",
+  "minecraft:nether_brick_fence[east=false,north=true,south=false,west=false]":
+    "113:0",
+  "minecraft:nether_brick_fence[east=false,north=true,south=false,west=true]":
+    "113:0",
+  "minecraft:nether_brick_fence[east=false,north=true,south=true,west=false]":
+    "113:0",
+  "minecraft:nether_brick_fence[east=false,north=true,south=true,west=true]":
+    "113:0",
+  "minecraft:nether_brick_fence[east=true,north=false,south=false,west=false]":
+    "113:0",
+  "minecraft:nether_brick_fence[east=true,north=false,south=false,west=true]":
+    "113:0",
+  "minecraft:nether_brick_fence[east=true,north=false,south=true,west=false]":
+    "113:0",
+  "minecraft:nether_brick_fence[east=true,north=false,south=true,west=true]":
+    "113:0",
+  "minecraft:nether_brick_fence[east=true,north=true,south=false,west=false]":
+    "113:0",
+  "minecraft:nether_brick_fence[east=true,north=true,south=false,west=true]":
+    "113:0",
+  "minecraft:nether_brick_fence[east=true,north=true,south=true,west=false]":
+    "113:0",
+  "minecraft:nether_brick_fence[east=true,north=true,south=true,west=true]":
+    "113:0",
+  "minecraft:nether_brick_stairs[facing=east,half=bottom,shape=straight]":
+    "114:0",
+  "minecraft:nether_brick_stairs[facing=east,half=bottom,shape=inner_left]":
+    "114:0",
+  "minecraft:nether_brick_stairs[facing=east,half=bottom,shape=inner_right]":
+    "114:0",
+  "minecraft:nether_brick_stairs[facing=east,half=bottom,shape=outer_left]":
+    "114:0",
+  "minecraft:nether_brick_stairs[facing=east,half=bottom,shape=outer_right]":
+    "114:0",
+  "minecraft:nether_brick_stairs[facing=west,half=bottom,shape=straight]":
+    "114:1",
+  "minecraft:nether_brick_stairs[facing=west,half=bottom,shape=inner_left]":
+    "114:1",
+  "minecraft:nether_brick_stairs[facing=west,half=bottom,shape=inner_right]":
+    "114:1",
+  "minecraft:nether_brick_stairs[facing=west,half=bottom,shape=outer_left]":
+    "114:1",
+  "minecraft:nether_brick_stairs[facing=west,half=bottom,shape=outer_right]":
+    "114:1",
+  "minecraft:nether_brick_stairs[facing=south,half=bottom,shape=straight]":
+    "114:2",
+  "minecraft:nether_brick_stairs[facing=south,half=bottom,shape=inner_left]":
+    "114:2",
+  "minecraft:nether_brick_stairs[facing=south,half=bottom,shape=inner_right]":
+    "114:2",
+  "minecraft:nether_brick_stairs[facing=south,half=bottom,shape=outer_left]":
+    "114:2",
+  "minecraft:nether_brick_stairs[facing=south,half=bottom,shape=outer_right]":
+    "114:2",
+  "minecraft:nether_brick_stairs[facing=north,half=bottom,shape=straight]":
+    "114:3",
+  "minecraft:nether_brick_stairs[facing=north,half=bottom,shape=inner_left]":
+    "114:3",
+  "minecraft:nether_brick_stairs[facing=north,half=bottom,shape=inner_right]":
+    "114:3",
+  "minecraft:nether_brick_stairs[facing=north,half=bottom,shape=outer_left]":
+    "114:3",
+  "minecraft:nether_brick_stairs[facing=north,half=bottom,shape=outer_right]":
+    "114:3",
   "minecraft:nether_brick_stairs[facing=east,half=top,shape=straight]": "114:4",
-  "minecraft:nether_brick_stairs[facing=east,half=top,shape=inner_left]": "114:4",
-  "minecraft:nether_brick_stairs[facing=east,half=top,shape=inner_right]": "114:4",
-  "minecraft:nether_brick_stairs[facing=east,half=top,shape=outer_left]": "114:4",
-  "minecraft:nether_brick_stairs[facing=east,half=top,shape=outer_right]": "114:4",
+  "minecraft:nether_brick_stairs[facing=east,half=top,shape=inner_left]":
+    "114:4",
+  "minecraft:nether_brick_stairs[facing=east,half=top,shape=inner_right]":
+    "114:4",
+  "minecraft:nether_brick_stairs[facing=east,half=top,shape=outer_left]":
+    "114:4",
+  "minecraft:nether_brick_stairs[facing=east,half=top,shape=outer_right]":
+    "114:4",
   "minecraft:nether_brick_stairs[facing=west,half=top,shape=straight]": "114:5",
-  "minecraft:nether_brick_stairs[facing=west,half=top,shape=inner_left]": "114:5",
-  "minecraft:nether_brick_stairs[facing=west,half=top,shape=inner_right]": "114:5",
-  "minecraft:nether_brick_stairs[facing=west,half=top,shape=outer_left]": "114:5",
-  "minecraft:nether_brick_stairs[facing=west,half=top,shape=outer_right]": "114:5",
-  "minecraft:nether_brick_stairs[facing=south,half=top,shape=straight]": "114:6",
-  "minecraft:nether_brick_stairs[facing=south,half=top,shape=inner_left]": "114:6",
-  "minecraft:nether_brick_stairs[facing=south,half=top,shape=inner_right]": "114:6",
-  "minecraft:nether_brick_stairs[facing=south,half=top,shape=outer_left]": "114:6",
-  "minecraft:nether_brick_stairs[facing=south,half=top,shape=outer_right]": "114:6",
-  "minecraft:nether_brick_stairs[facing=north,half=top,shape=straight]": "114:7",
-  "minecraft:nether_brick_stairs[facing=north,half=top,shape=inner_left]": "114:7",
-  "minecraft:nether_brick_stairs[facing=north,half=top,shape=inner_right]": "114:7",
-  "minecraft:nether_brick_stairs[facing=north,half=top,shape=outer_left]": "114:7",
-  "minecraft:nether_brick_stairs[facing=north,half=top,shape=outer_right]": "114:7",
+  "minecraft:nether_brick_stairs[facing=west,half=top,shape=inner_left]":
+    "114:5",
+  "minecraft:nether_brick_stairs[facing=west,half=top,shape=inner_right]":
+    "114:5",
+  "minecraft:nether_brick_stairs[facing=west,half=top,shape=outer_left]":
+    "114:5",
+  "minecraft:nether_brick_stairs[facing=west,half=top,shape=outer_right]":
+    "114:5",
+  "minecraft:nether_brick_stairs[facing=south,half=top,shape=straight]":
+    "114:6",
+  "minecraft:nether_brick_stairs[facing=south,half=top,shape=inner_left]":
+    "114:6",
+  "minecraft:nether_brick_stairs[facing=south,half=top,shape=inner_right]":
+    "114:6",
+  "minecraft:nether_brick_stairs[facing=south,half=top,shape=outer_left]":
+    "114:6",
+  "minecraft:nether_brick_stairs[facing=south,half=top,shape=outer_right]":
+    "114:6",
+  "minecraft:nether_brick_stairs[facing=north,half=top,shape=straight]":
+    "114:7",
+  "minecraft:nether_brick_stairs[facing=north,half=top,shape=inner_left]":
+    "114:7",
+  "minecraft:nether_brick_stairs[facing=north,half=top,shape=inner_right]":
+    "114:7",
+  "minecraft:nether_brick_stairs[facing=north,half=top,shape=outer_left]":
+    "114:7",
+  "minecraft:nether_brick_stairs[facing=north,half=top,shape=outer_right]":
+    "114:7",
   "minecraft:nether_wart[age=0]": "115:0",
   "minecraft:nether_wart[age=1]": "115:1",
   "minecraft:nether_wart[age=2]": "115:2",
   "minecraft:nether_wart[age=3]": "115:3",
   "minecraft:enchanting_table": "116:0",
-  "minecraft:brewing_stand[has_bottle_0=false,has_bottle_1=false,has_bottle_2=false]": "117:0",
-  "minecraft:brewing_stand[has_bottle_0=true,has_bottle_1=false,has_bottle_2=false]": "117:1",
-  "minecraft:brewing_stand[has_bottle_0=false,has_bottle_1=true,has_bottle_2=false]": "117:2",
-  "minecraft:brewing_stand[has_bottle_0=true,has_bottle_1=true,has_bottle_2=false]": "117:3",
-  "minecraft:brewing_stand[has_bottle_0=false,has_bottle_1=false,has_bottle_2=true]": "117:4",
-  "minecraft:brewing_stand[has_bottle_0=true,has_bottle_1=false,has_bottle_2=true]": "117:5",
-  "minecraft:brewing_stand[has_bottle_0=false,has_bottle_1=true,has_bottle_2=true]": "117:6",
-  "minecraft:brewing_stand[has_bottle_0=true,has_bottle_1=true,has_bottle_2=true]": "117:7",
+  "minecraft:brewing_stand[has_bottle_0=false,has_bottle_1=false,has_bottle_2=false]":
+    "117:0",
+  "minecraft:brewing_stand[has_bottle_0=true,has_bottle_1=false,has_bottle_2=false]":
+    "117:1",
+  "minecraft:brewing_stand[has_bottle_0=false,has_bottle_1=true,has_bottle_2=false]":
+    "117:2",
+  "minecraft:brewing_stand[has_bottle_0=true,has_bottle_1=true,has_bottle_2=false]":
+    "117:3",
+  "minecraft:brewing_stand[has_bottle_0=false,has_bottle_1=false,has_bottle_2=true]":
+    "117:4",
+  "minecraft:brewing_stand[has_bottle_0=true,has_bottle_1=false,has_bottle_2=true]":
+    "117:5",
+  "minecraft:brewing_stand[has_bottle_0=false,has_bottle_1=true,has_bottle_2=true]":
+    "117:6",
+  "minecraft:brewing_stand[has_bottle_0=true,has_bottle_1=true,has_bottle_2=true]":
+    "117:7",
   "minecraft:cauldron[level=0]": "118:0",
   "minecraft:cauldron[level=1]": "118:1",
   "minecraft:cauldron[level=2]": "118:2",
@@ -2268,25 +3729,43 @@ export const FORGE_1_12_FLATTEN: Readonly<Record<string, string>> = {
   "minecraft:cocoa[age=2,facing=north]": "127:10",
   "minecraft:cocoa[age=2,facing=east]": "127:11",
   "minecraft:sandstone_stairs[facing=east,half=bottom,shape=straight]": "128:0",
-  "minecraft:sandstone_stairs[facing=east,half=bottom,shape=inner_left]": "128:0",
-  "minecraft:sandstone_stairs[facing=east,half=bottom,shape=inner_right]": "128:0",
-  "minecraft:sandstone_stairs[facing=east,half=bottom,shape=outer_left]": "128:0",
-  "minecraft:sandstone_stairs[facing=east,half=bottom,shape=outer_right]": "128:0",
+  "minecraft:sandstone_stairs[facing=east,half=bottom,shape=inner_left]":
+    "128:0",
+  "minecraft:sandstone_stairs[facing=east,half=bottom,shape=inner_right]":
+    "128:0",
+  "minecraft:sandstone_stairs[facing=east,half=bottom,shape=outer_left]":
+    "128:0",
+  "minecraft:sandstone_stairs[facing=east,half=bottom,shape=outer_right]":
+    "128:0",
   "minecraft:sandstone_stairs[facing=west,half=bottom,shape=straight]": "128:1",
-  "minecraft:sandstone_stairs[facing=west,half=bottom,shape=inner_left]": "128:1",
-  "minecraft:sandstone_stairs[facing=west,half=bottom,shape=inner_right]": "128:1",
-  "minecraft:sandstone_stairs[facing=west,half=bottom,shape=outer_left]": "128:1",
-  "minecraft:sandstone_stairs[facing=west,half=bottom,shape=outer_right]": "128:1",
-  "minecraft:sandstone_stairs[facing=south,half=bottom,shape=straight]": "128:2",
-  "minecraft:sandstone_stairs[facing=south,half=bottom,shape=inner_left]": "128:2",
-  "minecraft:sandstone_stairs[facing=south,half=bottom,shape=inner_right]": "128:2",
-  "minecraft:sandstone_stairs[facing=south,half=bottom,shape=outer_left]": "128:2",
-  "minecraft:sandstone_stairs[facing=south,half=bottom,shape=outer_right]": "128:2",
-  "minecraft:sandstone_stairs[facing=north,half=bottom,shape=straight]": "128:3",
-  "minecraft:sandstone_stairs[facing=north,half=bottom,shape=inner_left]": "128:3",
-  "minecraft:sandstone_stairs[facing=north,half=bottom,shape=inner_right]": "128:3",
-  "minecraft:sandstone_stairs[facing=north,half=bottom,shape=outer_left]": "128:3",
-  "minecraft:sandstone_stairs[facing=north,half=bottom,shape=outer_right]": "128:3",
+  "minecraft:sandstone_stairs[facing=west,half=bottom,shape=inner_left]":
+    "128:1",
+  "minecraft:sandstone_stairs[facing=west,half=bottom,shape=inner_right]":
+    "128:1",
+  "minecraft:sandstone_stairs[facing=west,half=bottom,shape=outer_left]":
+    "128:1",
+  "minecraft:sandstone_stairs[facing=west,half=bottom,shape=outer_right]":
+    "128:1",
+  "minecraft:sandstone_stairs[facing=south,half=bottom,shape=straight]":
+    "128:2",
+  "minecraft:sandstone_stairs[facing=south,half=bottom,shape=inner_left]":
+    "128:2",
+  "minecraft:sandstone_stairs[facing=south,half=bottom,shape=inner_right]":
+    "128:2",
+  "minecraft:sandstone_stairs[facing=south,half=bottom,shape=outer_left]":
+    "128:2",
+  "minecraft:sandstone_stairs[facing=south,half=bottom,shape=outer_right]":
+    "128:2",
+  "minecraft:sandstone_stairs[facing=north,half=bottom,shape=straight]":
+    "128:3",
+  "minecraft:sandstone_stairs[facing=north,half=bottom,shape=inner_left]":
+    "128:3",
+  "minecraft:sandstone_stairs[facing=north,half=bottom,shape=inner_right]":
+    "128:3",
+  "minecraft:sandstone_stairs[facing=north,half=bottom,shape=outer_left]":
+    "128:3",
+  "minecraft:sandstone_stairs[facing=north,half=bottom,shape=outer_right]":
+    "128:3",
   "minecraft:sandstone_stairs[facing=east,half=top,shape=straight]": "128:4",
   "minecraft:sandstone_stairs[facing=east,half=top,shape=inner_left]": "128:4",
   "minecraft:sandstone_stairs[facing=east,half=top,shape=inner_right]": "128:4",
@@ -2299,163 +3778,311 @@ export const FORGE_1_12_FLATTEN: Readonly<Record<string, string>> = {
   "minecraft:sandstone_stairs[facing=west,half=top,shape=outer_right]": "128:5",
   "minecraft:sandstone_stairs[facing=south,half=top,shape=straight]": "128:6",
   "minecraft:sandstone_stairs[facing=south,half=top,shape=inner_left]": "128:6",
-  "minecraft:sandstone_stairs[facing=south,half=top,shape=inner_right]": "128:6",
+  "minecraft:sandstone_stairs[facing=south,half=top,shape=inner_right]":
+    "128:6",
   "minecraft:sandstone_stairs[facing=south,half=top,shape=outer_left]": "128:6",
-  "minecraft:sandstone_stairs[facing=south,half=top,shape=outer_right]": "128:6",
+  "minecraft:sandstone_stairs[facing=south,half=top,shape=outer_right]":
+    "128:6",
   "minecraft:sandstone_stairs[facing=north,half=top,shape=straight]": "128:7",
   "minecraft:sandstone_stairs[facing=north,half=top,shape=inner_left]": "128:7",
-  "minecraft:sandstone_stairs[facing=north,half=top,shape=inner_right]": "128:7",
+  "minecraft:sandstone_stairs[facing=north,half=top,shape=inner_right]":
+    "128:7",
   "minecraft:sandstone_stairs[facing=north,half=top,shape=outer_left]": "128:7",
-  "minecraft:sandstone_stairs[facing=north,half=top,shape=outer_right]": "128:7",
+  "minecraft:sandstone_stairs[facing=north,half=top,shape=outer_right]":
+    "128:7",
   "minecraft:emerald_ore": "129:0",
   "minecraft:ender_chest[facing=north]": "130:2",
   "minecraft:ender_chest[facing=south]": "130:3",
   "minecraft:ender_chest[facing=west]": "130:4",
   "minecraft:ender_chest[facing=east]": "130:5",
-  "minecraft:tripwire_hook[attached=false,facing=south,powered=false,suspended=false]": "131:0",
-  "minecraft:tripwire_hook[attached=false,facing=west,powered=false,suspended=false]": "131:1",
-  "minecraft:tripwire_hook[attached=false,facing=north,powered=false,suspended=false]": "131:2",
-  "minecraft:tripwire_hook[attached=false,facing=east,powered=false,suspended=false]": "131:3",
-  "minecraft:tripwire_hook[attached=true,facing=south,powered=false,suspended=false]": "131:4",
-  "minecraft:tripwire_hook[attached=true,facing=west,powered=false,suspended=false]": "131:5",
-  "minecraft:tripwire_hook[attached=true,facing=north,powered=false,suspended=false]": "131:6",
-  "minecraft:tripwire_hook[attached=true,facing=east,powered=false,suspended=false]": "131:7",
-  "minecraft:tripwire_hook[attached=false,facing=south,powered=true,suspended=false]": "131:8",
-  "minecraft:tripwire_hook[attached=false,facing=west,powered=true,suspended=false]": "131:9",
-  "minecraft:tripwire_hook[attached=false,facing=north,powered=true,suspended=false]": "131:10",
-  "minecraft:tripwire_hook[attached=false,facing=east,powered=true,suspended=false]": "131:11",
-  "minecraft:tripwire_hook[attached=true,facing=south,powered=true,suspended=false]": "131:12",
-  "minecraft:tripwire_hook[attached=true,facing=west,powered=true,suspended=false]": "131:13",
-  "minecraft:tripwire_hook[attached=true,facing=north,powered=true,suspended=false]": "131:14",
-  "minecraft:tripwire_hook[attached=true,facing=east,powered=true,suspended=false]": "131:15",
-  "minecraft:tripwire[attached=false,disarmed=false,east=false,north=false,powered=false,south=false,suspended=false,west=false]": "132:0",
-  "minecraft:tripwire[attached=false,disarmed=false,east=false,north=false,powered=false,south=false,suspended=false,west=true]": "132:0",
-  "minecraft:tripwire[attached=false,disarmed=false,east=false,north=false,powered=false,south=true,suspended=false,west=false]": "132:0",
-  "minecraft:tripwire[attached=false,disarmed=false,east=false,north=false,powered=false,south=true,suspended=false,west=true]": "132:0",
-  "minecraft:tripwire[attached=false,disarmed=false,east=false,north=true,powered=false,south=false,suspended=false,west=false]": "132:0",
-  "minecraft:tripwire[attached=false,disarmed=false,east=false,north=true,powered=false,south=false,suspended=false,west=true]": "132:0",
-  "minecraft:tripwire[attached=false,disarmed=false,east=false,north=true,powered=false,south=true,suspended=false,west=false]": "132:0",
-  "minecraft:tripwire[attached=false,disarmed=false,east=false,north=true,powered=false,south=true,suspended=false,west=true]": "132:0",
-  "minecraft:tripwire[attached=false,disarmed=false,east=true,north=false,powered=false,south=false,suspended=false,west=false]": "132:0",
-  "minecraft:tripwire[attached=false,disarmed=false,east=true,north=false,powered=false,south=false,suspended=false,west=true]": "132:0",
-  "minecraft:tripwire[attached=false,disarmed=false,east=true,north=false,powered=false,south=true,suspended=false,west=false]": "132:0",
-  "minecraft:tripwire[attached=false,disarmed=false,east=true,north=false,powered=false,south=true,suspended=false,west=true]": "132:0",
-  "minecraft:tripwire[attached=false,disarmed=false,east=true,north=true,powered=false,south=false,suspended=false,west=false]": "132:0",
-  "minecraft:tripwire[attached=false,disarmed=false,east=true,north=true,powered=false,south=false,suspended=false,west=true]": "132:0",
-  "minecraft:tripwire[attached=false,disarmed=false,east=true,north=true,powered=false,south=true,suspended=false,west=false]": "132:0",
-  "minecraft:tripwire[attached=false,disarmed=false,east=true,north=true,powered=false,south=true,suspended=false,west=true]": "132:0",
-  "minecraft:tripwire[attached=false,disarmed=false,east=false,north=false,powered=true,south=false,suspended=false,west=false]": "132:1",
-  "minecraft:tripwire[attached=false,disarmed=false,east=false,north=false,powered=true,south=false,suspended=false,west=true]": "132:1",
-  "minecraft:tripwire[attached=false,disarmed=false,east=false,north=false,powered=true,south=true,suspended=false,west=false]": "132:1",
-  "minecraft:tripwire[attached=false,disarmed=false,east=false,north=false,powered=true,south=true,suspended=false,west=true]": "132:1",
-  "minecraft:tripwire[attached=false,disarmed=false,east=false,north=true,powered=true,south=false,suspended=false,west=false]": "132:1",
-  "minecraft:tripwire[attached=false,disarmed=false,east=false,north=true,powered=true,south=false,suspended=false,west=true]": "132:1",
-  "minecraft:tripwire[attached=false,disarmed=false,east=false,north=true,powered=true,south=true,suspended=false,west=false]": "132:1",
-  "minecraft:tripwire[attached=false,disarmed=false,east=false,north=true,powered=true,south=true,suspended=false,west=true]": "132:1",
-  "minecraft:tripwire[attached=false,disarmed=false,east=true,north=false,powered=true,south=false,suspended=false,west=false]": "132:1",
-  "minecraft:tripwire[attached=false,disarmed=false,east=true,north=false,powered=true,south=false,suspended=false,west=true]": "132:1",
-  "minecraft:tripwire[attached=false,disarmed=false,east=true,north=false,powered=true,south=true,suspended=false,west=false]": "132:1",
-  "minecraft:tripwire[attached=false,disarmed=false,east=true,north=false,powered=true,south=true,suspended=false,west=true]": "132:1",
-  "minecraft:tripwire[attached=false,disarmed=false,east=true,north=true,powered=true,south=false,suspended=false,west=false]": "132:1",
-  "minecraft:tripwire[attached=false,disarmed=false,east=true,north=true,powered=true,south=false,suspended=false,west=true]": "132:1",
-  "minecraft:tripwire[attached=false,disarmed=false,east=true,north=true,powered=true,south=true,suspended=false,west=false]": "132:1",
-  "minecraft:tripwire[attached=false,disarmed=false,east=true,north=true,powered=true,south=true,suspended=false,west=true]": "132:1",
-  "minecraft:tripwire[attached=true,disarmed=false,east=false,north=false,powered=false,south=false,suspended=false,west=false]": "132:4",
-  "minecraft:tripwire[attached=true,disarmed=false,east=false,north=false,powered=false,south=false,suspended=false,west=true]": "132:4",
-  "minecraft:tripwire[attached=true,disarmed=false,east=false,north=false,powered=false,south=true,suspended=false,west=false]": "132:4",
-  "minecraft:tripwire[attached=true,disarmed=false,east=false,north=false,powered=false,south=true,suspended=false,west=true]": "132:4",
-  "minecraft:tripwire[attached=true,disarmed=false,east=false,north=true,powered=false,south=false,suspended=false,west=false]": "132:4",
-  "minecraft:tripwire[attached=true,disarmed=false,east=false,north=true,powered=false,south=false,suspended=false,west=true]": "132:4",
-  "minecraft:tripwire[attached=true,disarmed=false,east=false,north=true,powered=false,south=true,suspended=false,west=false]": "132:4",
-  "minecraft:tripwire[attached=true,disarmed=false,east=false,north=true,powered=false,south=true,suspended=false,west=true]": "132:4",
-  "minecraft:tripwire[attached=true,disarmed=false,east=true,north=false,powered=false,south=false,suspended=false,west=false]": "132:4",
-  "minecraft:tripwire[attached=true,disarmed=false,east=true,north=false,powered=false,south=false,suspended=false,west=true]": "132:4",
-  "minecraft:tripwire[attached=true,disarmed=false,east=true,north=false,powered=false,south=true,suspended=false,west=false]": "132:4",
-  "minecraft:tripwire[attached=true,disarmed=false,east=true,north=false,powered=false,south=true,suspended=false,west=true]": "132:4",
-  "minecraft:tripwire[attached=true,disarmed=false,east=true,north=true,powered=false,south=false,suspended=false,west=false]": "132:4",
-  "minecraft:tripwire[attached=true,disarmed=false,east=true,north=true,powered=false,south=false,suspended=false,west=true]": "132:4",
-  "minecraft:tripwire[attached=true,disarmed=false,east=true,north=true,powered=false,south=true,suspended=false,west=false]": "132:4",
-  "minecraft:tripwire[attached=true,disarmed=false,east=true,north=true,powered=false,south=true,suspended=false,west=true]": "132:4",
-  "minecraft:tripwire[attached=true,disarmed=false,east=false,north=false,powered=true,south=false,suspended=false,west=false]": "132:5",
-  "minecraft:tripwire[attached=true,disarmed=false,east=false,north=false,powered=true,south=false,suspended=false,west=true]": "132:5",
-  "minecraft:tripwire[attached=true,disarmed=false,east=false,north=false,powered=true,south=true,suspended=false,west=false]": "132:5",
-  "minecraft:tripwire[attached=true,disarmed=false,east=false,north=false,powered=true,south=true,suspended=false,west=true]": "132:5",
-  "minecraft:tripwire[attached=true,disarmed=false,east=false,north=true,powered=true,south=false,suspended=false,west=false]": "132:5",
-  "minecraft:tripwire[attached=true,disarmed=false,east=false,north=true,powered=true,south=false,suspended=false,west=true]": "132:5",
-  "minecraft:tripwire[attached=true,disarmed=false,east=false,north=true,powered=true,south=true,suspended=false,west=false]": "132:5",
-  "minecraft:tripwire[attached=true,disarmed=false,east=false,north=true,powered=true,south=true,suspended=false,west=true]": "132:5",
-  "minecraft:tripwire[attached=true,disarmed=false,east=true,north=false,powered=true,south=false,suspended=false,west=false]": "132:5",
-  "minecraft:tripwire[attached=true,disarmed=false,east=true,north=false,powered=true,south=false,suspended=false,west=true]": "132:5",
-  "minecraft:tripwire[attached=true,disarmed=false,east=true,north=false,powered=true,south=true,suspended=false,west=false]": "132:5",
-  "minecraft:tripwire[attached=true,disarmed=false,east=true,north=false,powered=true,south=true,suspended=false,west=true]": "132:5",
-  "minecraft:tripwire[attached=true,disarmed=false,east=true,north=true,powered=true,south=false,suspended=false,west=false]": "132:5",
-  "minecraft:tripwire[attached=true,disarmed=false,east=true,north=true,powered=true,south=false,suspended=false,west=true]": "132:5",
-  "minecraft:tripwire[attached=true,disarmed=false,east=true,north=true,powered=true,south=true,suspended=false,west=false]": "132:5",
-  "minecraft:tripwire[attached=true,disarmed=false,east=true,north=true,powered=true,south=true,suspended=false,west=true]": "132:5",
-  "minecraft:tripwire[attached=false,disarmed=true,east=false,north=false,powered=false,south=false,suspended=false,west=false]": "132:8",
-  "minecraft:tripwire[attached=false,disarmed=true,east=false,north=false,powered=false,south=false,suspended=false,west=true]": "132:8",
-  "minecraft:tripwire[attached=false,disarmed=true,east=false,north=false,powered=false,south=true,suspended=false,west=false]": "132:8",
-  "minecraft:tripwire[attached=false,disarmed=true,east=false,north=false,powered=false,south=true,suspended=false,west=true]": "132:8",
-  "minecraft:tripwire[attached=false,disarmed=true,east=false,north=true,powered=false,south=false,suspended=false,west=false]": "132:8",
-  "minecraft:tripwire[attached=false,disarmed=true,east=false,north=true,powered=false,south=false,suspended=false,west=true]": "132:8",
-  "minecraft:tripwire[attached=false,disarmed=true,east=false,north=true,powered=false,south=true,suspended=false,west=false]": "132:8",
-  "minecraft:tripwire[attached=false,disarmed=true,east=false,north=true,powered=false,south=true,suspended=false,west=true]": "132:8",
-  "minecraft:tripwire[attached=false,disarmed=true,east=true,north=false,powered=false,south=false,suspended=false,west=false]": "132:8",
-  "minecraft:tripwire[attached=false,disarmed=true,east=true,north=false,powered=false,south=false,suspended=false,west=true]": "132:8",
-  "minecraft:tripwire[attached=false,disarmed=true,east=true,north=false,powered=false,south=true,suspended=false,west=false]": "132:8",
-  "minecraft:tripwire[attached=false,disarmed=true,east=true,north=false,powered=false,south=true,suspended=false,west=true]": "132:8",
-  "minecraft:tripwire[attached=false,disarmed=true,east=true,north=true,powered=false,south=false,suspended=false,west=false]": "132:8",
-  "minecraft:tripwire[attached=false,disarmed=true,east=true,north=true,powered=false,south=false,suspended=false,west=true]": "132:8",
-  "minecraft:tripwire[attached=false,disarmed=true,east=true,north=true,powered=false,south=true,suspended=false,west=false]": "132:8",
-  "minecraft:tripwire[attached=false,disarmed=true,east=true,north=true,powered=false,south=true,suspended=false,west=true]": "132:8",
-  "minecraft:tripwire[attached=false,disarmed=true,east=false,north=false,powered=true,south=false,suspended=false,west=false]": "132:9",
-  "minecraft:tripwire[attached=false,disarmed=true,east=false,north=false,powered=true,south=false,suspended=false,west=true]": "132:9",
-  "minecraft:tripwire[attached=false,disarmed=true,east=false,north=false,powered=true,south=true,suspended=false,west=false]": "132:9",
-  "minecraft:tripwire[attached=false,disarmed=true,east=false,north=false,powered=true,south=true,suspended=false,west=true]": "132:9",
-  "minecraft:tripwire[attached=false,disarmed=true,east=false,north=true,powered=true,south=false,suspended=false,west=false]": "132:9",
-  "minecraft:tripwire[attached=false,disarmed=true,east=false,north=true,powered=true,south=false,suspended=false,west=true]": "132:9",
-  "minecraft:tripwire[attached=false,disarmed=true,east=false,north=true,powered=true,south=true,suspended=false,west=false]": "132:9",
-  "minecraft:tripwire[attached=false,disarmed=true,east=false,north=true,powered=true,south=true,suspended=false,west=true]": "132:9",
-  "minecraft:tripwire[attached=false,disarmed=true,east=true,north=false,powered=true,south=false,suspended=false,west=false]": "132:9",
-  "minecraft:tripwire[attached=false,disarmed=true,east=true,north=false,powered=true,south=false,suspended=false,west=true]": "132:9",
-  "minecraft:tripwire[attached=false,disarmed=true,east=true,north=false,powered=true,south=true,suspended=false,west=false]": "132:9",
-  "minecraft:tripwire[attached=false,disarmed=true,east=true,north=false,powered=true,south=true,suspended=false,west=true]": "132:9",
-  "minecraft:tripwire[attached=false,disarmed=true,east=true,north=true,powered=true,south=false,suspended=false,west=false]": "132:9",
-  "minecraft:tripwire[attached=false,disarmed=true,east=true,north=true,powered=true,south=false,suspended=false,west=true]": "132:9",
-  "minecraft:tripwire[attached=false,disarmed=true,east=true,north=true,powered=true,south=true,suspended=false,west=false]": "132:9",
-  "minecraft:tripwire[attached=false,disarmed=true,east=true,north=true,powered=true,south=true,suspended=false,west=true]": "132:9",
-  "minecraft:tripwire[attached=true,disarmed=true,east=false,north=false,powered=false,south=false,suspended=false,west=false]": "132:12",
-  "minecraft:tripwire[attached=true,disarmed=true,east=false,north=false,powered=false,south=false,suspended=false,west=true]": "132:12",
-  "minecraft:tripwire[attached=true,disarmed=true,east=false,north=false,powered=false,south=true,suspended=false,west=false]": "132:12",
-  "minecraft:tripwire[attached=true,disarmed=true,east=false,north=false,powered=false,south=true,suspended=false,west=true]": "132:12",
-  "minecraft:tripwire[attached=true,disarmed=true,east=false,north=true,powered=false,south=false,suspended=false,west=false]": "132:12",
-  "minecraft:tripwire[attached=true,disarmed=true,east=false,north=true,powered=false,south=false,suspended=false,west=true]": "132:12",
-  "minecraft:tripwire[attached=true,disarmed=true,east=false,north=true,powered=false,south=true,suspended=false,west=false]": "132:12",
-  "minecraft:tripwire[attached=true,disarmed=true,east=false,north=true,powered=false,south=true,suspended=false,west=true]": "132:12",
-  "minecraft:tripwire[attached=true,disarmed=true,east=true,north=false,powered=false,south=false,suspended=false,west=false]": "132:12",
-  "minecraft:tripwire[attached=true,disarmed=true,east=true,north=false,powered=false,south=false,suspended=false,west=true]": "132:12",
-  "minecraft:tripwire[attached=true,disarmed=true,east=true,north=false,powered=false,south=true,suspended=false,west=false]": "132:12",
-  "minecraft:tripwire[attached=true,disarmed=true,east=true,north=false,powered=false,south=true,suspended=false,west=true]": "132:12",
-  "minecraft:tripwire[attached=true,disarmed=true,east=true,north=true,powered=false,south=false,suspended=false,west=false]": "132:12",
-  "minecraft:tripwire[attached=true,disarmed=true,east=true,north=true,powered=false,south=false,suspended=false,west=true]": "132:12",
-  "minecraft:tripwire[attached=true,disarmed=true,east=true,north=true,powered=false,south=true,suspended=false,west=false]": "132:12",
-  "minecraft:tripwire[attached=true,disarmed=true,east=true,north=true,powered=false,south=true,suspended=false,west=true]": "132:12",
-  "minecraft:tripwire[attached=true,disarmed=true,east=false,north=false,powered=true,south=false,suspended=false,west=false]": "132:13",
-  "minecraft:tripwire[attached=true,disarmed=true,east=false,north=false,powered=true,south=false,suspended=false,west=true]": "132:13",
-  "minecraft:tripwire[attached=true,disarmed=true,east=false,north=false,powered=true,south=true,suspended=false,west=false]": "132:13",
-  "minecraft:tripwire[attached=true,disarmed=true,east=false,north=false,powered=true,south=true,suspended=false,west=true]": "132:13",
-  "minecraft:tripwire[attached=true,disarmed=true,east=false,north=true,powered=true,south=false,suspended=false,west=false]": "132:13",
-  "minecraft:tripwire[attached=true,disarmed=true,east=false,north=true,powered=true,south=false,suspended=false,west=true]": "132:13",
-  "minecraft:tripwire[attached=true,disarmed=true,east=false,north=true,powered=true,south=true,suspended=false,west=false]": "132:13",
-  "minecraft:tripwire[attached=true,disarmed=true,east=false,north=true,powered=true,south=true,suspended=false,west=true]": "132:13",
-  "minecraft:tripwire[attached=true,disarmed=true,east=true,north=false,powered=true,south=false,suspended=false,west=false]": "132:13",
-  "minecraft:tripwire[attached=true,disarmed=true,east=true,north=false,powered=true,south=false,suspended=false,west=true]": "132:13",
-  "minecraft:tripwire[attached=true,disarmed=true,east=true,north=false,powered=true,south=true,suspended=false,west=false]": "132:13",
-  "minecraft:tripwire[attached=true,disarmed=true,east=true,north=false,powered=true,south=true,suspended=false,west=true]": "132:13",
-  "minecraft:tripwire[attached=true,disarmed=true,east=true,north=true,powered=true,south=false,suspended=false,west=false]": "132:13",
-  "minecraft:tripwire[attached=true,disarmed=true,east=true,north=true,powered=true,south=false,suspended=false,west=true]": "132:13",
-  "minecraft:tripwire[attached=true,disarmed=true,east=true,north=true,powered=true,south=true,suspended=false,west=false]": "132:13",
-  "minecraft:tripwire[attached=true,disarmed=true,east=true,north=true,powered=true,south=true,suspended=false,west=true]": "132:13",
+  "minecraft:tripwire_hook[attached=false,facing=south,powered=false,suspended=false]":
+    "131:0",
+  "minecraft:tripwire_hook[attached=false,facing=west,powered=false,suspended=false]":
+    "131:1",
+  "minecraft:tripwire_hook[attached=false,facing=north,powered=false,suspended=false]":
+    "131:2",
+  "minecraft:tripwire_hook[attached=false,facing=east,powered=false,suspended=false]":
+    "131:3",
+  "minecraft:tripwire_hook[attached=true,facing=south,powered=false,suspended=false]":
+    "131:4",
+  "minecraft:tripwire_hook[attached=true,facing=west,powered=false,suspended=false]":
+    "131:5",
+  "minecraft:tripwire_hook[attached=true,facing=north,powered=false,suspended=false]":
+    "131:6",
+  "minecraft:tripwire_hook[attached=true,facing=east,powered=false,suspended=false]":
+    "131:7",
+  "minecraft:tripwire_hook[attached=false,facing=south,powered=true,suspended=false]":
+    "131:8",
+  "minecraft:tripwire_hook[attached=false,facing=west,powered=true,suspended=false]":
+    "131:9",
+  "minecraft:tripwire_hook[attached=false,facing=north,powered=true,suspended=false]":
+    "131:10",
+  "minecraft:tripwire_hook[attached=false,facing=east,powered=true,suspended=false]":
+    "131:11",
+  "minecraft:tripwire_hook[attached=true,facing=south,powered=true,suspended=false]":
+    "131:12",
+  "minecraft:tripwire_hook[attached=true,facing=west,powered=true,suspended=false]":
+    "131:13",
+  "minecraft:tripwire_hook[attached=true,facing=north,powered=true,suspended=false]":
+    "131:14",
+  "minecraft:tripwire_hook[attached=true,facing=east,powered=true,suspended=false]":
+    "131:15",
+  "minecraft:tripwire[attached=false,disarmed=false,east=false,north=false,powered=false,south=false,suspended=false,west=false]":
+    "132:0",
+  "minecraft:tripwire[attached=false,disarmed=false,east=false,north=false,powered=false,south=false,suspended=false,west=true]":
+    "132:0",
+  "minecraft:tripwire[attached=false,disarmed=false,east=false,north=false,powered=false,south=true,suspended=false,west=false]":
+    "132:0",
+  "minecraft:tripwire[attached=false,disarmed=false,east=false,north=false,powered=false,south=true,suspended=false,west=true]":
+    "132:0",
+  "minecraft:tripwire[attached=false,disarmed=false,east=false,north=true,powered=false,south=false,suspended=false,west=false]":
+    "132:0",
+  "minecraft:tripwire[attached=false,disarmed=false,east=false,north=true,powered=false,south=false,suspended=false,west=true]":
+    "132:0",
+  "minecraft:tripwire[attached=false,disarmed=false,east=false,north=true,powered=false,south=true,suspended=false,west=false]":
+    "132:0",
+  "minecraft:tripwire[attached=false,disarmed=false,east=false,north=true,powered=false,south=true,suspended=false,west=true]":
+    "132:0",
+  "minecraft:tripwire[attached=false,disarmed=false,east=true,north=false,powered=false,south=false,suspended=false,west=false]":
+    "132:0",
+  "minecraft:tripwire[attached=false,disarmed=false,east=true,north=false,powered=false,south=false,suspended=false,west=true]":
+    "132:0",
+  "minecraft:tripwire[attached=false,disarmed=false,east=true,north=false,powered=false,south=true,suspended=false,west=false]":
+    "132:0",
+  "minecraft:tripwire[attached=false,disarmed=false,east=true,north=false,powered=false,south=true,suspended=false,west=true]":
+    "132:0",
+  "minecraft:tripwire[attached=false,disarmed=false,east=true,north=true,powered=false,south=false,suspended=false,west=false]":
+    "132:0",
+  "minecraft:tripwire[attached=false,disarmed=false,east=true,north=true,powered=false,south=false,suspended=false,west=true]":
+    "132:0",
+  "minecraft:tripwire[attached=false,disarmed=false,east=true,north=true,powered=false,south=true,suspended=false,west=false]":
+    "132:0",
+  "minecraft:tripwire[attached=false,disarmed=false,east=true,north=true,powered=false,south=true,suspended=false,west=true]":
+    "132:0",
+  "minecraft:tripwire[attached=false,disarmed=false,east=false,north=false,powered=true,south=false,suspended=false,west=false]":
+    "132:1",
+  "minecraft:tripwire[attached=false,disarmed=false,east=false,north=false,powered=true,south=false,suspended=false,west=true]":
+    "132:1",
+  "minecraft:tripwire[attached=false,disarmed=false,east=false,north=false,powered=true,south=true,suspended=false,west=false]":
+    "132:1",
+  "minecraft:tripwire[attached=false,disarmed=false,east=false,north=false,powered=true,south=true,suspended=false,west=true]":
+    "132:1",
+  "minecraft:tripwire[attached=false,disarmed=false,east=false,north=true,powered=true,south=false,suspended=false,west=false]":
+    "132:1",
+  "minecraft:tripwire[attached=false,disarmed=false,east=false,north=true,powered=true,south=false,suspended=false,west=true]":
+    "132:1",
+  "minecraft:tripwire[attached=false,disarmed=false,east=false,north=true,powered=true,south=true,suspended=false,west=false]":
+    "132:1",
+  "minecraft:tripwire[attached=false,disarmed=false,east=false,north=true,powered=true,south=true,suspended=false,west=true]":
+    "132:1",
+  "minecraft:tripwire[attached=false,disarmed=false,east=true,north=false,powered=true,south=false,suspended=false,west=false]":
+    "132:1",
+  "minecraft:tripwire[attached=false,disarmed=false,east=true,north=false,powered=true,south=false,suspended=false,west=true]":
+    "132:1",
+  "minecraft:tripwire[attached=false,disarmed=false,east=true,north=false,powered=true,south=true,suspended=false,west=false]":
+    "132:1",
+  "minecraft:tripwire[attached=false,disarmed=false,east=true,north=false,powered=true,south=true,suspended=false,west=true]":
+    "132:1",
+  "minecraft:tripwire[attached=false,disarmed=false,east=true,north=true,powered=true,south=false,suspended=false,west=false]":
+    "132:1",
+  "minecraft:tripwire[attached=false,disarmed=false,east=true,north=true,powered=true,south=false,suspended=false,west=true]":
+    "132:1",
+  "minecraft:tripwire[attached=false,disarmed=false,east=true,north=true,powered=true,south=true,suspended=false,west=false]":
+    "132:1",
+  "minecraft:tripwire[attached=false,disarmed=false,east=true,north=true,powered=true,south=true,suspended=false,west=true]":
+    "132:1",
+  "minecraft:tripwire[attached=true,disarmed=false,east=false,north=false,powered=false,south=false,suspended=false,west=false]":
+    "132:4",
+  "minecraft:tripwire[attached=true,disarmed=false,east=false,north=false,powered=false,south=false,suspended=false,west=true]":
+    "132:4",
+  "minecraft:tripwire[attached=true,disarmed=false,east=false,north=false,powered=false,south=true,suspended=false,west=false]":
+    "132:4",
+  "minecraft:tripwire[attached=true,disarmed=false,east=false,north=false,powered=false,south=true,suspended=false,west=true]":
+    "132:4",
+  "minecraft:tripwire[attached=true,disarmed=false,east=false,north=true,powered=false,south=false,suspended=false,west=false]":
+    "132:4",
+  "minecraft:tripwire[attached=true,disarmed=false,east=false,north=true,powered=false,south=false,suspended=false,west=true]":
+    "132:4",
+  "minecraft:tripwire[attached=true,disarmed=false,east=false,north=true,powered=false,south=true,suspended=false,west=false]":
+    "132:4",
+  "minecraft:tripwire[attached=true,disarmed=false,east=false,north=true,powered=false,south=true,suspended=false,west=true]":
+    "132:4",
+  "minecraft:tripwire[attached=true,disarmed=false,east=true,north=false,powered=false,south=false,suspended=false,west=false]":
+    "132:4",
+  "minecraft:tripwire[attached=true,disarmed=false,east=true,north=false,powered=false,south=false,suspended=false,west=true]":
+    "132:4",
+  "minecraft:tripwire[attached=true,disarmed=false,east=true,north=false,powered=false,south=true,suspended=false,west=false]":
+    "132:4",
+  "minecraft:tripwire[attached=true,disarmed=false,east=true,north=false,powered=false,south=true,suspended=false,west=true]":
+    "132:4",
+  "minecraft:tripwire[attached=true,disarmed=false,east=true,north=true,powered=false,south=false,suspended=false,west=false]":
+    "132:4",
+  "minecraft:tripwire[attached=true,disarmed=false,east=true,north=true,powered=false,south=false,suspended=false,west=true]":
+    "132:4",
+  "minecraft:tripwire[attached=true,disarmed=false,east=true,north=true,powered=false,south=true,suspended=false,west=false]":
+    "132:4",
+  "minecraft:tripwire[attached=true,disarmed=false,east=true,north=true,powered=false,south=true,suspended=false,west=true]":
+    "132:4",
+  "minecraft:tripwire[attached=true,disarmed=false,east=false,north=false,powered=true,south=false,suspended=false,west=false]":
+    "132:5",
+  "minecraft:tripwire[attached=true,disarmed=false,east=false,north=false,powered=true,south=false,suspended=false,west=true]":
+    "132:5",
+  "minecraft:tripwire[attached=true,disarmed=false,east=false,north=false,powered=true,south=true,suspended=false,west=false]":
+    "132:5",
+  "minecraft:tripwire[attached=true,disarmed=false,east=false,north=false,powered=true,south=true,suspended=false,west=true]":
+    "132:5",
+  "minecraft:tripwire[attached=true,disarmed=false,east=false,north=true,powered=true,south=false,suspended=false,west=false]":
+    "132:5",
+  "minecraft:tripwire[attached=true,disarmed=false,east=false,north=true,powered=true,south=false,suspended=false,west=true]":
+    "132:5",
+  "minecraft:tripwire[attached=true,disarmed=false,east=false,north=true,powered=true,south=true,suspended=false,west=false]":
+    "132:5",
+  "minecraft:tripwire[attached=true,disarmed=false,east=false,north=true,powered=true,south=true,suspended=false,west=true]":
+    "132:5",
+  "minecraft:tripwire[attached=true,disarmed=false,east=true,north=false,powered=true,south=false,suspended=false,west=false]":
+    "132:5",
+  "minecraft:tripwire[attached=true,disarmed=false,east=true,north=false,powered=true,south=false,suspended=false,west=true]":
+    "132:5",
+  "minecraft:tripwire[attached=true,disarmed=false,east=true,north=false,powered=true,south=true,suspended=false,west=false]":
+    "132:5",
+  "minecraft:tripwire[attached=true,disarmed=false,east=true,north=false,powered=true,south=true,suspended=false,west=true]":
+    "132:5",
+  "minecraft:tripwire[attached=true,disarmed=false,east=true,north=true,powered=true,south=false,suspended=false,west=false]":
+    "132:5",
+  "minecraft:tripwire[attached=true,disarmed=false,east=true,north=true,powered=true,south=false,suspended=false,west=true]":
+    "132:5",
+  "minecraft:tripwire[attached=true,disarmed=false,east=true,north=true,powered=true,south=true,suspended=false,west=false]":
+    "132:5",
+  "minecraft:tripwire[attached=true,disarmed=false,east=true,north=true,powered=true,south=true,suspended=false,west=true]":
+    "132:5",
+  "minecraft:tripwire[attached=false,disarmed=true,east=false,north=false,powered=false,south=false,suspended=false,west=false]":
+    "132:8",
+  "minecraft:tripwire[attached=false,disarmed=true,east=false,north=false,powered=false,south=false,suspended=false,west=true]":
+    "132:8",
+  "minecraft:tripwire[attached=false,disarmed=true,east=false,north=false,powered=false,south=true,suspended=false,west=false]":
+    "132:8",
+  "minecraft:tripwire[attached=false,disarmed=true,east=false,north=false,powered=false,south=true,suspended=false,west=true]":
+    "132:8",
+  "minecraft:tripwire[attached=false,disarmed=true,east=false,north=true,powered=false,south=false,suspended=false,west=false]":
+    "132:8",
+  "minecraft:tripwire[attached=false,disarmed=true,east=false,north=true,powered=false,south=false,suspended=false,west=true]":
+    "132:8",
+  "minecraft:tripwire[attached=false,disarmed=true,east=false,north=true,powered=false,south=true,suspended=false,west=false]":
+    "132:8",
+  "minecraft:tripwire[attached=false,disarmed=true,east=false,north=true,powered=false,south=true,suspended=false,west=true]":
+    "132:8",
+  "minecraft:tripwire[attached=false,disarmed=true,east=true,north=false,powered=false,south=false,suspended=false,west=false]":
+    "132:8",
+  "minecraft:tripwire[attached=false,disarmed=true,east=true,north=false,powered=false,south=false,suspended=false,west=true]":
+    "132:8",
+  "minecraft:tripwire[attached=false,disarmed=true,east=true,north=false,powered=false,south=true,suspended=false,west=false]":
+    "132:8",
+  "minecraft:tripwire[attached=false,disarmed=true,east=true,north=false,powered=false,south=true,suspended=false,west=true]":
+    "132:8",
+  "minecraft:tripwire[attached=false,disarmed=true,east=true,north=true,powered=false,south=false,suspended=false,west=false]":
+    "132:8",
+  "minecraft:tripwire[attached=false,disarmed=true,east=true,north=true,powered=false,south=false,suspended=false,west=true]":
+    "132:8",
+  "minecraft:tripwire[attached=false,disarmed=true,east=true,north=true,powered=false,south=true,suspended=false,west=false]":
+    "132:8",
+  "minecraft:tripwire[attached=false,disarmed=true,east=true,north=true,powered=false,south=true,suspended=false,west=true]":
+    "132:8",
+  "minecraft:tripwire[attached=false,disarmed=true,east=false,north=false,powered=true,south=false,suspended=false,west=false]":
+    "132:9",
+  "minecraft:tripwire[attached=false,disarmed=true,east=false,north=false,powered=true,south=false,suspended=false,west=true]":
+    "132:9",
+  "minecraft:tripwire[attached=false,disarmed=true,east=false,north=false,powered=true,south=true,suspended=false,west=false]":
+    "132:9",
+  "minecraft:tripwire[attached=false,disarmed=true,east=false,north=false,powered=true,south=true,suspended=false,west=true]":
+    "132:9",
+  "minecraft:tripwire[attached=false,disarmed=true,east=false,north=true,powered=true,south=false,suspended=false,west=false]":
+    "132:9",
+  "minecraft:tripwire[attached=false,disarmed=true,east=false,north=true,powered=true,south=false,suspended=false,west=true]":
+    "132:9",
+  "minecraft:tripwire[attached=false,disarmed=true,east=false,north=true,powered=true,south=true,suspended=false,west=false]":
+    "132:9",
+  "minecraft:tripwire[attached=false,disarmed=true,east=false,north=true,powered=true,south=true,suspended=false,west=true]":
+    "132:9",
+  "minecraft:tripwire[attached=false,disarmed=true,east=true,north=false,powered=true,south=false,suspended=false,west=false]":
+    "132:9",
+  "minecraft:tripwire[attached=false,disarmed=true,east=true,north=false,powered=true,south=false,suspended=false,west=true]":
+    "132:9",
+  "minecraft:tripwire[attached=false,disarmed=true,east=true,north=false,powered=true,south=true,suspended=false,west=false]":
+    "132:9",
+  "minecraft:tripwire[attached=false,disarmed=true,east=true,north=false,powered=true,south=true,suspended=false,west=true]":
+    "132:9",
+  "minecraft:tripwire[attached=false,disarmed=true,east=true,north=true,powered=true,south=false,suspended=false,west=false]":
+    "132:9",
+  "minecraft:tripwire[attached=false,disarmed=true,east=true,north=true,powered=true,south=false,suspended=false,west=true]":
+    "132:9",
+  "minecraft:tripwire[attached=false,disarmed=true,east=true,north=true,powered=true,south=true,suspended=false,west=false]":
+    "132:9",
+  "minecraft:tripwire[attached=false,disarmed=true,east=true,north=true,powered=true,south=true,suspended=false,west=true]":
+    "132:9",
+  "minecraft:tripwire[attached=true,disarmed=true,east=false,north=false,powered=false,south=false,suspended=false,west=false]":
+    "132:12",
+  "minecraft:tripwire[attached=true,disarmed=true,east=false,north=false,powered=false,south=false,suspended=false,west=true]":
+    "132:12",
+  "minecraft:tripwire[attached=true,disarmed=true,east=false,north=false,powered=false,south=true,suspended=false,west=false]":
+    "132:12",
+  "minecraft:tripwire[attached=true,disarmed=true,east=false,north=false,powered=false,south=true,suspended=false,west=true]":
+    "132:12",
+  "minecraft:tripwire[attached=true,disarmed=true,east=false,north=true,powered=false,south=false,suspended=false,west=false]":
+    "132:12",
+  "minecraft:tripwire[attached=true,disarmed=true,east=false,north=true,powered=false,south=false,suspended=false,west=true]":
+    "132:12",
+  "minecraft:tripwire[attached=true,disarmed=true,east=false,north=true,powered=false,south=true,suspended=false,west=false]":
+    "132:12",
+  "minecraft:tripwire[attached=true,disarmed=true,east=false,north=true,powered=false,south=true,suspended=false,west=true]":
+    "132:12",
+  "minecraft:tripwire[attached=true,disarmed=true,east=true,north=false,powered=false,south=false,suspended=false,west=false]":
+    "132:12",
+  "minecraft:tripwire[attached=true,disarmed=true,east=true,north=false,powered=false,south=false,suspended=false,west=true]":
+    "132:12",
+  "minecraft:tripwire[attached=true,disarmed=true,east=true,north=false,powered=false,south=true,suspended=false,west=false]":
+    "132:12",
+  "minecraft:tripwire[attached=true,disarmed=true,east=true,north=false,powered=false,south=true,suspended=false,west=true]":
+    "132:12",
+  "minecraft:tripwire[attached=true,disarmed=true,east=true,north=true,powered=false,south=false,suspended=false,west=false]":
+    "132:12",
+  "minecraft:tripwire[attached=true,disarmed=true,east=true,north=true,powered=false,south=false,suspended=false,west=true]":
+    "132:12",
+  "minecraft:tripwire[attached=true,disarmed=true,east=true,north=true,powered=false,south=true,suspended=false,west=false]":
+    "132:12",
+  "minecraft:tripwire[attached=true,disarmed=true,east=true,north=true,powered=false,south=true,suspended=false,west=true]":
+    "132:12",
+  "minecraft:tripwire[attached=true,disarmed=true,east=false,north=false,powered=true,south=false,suspended=false,west=false]":
+    "132:13",
+  "minecraft:tripwire[attached=true,disarmed=true,east=false,north=false,powered=true,south=false,suspended=false,west=true]":
+    "132:13",
+  "minecraft:tripwire[attached=true,disarmed=true,east=false,north=false,powered=true,south=true,suspended=false,west=false]":
+    "132:13",
+  "minecraft:tripwire[attached=true,disarmed=true,east=false,north=false,powered=true,south=true,suspended=false,west=true]":
+    "132:13",
+  "minecraft:tripwire[attached=true,disarmed=true,east=false,north=true,powered=true,south=false,suspended=false,west=false]":
+    "132:13",
+  "minecraft:tripwire[attached=true,disarmed=true,east=false,north=true,powered=true,south=false,suspended=false,west=true]":
+    "132:13",
+  "minecraft:tripwire[attached=true,disarmed=true,east=false,north=true,powered=true,south=true,suspended=false,west=false]":
+    "132:13",
+  "minecraft:tripwire[attached=true,disarmed=true,east=false,north=true,powered=true,south=true,suspended=false,west=true]":
+    "132:13",
+  "minecraft:tripwire[attached=true,disarmed=true,east=true,north=false,powered=true,south=false,suspended=false,west=false]":
+    "132:13",
+  "minecraft:tripwire[attached=true,disarmed=true,east=true,north=false,powered=true,south=false,suspended=false,west=true]":
+    "132:13",
+  "minecraft:tripwire[attached=true,disarmed=true,east=true,north=false,powered=true,south=true,suspended=false,west=false]":
+    "132:13",
+  "minecraft:tripwire[attached=true,disarmed=true,east=true,north=false,powered=true,south=true,suspended=false,west=true]":
+    "132:13",
+  "minecraft:tripwire[attached=true,disarmed=true,east=true,north=true,powered=true,south=false,suspended=false,west=false]":
+    "132:13",
+  "minecraft:tripwire[attached=true,disarmed=true,east=true,north=true,powered=true,south=false,suspended=false,west=true]":
+    "132:13",
+  "minecraft:tripwire[attached=true,disarmed=true,east=true,north=true,powered=true,south=true,suspended=false,west=false]":
+    "132:13",
+  "minecraft:tripwire[attached=true,disarmed=true,east=true,north=true,powered=true,south=true,suspended=false,west=true]":
+    "132:13",
   "minecraft:emerald_block": "133:0",
   "minecraft:spruce_stairs[facing=east,half=bottom,shape=straight]": "134:0",
   "minecraft:spruce_stairs[facing=east,half=bottom,shape=inner_left]": "134:0",
@@ -2469,14 +4096,18 @@ export const FORGE_1_12_FLATTEN: Readonly<Record<string, string>> = {
   "minecraft:spruce_stairs[facing=west,half=bottom,shape=outer_right]": "134:1",
   "minecraft:spruce_stairs[facing=south,half=bottom,shape=straight]": "134:2",
   "minecraft:spruce_stairs[facing=south,half=bottom,shape=inner_left]": "134:2",
-  "minecraft:spruce_stairs[facing=south,half=bottom,shape=inner_right]": "134:2",
+  "minecraft:spruce_stairs[facing=south,half=bottom,shape=inner_right]":
+    "134:2",
   "minecraft:spruce_stairs[facing=south,half=bottom,shape=outer_left]": "134:2",
-  "minecraft:spruce_stairs[facing=south,half=bottom,shape=outer_right]": "134:2",
+  "minecraft:spruce_stairs[facing=south,half=bottom,shape=outer_right]":
+    "134:2",
   "minecraft:spruce_stairs[facing=north,half=bottom,shape=straight]": "134:3",
   "minecraft:spruce_stairs[facing=north,half=bottom,shape=inner_left]": "134:3",
-  "minecraft:spruce_stairs[facing=north,half=bottom,shape=inner_right]": "134:3",
+  "minecraft:spruce_stairs[facing=north,half=bottom,shape=inner_right]":
+    "134:3",
   "minecraft:spruce_stairs[facing=north,half=bottom,shape=outer_left]": "134:3",
-  "minecraft:spruce_stairs[facing=north,half=bottom,shape=outer_right]": "134:3",
+  "minecraft:spruce_stairs[facing=north,half=bottom,shape=outer_right]":
+    "134:3",
   "minecraft:spruce_stairs[facing=east,half=top,shape=straight]": "134:4",
   "minecraft:spruce_stairs[facing=east,half=top,shape=inner_left]": "134:4",
   "minecraft:spruce_stairs[facing=east,half=top,shape=inner_right]": "134:4",
@@ -2549,14 +4180,18 @@ export const FORGE_1_12_FLATTEN: Readonly<Record<string, string>> = {
   "minecraft:jungle_stairs[facing=west,half=bottom,shape=outer_right]": "136:1",
   "minecraft:jungle_stairs[facing=south,half=bottom,shape=straight]": "136:2",
   "minecraft:jungle_stairs[facing=south,half=bottom,shape=inner_left]": "136:2",
-  "minecraft:jungle_stairs[facing=south,half=bottom,shape=inner_right]": "136:2",
+  "minecraft:jungle_stairs[facing=south,half=bottom,shape=inner_right]":
+    "136:2",
   "minecraft:jungle_stairs[facing=south,half=bottom,shape=outer_left]": "136:2",
-  "minecraft:jungle_stairs[facing=south,half=bottom,shape=outer_right]": "136:2",
+  "minecraft:jungle_stairs[facing=south,half=bottom,shape=outer_right]":
+    "136:2",
   "minecraft:jungle_stairs[facing=north,half=bottom,shape=straight]": "136:3",
   "minecraft:jungle_stairs[facing=north,half=bottom,shape=inner_left]": "136:3",
-  "minecraft:jungle_stairs[facing=north,half=bottom,shape=inner_right]": "136:3",
+  "minecraft:jungle_stairs[facing=north,half=bottom,shape=inner_right]":
+    "136:3",
   "minecraft:jungle_stairs[facing=north,half=bottom,shape=outer_left]": "136:3",
-  "minecraft:jungle_stairs[facing=north,half=bottom,shape=outer_right]": "136:3",
+  "minecraft:jungle_stairs[facing=north,half=bottom,shape=outer_right]":
+    "136:3",
   "minecraft:jungle_stairs[facing=east,half=top,shape=straight]": "136:4",
   "minecraft:jungle_stairs[facing=east,half=top,shape=inner_left]": "136:4",
   "minecraft:jungle_stairs[facing=east,half=top,shape=inner_right]": "136:4",
@@ -2590,70 +4225,134 @@ export const FORGE_1_12_FLATTEN: Readonly<Record<string, string>> = {
   "minecraft:command_block[facing=west,triggered=true]": "137:12",
   "minecraft:command_block[facing=east,triggered=true]": "137:13",
   "minecraft:beacon": "138:0",
-  "minecraft:cobblestone_wall[east=false,north=false,south=false,up=false,variant=cobblestone,west=false]": "139:0",
-  "minecraft:cobblestone_wall[east=false,north=false,south=false,up=false,variant=cobblestone,west=true]": "139:0",
-  "minecraft:cobblestone_wall[east=false,north=false,south=false,up=true,variant=cobblestone,west=false]": "139:0",
-  "minecraft:cobblestone_wall[east=false,north=false,south=false,up=true,variant=cobblestone,west=true]": "139:0",
-  "minecraft:cobblestone_wall[east=false,north=false,south=true,up=false,variant=cobblestone,west=false]": "139:0",
-  "minecraft:cobblestone_wall[east=false,north=false,south=true,up=false,variant=cobblestone,west=true]": "139:0",
-  "minecraft:cobblestone_wall[east=false,north=false,south=true,up=true,variant=cobblestone,west=false]": "139:0",
-  "minecraft:cobblestone_wall[east=false,north=false,south=true,up=true,variant=cobblestone,west=true]": "139:0",
-  "minecraft:cobblestone_wall[east=false,north=true,south=false,up=false,variant=cobblestone,west=false]": "139:0",
-  "minecraft:cobblestone_wall[east=false,north=true,south=false,up=false,variant=cobblestone,west=true]": "139:0",
-  "minecraft:cobblestone_wall[east=false,north=true,south=false,up=true,variant=cobblestone,west=false]": "139:0",
-  "minecraft:cobblestone_wall[east=false,north=true,south=false,up=true,variant=cobblestone,west=true]": "139:0",
-  "minecraft:cobblestone_wall[east=false,north=true,south=true,up=false,variant=cobblestone,west=false]": "139:0",
-  "minecraft:cobblestone_wall[east=false,north=true,south=true,up=false,variant=cobblestone,west=true]": "139:0",
-  "minecraft:cobblestone_wall[east=false,north=true,south=true,up=true,variant=cobblestone,west=false]": "139:0",
-  "minecraft:cobblestone_wall[east=false,north=true,south=true,up=true,variant=cobblestone,west=true]": "139:0",
-  "minecraft:cobblestone_wall[east=true,north=false,south=false,up=false,variant=cobblestone,west=false]": "139:0",
-  "minecraft:cobblestone_wall[east=true,north=false,south=false,up=false,variant=cobblestone,west=true]": "139:0",
-  "minecraft:cobblestone_wall[east=true,north=false,south=false,up=true,variant=cobblestone,west=false]": "139:0",
-  "minecraft:cobblestone_wall[east=true,north=false,south=false,up=true,variant=cobblestone,west=true]": "139:0",
-  "minecraft:cobblestone_wall[east=true,north=false,south=true,up=false,variant=cobblestone,west=false]": "139:0",
-  "minecraft:cobblestone_wall[east=true,north=false,south=true,up=false,variant=cobblestone,west=true]": "139:0",
-  "minecraft:cobblestone_wall[east=true,north=false,south=true,up=true,variant=cobblestone,west=false]": "139:0",
-  "minecraft:cobblestone_wall[east=true,north=false,south=true,up=true,variant=cobblestone,west=true]": "139:0",
-  "minecraft:cobblestone_wall[east=true,north=true,south=false,up=false,variant=cobblestone,west=false]": "139:0",
-  "minecraft:cobblestone_wall[east=true,north=true,south=false,up=false,variant=cobblestone,west=true]": "139:0",
-  "minecraft:cobblestone_wall[east=true,north=true,south=false,up=true,variant=cobblestone,west=false]": "139:0",
-  "minecraft:cobblestone_wall[east=true,north=true,south=false,up=true,variant=cobblestone,west=true]": "139:0",
-  "minecraft:cobblestone_wall[east=true,north=true,south=true,up=false,variant=cobblestone,west=false]": "139:0",
-  "minecraft:cobblestone_wall[east=true,north=true,south=true,up=false,variant=cobblestone,west=true]": "139:0",
-  "minecraft:cobblestone_wall[east=true,north=true,south=true,up=true,variant=cobblestone,west=false]": "139:0",
-  "minecraft:cobblestone_wall[east=true,north=true,south=true,up=true,variant=cobblestone,west=true]": "139:0",
-  "minecraft:cobblestone_wall[east=false,north=false,south=false,up=false,variant=mossy_cobblestone,west=false]": "139:1",
-  "minecraft:cobblestone_wall[east=false,north=false,south=false,up=false,variant=mossy_cobblestone,west=true]": "139:1",
-  "minecraft:cobblestone_wall[east=false,north=false,south=false,up=true,variant=mossy_cobblestone,west=false]": "139:1",
-  "minecraft:cobblestone_wall[east=false,north=false,south=false,up=true,variant=mossy_cobblestone,west=true]": "139:1",
-  "minecraft:cobblestone_wall[east=false,north=false,south=true,up=false,variant=mossy_cobblestone,west=false]": "139:1",
-  "minecraft:cobblestone_wall[east=false,north=false,south=true,up=false,variant=mossy_cobblestone,west=true]": "139:1",
-  "minecraft:cobblestone_wall[east=false,north=false,south=true,up=true,variant=mossy_cobblestone,west=false]": "139:1",
-  "minecraft:cobblestone_wall[east=false,north=false,south=true,up=true,variant=mossy_cobblestone,west=true]": "139:1",
-  "minecraft:cobblestone_wall[east=false,north=true,south=false,up=false,variant=mossy_cobblestone,west=false]": "139:1",
-  "minecraft:cobblestone_wall[east=false,north=true,south=false,up=false,variant=mossy_cobblestone,west=true]": "139:1",
-  "minecraft:cobblestone_wall[east=false,north=true,south=false,up=true,variant=mossy_cobblestone,west=false]": "139:1",
-  "minecraft:cobblestone_wall[east=false,north=true,south=false,up=true,variant=mossy_cobblestone,west=true]": "139:1",
-  "minecraft:cobblestone_wall[east=false,north=true,south=true,up=false,variant=mossy_cobblestone,west=false]": "139:1",
-  "minecraft:cobblestone_wall[east=false,north=true,south=true,up=false,variant=mossy_cobblestone,west=true]": "139:1",
-  "minecraft:cobblestone_wall[east=false,north=true,south=true,up=true,variant=mossy_cobblestone,west=false]": "139:1",
-  "minecraft:cobblestone_wall[east=false,north=true,south=true,up=true,variant=mossy_cobblestone,west=true]": "139:1",
-  "minecraft:cobblestone_wall[east=true,north=false,south=false,up=false,variant=mossy_cobblestone,west=false]": "139:1",
-  "minecraft:cobblestone_wall[east=true,north=false,south=false,up=false,variant=mossy_cobblestone,west=true]": "139:1",
-  "minecraft:cobblestone_wall[east=true,north=false,south=false,up=true,variant=mossy_cobblestone,west=false]": "139:1",
-  "minecraft:cobblestone_wall[east=true,north=false,south=false,up=true,variant=mossy_cobblestone,west=true]": "139:1",
-  "minecraft:cobblestone_wall[east=true,north=false,south=true,up=false,variant=mossy_cobblestone,west=false]": "139:1",
-  "minecraft:cobblestone_wall[east=true,north=false,south=true,up=false,variant=mossy_cobblestone,west=true]": "139:1",
-  "minecraft:cobblestone_wall[east=true,north=false,south=true,up=true,variant=mossy_cobblestone,west=false]": "139:1",
-  "minecraft:cobblestone_wall[east=true,north=false,south=true,up=true,variant=mossy_cobblestone,west=true]": "139:1",
-  "minecraft:cobblestone_wall[east=true,north=true,south=false,up=false,variant=mossy_cobblestone,west=false]": "139:1",
-  "minecraft:cobblestone_wall[east=true,north=true,south=false,up=false,variant=mossy_cobblestone,west=true]": "139:1",
-  "minecraft:cobblestone_wall[east=true,north=true,south=false,up=true,variant=mossy_cobblestone,west=false]": "139:1",
-  "minecraft:cobblestone_wall[east=true,north=true,south=false,up=true,variant=mossy_cobblestone,west=true]": "139:1",
-  "minecraft:cobblestone_wall[east=true,north=true,south=true,up=false,variant=mossy_cobblestone,west=false]": "139:1",
-  "minecraft:cobblestone_wall[east=true,north=true,south=true,up=false,variant=mossy_cobblestone,west=true]": "139:1",
-  "minecraft:cobblestone_wall[east=true,north=true,south=true,up=true,variant=mossy_cobblestone,west=false]": "139:1",
-  "minecraft:cobblestone_wall[east=true,north=true,south=true,up=true,variant=mossy_cobblestone,west=true]": "139:1",
+  "minecraft:cobblestone_wall[east=false,north=false,south=false,up=false,variant=cobblestone,west=false]":
+    "139:0",
+  "minecraft:cobblestone_wall[east=false,north=false,south=false,up=false,variant=cobblestone,west=true]":
+    "139:0",
+  "minecraft:cobblestone_wall[east=false,north=false,south=false,up=true,variant=cobblestone,west=false]":
+    "139:0",
+  "minecraft:cobblestone_wall[east=false,north=false,south=false,up=true,variant=cobblestone,west=true]":
+    "139:0",
+  "minecraft:cobblestone_wall[east=false,north=false,south=true,up=false,variant=cobblestone,west=false]":
+    "139:0",
+  "minecraft:cobblestone_wall[east=false,north=false,south=true,up=false,variant=cobblestone,west=true]":
+    "139:0",
+  "minecraft:cobblestone_wall[east=false,north=false,south=true,up=true,variant=cobblestone,west=false]":
+    "139:0",
+  "minecraft:cobblestone_wall[east=false,north=false,south=true,up=true,variant=cobblestone,west=true]":
+    "139:0",
+  "minecraft:cobblestone_wall[east=false,north=true,south=false,up=false,variant=cobblestone,west=false]":
+    "139:0",
+  "minecraft:cobblestone_wall[east=false,north=true,south=false,up=false,variant=cobblestone,west=true]":
+    "139:0",
+  "minecraft:cobblestone_wall[east=false,north=true,south=false,up=true,variant=cobblestone,west=false]":
+    "139:0",
+  "minecraft:cobblestone_wall[east=false,north=true,south=false,up=true,variant=cobblestone,west=true]":
+    "139:0",
+  "minecraft:cobblestone_wall[east=false,north=true,south=true,up=false,variant=cobblestone,west=false]":
+    "139:0",
+  "minecraft:cobblestone_wall[east=false,north=true,south=true,up=false,variant=cobblestone,west=true]":
+    "139:0",
+  "minecraft:cobblestone_wall[east=false,north=true,south=true,up=true,variant=cobblestone,west=false]":
+    "139:0",
+  "minecraft:cobblestone_wall[east=false,north=true,south=true,up=true,variant=cobblestone,west=true]":
+    "139:0",
+  "minecraft:cobblestone_wall[east=true,north=false,south=false,up=false,variant=cobblestone,west=false]":
+    "139:0",
+  "minecraft:cobblestone_wall[east=true,north=false,south=false,up=false,variant=cobblestone,west=true]":
+    "139:0",
+  "minecraft:cobblestone_wall[east=true,north=false,south=false,up=true,variant=cobblestone,west=false]":
+    "139:0",
+  "minecraft:cobblestone_wall[east=true,north=false,south=false,up=true,variant=cobblestone,west=true]":
+    "139:0",
+  "minecraft:cobblestone_wall[east=true,north=false,south=true,up=false,variant=cobblestone,west=false]":
+    "139:0",
+  "minecraft:cobblestone_wall[east=true,north=false,south=true,up=false,variant=cobblestone,west=true]":
+    "139:0",
+  "minecraft:cobblestone_wall[east=true,north=false,south=true,up=true,variant=cobblestone,west=false]":
+    "139:0",
+  "minecraft:cobblestone_wall[east=true,north=false,south=true,up=true,variant=cobblestone,west=true]":
+    "139:0",
+  "minecraft:cobblestone_wall[east=true,north=true,south=false,up=false,variant=cobblestone,west=false]":
+    "139:0",
+  "minecraft:cobblestone_wall[east=true,north=true,south=false,up=false,variant=cobblestone,west=true]":
+    "139:0",
+  "minecraft:cobblestone_wall[east=true,north=true,south=false,up=true,variant=cobblestone,west=false]":
+    "139:0",
+  "minecraft:cobblestone_wall[east=true,north=true,south=false,up=true,variant=cobblestone,west=true]":
+    "139:0",
+  "minecraft:cobblestone_wall[east=true,north=true,south=true,up=false,variant=cobblestone,west=false]":
+    "139:0",
+  "minecraft:cobblestone_wall[east=true,north=true,south=true,up=false,variant=cobblestone,west=true]":
+    "139:0",
+  "minecraft:cobblestone_wall[east=true,north=true,south=true,up=true,variant=cobblestone,west=false]":
+    "139:0",
+  "minecraft:cobblestone_wall[east=true,north=true,south=true,up=true,variant=cobblestone,west=true]":
+    "139:0",
+  "minecraft:cobblestone_wall[east=false,north=false,south=false,up=false,variant=mossy_cobblestone,west=false]":
+    "139:1",
+  "minecraft:cobblestone_wall[east=false,north=false,south=false,up=false,variant=mossy_cobblestone,west=true]":
+    "139:1",
+  "minecraft:cobblestone_wall[east=false,north=false,south=false,up=true,variant=mossy_cobblestone,west=false]":
+    "139:1",
+  "minecraft:cobblestone_wall[east=false,north=false,south=false,up=true,variant=mossy_cobblestone,west=true]":
+    "139:1",
+  "minecraft:cobblestone_wall[east=false,north=false,south=true,up=false,variant=mossy_cobblestone,west=false]":
+    "139:1",
+  "minecraft:cobblestone_wall[east=false,north=false,south=true,up=false,variant=mossy_cobblestone,west=true]":
+    "139:1",
+  "minecraft:cobblestone_wall[east=false,north=false,south=true,up=true,variant=mossy_cobblestone,west=false]":
+    "139:1",
+  "minecraft:cobblestone_wall[east=false,north=false,south=true,up=true,variant=mossy_cobblestone,west=true]":
+    "139:1",
+  "minecraft:cobblestone_wall[east=false,north=true,south=false,up=false,variant=mossy_cobblestone,west=false]":
+    "139:1",
+  "minecraft:cobblestone_wall[east=false,north=true,south=false,up=false,variant=mossy_cobblestone,west=true]":
+    "139:1",
+  "minecraft:cobblestone_wall[east=false,north=true,south=false,up=true,variant=mossy_cobblestone,west=false]":
+    "139:1",
+  "minecraft:cobblestone_wall[east=false,north=true,south=false,up=true,variant=mossy_cobblestone,west=true]":
+    "139:1",
+  "minecraft:cobblestone_wall[east=false,north=true,south=true,up=false,variant=mossy_cobblestone,west=false]":
+    "139:1",
+  "minecraft:cobblestone_wall[east=false,north=true,south=true,up=false,variant=mossy_cobblestone,west=true]":
+    "139:1",
+  "minecraft:cobblestone_wall[east=false,north=true,south=true,up=true,variant=mossy_cobblestone,west=false]":
+    "139:1",
+  "minecraft:cobblestone_wall[east=false,north=true,south=true,up=true,variant=mossy_cobblestone,west=true]":
+    "139:1",
+  "minecraft:cobblestone_wall[east=true,north=false,south=false,up=false,variant=mossy_cobblestone,west=false]":
+    "139:1",
+  "minecraft:cobblestone_wall[east=true,north=false,south=false,up=false,variant=mossy_cobblestone,west=true]":
+    "139:1",
+  "minecraft:cobblestone_wall[east=true,north=false,south=false,up=true,variant=mossy_cobblestone,west=false]":
+    "139:1",
+  "minecraft:cobblestone_wall[east=true,north=false,south=false,up=true,variant=mossy_cobblestone,west=true]":
+    "139:1",
+  "minecraft:cobblestone_wall[east=true,north=false,south=true,up=false,variant=mossy_cobblestone,west=false]":
+    "139:1",
+  "minecraft:cobblestone_wall[east=true,north=false,south=true,up=false,variant=mossy_cobblestone,west=true]":
+    "139:1",
+  "minecraft:cobblestone_wall[east=true,north=false,south=true,up=true,variant=mossy_cobblestone,west=false]":
+    "139:1",
+  "minecraft:cobblestone_wall[east=true,north=false,south=true,up=true,variant=mossy_cobblestone,west=true]":
+    "139:1",
+  "minecraft:cobblestone_wall[east=true,north=true,south=false,up=false,variant=mossy_cobblestone,west=false]":
+    "139:1",
+  "minecraft:cobblestone_wall[east=true,north=true,south=false,up=false,variant=mossy_cobblestone,west=true]":
+    "139:1",
+  "minecraft:cobblestone_wall[east=true,north=true,south=false,up=true,variant=mossy_cobblestone,west=false]":
+    "139:1",
+  "minecraft:cobblestone_wall[east=true,north=true,south=false,up=true,variant=mossy_cobblestone,west=true]":
+    "139:1",
+  "minecraft:cobblestone_wall[east=true,north=true,south=true,up=false,variant=mossy_cobblestone,west=false]":
+    "139:1",
+  "minecraft:cobblestone_wall[east=true,north=true,south=true,up=false,variant=mossy_cobblestone,west=true]":
+    "139:1",
+  "minecraft:cobblestone_wall[east=true,north=true,south=true,up=true,variant=mossy_cobblestone,west=false]":
+    "139:1",
+  "minecraft:cobblestone_wall[east=true,north=true,south=true,up=true,variant=mossy_cobblestone,west=true]":
+    "139:1",
   "minecraft:flower_pot": "140:0",
   "minecraft:carrots[age=0]": "141:0",
   "minecraft:carrots[age=1]": "141:1",
@@ -2736,30 +4435,54 @@ export const FORGE_1_12_FLATTEN: Readonly<Record<string, string>> = {
   "minecraft:heavy_weighted_pressure_plate[power=13]": "148:13",
   "minecraft:heavy_weighted_pressure_plate[power=14]": "148:14",
   "minecraft:heavy_weighted_pressure_plate[power=15]": "148:15",
-  "minecraft:unpowered_comparator[facing=south,mode=compare,powered=false]": "149:0",
-  "minecraft:unpowered_comparator[facing=west,mode=compare,powered=false]": "149:1",
-  "minecraft:unpowered_comparator[facing=north,mode=compare,powered=false]": "149:2",
-  "minecraft:unpowered_comparator[facing=east,mode=compare,powered=false]": "149:3",
-  "minecraft:unpowered_comparator[facing=south,mode=subtract,powered=false]": "149:4",
-  "minecraft:unpowered_comparator[facing=west,mode=subtract,powered=false]": "149:5",
-  "minecraft:unpowered_comparator[facing=north,mode=subtract,powered=false]": "149:6",
-  "minecraft:unpowered_comparator[facing=east,mode=subtract,powered=false]": "149:7",
-  "minecraft:unpowered_comparator[facing=south,mode=compare,powered=true]": "149:8",
-  "minecraft:unpowered_comparator[facing=west,mode=compare,powered=true]": "149:9",
-  "minecraft:unpowered_comparator[facing=north,mode=compare,powered=true]": "149:10",
-  "minecraft:unpowered_comparator[facing=east,mode=compare,powered=true]": "149:11",
-  "minecraft:unpowered_comparator[facing=south,mode=subtract,powered=true]": "149:12",
-  "minecraft:unpowered_comparator[facing=west,mode=subtract,powered=true]": "149:13",
-  "minecraft:unpowered_comparator[facing=north,mode=subtract,powered=true]": "149:14",
-  "minecraft:unpowered_comparator[facing=east,mode=subtract,powered=true]": "149:15",
-  "minecraft:powered_comparator[facing=south,mode=compare,powered=true]": "150:0",
-  "minecraft:powered_comparator[facing=west,mode=compare,powered=true]": "150:1",
-  "minecraft:powered_comparator[facing=north,mode=compare,powered=true]": "150:2",
-  "minecraft:powered_comparator[facing=east,mode=compare,powered=true]": "150:3",
-  "minecraft:powered_comparator[facing=south,mode=subtract,powered=true]": "150:4",
-  "minecraft:powered_comparator[facing=west,mode=subtract,powered=true]": "150:5",
-  "minecraft:powered_comparator[facing=north,mode=subtract,powered=true]": "150:6",
-  "minecraft:powered_comparator[facing=east,mode=subtract,powered=true]": "150:7",
+  "minecraft:unpowered_comparator[facing=south,mode=compare,powered=false]":
+    "149:0",
+  "minecraft:unpowered_comparator[facing=west,mode=compare,powered=false]":
+    "149:1",
+  "minecraft:unpowered_comparator[facing=north,mode=compare,powered=false]":
+    "149:2",
+  "minecraft:unpowered_comparator[facing=east,mode=compare,powered=false]":
+    "149:3",
+  "minecraft:unpowered_comparator[facing=south,mode=subtract,powered=false]":
+    "149:4",
+  "minecraft:unpowered_comparator[facing=west,mode=subtract,powered=false]":
+    "149:5",
+  "minecraft:unpowered_comparator[facing=north,mode=subtract,powered=false]":
+    "149:6",
+  "minecraft:unpowered_comparator[facing=east,mode=subtract,powered=false]":
+    "149:7",
+  "minecraft:unpowered_comparator[facing=south,mode=compare,powered=true]":
+    "149:8",
+  "minecraft:unpowered_comparator[facing=west,mode=compare,powered=true]":
+    "149:9",
+  "minecraft:unpowered_comparator[facing=north,mode=compare,powered=true]":
+    "149:10",
+  "minecraft:unpowered_comparator[facing=east,mode=compare,powered=true]":
+    "149:11",
+  "minecraft:unpowered_comparator[facing=south,mode=subtract,powered=true]":
+    "149:12",
+  "minecraft:unpowered_comparator[facing=west,mode=subtract,powered=true]":
+    "149:13",
+  "minecraft:unpowered_comparator[facing=north,mode=subtract,powered=true]":
+    "149:14",
+  "minecraft:unpowered_comparator[facing=east,mode=subtract,powered=true]":
+    "149:15",
+  "minecraft:powered_comparator[facing=south,mode=compare,powered=true]":
+    "150:0",
+  "minecraft:powered_comparator[facing=west,mode=compare,powered=true]":
+    "150:1",
+  "minecraft:powered_comparator[facing=north,mode=compare,powered=true]":
+    "150:2",
+  "minecraft:powered_comparator[facing=east,mode=compare,powered=true]":
+    "150:3",
+  "minecraft:powered_comparator[facing=south,mode=subtract,powered=true]":
+    "150:4",
+  "minecraft:powered_comparator[facing=west,mode=subtract,powered=true]":
+    "150:5",
+  "minecraft:powered_comparator[facing=north,mode=subtract,powered=true]":
+    "150:6",
+  "minecraft:powered_comparator[facing=east,mode=subtract,powered=true]":
+    "150:7",
   "minecraft:daylight_detector[power=0]": "151:0",
   "minecraft:daylight_detector[power=1]": "151:1",
   "minecraft:daylight_detector[power=2]": "151:2",
@@ -2805,14 +4528,18 @@ export const FORGE_1_12_FLATTEN: Readonly<Record<string, string>> = {
   "minecraft:quartz_stairs[facing=west,half=bottom,shape=outer_right]": "156:1",
   "minecraft:quartz_stairs[facing=south,half=bottom,shape=straight]": "156:2",
   "minecraft:quartz_stairs[facing=south,half=bottom,shape=inner_left]": "156:2",
-  "minecraft:quartz_stairs[facing=south,half=bottom,shape=inner_right]": "156:2",
+  "minecraft:quartz_stairs[facing=south,half=bottom,shape=inner_right]":
+    "156:2",
   "minecraft:quartz_stairs[facing=south,half=bottom,shape=outer_left]": "156:2",
-  "minecraft:quartz_stairs[facing=south,half=bottom,shape=outer_right]": "156:2",
+  "minecraft:quartz_stairs[facing=south,half=bottom,shape=outer_right]":
+    "156:2",
   "minecraft:quartz_stairs[facing=north,half=bottom,shape=straight]": "156:3",
   "minecraft:quartz_stairs[facing=north,half=bottom,shape=inner_left]": "156:3",
-  "minecraft:quartz_stairs[facing=north,half=bottom,shape=inner_right]": "156:3",
+  "minecraft:quartz_stairs[facing=north,half=bottom,shape=inner_right]":
+    "156:3",
   "minecraft:quartz_stairs[facing=north,half=bottom,shape=outer_left]": "156:3",
-  "minecraft:quartz_stairs[facing=north,half=bottom,shape=outer_right]": "156:3",
+  "minecraft:quartz_stairs[facing=north,half=bottom,shape=outer_right]":
+    "156:3",
   "minecraft:quartz_stairs[facing=east,half=top,shape=straight]": "156:4",
   "minecraft:quartz_stairs[facing=east,half=top,shape=inner_left]": "156:4",
   "minecraft:quartz_stairs[facing=east,half=top,shape=inner_right]": "156:4",
@@ -2873,270 +4600,532 @@ export const FORGE_1_12_FLATTEN: Readonly<Record<string, string>> = {
   "minecraft:stained_hardened_clay[color=green]": "159:13",
   "minecraft:stained_hardened_clay[color=red]": "159:14",
   "minecraft:stained_hardened_clay[color=black]": "159:15",
-  "minecraft:stained_glass_pane[color=white,east=false,north=false,south=false,west=false]": "160:0",
-  "minecraft:stained_glass_pane[color=white,east=false,north=false,south=false,west=true]": "160:0",
-  "minecraft:stained_glass_pane[color=white,east=false,north=false,south=true,west=false]": "160:0",
-  "minecraft:stained_glass_pane[color=white,east=false,north=false,south=true,west=true]": "160:0",
-  "minecraft:stained_glass_pane[color=white,east=false,north=true,south=false,west=false]": "160:0",
-  "minecraft:stained_glass_pane[color=white,east=false,north=true,south=false,west=true]": "160:0",
-  "minecraft:stained_glass_pane[color=white,east=false,north=true,south=true,west=false]": "160:0",
-  "minecraft:stained_glass_pane[color=white,east=false,north=true,south=true,west=true]": "160:0",
-  "minecraft:stained_glass_pane[color=white,east=true,north=false,south=false,west=false]": "160:0",
-  "minecraft:stained_glass_pane[color=white,east=true,north=false,south=false,west=true]": "160:0",
-  "minecraft:stained_glass_pane[color=white,east=true,north=false,south=true,west=false]": "160:0",
-  "minecraft:stained_glass_pane[color=white,east=true,north=false,south=true,west=true]": "160:0",
-  "minecraft:stained_glass_pane[color=white,east=true,north=true,south=false,west=false]": "160:0",
-  "minecraft:stained_glass_pane[color=white,east=true,north=true,south=false,west=true]": "160:0",
-  "minecraft:stained_glass_pane[color=white,east=true,north=true,south=true,west=false]": "160:0",
-  "minecraft:stained_glass_pane[color=white,east=true,north=true,south=true,west=true]": "160:0",
-  "minecraft:stained_glass_pane[color=orange,east=false,north=false,south=false,west=false]": "160:1",
-  "minecraft:stained_glass_pane[color=orange,east=false,north=false,south=false,west=true]": "160:1",
-  "minecraft:stained_glass_pane[color=orange,east=false,north=false,south=true,west=false]": "160:1",
-  "minecraft:stained_glass_pane[color=orange,east=false,north=false,south=true,west=true]": "160:1",
-  "minecraft:stained_glass_pane[color=orange,east=false,north=true,south=false,west=false]": "160:1",
-  "minecraft:stained_glass_pane[color=orange,east=false,north=true,south=false,west=true]": "160:1",
-  "minecraft:stained_glass_pane[color=orange,east=false,north=true,south=true,west=false]": "160:1",
-  "minecraft:stained_glass_pane[color=orange,east=false,north=true,south=true,west=true]": "160:1",
-  "minecraft:stained_glass_pane[color=orange,east=true,north=false,south=false,west=false]": "160:1",
-  "minecraft:stained_glass_pane[color=orange,east=true,north=false,south=false,west=true]": "160:1",
-  "minecraft:stained_glass_pane[color=orange,east=true,north=false,south=true,west=false]": "160:1",
-  "minecraft:stained_glass_pane[color=orange,east=true,north=false,south=true,west=true]": "160:1",
-  "minecraft:stained_glass_pane[color=orange,east=true,north=true,south=false,west=false]": "160:1",
-  "minecraft:stained_glass_pane[color=orange,east=true,north=true,south=false,west=true]": "160:1",
-  "minecraft:stained_glass_pane[color=orange,east=true,north=true,south=true,west=false]": "160:1",
-  "minecraft:stained_glass_pane[color=orange,east=true,north=true,south=true,west=true]": "160:1",
-  "minecraft:stained_glass_pane[color=magenta,east=false,north=false,south=false,west=false]": "160:2",
-  "minecraft:stained_glass_pane[color=magenta,east=false,north=false,south=false,west=true]": "160:2",
-  "minecraft:stained_glass_pane[color=magenta,east=false,north=false,south=true,west=false]": "160:2",
-  "minecraft:stained_glass_pane[color=magenta,east=false,north=false,south=true,west=true]": "160:2",
-  "minecraft:stained_glass_pane[color=magenta,east=false,north=true,south=false,west=false]": "160:2",
-  "minecraft:stained_glass_pane[color=magenta,east=false,north=true,south=false,west=true]": "160:2",
-  "minecraft:stained_glass_pane[color=magenta,east=false,north=true,south=true,west=false]": "160:2",
-  "minecraft:stained_glass_pane[color=magenta,east=false,north=true,south=true,west=true]": "160:2",
-  "minecraft:stained_glass_pane[color=magenta,east=true,north=false,south=false,west=false]": "160:2",
-  "minecraft:stained_glass_pane[color=magenta,east=true,north=false,south=false,west=true]": "160:2",
-  "minecraft:stained_glass_pane[color=magenta,east=true,north=false,south=true,west=false]": "160:2",
-  "minecraft:stained_glass_pane[color=magenta,east=true,north=false,south=true,west=true]": "160:2",
-  "minecraft:stained_glass_pane[color=magenta,east=true,north=true,south=false,west=false]": "160:2",
-  "minecraft:stained_glass_pane[color=magenta,east=true,north=true,south=false,west=true]": "160:2",
-  "minecraft:stained_glass_pane[color=magenta,east=true,north=true,south=true,west=false]": "160:2",
-  "minecraft:stained_glass_pane[color=magenta,east=true,north=true,south=true,west=true]": "160:2",
-  "minecraft:stained_glass_pane[color=light_blue,east=false,north=false,south=false,west=false]": "160:3",
-  "minecraft:stained_glass_pane[color=light_blue,east=false,north=false,south=false,west=true]": "160:3",
-  "minecraft:stained_glass_pane[color=light_blue,east=false,north=false,south=true,west=false]": "160:3",
-  "minecraft:stained_glass_pane[color=light_blue,east=false,north=false,south=true,west=true]": "160:3",
-  "minecraft:stained_glass_pane[color=light_blue,east=false,north=true,south=false,west=false]": "160:3",
-  "minecraft:stained_glass_pane[color=light_blue,east=false,north=true,south=false,west=true]": "160:3",
-  "minecraft:stained_glass_pane[color=light_blue,east=false,north=true,south=true,west=false]": "160:3",
-  "minecraft:stained_glass_pane[color=light_blue,east=false,north=true,south=true,west=true]": "160:3",
-  "minecraft:stained_glass_pane[color=light_blue,east=true,north=false,south=false,west=false]": "160:3",
-  "minecraft:stained_glass_pane[color=light_blue,east=true,north=false,south=false,west=true]": "160:3",
-  "minecraft:stained_glass_pane[color=light_blue,east=true,north=false,south=true,west=false]": "160:3",
-  "minecraft:stained_glass_pane[color=light_blue,east=true,north=false,south=true,west=true]": "160:3",
-  "minecraft:stained_glass_pane[color=light_blue,east=true,north=true,south=false,west=false]": "160:3",
-  "minecraft:stained_glass_pane[color=light_blue,east=true,north=true,south=false,west=true]": "160:3",
-  "minecraft:stained_glass_pane[color=light_blue,east=true,north=true,south=true,west=false]": "160:3",
-  "minecraft:stained_glass_pane[color=light_blue,east=true,north=true,south=true,west=true]": "160:3",
-  "minecraft:stained_glass_pane[color=yellow,east=false,north=false,south=false,west=false]": "160:4",
-  "minecraft:stained_glass_pane[color=yellow,east=false,north=false,south=false,west=true]": "160:4",
-  "minecraft:stained_glass_pane[color=yellow,east=false,north=false,south=true,west=false]": "160:4",
-  "minecraft:stained_glass_pane[color=yellow,east=false,north=false,south=true,west=true]": "160:4",
-  "minecraft:stained_glass_pane[color=yellow,east=false,north=true,south=false,west=false]": "160:4",
-  "minecraft:stained_glass_pane[color=yellow,east=false,north=true,south=false,west=true]": "160:4",
-  "minecraft:stained_glass_pane[color=yellow,east=false,north=true,south=true,west=false]": "160:4",
-  "minecraft:stained_glass_pane[color=yellow,east=false,north=true,south=true,west=true]": "160:4",
-  "minecraft:stained_glass_pane[color=yellow,east=true,north=false,south=false,west=false]": "160:4",
-  "minecraft:stained_glass_pane[color=yellow,east=true,north=false,south=false,west=true]": "160:4",
-  "minecraft:stained_glass_pane[color=yellow,east=true,north=false,south=true,west=false]": "160:4",
-  "minecraft:stained_glass_pane[color=yellow,east=true,north=false,south=true,west=true]": "160:4",
-  "minecraft:stained_glass_pane[color=yellow,east=true,north=true,south=false,west=false]": "160:4",
-  "minecraft:stained_glass_pane[color=yellow,east=true,north=true,south=false,west=true]": "160:4",
-  "minecraft:stained_glass_pane[color=yellow,east=true,north=true,south=true,west=false]": "160:4",
-  "minecraft:stained_glass_pane[color=yellow,east=true,north=true,south=true,west=true]": "160:4",
-  "minecraft:stained_glass_pane[color=lime,east=false,north=false,south=false,west=false]": "160:5",
-  "minecraft:stained_glass_pane[color=lime,east=false,north=false,south=false,west=true]": "160:5",
-  "minecraft:stained_glass_pane[color=lime,east=false,north=false,south=true,west=false]": "160:5",
-  "minecraft:stained_glass_pane[color=lime,east=false,north=false,south=true,west=true]": "160:5",
-  "minecraft:stained_glass_pane[color=lime,east=false,north=true,south=false,west=false]": "160:5",
-  "minecraft:stained_glass_pane[color=lime,east=false,north=true,south=false,west=true]": "160:5",
-  "minecraft:stained_glass_pane[color=lime,east=false,north=true,south=true,west=false]": "160:5",
-  "minecraft:stained_glass_pane[color=lime,east=false,north=true,south=true,west=true]": "160:5",
-  "minecraft:stained_glass_pane[color=lime,east=true,north=false,south=false,west=false]": "160:5",
-  "minecraft:stained_glass_pane[color=lime,east=true,north=false,south=false,west=true]": "160:5",
-  "minecraft:stained_glass_pane[color=lime,east=true,north=false,south=true,west=false]": "160:5",
-  "minecraft:stained_glass_pane[color=lime,east=true,north=false,south=true,west=true]": "160:5",
-  "minecraft:stained_glass_pane[color=lime,east=true,north=true,south=false,west=false]": "160:5",
-  "minecraft:stained_glass_pane[color=lime,east=true,north=true,south=false,west=true]": "160:5",
-  "minecraft:stained_glass_pane[color=lime,east=true,north=true,south=true,west=false]": "160:5",
-  "minecraft:stained_glass_pane[color=lime,east=true,north=true,south=true,west=true]": "160:5",
-  "minecraft:stained_glass_pane[color=pink,east=false,north=false,south=false,west=false]": "160:6",
-  "minecraft:stained_glass_pane[color=pink,east=false,north=false,south=false,west=true]": "160:6",
-  "minecraft:stained_glass_pane[color=pink,east=false,north=false,south=true,west=false]": "160:6",
-  "minecraft:stained_glass_pane[color=pink,east=false,north=false,south=true,west=true]": "160:6",
-  "minecraft:stained_glass_pane[color=pink,east=false,north=true,south=false,west=false]": "160:6",
-  "minecraft:stained_glass_pane[color=pink,east=false,north=true,south=false,west=true]": "160:6",
-  "minecraft:stained_glass_pane[color=pink,east=false,north=true,south=true,west=false]": "160:6",
-  "minecraft:stained_glass_pane[color=pink,east=false,north=true,south=true,west=true]": "160:6",
-  "minecraft:stained_glass_pane[color=pink,east=true,north=false,south=false,west=false]": "160:6",
-  "minecraft:stained_glass_pane[color=pink,east=true,north=false,south=false,west=true]": "160:6",
-  "minecraft:stained_glass_pane[color=pink,east=true,north=false,south=true,west=false]": "160:6",
-  "minecraft:stained_glass_pane[color=pink,east=true,north=false,south=true,west=true]": "160:6",
-  "minecraft:stained_glass_pane[color=pink,east=true,north=true,south=false,west=false]": "160:6",
-  "minecraft:stained_glass_pane[color=pink,east=true,north=true,south=false,west=true]": "160:6",
-  "minecraft:stained_glass_pane[color=pink,east=true,north=true,south=true,west=false]": "160:6",
-  "minecraft:stained_glass_pane[color=pink,east=true,north=true,south=true,west=true]": "160:6",
-  "minecraft:stained_glass_pane[color=gray,east=false,north=false,south=false,west=false]": "160:7",
-  "minecraft:stained_glass_pane[color=gray,east=false,north=false,south=false,west=true]": "160:7",
-  "minecraft:stained_glass_pane[color=gray,east=false,north=false,south=true,west=false]": "160:7",
-  "minecraft:stained_glass_pane[color=gray,east=false,north=false,south=true,west=true]": "160:7",
-  "minecraft:stained_glass_pane[color=gray,east=false,north=true,south=false,west=false]": "160:7",
-  "minecraft:stained_glass_pane[color=gray,east=false,north=true,south=false,west=true]": "160:7",
-  "minecraft:stained_glass_pane[color=gray,east=false,north=true,south=true,west=false]": "160:7",
-  "minecraft:stained_glass_pane[color=gray,east=false,north=true,south=true,west=true]": "160:7",
-  "minecraft:stained_glass_pane[color=gray,east=true,north=false,south=false,west=false]": "160:7",
-  "minecraft:stained_glass_pane[color=gray,east=true,north=false,south=false,west=true]": "160:7",
-  "minecraft:stained_glass_pane[color=gray,east=true,north=false,south=true,west=false]": "160:7",
-  "minecraft:stained_glass_pane[color=gray,east=true,north=false,south=true,west=true]": "160:7",
-  "minecraft:stained_glass_pane[color=gray,east=true,north=true,south=false,west=false]": "160:7",
-  "minecraft:stained_glass_pane[color=gray,east=true,north=true,south=false,west=true]": "160:7",
-  "minecraft:stained_glass_pane[color=gray,east=true,north=true,south=true,west=false]": "160:7",
-  "minecraft:stained_glass_pane[color=gray,east=true,north=true,south=true,west=true]": "160:7",
-  "minecraft:stained_glass_pane[color=silver,east=false,north=false,south=false,west=false]": "160:8",
-  "minecraft:stained_glass_pane[color=silver,east=false,north=false,south=false,west=true]": "160:8",
-  "minecraft:stained_glass_pane[color=silver,east=false,north=false,south=true,west=false]": "160:8",
-  "minecraft:stained_glass_pane[color=silver,east=false,north=false,south=true,west=true]": "160:8",
-  "minecraft:stained_glass_pane[color=silver,east=false,north=true,south=false,west=false]": "160:8",
-  "minecraft:stained_glass_pane[color=silver,east=false,north=true,south=false,west=true]": "160:8",
-  "minecraft:stained_glass_pane[color=silver,east=false,north=true,south=true,west=false]": "160:8",
-  "minecraft:stained_glass_pane[color=silver,east=false,north=true,south=true,west=true]": "160:8",
-  "minecraft:stained_glass_pane[color=silver,east=true,north=false,south=false,west=false]": "160:8",
-  "minecraft:stained_glass_pane[color=silver,east=true,north=false,south=false,west=true]": "160:8",
-  "minecraft:stained_glass_pane[color=silver,east=true,north=false,south=true,west=false]": "160:8",
-  "minecraft:stained_glass_pane[color=silver,east=true,north=false,south=true,west=true]": "160:8",
-  "minecraft:stained_glass_pane[color=silver,east=true,north=true,south=false,west=false]": "160:8",
-  "minecraft:stained_glass_pane[color=silver,east=true,north=true,south=false,west=true]": "160:8",
-  "minecraft:stained_glass_pane[color=silver,east=true,north=true,south=true,west=false]": "160:8",
-  "minecraft:stained_glass_pane[color=silver,east=true,north=true,south=true,west=true]": "160:8",
-  "minecraft:stained_glass_pane[color=cyan,east=false,north=false,south=false,west=false]": "160:9",
-  "minecraft:stained_glass_pane[color=cyan,east=false,north=false,south=false,west=true]": "160:9",
-  "minecraft:stained_glass_pane[color=cyan,east=false,north=false,south=true,west=false]": "160:9",
-  "minecraft:stained_glass_pane[color=cyan,east=false,north=false,south=true,west=true]": "160:9",
-  "minecraft:stained_glass_pane[color=cyan,east=false,north=true,south=false,west=false]": "160:9",
-  "minecraft:stained_glass_pane[color=cyan,east=false,north=true,south=false,west=true]": "160:9",
-  "minecraft:stained_glass_pane[color=cyan,east=false,north=true,south=true,west=false]": "160:9",
-  "minecraft:stained_glass_pane[color=cyan,east=false,north=true,south=true,west=true]": "160:9",
-  "minecraft:stained_glass_pane[color=cyan,east=true,north=false,south=false,west=false]": "160:9",
-  "minecraft:stained_glass_pane[color=cyan,east=true,north=false,south=false,west=true]": "160:9",
-  "minecraft:stained_glass_pane[color=cyan,east=true,north=false,south=true,west=false]": "160:9",
-  "minecraft:stained_glass_pane[color=cyan,east=true,north=false,south=true,west=true]": "160:9",
-  "minecraft:stained_glass_pane[color=cyan,east=true,north=true,south=false,west=false]": "160:9",
-  "minecraft:stained_glass_pane[color=cyan,east=true,north=true,south=false,west=true]": "160:9",
-  "minecraft:stained_glass_pane[color=cyan,east=true,north=true,south=true,west=false]": "160:9",
-  "minecraft:stained_glass_pane[color=cyan,east=true,north=true,south=true,west=true]": "160:9",
-  "minecraft:stained_glass_pane[color=purple,east=false,north=false,south=false,west=false]": "160:10",
-  "minecraft:stained_glass_pane[color=purple,east=false,north=false,south=false,west=true]": "160:10",
-  "minecraft:stained_glass_pane[color=purple,east=false,north=false,south=true,west=false]": "160:10",
-  "minecraft:stained_glass_pane[color=purple,east=false,north=false,south=true,west=true]": "160:10",
-  "minecraft:stained_glass_pane[color=purple,east=false,north=true,south=false,west=false]": "160:10",
-  "minecraft:stained_glass_pane[color=purple,east=false,north=true,south=false,west=true]": "160:10",
-  "minecraft:stained_glass_pane[color=purple,east=false,north=true,south=true,west=false]": "160:10",
-  "minecraft:stained_glass_pane[color=purple,east=false,north=true,south=true,west=true]": "160:10",
-  "minecraft:stained_glass_pane[color=purple,east=true,north=false,south=false,west=false]": "160:10",
-  "minecraft:stained_glass_pane[color=purple,east=true,north=false,south=false,west=true]": "160:10",
-  "minecraft:stained_glass_pane[color=purple,east=true,north=false,south=true,west=false]": "160:10",
-  "minecraft:stained_glass_pane[color=purple,east=true,north=false,south=true,west=true]": "160:10",
-  "minecraft:stained_glass_pane[color=purple,east=true,north=true,south=false,west=false]": "160:10",
-  "minecraft:stained_glass_pane[color=purple,east=true,north=true,south=false,west=true]": "160:10",
-  "minecraft:stained_glass_pane[color=purple,east=true,north=true,south=true,west=false]": "160:10",
-  "minecraft:stained_glass_pane[color=purple,east=true,north=true,south=true,west=true]": "160:10",
-  "minecraft:stained_glass_pane[color=blue,east=false,north=false,south=false,west=false]": "160:11",
-  "minecraft:stained_glass_pane[color=blue,east=false,north=false,south=false,west=true]": "160:11",
-  "minecraft:stained_glass_pane[color=blue,east=false,north=false,south=true,west=false]": "160:11",
-  "minecraft:stained_glass_pane[color=blue,east=false,north=false,south=true,west=true]": "160:11",
-  "minecraft:stained_glass_pane[color=blue,east=false,north=true,south=false,west=false]": "160:11",
-  "minecraft:stained_glass_pane[color=blue,east=false,north=true,south=false,west=true]": "160:11",
-  "minecraft:stained_glass_pane[color=blue,east=false,north=true,south=true,west=false]": "160:11",
-  "minecraft:stained_glass_pane[color=blue,east=false,north=true,south=true,west=true]": "160:11",
-  "minecraft:stained_glass_pane[color=blue,east=true,north=false,south=false,west=false]": "160:11",
-  "minecraft:stained_glass_pane[color=blue,east=true,north=false,south=false,west=true]": "160:11",
-  "minecraft:stained_glass_pane[color=blue,east=true,north=false,south=true,west=false]": "160:11",
-  "minecraft:stained_glass_pane[color=blue,east=true,north=false,south=true,west=true]": "160:11",
-  "minecraft:stained_glass_pane[color=blue,east=true,north=true,south=false,west=false]": "160:11",
-  "minecraft:stained_glass_pane[color=blue,east=true,north=true,south=false,west=true]": "160:11",
-  "minecraft:stained_glass_pane[color=blue,east=true,north=true,south=true,west=false]": "160:11",
-  "minecraft:stained_glass_pane[color=blue,east=true,north=true,south=true,west=true]": "160:11",
-  "minecraft:stained_glass_pane[color=brown,east=false,north=false,south=false,west=false]": "160:12",
-  "minecraft:stained_glass_pane[color=brown,east=false,north=false,south=false,west=true]": "160:12",
-  "minecraft:stained_glass_pane[color=brown,east=false,north=false,south=true,west=false]": "160:12",
-  "minecraft:stained_glass_pane[color=brown,east=false,north=false,south=true,west=true]": "160:12",
-  "minecraft:stained_glass_pane[color=brown,east=false,north=true,south=false,west=false]": "160:12",
-  "minecraft:stained_glass_pane[color=brown,east=false,north=true,south=false,west=true]": "160:12",
-  "minecraft:stained_glass_pane[color=brown,east=false,north=true,south=true,west=false]": "160:12",
-  "minecraft:stained_glass_pane[color=brown,east=false,north=true,south=true,west=true]": "160:12",
-  "minecraft:stained_glass_pane[color=brown,east=true,north=false,south=false,west=false]": "160:12",
-  "minecraft:stained_glass_pane[color=brown,east=true,north=false,south=false,west=true]": "160:12",
-  "minecraft:stained_glass_pane[color=brown,east=true,north=false,south=true,west=false]": "160:12",
-  "minecraft:stained_glass_pane[color=brown,east=true,north=false,south=true,west=true]": "160:12",
-  "minecraft:stained_glass_pane[color=brown,east=true,north=true,south=false,west=false]": "160:12",
-  "minecraft:stained_glass_pane[color=brown,east=true,north=true,south=false,west=true]": "160:12",
-  "minecraft:stained_glass_pane[color=brown,east=true,north=true,south=true,west=false]": "160:12",
-  "minecraft:stained_glass_pane[color=brown,east=true,north=true,south=true,west=true]": "160:12",
-  "minecraft:stained_glass_pane[color=green,east=false,north=false,south=false,west=false]": "160:13",
-  "minecraft:stained_glass_pane[color=green,east=false,north=false,south=false,west=true]": "160:13",
-  "minecraft:stained_glass_pane[color=green,east=false,north=false,south=true,west=false]": "160:13",
-  "minecraft:stained_glass_pane[color=green,east=false,north=false,south=true,west=true]": "160:13",
-  "minecraft:stained_glass_pane[color=green,east=false,north=true,south=false,west=false]": "160:13",
-  "minecraft:stained_glass_pane[color=green,east=false,north=true,south=false,west=true]": "160:13",
-  "minecraft:stained_glass_pane[color=green,east=false,north=true,south=true,west=false]": "160:13",
-  "minecraft:stained_glass_pane[color=green,east=false,north=true,south=true,west=true]": "160:13",
-  "minecraft:stained_glass_pane[color=green,east=true,north=false,south=false,west=false]": "160:13",
-  "minecraft:stained_glass_pane[color=green,east=true,north=false,south=false,west=true]": "160:13",
-  "minecraft:stained_glass_pane[color=green,east=true,north=false,south=true,west=false]": "160:13",
-  "minecraft:stained_glass_pane[color=green,east=true,north=false,south=true,west=true]": "160:13",
-  "minecraft:stained_glass_pane[color=green,east=true,north=true,south=false,west=false]": "160:13",
-  "minecraft:stained_glass_pane[color=green,east=true,north=true,south=false,west=true]": "160:13",
-  "minecraft:stained_glass_pane[color=green,east=true,north=true,south=true,west=false]": "160:13",
-  "minecraft:stained_glass_pane[color=green,east=true,north=true,south=true,west=true]": "160:13",
-  "minecraft:stained_glass_pane[color=red,east=false,north=false,south=false,west=false]": "160:14",
-  "minecraft:stained_glass_pane[color=red,east=false,north=false,south=false,west=true]": "160:14",
-  "minecraft:stained_glass_pane[color=red,east=false,north=false,south=true,west=false]": "160:14",
-  "minecraft:stained_glass_pane[color=red,east=false,north=false,south=true,west=true]": "160:14",
-  "minecraft:stained_glass_pane[color=red,east=false,north=true,south=false,west=false]": "160:14",
-  "minecraft:stained_glass_pane[color=red,east=false,north=true,south=false,west=true]": "160:14",
-  "minecraft:stained_glass_pane[color=red,east=false,north=true,south=true,west=false]": "160:14",
-  "minecraft:stained_glass_pane[color=red,east=false,north=true,south=true,west=true]": "160:14",
-  "minecraft:stained_glass_pane[color=red,east=true,north=false,south=false,west=false]": "160:14",
-  "minecraft:stained_glass_pane[color=red,east=true,north=false,south=false,west=true]": "160:14",
-  "minecraft:stained_glass_pane[color=red,east=true,north=false,south=true,west=false]": "160:14",
-  "minecraft:stained_glass_pane[color=red,east=true,north=false,south=true,west=true]": "160:14",
-  "minecraft:stained_glass_pane[color=red,east=true,north=true,south=false,west=false]": "160:14",
-  "minecraft:stained_glass_pane[color=red,east=true,north=true,south=false,west=true]": "160:14",
-  "minecraft:stained_glass_pane[color=red,east=true,north=true,south=true,west=false]": "160:14",
-  "minecraft:stained_glass_pane[color=red,east=true,north=true,south=true,west=true]": "160:14",
-  "minecraft:stained_glass_pane[color=black,east=false,north=false,south=false,west=false]": "160:15",
-  "minecraft:stained_glass_pane[color=black,east=false,north=false,south=false,west=true]": "160:15",
-  "minecraft:stained_glass_pane[color=black,east=false,north=false,south=true,west=false]": "160:15",
-  "minecraft:stained_glass_pane[color=black,east=false,north=false,south=true,west=true]": "160:15",
-  "minecraft:stained_glass_pane[color=black,east=false,north=true,south=false,west=false]": "160:15",
-  "minecraft:stained_glass_pane[color=black,east=false,north=true,south=false,west=true]": "160:15",
-  "minecraft:stained_glass_pane[color=black,east=false,north=true,south=true,west=false]": "160:15",
-  "minecraft:stained_glass_pane[color=black,east=false,north=true,south=true,west=true]": "160:15",
-  "minecraft:stained_glass_pane[color=black,east=true,north=false,south=false,west=false]": "160:15",
-  "minecraft:stained_glass_pane[color=black,east=true,north=false,south=false,west=true]": "160:15",
-  "minecraft:stained_glass_pane[color=black,east=true,north=false,south=true,west=false]": "160:15",
-  "minecraft:stained_glass_pane[color=black,east=true,north=false,south=true,west=true]": "160:15",
-  "minecraft:stained_glass_pane[color=black,east=true,north=true,south=false,west=false]": "160:15",
-  "minecraft:stained_glass_pane[color=black,east=true,north=true,south=false,west=true]": "160:15",
-  "minecraft:stained_glass_pane[color=black,east=true,north=true,south=true,west=false]": "160:15",
-  "minecraft:stained_glass_pane[color=black,east=true,north=true,south=true,west=true]": "160:15",
+  "minecraft:stained_glass_pane[color=white,east=false,north=false,south=false,west=false]":
+    "160:0",
+  "minecraft:stained_glass_pane[color=white,east=false,north=false,south=false,west=true]":
+    "160:0",
+  "minecraft:stained_glass_pane[color=white,east=false,north=false,south=true,west=false]":
+    "160:0",
+  "minecraft:stained_glass_pane[color=white,east=false,north=false,south=true,west=true]":
+    "160:0",
+  "minecraft:stained_glass_pane[color=white,east=false,north=true,south=false,west=false]":
+    "160:0",
+  "minecraft:stained_glass_pane[color=white,east=false,north=true,south=false,west=true]":
+    "160:0",
+  "minecraft:stained_glass_pane[color=white,east=false,north=true,south=true,west=false]":
+    "160:0",
+  "minecraft:stained_glass_pane[color=white,east=false,north=true,south=true,west=true]":
+    "160:0",
+  "minecraft:stained_glass_pane[color=white,east=true,north=false,south=false,west=false]":
+    "160:0",
+  "minecraft:stained_glass_pane[color=white,east=true,north=false,south=false,west=true]":
+    "160:0",
+  "minecraft:stained_glass_pane[color=white,east=true,north=false,south=true,west=false]":
+    "160:0",
+  "minecraft:stained_glass_pane[color=white,east=true,north=false,south=true,west=true]":
+    "160:0",
+  "minecraft:stained_glass_pane[color=white,east=true,north=true,south=false,west=false]":
+    "160:0",
+  "minecraft:stained_glass_pane[color=white,east=true,north=true,south=false,west=true]":
+    "160:0",
+  "minecraft:stained_glass_pane[color=white,east=true,north=true,south=true,west=false]":
+    "160:0",
+  "minecraft:stained_glass_pane[color=white,east=true,north=true,south=true,west=true]":
+    "160:0",
+  "minecraft:stained_glass_pane[color=orange,east=false,north=false,south=false,west=false]":
+    "160:1",
+  "minecraft:stained_glass_pane[color=orange,east=false,north=false,south=false,west=true]":
+    "160:1",
+  "minecraft:stained_glass_pane[color=orange,east=false,north=false,south=true,west=false]":
+    "160:1",
+  "minecraft:stained_glass_pane[color=orange,east=false,north=false,south=true,west=true]":
+    "160:1",
+  "minecraft:stained_glass_pane[color=orange,east=false,north=true,south=false,west=false]":
+    "160:1",
+  "minecraft:stained_glass_pane[color=orange,east=false,north=true,south=false,west=true]":
+    "160:1",
+  "minecraft:stained_glass_pane[color=orange,east=false,north=true,south=true,west=false]":
+    "160:1",
+  "minecraft:stained_glass_pane[color=orange,east=false,north=true,south=true,west=true]":
+    "160:1",
+  "minecraft:stained_glass_pane[color=orange,east=true,north=false,south=false,west=false]":
+    "160:1",
+  "minecraft:stained_glass_pane[color=orange,east=true,north=false,south=false,west=true]":
+    "160:1",
+  "minecraft:stained_glass_pane[color=orange,east=true,north=false,south=true,west=false]":
+    "160:1",
+  "minecraft:stained_glass_pane[color=orange,east=true,north=false,south=true,west=true]":
+    "160:1",
+  "minecraft:stained_glass_pane[color=orange,east=true,north=true,south=false,west=false]":
+    "160:1",
+  "minecraft:stained_glass_pane[color=orange,east=true,north=true,south=false,west=true]":
+    "160:1",
+  "minecraft:stained_glass_pane[color=orange,east=true,north=true,south=true,west=false]":
+    "160:1",
+  "minecraft:stained_glass_pane[color=orange,east=true,north=true,south=true,west=true]":
+    "160:1",
+  "minecraft:stained_glass_pane[color=magenta,east=false,north=false,south=false,west=false]":
+    "160:2",
+  "minecraft:stained_glass_pane[color=magenta,east=false,north=false,south=false,west=true]":
+    "160:2",
+  "minecraft:stained_glass_pane[color=magenta,east=false,north=false,south=true,west=false]":
+    "160:2",
+  "minecraft:stained_glass_pane[color=magenta,east=false,north=false,south=true,west=true]":
+    "160:2",
+  "minecraft:stained_glass_pane[color=magenta,east=false,north=true,south=false,west=false]":
+    "160:2",
+  "minecraft:stained_glass_pane[color=magenta,east=false,north=true,south=false,west=true]":
+    "160:2",
+  "minecraft:stained_glass_pane[color=magenta,east=false,north=true,south=true,west=false]":
+    "160:2",
+  "minecraft:stained_glass_pane[color=magenta,east=false,north=true,south=true,west=true]":
+    "160:2",
+  "minecraft:stained_glass_pane[color=magenta,east=true,north=false,south=false,west=false]":
+    "160:2",
+  "minecraft:stained_glass_pane[color=magenta,east=true,north=false,south=false,west=true]":
+    "160:2",
+  "minecraft:stained_glass_pane[color=magenta,east=true,north=false,south=true,west=false]":
+    "160:2",
+  "minecraft:stained_glass_pane[color=magenta,east=true,north=false,south=true,west=true]":
+    "160:2",
+  "minecraft:stained_glass_pane[color=magenta,east=true,north=true,south=false,west=false]":
+    "160:2",
+  "minecraft:stained_glass_pane[color=magenta,east=true,north=true,south=false,west=true]":
+    "160:2",
+  "minecraft:stained_glass_pane[color=magenta,east=true,north=true,south=true,west=false]":
+    "160:2",
+  "minecraft:stained_glass_pane[color=magenta,east=true,north=true,south=true,west=true]":
+    "160:2",
+  "minecraft:stained_glass_pane[color=light_blue,east=false,north=false,south=false,west=false]":
+    "160:3",
+  "minecraft:stained_glass_pane[color=light_blue,east=false,north=false,south=false,west=true]":
+    "160:3",
+  "minecraft:stained_glass_pane[color=light_blue,east=false,north=false,south=true,west=false]":
+    "160:3",
+  "minecraft:stained_glass_pane[color=light_blue,east=false,north=false,south=true,west=true]":
+    "160:3",
+  "minecraft:stained_glass_pane[color=light_blue,east=false,north=true,south=false,west=false]":
+    "160:3",
+  "minecraft:stained_glass_pane[color=light_blue,east=false,north=true,south=false,west=true]":
+    "160:3",
+  "minecraft:stained_glass_pane[color=light_blue,east=false,north=true,south=true,west=false]":
+    "160:3",
+  "minecraft:stained_glass_pane[color=light_blue,east=false,north=true,south=true,west=true]":
+    "160:3",
+  "minecraft:stained_glass_pane[color=light_blue,east=true,north=false,south=false,west=false]":
+    "160:3",
+  "minecraft:stained_glass_pane[color=light_blue,east=true,north=false,south=false,west=true]":
+    "160:3",
+  "minecraft:stained_glass_pane[color=light_blue,east=true,north=false,south=true,west=false]":
+    "160:3",
+  "minecraft:stained_glass_pane[color=light_blue,east=true,north=false,south=true,west=true]":
+    "160:3",
+  "minecraft:stained_glass_pane[color=light_blue,east=true,north=true,south=false,west=false]":
+    "160:3",
+  "minecraft:stained_glass_pane[color=light_blue,east=true,north=true,south=false,west=true]":
+    "160:3",
+  "minecraft:stained_glass_pane[color=light_blue,east=true,north=true,south=true,west=false]":
+    "160:3",
+  "minecraft:stained_glass_pane[color=light_blue,east=true,north=true,south=true,west=true]":
+    "160:3",
+  "minecraft:stained_glass_pane[color=yellow,east=false,north=false,south=false,west=false]":
+    "160:4",
+  "minecraft:stained_glass_pane[color=yellow,east=false,north=false,south=false,west=true]":
+    "160:4",
+  "minecraft:stained_glass_pane[color=yellow,east=false,north=false,south=true,west=false]":
+    "160:4",
+  "minecraft:stained_glass_pane[color=yellow,east=false,north=false,south=true,west=true]":
+    "160:4",
+  "minecraft:stained_glass_pane[color=yellow,east=false,north=true,south=false,west=false]":
+    "160:4",
+  "minecraft:stained_glass_pane[color=yellow,east=false,north=true,south=false,west=true]":
+    "160:4",
+  "minecraft:stained_glass_pane[color=yellow,east=false,north=true,south=true,west=false]":
+    "160:4",
+  "minecraft:stained_glass_pane[color=yellow,east=false,north=true,south=true,west=true]":
+    "160:4",
+  "minecraft:stained_glass_pane[color=yellow,east=true,north=false,south=false,west=false]":
+    "160:4",
+  "minecraft:stained_glass_pane[color=yellow,east=true,north=false,south=false,west=true]":
+    "160:4",
+  "minecraft:stained_glass_pane[color=yellow,east=true,north=false,south=true,west=false]":
+    "160:4",
+  "minecraft:stained_glass_pane[color=yellow,east=true,north=false,south=true,west=true]":
+    "160:4",
+  "minecraft:stained_glass_pane[color=yellow,east=true,north=true,south=false,west=false]":
+    "160:4",
+  "minecraft:stained_glass_pane[color=yellow,east=true,north=true,south=false,west=true]":
+    "160:4",
+  "minecraft:stained_glass_pane[color=yellow,east=true,north=true,south=true,west=false]":
+    "160:4",
+  "minecraft:stained_glass_pane[color=yellow,east=true,north=true,south=true,west=true]":
+    "160:4",
+  "minecraft:stained_glass_pane[color=lime,east=false,north=false,south=false,west=false]":
+    "160:5",
+  "minecraft:stained_glass_pane[color=lime,east=false,north=false,south=false,west=true]":
+    "160:5",
+  "minecraft:stained_glass_pane[color=lime,east=false,north=false,south=true,west=false]":
+    "160:5",
+  "minecraft:stained_glass_pane[color=lime,east=false,north=false,south=true,west=true]":
+    "160:5",
+  "minecraft:stained_glass_pane[color=lime,east=false,north=true,south=false,west=false]":
+    "160:5",
+  "minecraft:stained_glass_pane[color=lime,east=false,north=true,south=false,west=true]":
+    "160:5",
+  "minecraft:stained_glass_pane[color=lime,east=false,north=true,south=true,west=false]":
+    "160:5",
+  "minecraft:stained_glass_pane[color=lime,east=false,north=true,south=true,west=true]":
+    "160:5",
+  "minecraft:stained_glass_pane[color=lime,east=true,north=false,south=false,west=false]":
+    "160:5",
+  "minecraft:stained_glass_pane[color=lime,east=true,north=false,south=false,west=true]":
+    "160:5",
+  "minecraft:stained_glass_pane[color=lime,east=true,north=false,south=true,west=false]":
+    "160:5",
+  "minecraft:stained_glass_pane[color=lime,east=true,north=false,south=true,west=true]":
+    "160:5",
+  "minecraft:stained_glass_pane[color=lime,east=true,north=true,south=false,west=false]":
+    "160:5",
+  "minecraft:stained_glass_pane[color=lime,east=true,north=true,south=false,west=true]":
+    "160:5",
+  "minecraft:stained_glass_pane[color=lime,east=true,north=true,south=true,west=false]":
+    "160:5",
+  "minecraft:stained_glass_pane[color=lime,east=true,north=true,south=true,west=true]":
+    "160:5",
+  "minecraft:stained_glass_pane[color=pink,east=false,north=false,south=false,west=false]":
+    "160:6",
+  "minecraft:stained_glass_pane[color=pink,east=false,north=false,south=false,west=true]":
+    "160:6",
+  "minecraft:stained_glass_pane[color=pink,east=false,north=false,south=true,west=false]":
+    "160:6",
+  "minecraft:stained_glass_pane[color=pink,east=false,north=false,south=true,west=true]":
+    "160:6",
+  "minecraft:stained_glass_pane[color=pink,east=false,north=true,south=false,west=false]":
+    "160:6",
+  "minecraft:stained_glass_pane[color=pink,east=false,north=true,south=false,west=true]":
+    "160:6",
+  "minecraft:stained_glass_pane[color=pink,east=false,north=true,south=true,west=false]":
+    "160:6",
+  "minecraft:stained_glass_pane[color=pink,east=false,north=true,south=true,west=true]":
+    "160:6",
+  "minecraft:stained_glass_pane[color=pink,east=true,north=false,south=false,west=false]":
+    "160:6",
+  "minecraft:stained_glass_pane[color=pink,east=true,north=false,south=false,west=true]":
+    "160:6",
+  "minecraft:stained_glass_pane[color=pink,east=true,north=false,south=true,west=false]":
+    "160:6",
+  "minecraft:stained_glass_pane[color=pink,east=true,north=false,south=true,west=true]":
+    "160:6",
+  "minecraft:stained_glass_pane[color=pink,east=true,north=true,south=false,west=false]":
+    "160:6",
+  "minecraft:stained_glass_pane[color=pink,east=true,north=true,south=false,west=true]":
+    "160:6",
+  "minecraft:stained_glass_pane[color=pink,east=true,north=true,south=true,west=false]":
+    "160:6",
+  "minecraft:stained_glass_pane[color=pink,east=true,north=true,south=true,west=true]":
+    "160:6",
+  "minecraft:stained_glass_pane[color=gray,east=false,north=false,south=false,west=false]":
+    "160:7",
+  "minecraft:stained_glass_pane[color=gray,east=false,north=false,south=false,west=true]":
+    "160:7",
+  "minecraft:stained_glass_pane[color=gray,east=false,north=false,south=true,west=false]":
+    "160:7",
+  "minecraft:stained_glass_pane[color=gray,east=false,north=false,south=true,west=true]":
+    "160:7",
+  "minecraft:stained_glass_pane[color=gray,east=false,north=true,south=false,west=false]":
+    "160:7",
+  "minecraft:stained_glass_pane[color=gray,east=false,north=true,south=false,west=true]":
+    "160:7",
+  "minecraft:stained_glass_pane[color=gray,east=false,north=true,south=true,west=false]":
+    "160:7",
+  "minecraft:stained_glass_pane[color=gray,east=false,north=true,south=true,west=true]":
+    "160:7",
+  "minecraft:stained_glass_pane[color=gray,east=true,north=false,south=false,west=false]":
+    "160:7",
+  "minecraft:stained_glass_pane[color=gray,east=true,north=false,south=false,west=true]":
+    "160:7",
+  "minecraft:stained_glass_pane[color=gray,east=true,north=false,south=true,west=false]":
+    "160:7",
+  "minecraft:stained_glass_pane[color=gray,east=true,north=false,south=true,west=true]":
+    "160:7",
+  "minecraft:stained_glass_pane[color=gray,east=true,north=true,south=false,west=false]":
+    "160:7",
+  "minecraft:stained_glass_pane[color=gray,east=true,north=true,south=false,west=true]":
+    "160:7",
+  "minecraft:stained_glass_pane[color=gray,east=true,north=true,south=true,west=false]":
+    "160:7",
+  "minecraft:stained_glass_pane[color=gray,east=true,north=true,south=true,west=true]":
+    "160:7",
+  "minecraft:stained_glass_pane[color=silver,east=false,north=false,south=false,west=false]":
+    "160:8",
+  "minecraft:stained_glass_pane[color=silver,east=false,north=false,south=false,west=true]":
+    "160:8",
+  "minecraft:stained_glass_pane[color=silver,east=false,north=false,south=true,west=false]":
+    "160:8",
+  "minecraft:stained_glass_pane[color=silver,east=false,north=false,south=true,west=true]":
+    "160:8",
+  "minecraft:stained_glass_pane[color=silver,east=false,north=true,south=false,west=false]":
+    "160:8",
+  "minecraft:stained_glass_pane[color=silver,east=false,north=true,south=false,west=true]":
+    "160:8",
+  "minecraft:stained_glass_pane[color=silver,east=false,north=true,south=true,west=false]":
+    "160:8",
+  "minecraft:stained_glass_pane[color=silver,east=false,north=true,south=true,west=true]":
+    "160:8",
+  "minecraft:stained_glass_pane[color=silver,east=true,north=false,south=false,west=false]":
+    "160:8",
+  "minecraft:stained_glass_pane[color=silver,east=true,north=false,south=false,west=true]":
+    "160:8",
+  "minecraft:stained_glass_pane[color=silver,east=true,north=false,south=true,west=false]":
+    "160:8",
+  "minecraft:stained_glass_pane[color=silver,east=true,north=false,south=true,west=true]":
+    "160:8",
+  "minecraft:stained_glass_pane[color=silver,east=true,north=true,south=false,west=false]":
+    "160:8",
+  "minecraft:stained_glass_pane[color=silver,east=true,north=true,south=false,west=true]":
+    "160:8",
+  "minecraft:stained_glass_pane[color=silver,east=true,north=true,south=true,west=false]":
+    "160:8",
+  "minecraft:stained_glass_pane[color=silver,east=true,north=true,south=true,west=true]":
+    "160:8",
+  "minecraft:stained_glass_pane[color=cyan,east=false,north=false,south=false,west=false]":
+    "160:9",
+  "minecraft:stained_glass_pane[color=cyan,east=false,north=false,south=false,west=true]":
+    "160:9",
+  "minecraft:stained_glass_pane[color=cyan,east=false,north=false,south=true,west=false]":
+    "160:9",
+  "minecraft:stained_glass_pane[color=cyan,east=false,north=false,south=true,west=true]":
+    "160:9",
+  "minecraft:stained_glass_pane[color=cyan,east=false,north=true,south=false,west=false]":
+    "160:9",
+  "minecraft:stained_glass_pane[color=cyan,east=false,north=true,south=false,west=true]":
+    "160:9",
+  "minecraft:stained_glass_pane[color=cyan,east=false,north=true,south=true,west=false]":
+    "160:9",
+  "minecraft:stained_glass_pane[color=cyan,east=false,north=true,south=true,west=true]":
+    "160:9",
+  "minecraft:stained_glass_pane[color=cyan,east=true,north=false,south=false,west=false]":
+    "160:9",
+  "minecraft:stained_glass_pane[color=cyan,east=true,north=false,south=false,west=true]":
+    "160:9",
+  "minecraft:stained_glass_pane[color=cyan,east=true,north=false,south=true,west=false]":
+    "160:9",
+  "minecraft:stained_glass_pane[color=cyan,east=true,north=false,south=true,west=true]":
+    "160:9",
+  "minecraft:stained_glass_pane[color=cyan,east=true,north=true,south=false,west=false]":
+    "160:9",
+  "minecraft:stained_glass_pane[color=cyan,east=true,north=true,south=false,west=true]":
+    "160:9",
+  "minecraft:stained_glass_pane[color=cyan,east=true,north=true,south=true,west=false]":
+    "160:9",
+  "minecraft:stained_glass_pane[color=cyan,east=true,north=true,south=true,west=true]":
+    "160:9",
+  "minecraft:stained_glass_pane[color=purple,east=false,north=false,south=false,west=false]":
+    "160:10",
+  "minecraft:stained_glass_pane[color=purple,east=false,north=false,south=false,west=true]":
+    "160:10",
+  "minecraft:stained_glass_pane[color=purple,east=false,north=false,south=true,west=false]":
+    "160:10",
+  "minecraft:stained_glass_pane[color=purple,east=false,north=false,south=true,west=true]":
+    "160:10",
+  "minecraft:stained_glass_pane[color=purple,east=false,north=true,south=false,west=false]":
+    "160:10",
+  "minecraft:stained_glass_pane[color=purple,east=false,north=true,south=false,west=true]":
+    "160:10",
+  "minecraft:stained_glass_pane[color=purple,east=false,north=true,south=true,west=false]":
+    "160:10",
+  "minecraft:stained_glass_pane[color=purple,east=false,north=true,south=true,west=true]":
+    "160:10",
+  "minecraft:stained_glass_pane[color=purple,east=true,north=false,south=false,west=false]":
+    "160:10",
+  "minecraft:stained_glass_pane[color=purple,east=true,north=false,south=false,west=true]":
+    "160:10",
+  "minecraft:stained_glass_pane[color=purple,east=true,north=false,south=true,west=false]":
+    "160:10",
+  "minecraft:stained_glass_pane[color=purple,east=true,north=false,south=true,west=true]":
+    "160:10",
+  "minecraft:stained_glass_pane[color=purple,east=true,north=true,south=false,west=false]":
+    "160:10",
+  "minecraft:stained_glass_pane[color=purple,east=true,north=true,south=false,west=true]":
+    "160:10",
+  "minecraft:stained_glass_pane[color=purple,east=true,north=true,south=true,west=false]":
+    "160:10",
+  "minecraft:stained_glass_pane[color=purple,east=true,north=true,south=true,west=true]":
+    "160:10",
+  "minecraft:stained_glass_pane[color=blue,east=false,north=false,south=false,west=false]":
+    "160:11",
+  "minecraft:stained_glass_pane[color=blue,east=false,north=false,south=false,west=true]":
+    "160:11",
+  "minecraft:stained_glass_pane[color=blue,east=false,north=false,south=true,west=false]":
+    "160:11",
+  "minecraft:stained_glass_pane[color=blue,east=false,north=false,south=true,west=true]":
+    "160:11",
+  "minecraft:stained_glass_pane[color=blue,east=false,north=true,south=false,west=false]":
+    "160:11",
+  "minecraft:stained_glass_pane[color=blue,east=false,north=true,south=false,west=true]":
+    "160:11",
+  "minecraft:stained_glass_pane[color=blue,east=false,north=true,south=true,west=false]":
+    "160:11",
+  "minecraft:stained_glass_pane[color=blue,east=false,north=true,south=true,west=true]":
+    "160:11",
+  "minecraft:stained_glass_pane[color=blue,east=true,north=false,south=false,west=false]":
+    "160:11",
+  "minecraft:stained_glass_pane[color=blue,east=true,north=false,south=false,west=true]":
+    "160:11",
+  "minecraft:stained_glass_pane[color=blue,east=true,north=false,south=true,west=false]":
+    "160:11",
+  "minecraft:stained_glass_pane[color=blue,east=true,north=false,south=true,west=true]":
+    "160:11",
+  "minecraft:stained_glass_pane[color=blue,east=true,north=true,south=false,west=false]":
+    "160:11",
+  "minecraft:stained_glass_pane[color=blue,east=true,north=true,south=false,west=true]":
+    "160:11",
+  "minecraft:stained_glass_pane[color=blue,east=true,north=true,south=true,west=false]":
+    "160:11",
+  "minecraft:stained_glass_pane[color=blue,east=true,north=true,south=true,west=true]":
+    "160:11",
+  "minecraft:stained_glass_pane[color=brown,east=false,north=false,south=false,west=false]":
+    "160:12",
+  "minecraft:stained_glass_pane[color=brown,east=false,north=false,south=false,west=true]":
+    "160:12",
+  "minecraft:stained_glass_pane[color=brown,east=false,north=false,south=true,west=false]":
+    "160:12",
+  "minecraft:stained_glass_pane[color=brown,east=false,north=false,south=true,west=true]":
+    "160:12",
+  "minecraft:stained_glass_pane[color=brown,east=false,north=true,south=false,west=false]":
+    "160:12",
+  "minecraft:stained_glass_pane[color=brown,east=false,north=true,south=false,west=true]":
+    "160:12",
+  "minecraft:stained_glass_pane[color=brown,east=false,north=true,south=true,west=false]":
+    "160:12",
+  "minecraft:stained_glass_pane[color=brown,east=false,north=true,south=true,west=true]":
+    "160:12",
+  "minecraft:stained_glass_pane[color=brown,east=true,north=false,south=false,west=false]":
+    "160:12",
+  "minecraft:stained_glass_pane[color=brown,east=true,north=false,south=false,west=true]":
+    "160:12",
+  "minecraft:stained_glass_pane[color=brown,east=true,north=false,south=true,west=false]":
+    "160:12",
+  "minecraft:stained_glass_pane[color=brown,east=true,north=false,south=true,west=true]":
+    "160:12",
+  "minecraft:stained_glass_pane[color=brown,east=true,north=true,south=false,west=false]":
+    "160:12",
+  "minecraft:stained_glass_pane[color=brown,east=true,north=true,south=false,west=true]":
+    "160:12",
+  "minecraft:stained_glass_pane[color=brown,east=true,north=true,south=true,west=false]":
+    "160:12",
+  "minecraft:stained_glass_pane[color=brown,east=true,north=true,south=true,west=true]":
+    "160:12",
+  "minecraft:stained_glass_pane[color=green,east=false,north=false,south=false,west=false]":
+    "160:13",
+  "minecraft:stained_glass_pane[color=green,east=false,north=false,south=false,west=true]":
+    "160:13",
+  "minecraft:stained_glass_pane[color=green,east=false,north=false,south=true,west=false]":
+    "160:13",
+  "minecraft:stained_glass_pane[color=green,east=false,north=false,south=true,west=true]":
+    "160:13",
+  "minecraft:stained_glass_pane[color=green,east=false,north=true,south=false,west=false]":
+    "160:13",
+  "minecraft:stained_glass_pane[color=green,east=false,north=true,south=false,west=true]":
+    "160:13",
+  "minecraft:stained_glass_pane[color=green,east=false,north=true,south=true,west=false]":
+    "160:13",
+  "minecraft:stained_glass_pane[color=green,east=false,north=true,south=true,west=true]":
+    "160:13",
+  "minecraft:stained_glass_pane[color=green,east=true,north=false,south=false,west=false]":
+    "160:13",
+  "minecraft:stained_glass_pane[color=green,east=true,north=false,south=false,west=true]":
+    "160:13",
+  "minecraft:stained_glass_pane[color=green,east=true,north=false,south=true,west=false]":
+    "160:13",
+  "minecraft:stained_glass_pane[color=green,east=true,north=false,south=true,west=true]":
+    "160:13",
+  "minecraft:stained_glass_pane[color=green,east=true,north=true,south=false,west=false]":
+    "160:13",
+  "minecraft:stained_glass_pane[color=green,east=true,north=true,south=false,west=true]":
+    "160:13",
+  "minecraft:stained_glass_pane[color=green,east=true,north=true,south=true,west=false]":
+    "160:13",
+  "minecraft:stained_glass_pane[color=green,east=true,north=true,south=true,west=true]":
+    "160:13",
+  "minecraft:stained_glass_pane[color=red,east=false,north=false,south=false,west=false]":
+    "160:14",
+  "minecraft:stained_glass_pane[color=red,east=false,north=false,south=false,west=true]":
+    "160:14",
+  "minecraft:stained_glass_pane[color=red,east=false,north=false,south=true,west=false]":
+    "160:14",
+  "minecraft:stained_glass_pane[color=red,east=false,north=false,south=true,west=true]":
+    "160:14",
+  "minecraft:stained_glass_pane[color=red,east=false,north=true,south=false,west=false]":
+    "160:14",
+  "minecraft:stained_glass_pane[color=red,east=false,north=true,south=false,west=true]":
+    "160:14",
+  "minecraft:stained_glass_pane[color=red,east=false,north=true,south=true,west=false]":
+    "160:14",
+  "minecraft:stained_glass_pane[color=red,east=false,north=true,south=true,west=true]":
+    "160:14",
+  "minecraft:stained_glass_pane[color=red,east=true,north=false,south=false,west=false]":
+    "160:14",
+  "minecraft:stained_glass_pane[color=red,east=true,north=false,south=false,west=true]":
+    "160:14",
+  "minecraft:stained_glass_pane[color=red,east=true,north=false,south=true,west=false]":
+    "160:14",
+  "minecraft:stained_glass_pane[color=red,east=true,north=false,south=true,west=true]":
+    "160:14",
+  "minecraft:stained_glass_pane[color=red,east=true,north=true,south=false,west=false]":
+    "160:14",
+  "minecraft:stained_glass_pane[color=red,east=true,north=true,south=false,west=true]":
+    "160:14",
+  "minecraft:stained_glass_pane[color=red,east=true,north=true,south=true,west=false]":
+    "160:14",
+  "minecraft:stained_glass_pane[color=red,east=true,north=true,south=true,west=true]":
+    "160:14",
+  "minecraft:stained_glass_pane[color=black,east=false,north=false,south=false,west=false]":
+    "160:15",
+  "minecraft:stained_glass_pane[color=black,east=false,north=false,south=false,west=true]":
+    "160:15",
+  "minecraft:stained_glass_pane[color=black,east=false,north=false,south=true,west=false]":
+    "160:15",
+  "minecraft:stained_glass_pane[color=black,east=false,north=false,south=true,west=true]":
+    "160:15",
+  "minecraft:stained_glass_pane[color=black,east=false,north=true,south=false,west=false]":
+    "160:15",
+  "minecraft:stained_glass_pane[color=black,east=false,north=true,south=false,west=true]":
+    "160:15",
+  "minecraft:stained_glass_pane[color=black,east=false,north=true,south=true,west=false]":
+    "160:15",
+  "minecraft:stained_glass_pane[color=black,east=false,north=true,south=true,west=true]":
+    "160:15",
+  "minecraft:stained_glass_pane[color=black,east=true,north=false,south=false,west=false]":
+    "160:15",
+  "minecraft:stained_glass_pane[color=black,east=true,north=false,south=false,west=true]":
+    "160:15",
+  "minecraft:stained_glass_pane[color=black,east=true,north=false,south=true,west=false]":
+    "160:15",
+  "minecraft:stained_glass_pane[color=black,east=true,north=false,south=true,west=true]":
+    "160:15",
+  "minecraft:stained_glass_pane[color=black,east=true,north=true,south=false,west=false]":
+    "160:15",
+  "minecraft:stained_glass_pane[color=black,east=true,north=true,south=false,west=true]":
+    "160:15",
+  "minecraft:stained_glass_pane[color=black,east=true,north=true,south=true,west=false]":
+    "160:15",
+  "minecraft:stained_glass_pane[color=black,east=true,north=true,south=true,west=true]":
+    "160:15",
   "minecraft:leaves2[check_decay=false,decayable=true,variant=acacia]": "161:0",
-  "minecraft:leaves2[check_decay=false,decayable=true,variant=dark_oak]": "161:1",
-  "minecraft:leaves2[check_decay=false,decayable=false,variant=acacia]": "161:4",
-  "minecraft:leaves2[check_decay=false,decayable=false,variant=dark_oak]": "161:5",
+  "minecraft:leaves2[check_decay=false,decayable=true,variant=dark_oak]":
+    "161:1",
+  "minecraft:leaves2[check_decay=false,decayable=false,variant=acacia]":
+    "161:4",
+  "minecraft:leaves2[check_decay=false,decayable=false,variant=dark_oak]":
+    "161:5",
   "minecraft:leaves2[check_decay=true,decayable=true,variant=acacia]": "161:8",
-  "minecraft:leaves2[check_decay=true,decayable=true,variant=dark_oak]": "161:9",
-  "minecraft:leaves2[check_decay=true,decayable=false,variant=acacia]": "161:12",
-  "minecraft:leaves2[check_decay=true,decayable=false,variant=dark_oak]": "161:13",
+  "minecraft:leaves2[check_decay=true,decayable=true,variant=dark_oak]":
+    "161:9",
+  "minecraft:leaves2[check_decay=true,decayable=false,variant=acacia]":
+    "161:12",
+  "minecraft:leaves2[check_decay=true,decayable=false,variant=dark_oak]":
+    "161:13",
   "minecraft:log2[axis=y,variant=acacia]": "162:0",
   "minecraft:log2[axis=y,variant=dark_oak]": "162:1",
   "minecraft:log2[axis=x,variant=acacia]": "162:4",
@@ -3157,14 +5146,18 @@ export const FORGE_1_12_FLATTEN: Readonly<Record<string, string>> = {
   "minecraft:acacia_stairs[facing=west,half=bottom,shape=outer_right]": "163:1",
   "minecraft:acacia_stairs[facing=south,half=bottom,shape=straight]": "163:2",
   "minecraft:acacia_stairs[facing=south,half=bottom,shape=inner_left]": "163:2",
-  "minecraft:acacia_stairs[facing=south,half=bottom,shape=inner_right]": "163:2",
+  "minecraft:acacia_stairs[facing=south,half=bottom,shape=inner_right]":
+    "163:2",
   "minecraft:acacia_stairs[facing=south,half=bottom,shape=outer_left]": "163:2",
-  "minecraft:acacia_stairs[facing=south,half=bottom,shape=outer_right]": "163:2",
+  "minecraft:acacia_stairs[facing=south,half=bottom,shape=outer_right]":
+    "163:2",
   "minecraft:acacia_stairs[facing=north,half=bottom,shape=straight]": "163:3",
   "minecraft:acacia_stairs[facing=north,half=bottom,shape=inner_left]": "163:3",
-  "minecraft:acacia_stairs[facing=north,half=bottom,shape=inner_right]": "163:3",
+  "minecraft:acacia_stairs[facing=north,half=bottom,shape=inner_right]":
+    "163:3",
   "minecraft:acacia_stairs[facing=north,half=bottom,shape=outer_left]": "163:3",
-  "minecraft:acacia_stairs[facing=north,half=bottom,shape=outer_right]": "163:3",
+  "minecraft:acacia_stairs[facing=north,half=bottom,shape=outer_right]":
+    "163:3",
   "minecraft:acacia_stairs[facing=east,half=top,shape=straight]": "163:4",
   "minecraft:acacia_stairs[facing=east,half=top,shape=inner_left]": "163:4",
   "minecraft:acacia_stairs[facing=east,half=top,shape=inner_right]": "163:4",
@@ -3186,25 +5179,41 @@ export const FORGE_1_12_FLATTEN: Readonly<Record<string, string>> = {
   "minecraft:acacia_stairs[facing=north,half=top,shape=outer_left]": "163:7",
   "minecraft:acacia_stairs[facing=north,half=top,shape=outer_right]": "163:7",
   "minecraft:dark_oak_stairs[facing=east,half=bottom,shape=straight]": "164:0",
-  "minecraft:dark_oak_stairs[facing=east,half=bottom,shape=inner_left]": "164:0",
-  "minecraft:dark_oak_stairs[facing=east,half=bottom,shape=inner_right]": "164:0",
-  "minecraft:dark_oak_stairs[facing=east,half=bottom,shape=outer_left]": "164:0",
-  "minecraft:dark_oak_stairs[facing=east,half=bottom,shape=outer_right]": "164:0",
+  "minecraft:dark_oak_stairs[facing=east,half=bottom,shape=inner_left]":
+    "164:0",
+  "minecraft:dark_oak_stairs[facing=east,half=bottom,shape=inner_right]":
+    "164:0",
+  "minecraft:dark_oak_stairs[facing=east,half=bottom,shape=outer_left]":
+    "164:0",
+  "minecraft:dark_oak_stairs[facing=east,half=bottom,shape=outer_right]":
+    "164:0",
   "minecraft:dark_oak_stairs[facing=west,half=bottom,shape=straight]": "164:1",
-  "minecraft:dark_oak_stairs[facing=west,half=bottom,shape=inner_left]": "164:1",
-  "minecraft:dark_oak_stairs[facing=west,half=bottom,shape=inner_right]": "164:1",
-  "minecraft:dark_oak_stairs[facing=west,half=bottom,shape=outer_left]": "164:1",
-  "minecraft:dark_oak_stairs[facing=west,half=bottom,shape=outer_right]": "164:1",
+  "minecraft:dark_oak_stairs[facing=west,half=bottom,shape=inner_left]":
+    "164:1",
+  "minecraft:dark_oak_stairs[facing=west,half=bottom,shape=inner_right]":
+    "164:1",
+  "minecraft:dark_oak_stairs[facing=west,half=bottom,shape=outer_left]":
+    "164:1",
+  "minecraft:dark_oak_stairs[facing=west,half=bottom,shape=outer_right]":
+    "164:1",
   "minecraft:dark_oak_stairs[facing=south,half=bottom,shape=straight]": "164:2",
-  "minecraft:dark_oak_stairs[facing=south,half=bottom,shape=inner_left]": "164:2",
-  "minecraft:dark_oak_stairs[facing=south,half=bottom,shape=inner_right]": "164:2",
-  "minecraft:dark_oak_stairs[facing=south,half=bottom,shape=outer_left]": "164:2",
-  "minecraft:dark_oak_stairs[facing=south,half=bottom,shape=outer_right]": "164:2",
+  "minecraft:dark_oak_stairs[facing=south,half=bottom,shape=inner_left]":
+    "164:2",
+  "minecraft:dark_oak_stairs[facing=south,half=bottom,shape=inner_right]":
+    "164:2",
+  "minecraft:dark_oak_stairs[facing=south,half=bottom,shape=outer_left]":
+    "164:2",
+  "minecraft:dark_oak_stairs[facing=south,half=bottom,shape=outer_right]":
+    "164:2",
   "minecraft:dark_oak_stairs[facing=north,half=bottom,shape=straight]": "164:3",
-  "minecraft:dark_oak_stairs[facing=north,half=bottom,shape=inner_left]": "164:3",
-  "minecraft:dark_oak_stairs[facing=north,half=bottom,shape=inner_right]": "164:3",
-  "minecraft:dark_oak_stairs[facing=north,half=bottom,shape=outer_left]": "164:3",
-  "minecraft:dark_oak_stairs[facing=north,half=bottom,shape=outer_right]": "164:3",
+  "minecraft:dark_oak_stairs[facing=north,half=bottom,shape=inner_left]":
+    "164:3",
+  "minecraft:dark_oak_stairs[facing=north,half=bottom,shape=inner_right]":
+    "164:3",
+  "minecraft:dark_oak_stairs[facing=north,half=bottom,shape=outer_left]":
+    "164:3",
+  "minecraft:dark_oak_stairs[facing=north,half=bottom,shape=outer_right]":
+    "164:3",
   "minecraft:dark_oak_stairs[facing=east,half=top,shape=straight]": "164:4",
   "minecraft:dark_oak_stairs[facing=east,half=top,shape=inner_left]": "164:4",
   "minecraft:dark_oak_stairs[facing=east,half=top,shape=inner_right]": "164:4",
@@ -3271,9 +5280,12 @@ export const FORGE_1_12_FLATTEN: Readonly<Record<string, string>> = {
   "minecraft:packed_ice": "174:0",
   "minecraft:double_plant[facing=south,half=lower,variant=sunflower]": "175:0",
   "minecraft:double_plant[facing=south,half=lower,variant=syringa]": "175:1",
-  "minecraft:double_plant[facing=south,half=lower,variant=double_grass]": "175:2",
-  "minecraft:double_plant[facing=south,half=lower,variant=double_fern]": "175:3",
-  "minecraft:double_plant[facing=south,half=lower,variant=double_rose]": "175:4",
+  "minecraft:double_plant[facing=south,half=lower,variant=double_grass]":
+    "175:2",
+  "minecraft:double_plant[facing=south,half=lower,variant=double_fern]":
+    "175:3",
+  "minecraft:double_plant[facing=south,half=lower,variant=double_rose]":
+    "175:4",
   "minecraft:double_plant[facing=south,half=lower,variant=paeonia]": "175:5",
   "minecraft:double_plant[facing=south,half=upper]": "175:8",
   "minecraft:double_plant[facing=north,half=upper]": "175:9",
@@ -3316,114 +5328,210 @@ export const FORGE_1_12_FLATTEN: Readonly<Record<string, string>> = {
   "minecraft:red_sandstone[type=red_sandstone]": "179:0",
   "minecraft:red_sandstone[type=chiseled_red_sandstone]": "179:1",
   "minecraft:red_sandstone[type=smooth_red_sandstone]": "179:2",
-  "minecraft:red_sandstone_stairs[facing=east,half=bottom,shape=straight]": "180:0",
-  "minecraft:red_sandstone_stairs[facing=east,half=bottom,shape=inner_left]": "180:0",
-  "minecraft:red_sandstone_stairs[facing=east,half=bottom,shape=inner_right]": "180:0",
-  "minecraft:red_sandstone_stairs[facing=east,half=bottom,shape=outer_left]": "180:0",
-  "minecraft:red_sandstone_stairs[facing=east,half=bottom,shape=outer_right]": "180:0",
-  "minecraft:red_sandstone_stairs[facing=west,half=bottom,shape=straight]": "180:1",
-  "minecraft:red_sandstone_stairs[facing=west,half=bottom,shape=inner_left]": "180:1",
-  "minecraft:red_sandstone_stairs[facing=west,half=bottom,shape=inner_right]": "180:1",
-  "minecraft:red_sandstone_stairs[facing=west,half=bottom,shape=outer_left]": "180:1",
-  "minecraft:red_sandstone_stairs[facing=west,half=bottom,shape=outer_right]": "180:1",
-  "minecraft:red_sandstone_stairs[facing=south,half=bottom,shape=straight]": "180:2",
-  "minecraft:red_sandstone_stairs[facing=south,half=bottom,shape=inner_left]": "180:2",
-  "minecraft:red_sandstone_stairs[facing=south,half=bottom,shape=inner_right]": "180:2",
-  "minecraft:red_sandstone_stairs[facing=south,half=bottom,shape=outer_left]": "180:2",
-  "minecraft:red_sandstone_stairs[facing=south,half=bottom,shape=outer_right]": "180:2",
-  "minecraft:red_sandstone_stairs[facing=north,half=bottom,shape=straight]": "180:3",
-  "minecraft:red_sandstone_stairs[facing=north,half=bottom,shape=inner_left]": "180:3",
-  "minecraft:red_sandstone_stairs[facing=north,half=bottom,shape=inner_right]": "180:3",
-  "minecraft:red_sandstone_stairs[facing=north,half=bottom,shape=outer_left]": "180:3",
-  "minecraft:red_sandstone_stairs[facing=north,half=bottom,shape=outer_right]": "180:3",
-  "minecraft:red_sandstone_stairs[facing=east,half=top,shape=straight]": "180:4",
-  "minecraft:red_sandstone_stairs[facing=east,half=top,shape=inner_left]": "180:4",
-  "minecraft:red_sandstone_stairs[facing=east,half=top,shape=inner_right]": "180:4",
-  "minecraft:red_sandstone_stairs[facing=east,half=top,shape=outer_left]": "180:4",
-  "minecraft:red_sandstone_stairs[facing=east,half=top,shape=outer_right]": "180:4",
-  "minecraft:red_sandstone_stairs[facing=west,half=top,shape=straight]": "180:5",
-  "minecraft:red_sandstone_stairs[facing=west,half=top,shape=inner_left]": "180:5",
-  "minecraft:red_sandstone_stairs[facing=west,half=top,shape=inner_right]": "180:5",
-  "minecraft:red_sandstone_stairs[facing=west,half=top,shape=outer_left]": "180:5",
-  "minecraft:red_sandstone_stairs[facing=west,half=top,shape=outer_right]": "180:5",
-  "minecraft:red_sandstone_stairs[facing=south,half=top,shape=straight]": "180:6",
-  "minecraft:red_sandstone_stairs[facing=south,half=top,shape=inner_left]": "180:6",
-  "minecraft:red_sandstone_stairs[facing=south,half=top,shape=inner_right]": "180:6",
-  "minecraft:red_sandstone_stairs[facing=south,half=top,shape=outer_left]": "180:6",
-  "minecraft:red_sandstone_stairs[facing=south,half=top,shape=outer_right]": "180:6",
-  "minecraft:red_sandstone_stairs[facing=north,half=top,shape=straight]": "180:7",
-  "minecraft:red_sandstone_stairs[facing=north,half=top,shape=inner_left]": "180:7",
-  "minecraft:red_sandstone_stairs[facing=north,half=top,shape=inner_right]": "180:7",
-  "minecraft:red_sandstone_stairs[facing=north,half=top,shape=outer_left]": "180:7",
-  "minecraft:red_sandstone_stairs[facing=north,half=top,shape=outer_right]": "180:7",
+  "minecraft:red_sandstone_stairs[facing=east,half=bottom,shape=straight]":
+    "180:0",
+  "minecraft:red_sandstone_stairs[facing=east,half=bottom,shape=inner_left]":
+    "180:0",
+  "minecraft:red_sandstone_stairs[facing=east,half=bottom,shape=inner_right]":
+    "180:0",
+  "minecraft:red_sandstone_stairs[facing=east,half=bottom,shape=outer_left]":
+    "180:0",
+  "minecraft:red_sandstone_stairs[facing=east,half=bottom,shape=outer_right]":
+    "180:0",
+  "minecraft:red_sandstone_stairs[facing=west,half=bottom,shape=straight]":
+    "180:1",
+  "minecraft:red_sandstone_stairs[facing=west,half=bottom,shape=inner_left]":
+    "180:1",
+  "minecraft:red_sandstone_stairs[facing=west,half=bottom,shape=inner_right]":
+    "180:1",
+  "minecraft:red_sandstone_stairs[facing=west,half=bottom,shape=outer_left]":
+    "180:1",
+  "minecraft:red_sandstone_stairs[facing=west,half=bottom,shape=outer_right]":
+    "180:1",
+  "minecraft:red_sandstone_stairs[facing=south,half=bottom,shape=straight]":
+    "180:2",
+  "minecraft:red_sandstone_stairs[facing=south,half=bottom,shape=inner_left]":
+    "180:2",
+  "minecraft:red_sandstone_stairs[facing=south,half=bottom,shape=inner_right]":
+    "180:2",
+  "minecraft:red_sandstone_stairs[facing=south,half=bottom,shape=outer_left]":
+    "180:2",
+  "minecraft:red_sandstone_stairs[facing=south,half=bottom,shape=outer_right]":
+    "180:2",
+  "minecraft:red_sandstone_stairs[facing=north,half=bottom,shape=straight]":
+    "180:3",
+  "minecraft:red_sandstone_stairs[facing=north,half=bottom,shape=inner_left]":
+    "180:3",
+  "minecraft:red_sandstone_stairs[facing=north,half=bottom,shape=inner_right]":
+    "180:3",
+  "minecraft:red_sandstone_stairs[facing=north,half=bottom,shape=outer_left]":
+    "180:3",
+  "minecraft:red_sandstone_stairs[facing=north,half=bottom,shape=outer_right]":
+    "180:3",
+  "minecraft:red_sandstone_stairs[facing=east,half=top,shape=straight]":
+    "180:4",
+  "minecraft:red_sandstone_stairs[facing=east,half=top,shape=inner_left]":
+    "180:4",
+  "minecraft:red_sandstone_stairs[facing=east,half=top,shape=inner_right]":
+    "180:4",
+  "minecraft:red_sandstone_stairs[facing=east,half=top,shape=outer_left]":
+    "180:4",
+  "minecraft:red_sandstone_stairs[facing=east,half=top,shape=outer_right]":
+    "180:4",
+  "minecraft:red_sandstone_stairs[facing=west,half=top,shape=straight]":
+    "180:5",
+  "minecraft:red_sandstone_stairs[facing=west,half=top,shape=inner_left]":
+    "180:5",
+  "minecraft:red_sandstone_stairs[facing=west,half=top,shape=inner_right]":
+    "180:5",
+  "minecraft:red_sandstone_stairs[facing=west,half=top,shape=outer_left]":
+    "180:5",
+  "minecraft:red_sandstone_stairs[facing=west,half=top,shape=outer_right]":
+    "180:5",
+  "minecraft:red_sandstone_stairs[facing=south,half=top,shape=straight]":
+    "180:6",
+  "minecraft:red_sandstone_stairs[facing=south,half=top,shape=inner_left]":
+    "180:6",
+  "minecraft:red_sandstone_stairs[facing=south,half=top,shape=inner_right]":
+    "180:6",
+  "minecraft:red_sandstone_stairs[facing=south,half=top,shape=outer_left]":
+    "180:6",
+  "minecraft:red_sandstone_stairs[facing=south,half=top,shape=outer_right]":
+    "180:6",
+  "minecraft:red_sandstone_stairs[facing=north,half=top,shape=straight]":
+    "180:7",
+  "minecraft:red_sandstone_stairs[facing=north,half=top,shape=inner_left]":
+    "180:7",
+  "minecraft:red_sandstone_stairs[facing=north,half=top,shape=inner_right]":
+    "180:7",
+  "minecraft:red_sandstone_stairs[facing=north,half=top,shape=outer_left]":
+    "180:7",
+  "minecraft:red_sandstone_stairs[facing=north,half=top,shape=outer_right]":
+    "180:7",
   "minecraft:double_stone_slab2[variant=red_sandstone]": "181:0",
   "minecraft:stone_slab2[half=bottom,variant=red_sandstone]": "182:0",
   "minecraft:stone_slab2[half=top,variant=red_sandstone]": "182:8",
-  "minecraft:spruce_fence_gate[facing=south,in_wall=false,open=false,powered=false]": "183:0",
-  "minecraft:spruce_fence_gate[facing=west,in_wall=false,open=false,powered=false]": "183:1",
-  "minecraft:spruce_fence_gate[facing=north,in_wall=false,open=false,powered=false]": "183:2",
-  "minecraft:spruce_fence_gate[facing=east,in_wall=false,open=false,powered=false]": "183:3",
-  "minecraft:spruce_fence_gate[facing=south,in_wall=false,open=true,powered=false]": "183:4",
-  "minecraft:spruce_fence_gate[facing=west,in_wall=false,open=true,powered=false]": "183:5",
-  "minecraft:spruce_fence_gate[facing=north,in_wall=false,open=true,powered=false]": "183:6",
-  "minecraft:spruce_fence_gate[facing=east,in_wall=false,open=true,powered=false]": "183:7",
-  "minecraft:birch_fence_gate[facing=south,in_wall=false,open=false,powered=false]": "184:0",
-  "minecraft:birch_fence_gate[facing=west,in_wall=false,open=false,powered=false]": "184:1",
-  "minecraft:birch_fence_gate[facing=north,in_wall=false,open=false,powered=false]": "184:2",
-  "minecraft:birch_fence_gate[facing=east,in_wall=false,open=false,powered=false]": "184:3",
-  "minecraft:birch_fence_gate[facing=south,in_wall=false,open=true,powered=false]": "184:4",
-  "minecraft:birch_fence_gate[facing=west,in_wall=false,open=true,powered=false]": "184:5",
-  "minecraft:birch_fence_gate[facing=north,in_wall=false,open=true,powered=false]": "184:6",
-  "minecraft:birch_fence_gate[facing=east,in_wall=false,open=true,powered=false]": "184:7",
-  "minecraft:jungle_fence_gate[facing=south,in_wall=false,open=false,powered=false]": "185:0",
-  "minecraft:jungle_fence_gate[facing=west,in_wall=false,open=false,powered=false]": "185:1",
-  "minecraft:jungle_fence_gate[facing=north,in_wall=false,open=false,powered=false]": "185:2",
-  "minecraft:jungle_fence_gate[facing=east,in_wall=false,open=false,powered=false]": "185:3",
-  "minecraft:jungle_fence_gate[facing=south,in_wall=false,open=true,powered=false]": "185:4",
-  "minecraft:jungle_fence_gate[facing=west,in_wall=false,open=true,powered=false]": "185:5",
-  "minecraft:jungle_fence_gate[facing=north,in_wall=false,open=true,powered=false]": "185:6",
-  "minecraft:jungle_fence_gate[facing=east,in_wall=false,open=true,powered=false]": "185:7",
-  "minecraft:dark_oak_fence_gate[facing=south,in_wall=false,open=false,powered=false]": "186:0",
-  "minecraft:dark_oak_fence_gate[facing=west,in_wall=false,open=false,powered=false]": "186:1",
-  "minecraft:dark_oak_fence_gate[facing=north,in_wall=false,open=false,powered=false]": "186:2",
-  "minecraft:dark_oak_fence_gate[facing=east,in_wall=false,open=false,powered=false]": "186:3",
-  "minecraft:dark_oak_fence_gate[facing=south,in_wall=false,open=true,powered=false]": "186:4",
-  "minecraft:dark_oak_fence_gate[facing=west,in_wall=false,open=true,powered=false]": "186:5",
-  "minecraft:dark_oak_fence_gate[facing=north,in_wall=false,open=true,powered=false]": "186:6",
-  "minecraft:dark_oak_fence_gate[facing=east,in_wall=false,open=true,powered=false]": "186:7",
-  "minecraft:acacia_fence_gate[facing=south,in_wall=false,open=false,powered=false]": "187:0",
-  "minecraft:acacia_fence_gate[facing=west,in_wall=false,open=false,powered=false]": "187:1",
-  "minecraft:acacia_fence_gate[facing=north,in_wall=false,open=false,powered=false]": "187:2",
-  "minecraft:acacia_fence_gate[facing=east,in_wall=false,open=false,powered=false]": "187:3",
-  "minecraft:acacia_fence_gate[facing=south,in_wall=false,open=true,powered=false]": "187:4",
-  "minecraft:acacia_fence_gate[facing=west,in_wall=false,open=true,powered=false]": "187:5",
-  "minecraft:acacia_fence_gate[facing=north,in_wall=false,open=true,powered=false]": "187:6",
-  "minecraft:acacia_fence_gate[facing=east,in_wall=false,open=true,powered=false]": "187:7",
-  "minecraft:spruce_fence[east=false,north=false,south=false,west=false]": "188:0",
-  "minecraft:spruce_fence[east=false,north=false,south=false,west=true]": "188:0",
-  "minecraft:spruce_fence[east=false,north=false,south=true,west=false]": "188:0",
-  "minecraft:spruce_fence[east=false,north=false,south=true,west=true]": "188:0",
-  "minecraft:spruce_fence[east=false,north=true,south=false,west=false]": "188:0",
-  "minecraft:spruce_fence[east=false,north=true,south=false,west=true]": "188:0",
-  "minecraft:spruce_fence[east=false,north=true,south=true,west=false]": "188:0",
+  "minecraft:spruce_fence_gate[facing=south,in_wall=false,open=false,powered=false]":
+    "183:0",
+  "minecraft:spruce_fence_gate[facing=west,in_wall=false,open=false,powered=false]":
+    "183:1",
+  "minecraft:spruce_fence_gate[facing=north,in_wall=false,open=false,powered=false]":
+    "183:2",
+  "minecraft:spruce_fence_gate[facing=east,in_wall=false,open=false,powered=false]":
+    "183:3",
+  "minecraft:spruce_fence_gate[facing=south,in_wall=false,open=true,powered=false]":
+    "183:4",
+  "minecraft:spruce_fence_gate[facing=west,in_wall=false,open=true,powered=false]":
+    "183:5",
+  "minecraft:spruce_fence_gate[facing=north,in_wall=false,open=true,powered=false]":
+    "183:6",
+  "minecraft:spruce_fence_gate[facing=east,in_wall=false,open=true,powered=false]":
+    "183:7",
+  "minecraft:birch_fence_gate[facing=south,in_wall=false,open=false,powered=false]":
+    "184:0",
+  "minecraft:birch_fence_gate[facing=west,in_wall=false,open=false,powered=false]":
+    "184:1",
+  "minecraft:birch_fence_gate[facing=north,in_wall=false,open=false,powered=false]":
+    "184:2",
+  "minecraft:birch_fence_gate[facing=east,in_wall=false,open=false,powered=false]":
+    "184:3",
+  "minecraft:birch_fence_gate[facing=south,in_wall=false,open=true,powered=false]":
+    "184:4",
+  "minecraft:birch_fence_gate[facing=west,in_wall=false,open=true,powered=false]":
+    "184:5",
+  "minecraft:birch_fence_gate[facing=north,in_wall=false,open=true,powered=false]":
+    "184:6",
+  "minecraft:birch_fence_gate[facing=east,in_wall=false,open=true,powered=false]":
+    "184:7",
+  "minecraft:jungle_fence_gate[facing=south,in_wall=false,open=false,powered=false]":
+    "185:0",
+  "minecraft:jungle_fence_gate[facing=west,in_wall=false,open=false,powered=false]":
+    "185:1",
+  "minecraft:jungle_fence_gate[facing=north,in_wall=false,open=false,powered=false]":
+    "185:2",
+  "minecraft:jungle_fence_gate[facing=east,in_wall=false,open=false,powered=false]":
+    "185:3",
+  "minecraft:jungle_fence_gate[facing=south,in_wall=false,open=true,powered=false]":
+    "185:4",
+  "minecraft:jungle_fence_gate[facing=west,in_wall=false,open=true,powered=false]":
+    "185:5",
+  "minecraft:jungle_fence_gate[facing=north,in_wall=false,open=true,powered=false]":
+    "185:6",
+  "minecraft:jungle_fence_gate[facing=east,in_wall=false,open=true,powered=false]":
+    "185:7",
+  "minecraft:dark_oak_fence_gate[facing=south,in_wall=false,open=false,powered=false]":
+    "186:0",
+  "minecraft:dark_oak_fence_gate[facing=west,in_wall=false,open=false,powered=false]":
+    "186:1",
+  "minecraft:dark_oak_fence_gate[facing=north,in_wall=false,open=false,powered=false]":
+    "186:2",
+  "minecraft:dark_oak_fence_gate[facing=east,in_wall=false,open=false,powered=false]":
+    "186:3",
+  "minecraft:dark_oak_fence_gate[facing=south,in_wall=false,open=true,powered=false]":
+    "186:4",
+  "minecraft:dark_oak_fence_gate[facing=west,in_wall=false,open=true,powered=false]":
+    "186:5",
+  "minecraft:dark_oak_fence_gate[facing=north,in_wall=false,open=true,powered=false]":
+    "186:6",
+  "minecraft:dark_oak_fence_gate[facing=east,in_wall=false,open=true,powered=false]":
+    "186:7",
+  "minecraft:acacia_fence_gate[facing=south,in_wall=false,open=false,powered=false]":
+    "187:0",
+  "minecraft:acacia_fence_gate[facing=west,in_wall=false,open=false,powered=false]":
+    "187:1",
+  "minecraft:acacia_fence_gate[facing=north,in_wall=false,open=false,powered=false]":
+    "187:2",
+  "minecraft:acacia_fence_gate[facing=east,in_wall=false,open=false,powered=false]":
+    "187:3",
+  "minecraft:acacia_fence_gate[facing=south,in_wall=false,open=true,powered=false]":
+    "187:4",
+  "minecraft:acacia_fence_gate[facing=west,in_wall=false,open=true,powered=false]":
+    "187:5",
+  "minecraft:acacia_fence_gate[facing=north,in_wall=false,open=true,powered=false]":
+    "187:6",
+  "minecraft:acacia_fence_gate[facing=east,in_wall=false,open=true,powered=false]":
+    "187:7",
+  "minecraft:spruce_fence[east=false,north=false,south=false,west=false]":
+    "188:0",
+  "minecraft:spruce_fence[east=false,north=false,south=false,west=true]":
+    "188:0",
+  "minecraft:spruce_fence[east=false,north=false,south=true,west=false]":
+    "188:0",
+  "minecraft:spruce_fence[east=false,north=false,south=true,west=true]":
+    "188:0",
+  "minecraft:spruce_fence[east=false,north=true,south=false,west=false]":
+    "188:0",
+  "minecraft:spruce_fence[east=false,north=true,south=false,west=true]":
+    "188:0",
+  "minecraft:spruce_fence[east=false,north=true,south=true,west=false]":
+    "188:0",
   "minecraft:spruce_fence[east=false,north=true,south=true,west=true]": "188:0",
-  "minecraft:spruce_fence[east=true,north=false,south=false,west=false]": "188:0",
-  "minecraft:spruce_fence[east=true,north=false,south=false,west=true]": "188:0",
-  "minecraft:spruce_fence[east=true,north=false,south=true,west=false]": "188:0",
+  "minecraft:spruce_fence[east=true,north=false,south=false,west=false]":
+    "188:0",
+  "minecraft:spruce_fence[east=true,north=false,south=false,west=true]":
+    "188:0",
+  "minecraft:spruce_fence[east=true,north=false,south=true,west=false]":
+    "188:0",
   "minecraft:spruce_fence[east=true,north=false,south=true,west=true]": "188:0",
-  "minecraft:spruce_fence[east=true,north=true,south=false,west=false]": "188:0",
+  "minecraft:spruce_fence[east=true,north=true,south=false,west=false]":
+    "188:0",
   "minecraft:spruce_fence[east=true,north=true,south=false,west=true]": "188:0",
   "minecraft:spruce_fence[east=true,north=true,south=true,west=false]": "188:0",
   "minecraft:spruce_fence[east=true,north=true,south=true,west=true]": "188:0",
-  "minecraft:birch_fence[east=false,north=false,south=false,west=false]": "189:0",
-  "minecraft:birch_fence[east=false,north=false,south=false,west=true]": "189:0",
-  "minecraft:birch_fence[east=false,north=false,south=true,west=false]": "189:0",
+  "minecraft:birch_fence[east=false,north=false,south=false,west=false]":
+    "189:0",
+  "minecraft:birch_fence[east=false,north=false,south=false,west=true]":
+    "189:0",
+  "minecraft:birch_fence[east=false,north=false,south=true,west=false]":
+    "189:0",
   "minecraft:birch_fence[east=false,north=false,south=true,west=true]": "189:0",
-  "minecraft:birch_fence[east=false,north=true,south=false,west=false]": "189:0",
+  "minecraft:birch_fence[east=false,north=true,south=false,west=false]":
+    "189:0",
   "minecraft:birch_fence[east=false,north=true,south=false,west=true]": "189:0",
   "minecraft:birch_fence[east=false,north=true,south=true,west=false]": "189:0",
   "minecraft:birch_fence[east=false,north=true,south=true,west=true]": "189:0",
-  "minecraft:birch_fence[east=true,north=false,south=false,west=false]": "189:0",
+  "minecraft:birch_fence[east=true,north=false,south=false,west=false]":
+    "189:0",
   "minecraft:birch_fence[east=true,north=false,south=false,west=true]": "189:0",
   "minecraft:birch_fence[east=true,north=false,south=true,west=false]": "189:0",
   "minecraft:birch_fence[east=true,north=false,south=true,west=true]": "189:0",
@@ -3431,174 +5539,326 @@ export const FORGE_1_12_FLATTEN: Readonly<Record<string, string>> = {
   "minecraft:birch_fence[east=true,north=true,south=false,west=true]": "189:0",
   "minecraft:birch_fence[east=true,north=true,south=true,west=false]": "189:0",
   "minecraft:birch_fence[east=true,north=true,south=true,west=true]": "189:0",
-  "minecraft:jungle_fence[east=false,north=false,south=false,west=false]": "190:0",
-  "minecraft:jungle_fence[east=false,north=false,south=false,west=true]": "190:0",
-  "minecraft:jungle_fence[east=false,north=false,south=true,west=false]": "190:0",
-  "minecraft:jungle_fence[east=false,north=false,south=true,west=true]": "190:0",
-  "minecraft:jungle_fence[east=false,north=true,south=false,west=false]": "190:0",
-  "minecraft:jungle_fence[east=false,north=true,south=false,west=true]": "190:0",
-  "minecraft:jungle_fence[east=false,north=true,south=true,west=false]": "190:0",
+  "minecraft:jungle_fence[east=false,north=false,south=false,west=false]":
+    "190:0",
+  "minecraft:jungle_fence[east=false,north=false,south=false,west=true]":
+    "190:0",
+  "minecraft:jungle_fence[east=false,north=false,south=true,west=false]":
+    "190:0",
+  "minecraft:jungle_fence[east=false,north=false,south=true,west=true]":
+    "190:0",
+  "minecraft:jungle_fence[east=false,north=true,south=false,west=false]":
+    "190:0",
+  "minecraft:jungle_fence[east=false,north=true,south=false,west=true]":
+    "190:0",
+  "minecraft:jungle_fence[east=false,north=true,south=true,west=false]":
+    "190:0",
   "minecraft:jungle_fence[east=false,north=true,south=true,west=true]": "190:0",
-  "minecraft:jungle_fence[east=true,north=false,south=false,west=false]": "190:0",
-  "minecraft:jungle_fence[east=true,north=false,south=false,west=true]": "190:0",
-  "minecraft:jungle_fence[east=true,north=false,south=true,west=false]": "190:0",
+  "minecraft:jungle_fence[east=true,north=false,south=false,west=false]":
+    "190:0",
+  "minecraft:jungle_fence[east=true,north=false,south=false,west=true]":
+    "190:0",
+  "minecraft:jungle_fence[east=true,north=false,south=true,west=false]":
+    "190:0",
   "minecraft:jungle_fence[east=true,north=false,south=true,west=true]": "190:0",
-  "minecraft:jungle_fence[east=true,north=true,south=false,west=false]": "190:0",
+  "minecraft:jungle_fence[east=true,north=true,south=false,west=false]":
+    "190:0",
   "minecraft:jungle_fence[east=true,north=true,south=false,west=true]": "190:0",
   "minecraft:jungle_fence[east=true,north=true,south=true,west=false]": "190:0",
   "minecraft:jungle_fence[east=true,north=true,south=true,west=true]": "190:0",
-  "minecraft:dark_oak_fence[east=false,north=false,south=false,west=false]": "191:0",
-  "minecraft:dark_oak_fence[east=false,north=false,south=false,west=true]": "191:0",
-  "minecraft:dark_oak_fence[east=false,north=false,south=true,west=false]": "191:0",
-  "minecraft:dark_oak_fence[east=false,north=false,south=true,west=true]": "191:0",
-  "minecraft:dark_oak_fence[east=false,north=true,south=false,west=false]": "191:0",
-  "minecraft:dark_oak_fence[east=false,north=true,south=false,west=true]": "191:0",
-  "minecraft:dark_oak_fence[east=false,north=true,south=true,west=false]": "191:0",
-  "minecraft:dark_oak_fence[east=false,north=true,south=true,west=true]": "191:0",
-  "minecraft:dark_oak_fence[east=true,north=false,south=false,west=false]": "191:0",
-  "minecraft:dark_oak_fence[east=true,north=false,south=false,west=true]": "191:0",
-  "minecraft:dark_oak_fence[east=true,north=false,south=true,west=false]": "191:0",
-  "minecraft:dark_oak_fence[east=true,north=false,south=true,west=true]": "191:0",
-  "minecraft:dark_oak_fence[east=true,north=true,south=false,west=false]": "191:0",
-  "minecraft:dark_oak_fence[east=true,north=true,south=false,west=true]": "191:0",
-  "minecraft:dark_oak_fence[east=true,north=true,south=true,west=false]": "191:0",
-  "minecraft:dark_oak_fence[east=true,north=true,south=true,west=true]": "191:0",
-  "minecraft:acacia_fence[east=false,north=false,south=false,west=false]": "192:0",
-  "minecraft:acacia_fence[east=false,north=false,south=false,west=true]": "192:0",
-  "minecraft:acacia_fence[east=false,north=false,south=true,west=false]": "192:0",
-  "minecraft:acacia_fence[east=false,north=false,south=true,west=true]": "192:0",
-  "minecraft:acacia_fence[east=false,north=true,south=false,west=false]": "192:0",
-  "minecraft:acacia_fence[east=false,north=true,south=false,west=true]": "192:0",
-  "minecraft:acacia_fence[east=false,north=true,south=true,west=false]": "192:0",
+  "minecraft:dark_oak_fence[east=false,north=false,south=false,west=false]":
+    "191:0",
+  "minecraft:dark_oak_fence[east=false,north=false,south=false,west=true]":
+    "191:0",
+  "minecraft:dark_oak_fence[east=false,north=false,south=true,west=false]":
+    "191:0",
+  "minecraft:dark_oak_fence[east=false,north=false,south=true,west=true]":
+    "191:0",
+  "minecraft:dark_oak_fence[east=false,north=true,south=false,west=false]":
+    "191:0",
+  "minecraft:dark_oak_fence[east=false,north=true,south=false,west=true]":
+    "191:0",
+  "minecraft:dark_oak_fence[east=false,north=true,south=true,west=false]":
+    "191:0",
+  "minecraft:dark_oak_fence[east=false,north=true,south=true,west=true]":
+    "191:0",
+  "minecraft:dark_oak_fence[east=true,north=false,south=false,west=false]":
+    "191:0",
+  "minecraft:dark_oak_fence[east=true,north=false,south=false,west=true]":
+    "191:0",
+  "minecraft:dark_oak_fence[east=true,north=false,south=true,west=false]":
+    "191:0",
+  "minecraft:dark_oak_fence[east=true,north=false,south=true,west=true]":
+    "191:0",
+  "minecraft:dark_oak_fence[east=true,north=true,south=false,west=false]":
+    "191:0",
+  "minecraft:dark_oak_fence[east=true,north=true,south=false,west=true]":
+    "191:0",
+  "minecraft:dark_oak_fence[east=true,north=true,south=true,west=false]":
+    "191:0",
+  "minecraft:dark_oak_fence[east=true,north=true,south=true,west=true]":
+    "191:0",
+  "minecraft:acacia_fence[east=false,north=false,south=false,west=false]":
+    "192:0",
+  "minecraft:acacia_fence[east=false,north=false,south=false,west=true]":
+    "192:0",
+  "minecraft:acacia_fence[east=false,north=false,south=true,west=false]":
+    "192:0",
+  "minecraft:acacia_fence[east=false,north=false,south=true,west=true]":
+    "192:0",
+  "minecraft:acacia_fence[east=false,north=true,south=false,west=false]":
+    "192:0",
+  "minecraft:acacia_fence[east=false,north=true,south=false,west=true]":
+    "192:0",
+  "minecraft:acacia_fence[east=false,north=true,south=true,west=false]":
+    "192:0",
   "minecraft:acacia_fence[east=false,north=true,south=true,west=true]": "192:0",
-  "minecraft:acacia_fence[east=true,north=false,south=false,west=false]": "192:0",
-  "minecraft:acacia_fence[east=true,north=false,south=false,west=true]": "192:0",
-  "minecraft:acacia_fence[east=true,north=false,south=true,west=false]": "192:0",
+  "minecraft:acacia_fence[east=true,north=false,south=false,west=false]":
+    "192:0",
+  "minecraft:acacia_fence[east=true,north=false,south=false,west=true]":
+    "192:0",
+  "minecraft:acacia_fence[east=true,north=false,south=true,west=false]":
+    "192:0",
   "minecraft:acacia_fence[east=true,north=false,south=true,west=true]": "192:0",
-  "minecraft:acacia_fence[east=true,north=true,south=false,west=false]": "192:0",
+  "minecraft:acacia_fence[east=true,north=true,south=false,west=false]":
+    "192:0",
   "minecraft:acacia_fence[east=true,north=true,south=false,west=true]": "192:0",
   "minecraft:acacia_fence[east=true,north=true,south=true,west=false]": "192:0",
   "minecraft:acacia_fence[east=true,north=true,south=true,west=true]": "192:0",
-  "minecraft:spruce_door[facing=east,half=lower,hinge=left,open=false,powered=false]": "193:0",
-  "minecraft:spruce_door[facing=south,half=lower,hinge=left,open=false,powered=false]": "193:1",
-  "minecraft:spruce_door[facing=west,half=lower,hinge=left,open=false,powered=false]": "193:2",
-  "minecraft:spruce_door[facing=north,half=lower,hinge=left,open=false,powered=false]": "193:3",
-  "minecraft:spruce_door[facing=east,half=lower,hinge=left,open=true,powered=false]": "193:4",
-  "minecraft:spruce_door[facing=south,half=lower,hinge=left,open=true,powered=false]": "193:5",
-  "minecraft:spruce_door[facing=west,half=lower,hinge=left,open=true,powered=false]": "193:6",
-  "minecraft:spruce_door[facing=north,half=lower,hinge=left,open=true,powered=false]": "193:7",
-  "minecraft:spruce_door[facing=north,half=upper,hinge=left,open=false,powered=false]": "193:8",
-  "minecraft:spruce_door[facing=north,half=upper,hinge=right,open=false,powered=false]": "193:9",
-  "minecraft:birch_door[facing=east,half=lower,hinge=left,open=false,powered=false]": "194:0",
-  "minecraft:birch_door[facing=south,half=lower,hinge=left,open=false,powered=false]": "194:1",
-  "minecraft:birch_door[facing=west,half=lower,hinge=left,open=false,powered=false]": "194:2",
-  "minecraft:birch_door[facing=north,half=lower,hinge=left,open=false,powered=false]": "194:3",
-  "minecraft:birch_door[facing=east,half=lower,hinge=left,open=true,powered=false]": "194:4",
-  "minecraft:birch_door[facing=south,half=lower,hinge=left,open=true,powered=false]": "194:5",
-  "minecraft:birch_door[facing=west,half=lower,hinge=left,open=true,powered=false]": "194:6",
-  "minecraft:birch_door[facing=north,half=lower,hinge=left,open=true,powered=false]": "194:7",
-  "minecraft:birch_door[facing=north,half=upper,hinge=left,open=false,powered=false]": "194:8",
-  "minecraft:birch_door[facing=north,half=upper,hinge=right,open=false,powered=false]": "194:9",
-  "minecraft:jungle_door[facing=east,half=lower,hinge=left,open=false,powered=false]": "195:0",
-  "minecraft:jungle_door[facing=south,half=lower,hinge=left,open=false,powered=false]": "195:1",
-  "minecraft:jungle_door[facing=west,half=lower,hinge=left,open=false,powered=false]": "195:2",
-  "minecraft:jungle_door[facing=north,half=lower,hinge=left,open=false,powered=false]": "195:3",
-  "minecraft:jungle_door[facing=east,half=lower,hinge=left,open=true,powered=false]": "195:4",
-  "minecraft:jungle_door[facing=south,half=lower,hinge=left,open=true,powered=false]": "195:5",
-  "minecraft:jungle_door[facing=west,half=lower,hinge=left,open=true,powered=false]": "195:6",
-  "minecraft:jungle_door[facing=north,half=lower,hinge=left,open=true,powered=false]": "195:7",
-  "minecraft:jungle_door[facing=north,half=upper,hinge=left,open=false,powered=false]": "195:8",
-  "minecraft:jungle_door[facing=north,half=upper,hinge=right,open=false,powered=false]": "195:9",
-  "minecraft:acacia_door[facing=east,half=lower,hinge=left,open=false,powered=false]": "196:0",
-  "minecraft:acacia_door[facing=south,half=lower,hinge=left,open=false,powered=false]": "196:1",
-  "minecraft:acacia_door[facing=west,half=lower,hinge=left,open=false,powered=false]": "196:2",
-  "minecraft:acacia_door[facing=north,half=lower,hinge=left,open=false,powered=false]": "196:3",
-  "minecraft:acacia_door[facing=east,half=lower,hinge=left,open=true,powered=false]": "196:4",
-  "minecraft:acacia_door[facing=south,half=lower,hinge=left,open=true,powered=false]": "196:5",
-  "minecraft:acacia_door[facing=west,half=lower,hinge=left,open=true,powered=false]": "196:6",
-  "minecraft:acacia_door[facing=north,half=lower,hinge=left,open=true,powered=false]": "196:7",
-  "minecraft:acacia_door[facing=north,half=upper,hinge=left,open=false,powered=false]": "196:8",
-  "minecraft:acacia_door[facing=north,half=upper,hinge=right,open=false,powered=false]": "196:9",
-  "minecraft:dark_oak_door[facing=east,half=lower,hinge=left,open=false,powered=false]": "197:0",
-  "minecraft:dark_oak_door[facing=south,half=lower,hinge=left,open=false,powered=false]": "197:1",
-  "minecraft:dark_oak_door[facing=west,half=lower,hinge=left,open=false,powered=false]": "197:2",
-  "minecraft:dark_oak_door[facing=north,half=lower,hinge=left,open=false,powered=false]": "197:3",
-  "minecraft:dark_oak_door[facing=east,half=lower,hinge=left,open=true,powered=false]": "197:4",
-  "minecraft:dark_oak_door[facing=south,half=lower,hinge=left,open=true,powered=false]": "197:5",
-  "minecraft:dark_oak_door[facing=west,half=lower,hinge=left,open=true,powered=false]": "197:6",
-  "minecraft:dark_oak_door[facing=north,half=lower,hinge=left,open=true,powered=false]": "197:7",
-  "minecraft:dark_oak_door[facing=north,half=upper,hinge=left,open=false,powered=false]": "197:8",
-  "minecraft:dark_oak_door[facing=north,half=upper,hinge=right,open=false,powered=false]": "197:9",
+  "minecraft:spruce_door[facing=east,half=lower,hinge=left,open=false,powered=false]":
+    "193:0",
+  "minecraft:spruce_door[facing=south,half=lower,hinge=left,open=false,powered=false]":
+    "193:1",
+  "minecraft:spruce_door[facing=west,half=lower,hinge=left,open=false,powered=false]":
+    "193:2",
+  "minecraft:spruce_door[facing=north,half=lower,hinge=left,open=false,powered=false]":
+    "193:3",
+  "minecraft:spruce_door[facing=east,half=lower,hinge=left,open=true,powered=false]":
+    "193:4",
+  "minecraft:spruce_door[facing=south,half=lower,hinge=left,open=true,powered=false]":
+    "193:5",
+  "minecraft:spruce_door[facing=west,half=lower,hinge=left,open=true,powered=false]":
+    "193:6",
+  "minecraft:spruce_door[facing=north,half=lower,hinge=left,open=true,powered=false]":
+    "193:7",
+  "minecraft:spruce_door[facing=north,half=upper,hinge=left,open=false,powered=false]":
+    "193:8",
+  "minecraft:spruce_door[facing=north,half=upper,hinge=right,open=false,powered=false]":
+    "193:9",
+  "minecraft:birch_door[facing=east,half=lower,hinge=left,open=false,powered=false]":
+    "194:0",
+  "minecraft:birch_door[facing=south,half=lower,hinge=left,open=false,powered=false]":
+    "194:1",
+  "minecraft:birch_door[facing=west,half=lower,hinge=left,open=false,powered=false]":
+    "194:2",
+  "minecraft:birch_door[facing=north,half=lower,hinge=left,open=false,powered=false]":
+    "194:3",
+  "minecraft:birch_door[facing=east,half=lower,hinge=left,open=true,powered=false]":
+    "194:4",
+  "minecraft:birch_door[facing=south,half=lower,hinge=left,open=true,powered=false]":
+    "194:5",
+  "minecraft:birch_door[facing=west,half=lower,hinge=left,open=true,powered=false]":
+    "194:6",
+  "minecraft:birch_door[facing=north,half=lower,hinge=left,open=true,powered=false]":
+    "194:7",
+  "minecraft:birch_door[facing=north,half=upper,hinge=left,open=false,powered=false]":
+    "194:8",
+  "minecraft:birch_door[facing=north,half=upper,hinge=right,open=false,powered=false]":
+    "194:9",
+  "minecraft:jungle_door[facing=east,half=lower,hinge=left,open=false,powered=false]":
+    "195:0",
+  "minecraft:jungle_door[facing=south,half=lower,hinge=left,open=false,powered=false]":
+    "195:1",
+  "minecraft:jungle_door[facing=west,half=lower,hinge=left,open=false,powered=false]":
+    "195:2",
+  "minecraft:jungle_door[facing=north,half=lower,hinge=left,open=false,powered=false]":
+    "195:3",
+  "minecraft:jungle_door[facing=east,half=lower,hinge=left,open=true,powered=false]":
+    "195:4",
+  "minecraft:jungle_door[facing=south,half=lower,hinge=left,open=true,powered=false]":
+    "195:5",
+  "minecraft:jungle_door[facing=west,half=lower,hinge=left,open=true,powered=false]":
+    "195:6",
+  "minecraft:jungle_door[facing=north,half=lower,hinge=left,open=true,powered=false]":
+    "195:7",
+  "minecraft:jungle_door[facing=north,half=upper,hinge=left,open=false,powered=false]":
+    "195:8",
+  "minecraft:jungle_door[facing=north,half=upper,hinge=right,open=false,powered=false]":
+    "195:9",
+  "minecraft:acacia_door[facing=east,half=lower,hinge=left,open=false,powered=false]":
+    "196:0",
+  "minecraft:acacia_door[facing=south,half=lower,hinge=left,open=false,powered=false]":
+    "196:1",
+  "minecraft:acacia_door[facing=west,half=lower,hinge=left,open=false,powered=false]":
+    "196:2",
+  "minecraft:acacia_door[facing=north,half=lower,hinge=left,open=false,powered=false]":
+    "196:3",
+  "minecraft:acacia_door[facing=east,half=lower,hinge=left,open=true,powered=false]":
+    "196:4",
+  "minecraft:acacia_door[facing=south,half=lower,hinge=left,open=true,powered=false]":
+    "196:5",
+  "minecraft:acacia_door[facing=west,half=lower,hinge=left,open=true,powered=false]":
+    "196:6",
+  "minecraft:acacia_door[facing=north,half=lower,hinge=left,open=true,powered=false]":
+    "196:7",
+  "minecraft:acacia_door[facing=north,half=upper,hinge=left,open=false,powered=false]":
+    "196:8",
+  "minecraft:acacia_door[facing=north,half=upper,hinge=right,open=false,powered=false]":
+    "196:9",
+  "minecraft:dark_oak_door[facing=east,half=lower,hinge=left,open=false,powered=false]":
+    "197:0",
+  "minecraft:dark_oak_door[facing=south,half=lower,hinge=left,open=false,powered=false]":
+    "197:1",
+  "minecraft:dark_oak_door[facing=west,half=lower,hinge=left,open=false,powered=false]":
+    "197:2",
+  "minecraft:dark_oak_door[facing=north,half=lower,hinge=left,open=false,powered=false]":
+    "197:3",
+  "minecraft:dark_oak_door[facing=east,half=lower,hinge=left,open=true,powered=false]":
+    "197:4",
+  "minecraft:dark_oak_door[facing=south,half=lower,hinge=left,open=true,powered=false]":
+    "197:5",
+  "minecraft:dark_oak_door[facing=west,half=lower,hinge=left,open=true,powered=false]":
+    "197:6",
+  "minecraft:dark_oak_door[facing=north,half=lower,hinge=left,open=true,powered=false]":
+    "197:7",
+  "minecraft:dark_oak_door[facing=north,half=upper,hinge=left,open=false,powered=false]":
+    "197:8",
+  "minecraft:dark_oak_door[facing=north,half=upper,hinge=right,open=false,powered=false]":
+    "197:9",
   "minecraft:end_rod[facing=down]": "198:0",
   "minecraft:end_rod[facing=up]": "198:1",
   "minecraft:end_rod[facing=north]": "198:2",
   "minecraft:end_rod[facing=south]": "198:3",
   "minecraft:end_rod[facing=west]": "198:4",
   "minecraft:end_rod[facing=east]": "198:5",
-  "minecraft:chorus_plant[down=false,east=false,north=false,south=false,up=false,west=false]": "199:0",
-  "minecraft:chorus_plant[down=false,east=false,north=false,south=false,up=false,west=true]": "199:0",
-  "minecraft:chorus_plant[down=false,east=false,north=false,south=false,up=true,west=false]": "199:0",
-  "minecraft:chorus_plant[down=false,east=false,north=false,south=false,up=true,west=true]": "199:0",
-  "minecraft:chorus_plant[down=false,east=false,north=false,south=true,up=false,west=false]": "199:0",
-  "minecraft:chorus_plant[down=false,east=false,north=false,south=true,up=false,west=true]": "199:0",
-  "minecraft:chorus_plant[down=false,east=false,north=false,south=true,up=true,west=false]": "199:0",
-  "minecraft:chorus_plant[down=false,east=false,north=false,south=true,up=true,west=true]": "199:0",
-  "minecraft:chorus_plant[down=false,east=false,north=true,south=false,up=false,west=false]": "199:0",
-  "minecraft:chorus_plant[down=false,east=false,north=true,south=false,up=false,west=true]": "199:0",
-  "minecraft:chorus_plant[down=false,east=false,north=true,south=false,up=true,west=false]": "199:0",
-  "minecraft:chorus_plant[down=false,east=false,north=true,south=false,up=true,west=true]": "199:0",
-  "minecraft:chorus_plant[down=false,east=false,north=true,south=true,up=false,west=false]": "199:0",
-  "minecraft:chorus_plant[down=false,east=false,north=true,south=true,up=false,west=true]": "199:0",
-  "minecraft:chorus_plant[down=false,east=false,north=true,south=true,up=true,west=false]": "199:0",
-  "minecraft:chorus_plant[down=false,east=false,north=true,south=true,up=true,west=true]": "199:0",
-  "minecraft:chorus_plant[down=false,east=true,north=false,south=false,up=false,west=false]": "199:0",
-  "minecraft:chorus_plant[down=false,east=true,north=false,south=false,up=false,west=true]": "199:0",
-  "minecraft:chorus_plant[down=false,east=true,north=false,south=false,up=true,west=false]": "199:0",
-  "minecraft:chorus_plant[down=false,east=true,north=false,south=false,up=true,west=true]": "199:0",
-  "minecraft:chorus_plant[down=false,east=true,north=false,south=true,up=false,west=false]": "199:0",
-  "minecraft:chorus_plant[down=false,east=true,north=false,south=true,up=false,west=true]": "199:0",
-  "minecraft:chorus_plant[down=false,east=true,north=false,south=true,up=true,west=false]": "199:0",
-  "minecraft:chorus_plant[down=false,east=true,north=false,south=true,up=true,west=true]": "199:0",
-  "minecraft:chorus_plant[down=false,east=true,north=true,south=false,up=false,west=false]": "199:0",
-  "minecraft:chorus_plant[down=false,east=true,north=true,south=false,up=false,west=true]": "199:0",
-  "minecraft:chorus_plant[down=false,east=true,north=true,south=false,up=true,west=false]": "199:0",
-  "minecraft:chorus_plant[down=false,east=true,north=true,south=false,up=true,west=true]": "199:0",
-  "minecraft:chorus_plant[down=false,east=true,north=true,south=true,up=false,west=false]": "199:0",
-  "minecraft:chorus_plant[down=false,east=true,north=true,south=true,up=false,west=true]": "199:0",
-  "minecraft:chorus_plant[down=false,east=true,north=true,south=true,up=true,west=false]": "199:0",
-  "minecraft:chorus_plant[down=false,east=true,north=true,south=true,up=true,west=true]": "199:0",
-  "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=false,west=false]": "199:0",
-  "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=false,west=true]": "199:0",
-  "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=true,west=false]": "199:0",
-  "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=true,west=true]": "199:0",
-  "minecraft:chorus_plant[down=true,east=false,north=false,south=true,up=false,west=false]": "199:0",
-  "minecraft:chorus_plant[down=true,east=false,north=false,south=true,up=false,west=true]": "199:0",
-  "minecraft:chorus_plant[down=true,east=false,north=false,south=true,up=true,west=false]": "199:0",
-  "minecraft:chorus_plant[down=true,east=false,north=false,south=true,up=true,west=true]": "199:0",
-  "minecraft:chorus_plant[down=true,east=false,north=true,south=false,up=false,west=false]": "199:0",
-  "minecraft:chorus_plant[down=true,east=false,north=true,south=false,up=false,west=true]": "199:0",
-  "minecraft:chorus_plant[down=true,east=false,north=true,south=false,up=true,west=false]": "199:0",
-  "minecraft:chorus_plant[down=true,east=false,north=true,south=false,up=true,west=true]": "199:0",
-  "minecraft:chorus_plant[down=true,east=false,north=true,south=true,up=false,west=false]": "199:0",
-  "minecraft:chorus_plant[down=true,east=false,north=true,south=true,up=false,west=true]": "199:0",
-  "minecraft:chorus_plant[down=true,east=false,north=true,south=true,up=true,west=false]": "199:0",
-  "minecraft:chorus_plant[down=true,east=false,north=true,south=true,up=true,west=true]": "199:0",
-  "minecraft:chorus_plant[down=true,east=true,north=false,south=false,up=false,west=false]": "199:0",
-  "minecraft:chorus_plant[down=true,east=true,north=false,south=false,up=false,west=true]": "199:0",
-  "minecraft:chorus_plant[down=true,east=true,north=false,south=false,up=true,west=false]": "199:0",
-  "minecraft:chorus_plant[down=true,east=true,north=false,south=false,up=true,west=true]": "199:0",
-  "minecraft:chorus_plant[down=true,east=true,north=false,south=true,up=false,west=false]": "199:0",
-  "minecraft:chorus_plant[down=true,east=true,north=false,south=true,up=false,west=true]": "199:0",
-  "minecraft:chorus_plant[down=true,east=true,north=false,south=true,up=true,west=false]": "199:0",
-  "minecraft:chorus_plant[down=true,east=true,north=false,south=true,up=true,west=true]": "199:0",
-  "minecraft:chorus_plant[down=true,east=true,north=true,south=false,up=false,west=false]": "199:0",
-  "minecraft:chorus_plant[down=true,east=true,north=true,south=false,up=false,west=true]": "199:0",
-  "minecraft:chorus_plant[down=true,east=true,north=true,south=false,up=true,west=false]": "199:0",
-  "minecraft:chorus_plant[down=true,east=true,north=true,south=false,up=true,west=true]": "199:0",
-  "minecraft:chorus_plant[down=true,east=true,north=true,south=true,up=false,west=false]": "199:0",
-  "minecraft:chorus_plant[down=true,east=true,north=true,south=true,up=false,west=true]": "199:0",
-  "minecraft:chorus_plant[down=true,east=true,north=true,south=true,up=true,west=false]": "199:0",
-  "minecraft:chorus_plant[down=true,east=true,north=true,south=true,up=true,west=true]": "199:0",
+  "minecraft:chorus_plant[down=false,east=false,north=false,south=false,up=false,west=false]":
+    "199:0",
+  "minecraft:chorus_plant[down=false,east=false,north=false,south=false,up=false,west=true]":
+    "199:0",
+  "minecraft:chorus_plant[down=false,east=false,north=false,south=false,up=true,west=false]":
+    "199:0",
+  "minecraft:chorus_plant[down=false,east=false,north=false,south=false,up=true,west=true]":
+    "199:0",
+  "minecraft:chorus_plant[down=false,east=false,north=false,south=true,up=false,west=false]":
+    "199:0",
+  "minecraft:chorus_plant[down=false,east=false,north=false,south=true,up=false,west=true]":
+    "199:0",
+  "minecraft:chorus_plant[down=false,east=false,north=false,south=true,up=true,west=false]":
+    "199:0",
+  "minecraft:chorus_plant[down=false,east=false,north=false,south=true,up=true,west=true]":
+    "199:0",
+  "minecraft:chorus_plant[down=false,east=false,north=true,south=false,up=false,west=false]":
+    "199:0",
+  "minecraft:chorus_plant[down=false,east=false,north=true,south=false,up=false,west=true]":
+    "199:0",
+  "minecraft:chorus_plant[down=false,east=false,north=true,south=false,up=true,west=false]":
+    "199:0",
+  "minecraft:chorus_plant[down=false,east=false,north=true,south=false,up=true,west=true]":
+    "199:0",
+  "minecraft:chorus_plant[down=false,east=false,north=true,south=true,up=false,west=false]":
+    "199:0",
+  "minecraft:chorus_plant[down=false,east=false,north=true,south=true,up=false,west=true]":
+    "199:0",
+  "minecraft:chorus_plant[down=false,east=false,north=true,south=true,up=true,west=false]":
+    "199:0",
+  "minecraft:chorus_plant[down=false,east=false,north=true,south=true,up=true,west=true]":
+    "199:0",
+  "minecraft:chorus_plant[down=false,east=true,north=false,south=false,up=false,west=false]":
+    "199:0",
+  "minecraft:chorus_plant[down=false,east=true,north=false,south=false,up=false,west=true]":
+    "199:0",
+  "minecraft:chorus_plant[down=false,east=true,north=false,south=false,up=true,west=false]":
+    "199:0",
+  "minecraft:chorus_plant[down=false,east=true,north=false,south=false,up=true,west=true]":
+    "199:0",
+  "minecraft:chorus_plant[down=false,east=true,north=false,south=true,up=false,west=false]":
+    "199:0",
+  "minecraft:chorus_plant[down=false,east=true,north=false,south=true,up=false,west=true]":
+    "199:0",
+  "minecraft:chorus_plant[down=false,east=true,north=false,south=true,up=true,west=false]":
+    "199:0",
+  "minecraft:chorus_plant[down=false,east=true,north=false,south=true,up=true,west=true]":
+    "199:0",
+  "minecraft:chorus_plant[down=false,east=true,north=true,south=false,up=false,west=false]":
+    "199:0",
+  "minecraft:chorus_plant[down=false,east=true,north=true,south=false,up=false,west=true]":
+    "199:0",
+  "minecraft:chorus_plant[down=false,east=true,north=true,south=false,up=true,west=false]":
+    "199:0",
+  "minecraft:chorus_plant[down=false,east=true,north=true,south=false,up=true,west=true]":
+    "199:0",
+  "minecraft:chorus_plant[down=false,east=true,north=true,south=true,up=false,west=false]":
+    "199:0",
+  "minecraft:chorus_plant[down=false,east=true,north=true,south=true,up=false,west=true]":
+    "199:0",
+  "minecraft:chorus_plant[down=false,east=true,north=true,south=true,up=true,west=false]":
+    "199:0",
+  "minecraft:chorus_plant[down=false,east=true,north=true,south=true,up=true,west=true]":
+    "199:0",
+  "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=false,west=false]":
+    "199:0",
+  "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=false,west=true]":
+    "199:0",
+  "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=true,west=false]":
+    "199:0",
+  "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=true,west=true]":
+    "199:0",
+  "minecraft:chorus_plant[down=true,east=false,north=false,south=true,up=false,west=false]":
+    "199:0",
+  "minecraft:chorus_plant[down=true,east=false,north=false,south=true,up=false,west=true]":
+    "199:0",
+  "minecraft:chorus_plant[down=true,east=false,north=false,south=true,up=true,west=false]":
+    "199:0",
+  "minecraft:chorus_plant[down=true,east=false,north=false,south=true,up=true,west=true]":
+    "199:0",
+  "minecraft:chorus_plant[down=true,east=false,north=true,south=false,up=false,west=false]":
+    "199:0",
+  "minecraft:chorus_plant[down=true,east=false,north=true,south=false,up=false,west=true]":
+    "199:0",
+  "minecraft:chorus_plant[down=true,east=false,north=true,south=false,up=true,west=false]":
+    "199:0",
+  "minecraft:chorus_plant[down=true,east=false,north=true,south=false,up=true,west=true]":
+    "199:0",
+  "minecraft:chorus_plant[down=true,east=false,north=true,south=true,up=false,west=false]":
+    "199:0",
+  "minecraft:chorus_plant[down=true,east=false,north=true,south=true,up=false,west=true]":
+    "199:0",
+  "minecraft:chorus_plant[down=true,east=false,north=true,south=true,up=true,west=false]":
+    "199:0",
+  "minecraft:chorus_plant[down=true,east=false,north=true,south=true,up=true,west=true]":
+    "199:0",
+  "minecraft:chorus_plant[down=true,east=true,north=false,south=false,up=false,west=false]":
+    "199:0",
+  "minecraft:chorus_plant[down=true,east=true,north=false,south=false,up=false,west=true]":
+    "199:0",
+  "minecraft:chorus_plant[down=true,east=true,north=false,south=false,up=true,west=false]":
+    "199:0",
+  "minecraft:chorus_plant[down=true,east=true,north=false,south=false,up=true,west=true]":
+    "199:0",
+  "minecraft:chorus_plant[down=true,east=true,north=false,south=true,up=false,west=false]":
+    "199:0",
+  "minecraft:chorus_plant[down=true,east=true,north=false,south=true,up=false,west=true]":
+    "199:0",
+  "minecraft:chorus_plant[down=true,east=true,north=false,south=true,up=true,west=false]":
+    "199:0",
+  "minecraft:chorus_plant[down=true,east=true,north=false,south=true,up=true,west=true]":
+    "199:0",
+  "minecraft:chorus_plant[down=true,east=true,north=true,south=false,up=false,west=false]":
+    "199:0",
+  "minecraft:chorus_plant[down=true,east=true,north=true,south=false,up=false,west=true]":
+    "199:0",
+  "minecraft:chorus_plant[down=true,east=true,north=true,south=false,up=true,west=false]":
+    "199:0",
+  "minecraft:chorus_plant[down=true,east=true,north=true,south=false,up=true,west=true]":
+    "199:0",
+  "minecraft:chorus_plant[down=true,east=true,north=true,south=true,up=false,west=false]":
+    "199:0",
+  "minecraft:chorus_plant[down=true,east=true,north=true,south=true,up=false,west=true]":
+    "199:0",
+  "minecraft:chorus_plant[down=true,east=true,north=true,south=true,up=true,west=false]":
+    "199:0",
+  "minecraft:chorus_plant[down=true,east=true,north=true,south=true,up=true,west=true]":
+    "199:0",
   "minecraft:chorus_flower[age=0]": "200:0",
   "minecraft:chorus_flower[age=1]": "200:1",
   "minecraft:chorus_flower[age=2]": "200:2",
@@ -3621,14 +5881,18 @@ export const FORGE_1_12_FLATTEN: Readonly<Record<string, string>> = {
   "minecraft:purpur_stairs[facing=west,half=bottom,shape=outer_right]": "203:1",
   "minecraft:purpur_stairs[facing=south,half=bottom,shape=straight]": "203:2",
   "minecraft:purpur_stairs[facing=south,half=bottom,shape=inner_left]": "203:2",
-  "minecraft:purpur_stairs[facing=south,half=bottom,shape=inner_right]": "203:2",
+  "minecraft:purpur_stairs[facing=south,half=bottom,shape=inner_right]":
+    "203:2",
   "minecraft:purpur_stairs[facing=south,half=bottom,shape=outer_left]": "203:2",
-  "minecraft:purpur_stairs[facing=south,half=bottom,shape=outer_right]": "203:2",
+  "minecraft:purpur_stairs[facing=south,half=bottom,shape=outer_right]":
+    "203:2",
   "minecraft:purpur_stairs[facing=north,half=bottom,shape=straight]": "203:3",
   "minecraft:purpur_stairs[facing=north,half=bottom,shape=inner_left]": "203:3",
-  "minecraft:purpur_stairs[facing=north,half=bottom,shape=inner_right]": "203:3",
+  "minecraft:purpur_stairs[facing=north,half=bottom,shape=inner_right]":
+    "203:3",
   "minecraft:purpur_stairs[facing=north,half=bottom,shape=outer_left]": "203:3",
-  "minecraft:purpur_stairs[facing=north,half=bottom,shape=outer_right]": "203:3",
+  "minecraft:purpur_stairs[facing=north,half=bottom,shape=outer_right]":
+    "203:3",
   "minecraft:purpur_stairs[facing=east,half=top,shape=straight]": "203:4",
   "minecraft:purpur_stairs[facing=east,half=top,shape=inner_left]": "203:4",
   "minecraft:purpur_stairs[facing=east,half=top,shape=inner_right]": "203:4",
@@ -3818,5 +6082,5 @@ export const FORGE_1_12_FLATTEN: Readonly<Record<string, string>> = {
   "minecraft:structure_block[mode=save]": "255:0",
   "minecraft:structure_block[mode=load]": "255:1",
   "minecraft:structure_block[mode=corner]": "255:2",
-  "minecraft:structure_block[mode=data]": "255:3"
+  "minecraft:structure_block[mode=data]": "255:3",
 };

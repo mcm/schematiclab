@@ -41,12 +41,20 @@ export abstract class AbstractRegion {
       if (p0 === null) {
         p0 = [pos[0], pos[1], pos[2]];
       } else {
-        p0 = [Math.min(p0[0], pos[0]), Math.min(p0[1], pos[1]), Math.min(p0[2], pos[2])];
+        p0 = [
+          Math.min(p0[0], pos[0]),
+          Math.min(p0[1], pos[1]),
+          Math.min(p0[2], pos[2]),
+        ];
       }
       if (p1 === null) {
         p1 = [pos[0], pos[1], pos[2]];
       } else {
-        p1 = [Math.max(p1[0], pos[0]), Math.max(p1[1], pos[1]), Math.max(p1[2], pos[2])];
+        p1 = [
+          Math.max(p1[0], pos[0]),
+          Math.max(p1[1], pos[1]),
+          Math.max(p1[2], pos[2]),
+        ];
       }
     }
 
@@ -54,7 +62,10 @@ export abstract class AbstractRegion {
       return [BlockPos.ORIGIN, BlockPos.ORIGIN];
     }
 
-    return [new BlockPos(p0[0], p0[1], p0[2]), new BlockPos(p1[0], p1[1], p1[2])];
+    return [
+      new BlockPos(p0[0], p0[1], p0[2]),
+      new BlockPos(p1[0], p1[1], p1[2]),
+    ];
   }
 
   getPalette(): BlockState[] {
@@ -84,8 +95,13 @@ export abstract class AbstractRegion {
     return [...this.getTranslatedBlockMatrix(targetVersion).values()];
   }
 
-  getTranslatedBlockMatrix(targetVersion: MinecraftVersion): Map<string, Block> {
-    const mapper = new MinecraftVersionMapper(this.getBlockMatrix(), this.getMinecraftVersion());
+  getTranslatedBlockMatrix(
+    targetVersion: MinecraftVersion,
+  ): Map<string, Block> {
+    const mapper = new MinecraftVersionMapper(
+      this.getBlockMatrix(),
+      this.getMinecraftVersion(),
+    );
     const out = new Map<string, Block>();
     for (const [k, b] of this.getBlockMatrix()) {
       out.set(k, mapper.mapBlock(b, targetVersion));
@@ -101,7 +117,9 @@ export abstract class AbstractRegion {
     return this.getEntities();
   }
 
-  getTranslatedEntityMatrix(_targetVersion: MinecraftVersion): Map<string, Entity> {
+  getTranslatedEntityMatrix(
+    _targetVersion: MinecraftVersion,
+  ): Map<string, Entity> {
     return this.getEntityMatrix();
   }
 
@@ -109,7 +127,9 @@ export abstract class AbstractRegion {
     return this.getTileEntities();
   }
 
-  getTranslatedTileEntityMatrix(_targetVersion: MinecraftVersion): Map<string, Entity> {
+  getTranslatedTileEntityMatrix(
+    _targetVersion: MinecraftVersion,
+  ): Map<string, Entity> {
     return this.getTileEntityMatrix();
   }
 

@@ -32,7 +32,11 @@ export class BinaryReader {
   pos = 0;
 
   constructor(public readonly buffer: Uint8Array) {
-    this.view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+    this.view = new DataView(
+      buffer.buffer,
+      buffer.byteOffset,
+      buffer.byteLength,
+    );
   }
 
   get eof(): boolean {
@@ -228,9 +232,11 @@ export abstract class NbtTag {
   abstract toString(): string;
 
   static fromBytes(bytes: Uint8Array): NbtTag {
-    return (this as unknown as {
-      fromReader(r: BinaryReader): NbtTag;
-    }).fromReader(new BinaryReader(bytes));
+    return (
+      this as unknown as {
+        fromReader(r: BinaryReader): NbtTag;
+      }
+    ).fromReader(new BinaryReader(bytes));
   }
 
   static fromReader(_reader: BinaryReader): NbtTag {
@@ -249,12 +255,22 @@ export type TagClass = (new (...args: any[]) => NbtTag) & {
 
 const tagTypeRegistry = new Map<number, TagClass>();
 
-export function registerTagType<T extends TagClass>(id: number, tag: T, opts: { overwrite?: boolean } = {}): T {
+export function registerTagType<T extends TagClass>(
+  id: number,
+  tag: T,
+  opts: { overwrite?: boolean } = {},
+): T {
   if (tagTypeRegistry.has(id) && !opts.overwrite) {
-    throw new Error(`${tagTypeRegistry.get(id)!.name} already registered for id ${id}`);
+    throw new Error(
+      `${tagTypeRegistry.get(id)!.name} already registered for id ${id}`,
+    );
   }
   tagTypeRegistry.set(id, tag);
-  Object.defineProperty(tag, "tagTypeId", { value: id, writable: false, configurable: true });
+  Object.defineProperty(tag, "tagTypeId", {
+    value: id,
+    writable: false,
+    configurable: true,
+  });
   return tag;
 }
 
@@ -434,7 +450,10 @@ abstract class _ArrayTag extends NbtTag {
   equals(other: unknown): boolean {
     if (!(other instanceof _ArrayTag) && !Array.isArray(other)) return false;
     const ours = this.unpackValues();
-    const theirs = other instanceof _ArrayTag ? other.unpackValues() : (other as Array<number | bigint>);
+    const theirs =
+      other instanceof _ArrayTag
+        ? other.unpackValues()
+        : (other as Array<number | bigint>);
     if (ours.length !== theirs.length) return false;
     for (let i = 0; i < ours.length; i++) {
       const a = ours[i];
@@ -471,7 +490,9 @@ abstract class _ArrayTag extends NbtTag {
     const vBits = BigInt(virtualBits);
     const startOffset = BigInt(idx) * vBits;
     const startStorageIdx = Number(startOffset / elementBits);
-    const endStorageIdx = Number(((BigInt(idx) + 1n) * vBits - 1n) / elementBits);
+    const endStorageIdx = Number(
+      ((BigInt(idx) + 1n) * vBits - 1n) / elementBits,
+    );
     const startBitOffset = startOffset % elementBits;
     const mask = (1n << vBits) - 1n;
 
@@ -481,15 +502,25 @@ abstract class _ArrayTag extends NbtTag {
       return (elementAt(startStorageIdx) >> startBitOffset) & mask;
     }
     const endOffset = elementBits - startBitOffset;
-    return ((elementAt(startStorageIdx) >> startBitOffset) | (elementAt(endStorageIdx) << endOffset)) & mask;
+    return (
+      ((elementAt(startStorageIdx) >> startBitOffset) |
+        (elementAt(endStorageIdx) << endOffset)) &
+      mask
+    );
   }
 
-  writePackedUint(idx: number, virtualBits: number, value: bigint | number): void {
+  writePackedUint(
+    idx: number,
+    virtualBits: number,
+    value: bigint | number,
+  ): void {
     const elementBits = BigInt(this.elementBits);
     const vBits = BigInt(virtualBits);
     const startOffset = BigInt(idx) * vBits;
     const startStorageIdx = Number(startOffset / elementBits);
-    const endStorageIdx = Number(((BigInt(idx) + 1n) * vBits - 1n) / elementBits);
+    const endStorageIdx = Number(
+      ((BigInt(idx) + 1n) * vBits - 1n) / elementBits,
+    );
     const startBitOffset = startOffset % elementBits;
     const mask = (1n << vBits) - 1n;
     const elementMask = (1n << elementBits) - 1n;
@@ -497,7 +528,10 @@ abstract class _ArrayTag extends NbtTag {
 
     const startVal = this.elementAtIndex(startStorageIdx);
     const zeroed = startVal & ~(mask << startBitOffset);
-    this.setElementAtIndex(startStorageIdx, (zeroed | (v << startBitOffset)) & elementMask);
+    this.setElementAtIndex(
+      startStorageIdx,
+      (zeroed | (v << startBitOffset)) & elementMask,
+    );
 
     if (startStorageIdx !== endStorageIdx) {
       const endVal = this.elementAtIndex(endStorageIdx);
@@ -520,7 +554,8 @@ export class ByteArray extends _ArrayTag {
     const out = new Uint8Array(values.length);
     for (let i = 0; i < values.length; i++) {
       const v = values[i];
-      out[i] = typeof v === "bigint" ? Number(BigInt.asIntN(8, v)) & 0xff : v & 0xff;
+      out[i] =
+        typeof v === "bigint" ? Number(BigInt.asIntN(8, v)) & 0xff : v & 0xff;
     }
     return out;
   }
@@ -555,13 +590,21 @@ export class IntArray extends _ArrayTag {
     const view = new DataView(out.buffer);
     for (let i = 0; i < values.length; i++) {
       const v = values[i];
-      view.setInt32(i * 4, typeof v === "bigint" ? Number(BigInt.asIntN(32, v)) : v, false);
+      view.setInt32(
+        i * 4,
+        typeof v === "bigint" ? Number(BigInt.asIntN(32, v)) : v,
+        false,
+      );
     }
     return out;
   }
 
   protected unpackValues(): number[] {
-    const view = new DataView(this.storage.buffer, this.storage.byteOffset, this.storage.byteLength);
+    const view = new DataView(
+      this.storage.buffer,
+      this.storage.byteOffset,
+      this.storage.byteLength,
+    );
     const out: number[] = new Array(this.storage.length / 4);
     for (let i = 0; i < out.length; i++) {
       out[i] = view.getInt32(i * 4, false);
@@ -570,11 +613,19 @@ export class IntArray extends _ArrayTag {
   }
 
   protected elementAtIndex(i: number): bigint {
-    const view = new DataView(this.storage.buffer, this.storage.byteOffset, this.storage.byteLength);
+    const view = new DataView(
+      this.storage.buffer,
+      this.storage.byteOffset,
+      this.storage.byteLength,
+    );
     return BigInt.asUintN(32, BigInt(view.getInt32(i * 4, false)));
   }
   protected setElementAtIndex(i: number, value: bigint): void {
-    const view = new DataView(this.storage.buffer, this.storage.byteOffset, this.storage.byteLength);
+    const view = new DataView(
+      this.storage.buffer,
+      this.storage.byteOffset,
+      this.storage.byteLength,
+    );
     view.setInt32(i * 4, Number(BigInt.asIntN(32, value)), false);
   }
 
@@ -641,7 +692,11 @@ export class LongArray extends _ArrayTag {
   }
 
   protected unpackValues(): bigint[] {
-    const view = new DataView(this.storage.buffer, this.storage.byteOffset, this.storage.byteLength);
+    const view = new DataView(
+      this.storage.buffer,
+      this.storage.byteOffset,
+      this.storage.byteLength,
+    );
     const out: bigint[] = new Array(this.storage.length / 8);
     for (let i = 0; i < out.length; i++) {
       out[i] = view.getBigInt64(i * 8, false);
@@ -650,11 +705,19 @@ export class LongArray extends _ArrayTag {
   }
 
   protected elementAtIndex(i: number): bigint {
-    const view = new DataView(this.storage.buffer, this.storage.byteOffset, this.storage.byteLength);
+    const view = new DataView(
+      this.storage.buffer,
+      this.storage.byteOffset,
+      this.storage.byteLength,
+    );
     return view.getBigUint64(i * 8, false);
   }
   protected setElementAtIndex(i: number, value: bigint): void {
-    const view = new DataView(this.storage.buffer, this.storage.byteOffset, this.storage.byteLength);
+    const view = new DataView(
+      this.storage.buffer,
+      this.storage.byteOffset,
+      this.storage.byteLength,
+    );
     view.setBigUint64(i * 8, BigInt.asUintN(64, value), false);
   }
 
@@ -716,7 +779,8 @@ export class NbtList<T extends NbtTag = NbtTag> extends NbtTag {
   toBytes(): Uint8Array {
     const itemTagTypeId =
       this.items.length > 0
-        ? ((this.items[0].constructor as unknown as { tagTypeId: number }).tagTypeId ?? 0)
+        ? ((this.items[0].constructor as unknown as { tagTypeId: number })
+            .tagTypeId ?? 0)
         : 0;
     const w = new BinaryWriter()
       .writeInt8(itemTagTypeId)
@@ -747,7 +811,10 @@ export { NbtList as List };
 
 // ── Compound tag ──────────────────────────────────────────────────────────
 
-export type CompoundEntries<T extends NbtTag = NbtTag> = Record<string, T> | Map<string, T> | Iterable<[string, T]>;
+export type CompoundEntries<T extends NbtTag = NbtTag> =
+  | Record<string, T>
+  | Map<string, T>
+  | Iterable<[string, T]>;
 
 export class Compound<T extends NbtTag = NbtTag> extends NbtTag {
   readonly entries: Map<string, T>;
@@ -820,7 +887,8 @@ export class Compound<T extends NbtTag = NbtTag> extends NbtTag {
   toBytes(): Uint8Array {
     const w = new BinaryWriter();
     for (const [key, value] of this.entries) {
-      const tagTypeId = (value.constructor as unknown as { tagTypeId: number }).tagTypeId;
+      const tagTypeId = (value.constructor as unknown as { tagTypeId: number })
+        .tagTypeId;
       w.writeInt8(tagTypeId)
         .writeBytes(new StringTag(key).toBytes())
         .writeBytes(value.toBytes());
@@ -851,15 +919,24 @@ registerTagType(TagId.Compound, Compound);
 export class Named extends Compound {
   readonly name: string;
 
-  constructor(initial: Record<string, NbtTag | Record<string, NbtTag>> | Map<string, NbtTag | Record<string, NbtTag>> | Iterable<[string, NbtTag | Record<string, NbtTag>]>) {
+  constructor(
+    initial:
+      | Record<string, NbtTag | Record<string, NbtTag>>
+      | Map<string, NbtTag | Record<string, NbtTag>>
+      | Iterable<[string, NbtTag | Record<string, NbtTag>]>,
+  ) {
     // initial is { name: Compound | Record<string, NbtTag> } with exactly one key
     let entries: [string, NbtTag | Record<string, NbtTag>][];
     if (initial instanceof Map) {
       entries = Array.from(initial.entries());
     } else if (Symbol.iterator in (initial as object)) {
-      entries = Array.from(initial as Iterable<[string, NbtTag | Record<string, NbtTag>]>);
+      entries = Array.from(
+        initial as Iterable<[string, NbtTag | Record<string, NbtTag>]>,
+      );
     } else {
-      entries = Object.entries(initial as Record<string, NbtTag | Record<string, NbtTag>>);
+      entries = Object.entries(
+        initial as Record<string, NbtTag | Record<string, NbtTag>>,
+      );
     }
 
     if (entries.length !== 1) {
@@ -869,7 +946,10 @@ export class Named extends Compound {
     }
 
     const [name, payload] = entries[0];
-    const compound = payload instanceof Compound ? payload : new Compound(payload as Record<string, NbtTag>);
+    const compound =
+      payload instanceof Compound
+        ? payload
+        : new Compound(payload as Record<string, NbtTag>);
     super(compound.entries);
     this.name = name;
   }
@@ -929,7 +1009,9 @@ function hasToCompound(value: unknown): value is HasToCompound {
   );
 }
 
-export function modelToCompound(value: HasToCompound | Record<string, unknown>): Compound {
+export function modelToCompound(
+  value: HasToCompound | Record<string, unknown>,
+): Compound {
   if (hasToCompound(value)) {
     return value.toCompound();
   }
@@ -942,7 +1024,9 @@ export function modelToCompound(value: HasToCompound | Record<string, unknown>):
     } else if (typeof v === "object" && v !== null) {
       entries.set(k, modelToCompound(v as Record<string, unknown>));
     } else {
-      throw new TypeError(`Cannot convert value at key ${JSON.stringify(k)} to NBT tag`);
+      throw new TypeError(
+        `Cannot convert value at key ${JSON.stringify(k)} to NBT tag`,
+      );
     }
   }
   return new Compound(entries);
@@ -955,7 +1039,11 @@ const GZIP_MAGIC_1 = 0x8b;
 
 export function loadNbtFromBytes(bytes: Uint8Array): Named {
   let data = bytes;
-  if (data.length >= 2 && data[0] === GZIP_MAGIC_0 && data[1] === GZIP_MAGIC_1) {
+  if (
+    data.length >= 2 &&
+    data[0] === GZIP_MAGIC_0 &&
+    data[1] === GZIP_MAGIC_1
+  ) {
     data = gunzipSync(data);
   }
   return Named.fromBytes(data) as Named;

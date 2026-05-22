@@ -29,11 +29,19 @@ export function getVersion(versionString: string): MinecraftVersion {
   return v;
 }
 
-export function versionsEqual(a: MinecraftVersion, b: MinecraftVersion): boolean {
-  return a.platform === b.platform && a.versionNumber.join(".") === b.versionNumber.join(".");
+export function versionsEqual(
+  a: MinecraftVersion,
+  b: MinecraftVersion,
+): boolean {
+  return (
+    a.platform === b.platform &&
+    a.versionNumber.join(".") === b.versionNumber.join(".")
+  );
 }
 
-export function getVersionFromDataVersion(dataVersion: number): MinecraftVersion {
+export function getVersionFromDataVersion(
+  dataVersion: number,
+): MinecraftVersion {
   for (const v of Object.values(KNOWN_VERSIONS)) {
     if (v.dataVersion === dataVersion) return v;
   }

@@ -74,7 +74,9 @@ export interface VersionDiff {
       {
         added: Readonly<Record<string, readonly string[]>>; // prop → allowed values in `to`
         removed: readonly string[]; // prop names dropped in `to`
-        valueRenames: Readonly<Record<string, Readonly<Record<string, string>>>>; // prop → {old → new}
+        valueRenames: Readonly<
+          Record<string, Readonly<Record<string, string>>>
+        >; // prop → {old → new}
       }
     >
   >;

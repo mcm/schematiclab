@@ -9,11 +9,7 @@ import {
   VERSION_DIFFS,
 } from "./block-translations.generated";
 import { FORGE_1_12_FLATTEN } from "./forge-1.12-flatten.generated";
-import {
-  ANCHOR_VERSIONS,
-  type AnchorVersion,
-  type VersionDiff,
-} from "./types";
+import { ANCHOR_VERSIONS, type AnchorVersion, type VersionDiff } from "./types";
 
 export interface TranslateOptions {
   /** Invoked with a human-readable message when a translation loses info
@@ -377,8 +373,10 @@ export function fixupDoors(matrix: Map<string, Block>): void {
     if (!block) continue;
     matrix.set(
       key,
-      new Block(block.pos, new BlockState({ Name: block.state.Name, Properties: props })),
+      new Block(
+        block.pos,
+        new BlockState({ Name: block.state.Name, Properties: props }),
+      ),
     );
   }
 }
-

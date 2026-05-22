@@ -33,18 +33,24 @@ export abstract class AbstractPos<T extends number | bigint> {
     // the same primitive type. We cast through `unknown` to satisfy TS, which
     // can't narrow the union to a single arithmetic operator signature.
     return this.make(
-      ((this.x as unknown as number) + (ox as unknown as number)) as unknown as T,
-      ((this.y as unknown as number) + (oy as unknown as number)) as unknown as T,
-      ((this.z as unknown as number) + (oz as unknown as number)) as unknown as T,
+      ((this.x as unknown as number) +
+        (ox as unknown as number)) as unknown as T,
+      ((this.y as unknown as number) +
+        (oy as unknown as number)) as unknown as T,
+      ((this.z as unknown as number) +
+        (oz as unknown as number)) as unknown as T,
     );
   }
 
   sub(other: AbstractPos<T> | PosTuple<T>): this {
     const [ox, oy, oz] = other instanceof AbstractPos ? other.astuple() : other;
     return this.make(
-      ((this.x as unknown as number) - (ox as unknown as number)) as unknown as T,
-      ((this.y as unknown as number) - (oy as unknown as number)) as unknown as T,
-      ((this.z as unknown as number) - (oz as unknown as number)) as unknown as T,
+      ((this.x as unknown as number) -
+        (ox as unknown as number)) as unknown as T,
+      ((this.y as unknown as number) -
+        (oy as unknown as number)) as unknown as T,
+      ((this.z as unknown as number) -
+        (oz as unknown as number)) as unknown as T,
     );
   }
 
@@ -69,7 +75,11 @@ export class BlockPos extends AbstractPos<number> {
   static ORIGIN: BlockPos;
 
   protected make(x: number, y: number, z: number): this {
-    return new (this.constructor as new (x: number, y: number, z: number) => this)(x, y, z);
+    return new (this.constructor as new (
+      x: number,
+      y: number,
+      z: number,
+    ) => this)(x, y, z);
   }
 
   /** Construct from a `[x, y, z]` tuple — mirrors `BlockPos.model_validate((0,0,0))`. */
@@ -96,15 +106,14 @@ export class BlockState {
   static AIR_BLOCK: BlockState;
 
   constructor(opts: BlockStateOptions) {
-    this.Name = opts.Name instanceof nbt.StringTag ? opts.Name.value : opts.Name;
+    this.Name =
+      opts.Name instanceof nbt.StringTag ? opts.Name.value : opts.Name;
 
     const props = new Map<string, string>();
     const src = opts.Properties;
     if (src) {
       const entries =
-        src instanceof Map
-          ? Array.from(src.entries())
-          : Object.entries(src);
+        src instanceof Map ? Array.from(src.entries()) : Object.entries(src);
       for (const [k, v] of entries) {
         props.set(k, v instanceof nbt.StringTag ? v.value : v);
       }
@@ -142,7 +151,9 @@ export class BlockState {
       return this.Name;
     }
     const keys = Array.from(this.Properties.keys()).sort();
-    const propsStr = keys.map((k) => `${k}=${this.Properties.get(k)}`).join(",");
+    const propsStr = keys
+      .map((k) => `${k}=${this.Properties.get(k)}`)
+      .join(",");
     return `${this.Name}[${propsStr}]`;
   }
 

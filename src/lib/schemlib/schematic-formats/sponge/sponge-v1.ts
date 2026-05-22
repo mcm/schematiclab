@@ -13,11 +13,7 @@ import * as nbt from "../../nbt";
 import { Block, BlockPos, BlockState } from "../../blocks";
 import { Entity } from "../../entities";
 import { AbstractRegion, AbstractSchematic } from "../abstract";
-import {
-  MinecraftVersion,
-  getVersion,
-  posKey,
-} from "../version-mapping";
+import { MinecraftVersion, getVersion, posKey } from "../version-mapping";
 
 // ── BlockEntity shape translation ──────────────────────────────────────────
 //
@@ -51,7 +47,9 @@ function chunkShapeToV1TileEntity(c: nbt.Compound): nbt.Compound | null {
   const idTag = c.get("id") ?? c.get("Id");
   if (!(idTag instanceof nbt.StringTag)) return null;
 
-  let x = 0, y = 0, z = 0;
+  let x = 0,
+    y = 0,
+    z = 0;
   const xt = c.get("x");
   const yt = c.get("y");
   const zt = c.get("z");
@@ -63,7 +61,8 @@ function chunkShapeToV1TileEntity(c: nbt.Compound): nbt.Compound | null {
   out.set("Id", new nbt.StringTag(idTag.value));
   out.set("Pos", new nbt.IntArray([x, y, z]));
   for (const [k, v] of c.entries) {
-    if (k === "id" || k === "Id" || k === "x" || k === "y" || k === "z") continue;
+    if (k === "id" || k === "Id" || k === "x" || k === "y" || k === "z")
+      continue;
     out.set(k, v);
   }
   return out;
@@ -190,8 +189,7 @@ export class SpongeSchematicV1
   // ── Load / dump ────────────────────────────────────────────────────────
 
   static schematicLoad(obj: string | Uint8Array): SpongeSchematicV1 {
-    const bytes =
-      typeof obj === "string" ? new TextEncoder().encode(obj) : obj;
+    const bytes = typeof obj === "string" ? new TextEncoder().encode(obj) : obj;
     const named = nbt.loadNbtFromBytes(bytes);
     return SpongeSchematicV1.fromCompound(named);
   }
@@ -480,7 +478,8 @@ export class SpongeSchematicV1
     const blocks = new Map<number, number>();
     for (const block of sourceBlocks) {
       const colon = block.state.Name.indexOf(":");
-      const modId = colon === -1 ? block.state.Name : block.state.Name.slice(0, colon);
+      const modId =
+        colon === -1 ? block.state.Name : block.state.Name.slice(0, colon);
       if (modId !== "minecraft" && !requiredMods.includes(modId)) {
         requiredMods.push(modId);
       }
@@ -489,7 +488,8 @@ export class SpongeSchematicV1
         sourcePalette.push(block.state);
         stateIdx = sourcePalette.length - 1;
       }
-      const i = block.pos.x + block.pos.z * width + block.pos.y * length * width;
+      const i =
+        block.pos.x + block.pos.z * width + block.pos.y * length * width;
       blocks.set(i, stateIdx);
     }
 

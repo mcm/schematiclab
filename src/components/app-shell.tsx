@@ -1,6 +1,10 @@
 "use client";
 
-import { ToastProvider, ToastViewport, TooltipProvider } from "@iamthemcmaster/ui";
+import {
+  ToastProvider,
+  ToastViewport,
+  TooltipProvider,
+} from "@iamthemcmaster/ui";
 import { SonnerToaster } from "@iamthemcmaster/ui";
 
 export function AppShell({ children }: { children: React.ReactNode }) {

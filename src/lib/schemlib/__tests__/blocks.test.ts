@@ -12,7 +12,8 @@ const genInt = (min = -128, max = 127): number =>
 const genAlpha = (length = 10): string => {
   const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
   let out = "";
-  for (let i = 0; i < length; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  for (let i = 0; i < length; i++)
+    out += chars[Math.floor(Math.random() * chars.length)];
   return out;
 };
 
@@ -33,11 +34,15 @@ describe("Block", () => {
 
 describe("BlockPos", () => {
   it("ORIGIN equals (0,0,0)", () => {
-    expect(blocks.BlockPos.ORIGIN.equals(new blocks.BlockPos(0, 0, 0))).toBe(true);
+    expect(blocks.BlockPos.ORIGIN.equals(new blocks.BlockPos(0, 0, 0))).toBe(
+      true,
+    );
   });
 
   it("constructs from a tuple", () => {
-    expect(blocks.BlockPos.from([0, 0, 0]).equals(new blocks.BlockPos(0, 0, 0))).toBe(true);
+    expect(
+      blocks.BlockPos.from([0, 0, 0]).equals(new blocks.BlockPos(0, 0, 0)),
+    ).toBe(true);
   });
 
   it("adds another BlockPos", () => {
@@ -50,7 +55,11 @@ describe("BlockPos", () => {
   it("adds a tuple", () => {
     const p1 = new blocks.BlockPos(genInt(), genInt(), genInt());
     const p2: [number, number, number] = [genInt(), genInt(), genInt()];
-    const expected = new blocks.BlockPos(p1.x + p2[0], p1.y + p2[1], p1.z + p2[2]);
+    const expected = new blocks.BlockPos(
+      p1.x + p2[0],
+      p1.y + p2[1],
+      p1.z + p2[2],
+    );
     expect(p1.add(p2).equals(expected)).toBe(true);
   });
 
@@ -64,7 +73,11 @@ describe("BlockPos", () => {
   it("subtracts a tuple", () => {
     const p1 = new blocks.BlockPos(genInt(), genInt(), genInt());
     const p2: [number, number, number] = [genInt(), genInt(), genInt()];
-    const expected = new blocks.BlockPos(p1.x - p2[0], p1.y - p2[1], p1.z - p2[2]);
+    const expected = new blocks.BlockPos(
+      p1.x - p2[0],
+      p1.y - p2[1],
+      p1.z - p2[2],
+    );
     expect(p1.sub(p2).equals(expected)).toBe(true);
   });
 
@@ -141,15 +154,21 @@ describe("BlockState.fromString", () => {
 });
 
 describe("BlockState.toString", () => {
-  it.each(blockstateStrings)("serializes '$str'", ({ str, expected, expectedStr }) => {
-    expect(expected.toString()).toBe(expectedStr ?? str);
-  });
+  it.each(blockstateStrings)(
+    "serializes '$str'",
+    ({ str, expected, expectedStr }) => {
+      expect(expected.toString()).toBe(expectedStr ?? str);
+    },
+  );
 });
 
 describe("BlockState.equals", () => {
-  it.each(blockstateStrings)("equals its source string '$str'", ({ str, expected }) => {
-    expect(expected.equals(str)).toBe(true);
-  });
+  it.each(blockstateStrings)(
+    "equals its source string '$str'",
+    ({ str, expected }) => {
+      expect(expected.equals(str)).toBe(true);
+    },
+  );
 });
 
 describe("BlockState.fromString invalid input", () => {
@@ -183,7 +202,9 @@ describe("BlockState as compound", () => {
   });
 
   it("Name is a String tag when constructed from a String tag", () => {
-    const airBlock = new blocks.BlockState({ Name: new nbt.StringTag("minecraft:air") });
+    const airBlock = new blocks.BlockState({
+      Name: new nbt.StringTag("minecraft:air"),
+    });
     const compound = nbt.modelToCompound(airBlock);
     expect(compound.get("Name")).toBeInstanceOf(nbt.StringTag);
   });

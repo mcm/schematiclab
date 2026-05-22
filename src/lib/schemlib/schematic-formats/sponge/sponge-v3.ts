@@ -114,7 +114,9 @@ function chunkShapeToV3BlockEntity(c: nbt.Compound): nbt.Compound | null {
   const idTag = c.get("id") ?? c.get("Id");
   if (!(idTag instanceof nbt.StringTag)) return null;
 
-  let x = 0, y = 0, z = 0;
+  let x = 0,
+    y = 0,
+    z = 0;
   const xt = c.get("x");
   const yt = c.get("y");
   const zt = c.get("z");
@@ -124,7 +126,8 @@ function chunkShapeToV3BlockEntity(c: nbt.Compound): nbt.Compound | null {
 
   const data = new nbt.Compound();
   for (const [k, v] of c.entries) {
-    if (k === "id" || k === "Id" || k === "x" || k === "y" || k === "z") continue;
+    if (k === "id" || k === "Id" || k === "x" || k === "y" || k === "z")
+      continue;
     data.set(k, v);
   }
 
@@ -200,7 +203,9 @@ export class SpongeSchematicV3
     const named = nbt.loadNbtFromBytes(bytes);
     const inner = named.get("Schematic");
     if (!(inner instanceof nbt.Compound)) {
-      throw new TypeError("Sponge v3: root must contain a 'Schematic' compound");
+      throw new TypeError(
+        "Sponge v3: root must contain a 'Schematic' compound",
+      );
     }
     return SpongeSchematicV3.fromCompound(inner);
   }
@@ -312,9 +317,18 @@ export class SpongeSchematicV3
     entries.set("Metadata", this.Metadata.toCompound());
     // NBT Short is signed; unsigned-short values up to 65535 round-trip via
     // two's complement reinterpretation.
-    entries.set("Width", new nbt.Short(this.Width > 0x7fff ? this.Width - 0x10000 : this.Width));
-    entries.set("Height", new nbt.Short(this.Height > 0x7fff ? this.Height - 0x10000 : this.Height));
-    entries.set("Length", new nbt.Short(this.Length > 0x7fff ? this.Length - 0x10000 : this.Length));
+    entries.set(
+      "Width",
+      new nbt.Short(this.Width > 0x7fff ? this.Width - 0x10000 : this.Width),
+    );
+    entries.set(
+      "Height",
+      new nbt.Short(this.Height > 0x7fff ? this.Height - 0x10000 : this.Height),
+    );
+    entries.set(
+      "Length",
+      new nbt.Short(this.Length > 0x7fff ? this.Length - 0x10000 : this.Length),
+    );
     entries.set("Offset", new nbt.IntArray(this.Offset));
 
     const blocks = new Map<string, nbt.NbtTag>();
@@ -479,7 +493,8 @@ export class SpongeSchematicV3
     const indices = new Map<number, number>();
     for (const block of sourceBlocks) {
       const colon = block.state.Name.indexOf(":");
-      const modId = colon === -1 ? block.state.Name : block.state.Name.slice(0, colon);
+      const modId =
+        colon === -1 ? block.state.Name : block.state.Name.slice(0, colon);
       if (modId !== "minecraft" && !requiredMods.includes(modId)) {
         requiredMods.push(modId);
       }

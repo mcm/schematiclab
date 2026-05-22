@@ -1,10 +1,7 @@
 // Barrel re-export for the schematic-formats abstract layer.
 
 export { AbstractRegion, AbstractSchematic } from "./abstract";
-export {
-  IntermediateRegion,
-  IntermediateSchematic,
-} from "./intermediate";
+export { IntermediateRegion, IntermediateSchematic } from "./intermediate";
 export {
   KNOWN_VERSIONS,
   MinecraftVersionMapper,

@@ -60,7 +60,11 @@ function readPosTriple(tag: nbt.NbtTag | undefined): [number, number, number] {
     return [coord(0), coord(1), coord(2)];
   }
   if (tag instanceof nbt.Compound) {
-    return [readInt(tag.get("x")), readInt(tag.get("y")), readInt(tag.get("z"))];
+    return [
+      readInt(tag.get("x")),
+      readInt(tag.get("y")),
+      readInt(tag.get("z")),
+    ];
   }
   return [0, 0, 0];
 }
@@ -77,7 +81,9 @@ function blockStateFromCompound(c: nbt.Compound): BlockState {
   return new BlockState({ Name: name, Properties: props });
 }
 
-function intListFromTriple(triple: readonly [number, number, number]): nbt.NbtList<nbt.Int> {
+function intListFromTriple(
+  triple: readonly [number, number, number],
+): nbt.NbtList<nbt.Int> {
   return new nbt.NbtList<nbt.Int>([
     new nbt.Int(triple[0]),
     new nbt.Int(triple[1]),
@@ -85,7 +91,9 @@ function intListFromTriple(triple: readonly [number, number, number]): nbt.NbtLi
   ]);
 }
 
-function floatListFromTriple(triple: readonly [number, number, number]): nbt.NbtList<nbt.Float> {
+function floatListFromTriple(
+  triple: readonly [number, number, number],
+): nbt.NbtList<nbt.Float> {
   return new nbt.NbtList<nbt.Float>([
     new nbt.Float(triple[0]),
     new nbt.Float(triple[1]),
@@ -157,7 +165,8 @@ export class StructureSchematic extends AbstractRegion {
     const palette: BlockState[] = [];
     if (paletteTag instanceof nbt.NbtList) {
       for (const item of paletteTag.items) {
-        if (item instanceof nbt.Compound) palette.push(blockStateFromCompound(item));
+        if (item instanceof nbt.Compound)
+          palette.push(blockStateFromCompound(item));
       }
     }
 
@@ -213,7 +222,9 @@ export class StructureSchematic extends AbstractRegion {
   ): StructureSchematic {
     const regions = schematic.getRegions();
     if (regions.length > 1) {
-      throw new Error(`Too many regions in source schematic (${regions.length})`);
+      throw new Error(
+        `Too many regions in source schematic (${regions.length})`,
+      );
     }
     const region = schematic.getRegion(0);
 
@@ -223,12 +234,16 @@ export class StructureSchematic extends AbstractRegion {
     let sourceEntities: Entity[];
     let sourceTileEntityMatrix: Map<string, Entity>;
 
-    if (targetVersion !== null && !versionsEqual(targetVersion, region.getMinecraftVersion())) {
+    if (
+      targetVersion !== null &&
+      !versionsEqual(targetVersion, region.getMinecraftVersion())
+    ) {
       dataVersion = targetVersion.dataVersion;
       sourcePalette = region.getTranslatedPalette(targetVersion);
       sourceBlocks = region.getTranslatedBlocks(targetVersion);
       sourceEntities = region.getTranslatedEntities(targetVersion);
-      sourceTileEntityMatrix = region.getTranslatedTileEntityMatrix(targetVersion);
+      sourceTileEntityMatrix =
+        region.getTranslatedTileEntityMatrix(targetVersion);
     } else {
       dataVersion = targetVersion?.dataVersion ?? schematic.getDataVersion();
       sourcePalette = region.getPalette();
@@ -317,7 +332,9 @@ export class StructureSchematic extends AbstractRegion {
     for (const block of this.blockRecords) {
       const state = this.palette[block.state];
       if (!state) {
-        throw new Error(`Block at ${posKey(block.pos)} references missing palette index ${block.state}`);
+        throw new Error(
+          `Block at ${posKey(block.pos)} references missing palette index ${block.state}`,
+        );
       }
       matrix.set(posKey(block.pos), new Block(block.pos, state));
     }
@@ -350,7 +367,10 @@ export class StructureSchematic extends AbstractRegion {
     const blocksList = new nbt.NbtList<nbt.Compound>(
       this.blockRecords.map((block) => {
         const entries = new Map<string, nbt.NbtTag>();
-        entries.set("pos", intListFromTriple([block.pos.x, block.pos.y, block.pos.z]));
+        entries.set(
+          "pos",
+          intListFromTriple([block.pos.x, block.pos.y, block.pos.z]),
+        );
         entries.set("state", new nbt.Int(block.state));
         if (block.nbt) entries.set("nbt", block.nbt.toCompound());
         return new nbt.Compound(entries);
@@ -362,12 +382,17 @@ export class StructureSchematic extends AbstractRegion {
     );
 
     const entitiesList = new nbt.NbtList<nbt.Compound>(
-      this.entityRecords.map((e) =>
-        new nbt.Compound({
-          blockPos: intListFromTriple([e.blockPos.x, e.blockPos.y, e.blockPos.z]),
-          nbt: e.nbt.toCompound(),
-          pos: floatListFromTriple([e.pos.x, e.pos.y, e.pos.z]),
-        }),
+      this.entityRecords.map(
+        (e) =>
+          new nbt.Compound({
+            blockPos: intListFromTriple([
+              e.blockPos.x,
+              e.blockPos.y,
+              e.blockPos.z,
+            ]),
+            nbt: e.nbt.toCompound(),
+            pos: floatListFromTriple([e.pos.x, e.pos.y, e.pos.z]),
+          }),
       ),
     );
 

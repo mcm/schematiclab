@@ -18,7 +18,13 @@ import {
   Avatar,
   AvatarFallback,
 } from "@iamthemcmaster/ui";
-import { IconBell, IconSearch, IconChevronDown, IconSun, IconMoon } from "@tabler/icons-react";
+import {
+  IconBell,
+  IconSearch,
+  IconChevronDown,
+  IconSun,
+  IconMoon,
+} from "@tabler/icons-react";
 
 interface AppHeaderProps {
   breadcrumbs?: { label: string; href?: string }[];
@@ -34,10 +40,12 @@ function useTheme() {
   }, []);
 
   const toggle = React.useCallback(() => {
-    setTheme(prev => {
+    setTheme((prev) => {
       const next = prev === "light" ? "dark" : "light";
       document.documentElement.setAttribute("data-theme", next);
-      try { localStorage.setItem("mcmaster-theme", next); } catch (_) {}
+      try {
+        localStorage.setItem("mcmaster-theme", next);
+      } catch (_) {}
       return next;
     });
   }, []);
@@ -72,7 +80,9 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
               <React.Fragment key={i}>
                 <BreadcrumbItem>
                   {i < breadcrumbs.length - 1 ? (
-                    <BreadcrumbLink href={crumb.href ?? "#"}>{crumb.label}</BreadcrumbLink>
+                    <BreadcrumbLink href={crumb.href ?? "#"}>
+                      {crumb.label}
+                    </BreadcrumbLink>
                   ) : (
                     <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
                   )}
@@ -85,7 +95,14 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
       )}
 
       {/* Right controls */}
-      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", marginLeft: "auto" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "var(--space-2)",
+          marginLeft: "auto",
+        }}
+      >
         <Button
           variant="ghost"
           size="icon"
@@ -119,19 +136,46 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
           />
         </div>
 
-        <div style={{ width: 1, height: 20, background: "var(--border-subtle)", margin: "0 var(--space-1)" }} />
+        <div
+          style={{
+            width: 1,
+            height: 20,
+            background: "var(--border-subtle)",
+            margin: "0 var(--space-1)",
+          }}
+        />
 
         {/* User menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" style={{ gap: "var(--space-2)", paddingRight: "var(--space-2)" }}>
+            <Button
+              variant="ghost"
+              size="sm"
+              style={{ gap: "var(--space-2)", paddingRight: "var(--space-2)" }}
+            >
               <Avatar style={{ width: 24, height: 24 }}>
-                <AvatarFallback style={{ fontSize: 10, background: "var(--bg-raised)", color: "var(--text-secondary)" }}>
+                <AvatarFallback
+                  style={{
+                    fontSize: 10,
+                    background: "var(--bg-raised)",
+                    color: "var(--text-secondary)",
+                  }}
+                >
                   JD
                 </AvatarFallback>
               </Avatar>
-              <span style={{ fontSize: "var(--text-sm)", color: "var(--text-secondary)" }}>Jane Doe</span>
-              <IconChevronDown size={12} style={{ color: "var(--text-tertiary)" }} />
+              <span
+                style={{
+                  fontSize: "var(--text-sm)",
+                  color: "var(--text-secondary)",
+                }}
+              >
+                Jane Doe
+              </span>
+              <IconChevronDown
+                size={12}
+                style={{ color: "var(--text-tertiary)" }}
+              />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" style={{ minWidth: 180 }}>
@@ -140,7 +184,9 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
             <DropdownMenuItem>Profile</DropdownMenuItem>
             <DropdownMenuItem>Billing</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem style={{ color: "var(--error)" }}>Sign out</DropdownMenuItem>
+            <DropdownMenuItem style={{ color: "var(--error)" }}>
+              Sign out
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

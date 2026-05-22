@@ -13,11 +13,7 @@ import { Block, BlockPos, BlockState } from "../../blocks";
 import { Entity } from "../../entities";
 import { fromSnbt, toSnbt } from "../../snbt";
 import { AbstractRegion, AbstractSchematic } from "../abstract";
-import {
-  MinecraftVersion,
-  getVersion,
-  posKey,
-} from "../version-mapping";
+import { MinecraftVersion, getVersion, posKey } from "../version-mapping";
 import { posToUppercaseCompound, readUppercasePos } from "./common";
 
 // ── Helpers ───────────────────────────────────────────────────────────────

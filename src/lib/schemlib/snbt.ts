@@ -69,14 +69,29 @@ class SnbtParser {
         this.pos++;
         const esc = this.peek();
         switch (esc) {
-          case '"': out += '"'; break;
-          case "'": out += "'"; break;
-          case "\\": out += "\\"; break;
-          case "n": out += "\n"; break;
-          case "r": out += "\r"; break;
-          case "t": out += "\t"; break;
-          case "/": out += "/"; break;
-          default: out += esc;
+          case '"':
+            out += '"';
+            break;
+          case "'":
+            out += "'";
+            break;
+          case "\\":
+            out += "\\";
+            break;
+          case "n":
+            out += "\n";
+            break;
+          case "r":
+            out += "\r";
+            break;
+          case "t":
+            out += "\t";
+            break;
+          case "/":
+            out += "/";
+            break;
+          default:
+            out += esc;
         }
         this.pos++;
       } else {
@@ -120,17 +135,20 @@ class SnbtParser {
 
     switch (suffix.toUpperCase()) {
       case "B":
-        if (isFloat) throw new Error(`Invalid byte literal with decimal at ${start}`);
+        if (isFloat)
+          throw new Error(`Invalid byte literal with decimal at ${start}`);
         tagType = "byte";
         consumedSuffix = true;
         break;
       case "S":
-        if (isFloat) throw new Error(`Invalid short literal with decimal at ${start}`);
+        if (isFloat)
+          throw new Error(`Invalid short literal with decimal at ${start}`);
         tagType = "short";
         consumedSuffix = true;
         break;
       case "L":
-        if (isFloat) throw new Error(`Invalid long literal with decimal at ${start}`);
+        if (isFloat)
+          throw new Error(`Invalid long literal with decimal at ${start}`);
         tagType = "long";
         consumedSuffix = true;
         break;
@@ -167,7 +185,10 @@ class SnbtParser {
     this.expect("[");
     this.skipWs();
     // Array form: "[B;...]" / "[I;...]" / "[L;...]" — check 2 chars ahead.
-    if ((this.peek(0) === "B" || this.peek(0) === "I" || this.peek(0) === "L") && this.peek(1) === ";") {
+    if (
+      (this.peek(0) === "B" || this.peek(0) === "I" || this.peek(0) === "L") &&
+      this.peek(1) === ";"
+    ) {
       const arrayKind = this.peek(0);
       this.pos += 2; // consume "B;" / "I;" / "L;"
       const items: Array<number | bigint> = [];
@@ -185,7 +206,9 @@ class SnbtParser {
           if (arrayKind === "L" && !(itemTag instanceof nbt.Long)) {
             throw new Error(`LongArray item must be Long`);
           }
-          items.push((itemTag as nbt.Byte | nbt.Int | nbt.Long).value as number | bigint);
+          items.push(
+            (itemTag as nbt.Byte | nbt.Int | nbt.Long).value as number | bigint,
+          );
           this.skipWs();
           if (this.peek() !== ",") break;
           this.pos++; // consume comma
@@ -253,7 +276,9 @@ export function fromSnbt(input: string): nbt.NbtTag {
   const value = parser.parseValue();
   parser.skipWs();
   if (!parser.eof) {
-    throw new Error(`Unexpected trailing input at ${parser.pos}: ${JSON.stringify(input.slice(parser.pos))}`);
+    throw new Error(
+      `Unexpected trailing input at ${parser.pos}: ${JSON.stringify(input.slice(parser.pos))}`,
+    );
   }
   return value;
 }

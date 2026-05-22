@@ -19,4 +19,3 @@ Canonical file extensions and production-availability rules for every schematic 
 - **Detection ids** come from `src/lib/schemlib/schematic-formats/detect.ts` (`detectSchematicType`). Treat these strings as stable identifiers throughout the app.
 - **schemlib JSON is dev-only.** The `.json` intermediate format is useful for inspection and debugging but is not a user-facing output. It MUST be hidden from any production UI dropdown. Detection of `.json` input MAY still be supported in production (so users can re-import an exported intermediate), but production builds MUST NOT offer it as an output choice.
 - **Filename derivation.** Strip the original extension from the input filename, then append the canonical extension above. (E.g. `castle.litematic` exported as Sponge → `castle.schem`.)
-

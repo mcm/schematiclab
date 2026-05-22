@@ -10,7 +10,12 @@ import { Entity } from "../entities";
 import * as snbt from "../snbt";
 import * as nbt from "../nbt";
 import { AbstractRegion, AbstractSchematic } from "./abstract";
-import { MinecraftVersion, getVersion, posKey, versionsEqual } from "./version-mapping";
+import {
+  MinecraftVersion,
+  getVersion,
+  posKey,
+  versionsEqual,
+} from "./version-mapping";
 
 // ── IntermediateRegion ────────────────────────────────────────────────────
 
@@ -79,20 +84,28 @@ export class IntermediateRegion extends AbstractRegion {
         for (const [k, v] of block.state.Properties) propsObj[k] = v;
         block.state = new BlockState({ Name: newName, Properties: propsObj });
       } else if (blockMapping[block.state.toString()] !== undefined) {
-        block.state = BlockState.fromString(blockMapping[block.state.toString()]);
+        block.state = BlockState.fromString(
+          blockMapping[block.state.toString()],
+        );
       }
       remapped.push(block);
     }
     this.blocks = remapped;
   }
 
-  static fromRegion(region: AbstractRegion, targetVersion: MinecraftVersion | null): IntermediateRegion {
+  static fromRegion(
+    region: AbstractRegion,
+    targetVersion: MinecraftVersion | null,
+  ): IntermediateRegion {
     let blocks: Block[];
     let entities: Entity[];
     let tileEntities: Entity[];
     let minecraftVersion: MinecraftVersion;
 
-    if (targetVersion !== null && !versionsEqual(targetVersion, region.getMinecraftVersion())) {
+    if (
+      targetVersion !== null &&
+      !versionsEqual(targetVersion, region.getMinecraftVersion())
+    ) {
       blocks = region.getTranslatedBlocks(targetVersion);
       entities = region.getTranslatedEntities(targetVersion);
       tileEntities = region.getTranslatedTileEntities(targetVersion);
@@ -182,7 +195,11 @@ function regionToJson(region: IntermediateRegion): RegionJson {
 
 function regionFromJson(raw: RegionJson): IntermediateRegion {
   const blocks = raw.blocks.map(
-    (b) => new Block(new BlockPos(b.pos.x, b.pos.y, b.pos.z), BlockState.fromString(b.state)),
+    (b) =>
+      new Block(
+        new BlockPos(b.pos.x, b.pos.y, b.pos.z),
+        BlockState.fromString(b.state),
+      ),
   );
   const entities = raw.entities.map((s) => {
     const parsed = snbt.fromSnbt(s);
@@ -274,7 +291,9 @@ export class IntermediateSchematic extends AbstractSchematic {
     schematic: AbstractSchematic,
     targetVersion: MinecraftVersion | null,
   ): IntermediateSchematic {
-    const regions = schematic.getRegions().map((r) => IntermediateRegion.fromRegion(r, targetVersion));
+    const regions = schematic
+      .getRegions()
+      .map((r) => IntermediateRegion.fromRegion(r, targetVersion));
     const minecraftVersion = targetVersion ?? schematic.getMinecraftVersion();
     return new IntermediateSchematic(
       schematic.getMetadata(),

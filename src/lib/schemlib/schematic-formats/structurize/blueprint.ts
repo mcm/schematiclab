@@ -76,7 +76,11 @@ function compoundListFrom(tag: nbt.NbtTag | undefined): nbt.Compound[] {
   return out;
 }
 
-function blockPosCompound(p: { x: number; y: number; z: number }): nbt.Compound {
+function blockPosCompound(p: {
+  x: number;
+  y: number;
+  z: number;
+}): nbt.Compound {
   return new nbt.Compound({
     x: new nbt.Int(p.x),
     y: new nbt.Int(p.y),
@@ -97,7 +101,9 @@ function isSubstitutionState(state: BlockState): boolean {
   // `get_block_matrix` and `startswith("structurize:")` in `get_palette`. We
   // mirror the looser `get_block_matrix` form here since both checks bracket
   // the same set of names in practice.
-  return state.Name.startsWith("structurize") && state.Name.endsWith("substitution");
+  return (
+    state.Name.startsWith("structurize") && state.Name.endsWith("substitution")
+  );
 }
 
 // ── StructurizeOptionalData ───────────────────────────────────────────────
@@ -110,7 +116,9 @@ export interface OptionalData {
   structurize: StructurizeOptionalData;
 }
 
-function optionalDataFromCompound(tag: nbt.NbtTag | undefined): OptionalData | null {
+function optionalDataFromCompound(
+  tag: nbt.NbtTag | undefined,
+): OptionalData | null {
   if (!(tag instanceof nbt.Compound)) return null;
   const structurize = tag.get("structurize");
   if (!(structurize instanceof nbt.Compound)) return null;
@@ -199,20 +207,25 @@ export class StructurizeBlueprint extends AbstractRegion {
 
     const blocksTag = root.get("blocks");
     if (!(blocksTag instanceof nbt.IntArray)) {
-      throw new Error("StructurizeBlueprint missing or invalid `blocks` IntArray");
+      throw new Error(
+        "StructurizeBlueprint missing or invalid `blocks` IntArray",
+      );
     }
 
     const paletteTag = root.get("palette");
     const palette: BlockState[] = [];
     if (paletteTag instanceof nbt.NbtList) {
       for (const item of paletteTag.items) {
-        if (item instanceof nbt.Compound) palette.push(blockStateFromCompound(item));
+        if (item instanceof nbt.Compound)
+          palette.push(blockStateFromCompound(item));
       }
     }
 
     const architectsTag = root.get("architects");
     const architects =
-      architectsTag instanceof nbt.NbtList ? stringListFrom(architectsTag) : null;
+      architectsTag instanceof nbt.NbtList
+        ? stringListFrom(architectsTag)
+        : null;
 
     const mcversionTag = root.get("mcversion");
     const mcversion = mcversionTag !== undefined ? readInt(mcversionTag) : null;
@@ -240,7 +253,9 @@ export class StructurizeBlueprint extends AbstractRegion {
   ): StructurizeBlueprint {
     const regions = schematic.getRegions();
     if (regions.length > 1) {
-      throw new Error(`Too many regions in source schematic (${regions.length})`);
+      throw new Error(
+        `Too many regions in source schematic (${regions.length})`,
+      );
     }
     const region = schematic.getRegion(0);
 
@@ -250,14 +265,18 @@ export class StructurizeBlueprint extends AbstractRegion {
     let sourceEntities: Entity[];
     let sourceTileEntities: Entity[];
 
-    if (targetVersion !== null && !versionsEqual(targetVersion, region.getMinecraftVersion())) {
+    if (
+      targetVersion !== null &&
+      !versionsEqual(targetVersion, region.getMinecraftVersion())
+    ) {
       dataVersion = targetVersion.dataVersion;
       sourcePalette = region.getTranslatedPalette(targetVersion);
       sourceBlockMatrix = region.getTranslatedBlockMatrix(targetVersion);
       sourceEntities = region.getTranslatedEntities(targetVersion);
       sourceTileEntities = region.getTranslatedTileEntities(targetVersion);
     } else {
-      dataVersion = (targetVersion ?? schematic.getMinecraftVersion()).dataVersion;
+      dataVersion = (targetVersion ?? schematic.getMinecraftVersion())
+        .dataVersion;
       sourcePalette = region.getPalette();
       sourceBlockMatrix = region.getBlockMatrix();
       sourceEntities = region.getEntities();
@@ -292,8 +311,15 @@ export class StructurizeBlueprint extends AbstractRegion {
           const block = sourceBlockMatrix.get(key);
           if (block) {
             const colonIdx = block.state.Name.indexOf(":");
-            const modid = colonIdx === -1 ? block.state.Name : block.state.Name.slice(0, colonIdx);
-            if (modid !== "minecraft" && modid.length > 0 && !requiredMods.includes(modid)) {
+            const modid =
+              colonIdx === -1
+                ? block.state.Name
+                : block.state.Name.slice(0, colonIdx);
+            if (
+              modid !== "minecraft" &&
+              modid.length > 0 &&
+              !requiredMods.includes(modid)
+            ) {
               requiredMods.push(modid);
             }
             blocks.push(indexOfState(block.state));
@@ -304,8 +330,12 @@ export class StructurizeBlueprint extends AbstractRegion {
       }
     }
 
-    const tileEntityCompounds: nbt.Compound[] = sourceTileEntities.map((e) => e.toCompound());
-    const entityCompounds: nbt.Compound[] = sourceEntities.map((e) => e.toCompound());
+    const tileEntityCompounds: nbt.Compound[] = sourceTileEntities.map((e) =>
+      e.toCompound(),
+    );
+    const entityCompounds: nbt.Compound[] = sourceEntities.map((e) =>
+      e.toCompound(),
+    );
 
     return new StructurizeBlueprint({
       architects: null,
@@ -343,7 +373,8 @@ export class StructurizeBlueprint extends AbstractRegion {
   }
 
   getMinecraftVersion(): MinecraftVersion {
-    if (this.mcversion === null) return StructurizeBlueprint.getDefaultVersion();
+    if (this.mcversion === null)
+      return StructurizeBlueprint.getDefaultVersion();
     return safeGetVersionFromDataVersion(this.mcversion);
   }
 
@@ -361,7 +392,11 @@ export class StructurizeBlueprint extends AbstractRegion {
     const out: BlockState[] = [];
     for (const state of this.palette) {
       if (state.Name === "minecraft:air") continue;
-      if (state.Name.startsWith("structurize:") && state.Name.endsWith("substitution")) continue;
+      if (
+        state.Name.startsWith("structurize:") &&
+        state.Name.endsWith("substitution")
+      )
+        continue;
       out.push(state);
     }
     return out;
@@ -376,7 +411,8 @@ export class StructurizeBlueprint extends AbstractRegion {
         for (let x = 0; x < this.sizeX; x++) {
           const idx = y * this.sizeZ * this.sizeX + z * this.sizeX + x;
           const stateIdx = blockstates[idx];
-          if (stateIdx === undefined || stateIdx >= this.palette.length) continue;
+          if (stateIdx === undefined || stateIdx >= this.palette.length)
+            continue;
           const state = this.palette[stateIdx];
           if (state.Name === "minecraft:air") continue;
           if (isSubstitutionState(state)) continue;
@@ -430,7 +466,9 @@ export class StructurizeBlueprint extends AbstractRegion {
     if (this.architects !== null) {
       root.set(
         "architects",
-        new nbt.NbtList<nbt.StringTag>(this.architects.map((a) => new nbt.StringTag(a))),
+        new nbt.NbtList<nbt.StringTag>(
+          this.architects.map((a) => new nbt.StringTag(a)),
+        ),
       );
     }
     if (this.mcversion !== null) {

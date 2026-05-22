@@ -14,11 +14,7 @@ import { Block, BlockPos, BlockState } from "../../blocks";
 import { Entity } from "../../entities";
 import { fromSnbt, toSnbt } from "../../snbt";
 import { AbstractRegion, AbstractSchematic } from "../abstract";
-import {
-  MinecraftVersion,
-  getVersion,
-  posKey,
-} from "../version-mapping";
+import { MinecraftVersion, getVersion, posKey } from "../version-mapping";
 import { posToUppercaseCompound, readUppercasePos } from "./common";
 
 // ── Helpers ───────────────────────────────────────────────────────────────
@@ -148,9 +144,7 @@ export class BuildingGadgetsV0Schematic
       typeof obj === "string" ? obj : new TextDecoder("utf-8").decode(obj);
     const root = fromSnbt(text);
     if (!(root instanceof nbt.Compound)) {
-      throw new TypeError(
-        "Building Gadgets v0 SNBT must parse to a Compound",
-      );
+      throw new TypeError("Building Gadgets v0 SNBT must parse to a Compound");
     }
 
     const stateIntArrayTag = root.get("stateIntArray");

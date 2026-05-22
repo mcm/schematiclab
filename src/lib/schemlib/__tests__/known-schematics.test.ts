@@ -4,7 +4,10 @@ import path from "node:path";
 import { describe, it, expect, beforeAll } from "vitest";
 
 import { BlockPos } from "../blocks";
-import { AbstractRegion, AbstractSchematic } from "../schematic-formats/abstract";
+import {
+  AbstractRegion,
+  AbstractSchematic,
+} from "../schematic-formats/abstract";
 import { LitematicSchematic } from "../schematic-formats/litematic";
 import { StructureSchematic } from "../schematic-formats/structure";
 import {
@@ -12,7 +15,11 @@ import {
   BuildingGadgetsV1Schematic,
   BuildingGadgetsV2Schematic,
 } from "../schematic-formats/building-gadgets";
-import { SpongeSchematicV1, SpongeSchematicV2, SpongeSchematicV3 } from "../schematic-formats/sponge";
+import {
+  SpongeSchematicV1,
+  SpongeSchematicV2,
+  SpongeSchematicV3,
+} from "../schematic-formats/sponge";
 
 // ── Fixtures ───────────────────────────────────────────────────────────────
 
@@ -23,16 +30,27 @@ type SchematicCtor = typeof AbstractSchematic & {
   getDefaultVersion(): import("../schematic-formats/version-mapping").MinecraftVersion;
   fromSchematic(
     schematic: AbstractSchematic,
-    targetVersion: import("../schematic-formats/version-mapping").MinecraftVersion | null,
+    targetVersion:
+      | import("../schematic-formats/version-mapping").MinecraftVersion
+      | null,
   ): AbstractSchematic;
 };
 
 const schematics: Array<[string, SchematicCtor]> = [
   ["one_stone_block.litematic", LitematicSchematic as unknown as SchematicCtor],
   ["one_stone_block.nbt", StructureSchematic as unknown as SchematicCtor],
-  ["one_stone_block_bg0.txt", BuildingGadgetsV0Schematic as unknown as SchematicCtor],
-  ["one_stone_block_bg1.txt", BuildingGadgetsV1Schematic as unknown as SchematicCtor],
-  ["one_stone_block_bg2.txt", BuildingGadgetsV2Schematic as unknown as SchematicCtor],
+  [
+    "one_stone_block_bg0.txt",
+    BuildingGadgetsV0Schematic as unknown as SchematicCtor,
+  ],
+  [
+    "one_stone_block_bg1.txt",
+    BuildingGadgetsV1Schematic as unknown as SchematicCtor,
+  ],
+  [
+    "one_stone_block_bg2.txt",
+    BuildingGadgetsV2Schematic as unknown as SchematicCtor,
+  ],
   ["one_stone_block_v1.schem", SpongeSchematicV1 as unknown as SchematicCtor],
   ["one_stone_block_v2.schem", SpongeSchematicV2 as unknown as SchematicCtor],
   ["one_stone_block_v3.schem", SpongeSchematicV3 as unknown as SchematicCtor],
@@ -42,7 +60,9 @@ const schematics: Array<[string, SchematicCtor]> = [
 // `target_classes = ... if target_class is not BuildingGadgetsV0Schematic`).
 const targetClasses: SchematicCtor[] = schematics
   .map(([, cls]) => cls)
-  .filter((cls) => cls !== (BuildingGadgetsV0Schematic as unknown as SchematicCtor));
+  .filter(
+    (cls) => cls !== (BuildingGadgetsV0Schematic as unknown as SchematicCtor),
+  );
 
 const fixturePath = (filename: string): string =>
   path.resolve(__dirname, "../../__tests__/fixtures", filename);
@@ -103,7 +123,9 @@ for (const [filename, schematicType] of schematics) {
     });
 
     it("region origin is at the world origin", () => {
-      expect(schematic.getRegions()[0].getOrigin().equals(BlockPos.ORIGIN)).toBe(true);
+      expect(
+        schematic.getRegions()[0].getOrigin().equals(BlockPos.ORIGIN),
+      ).toBe(true);
     });
 
     it("region has one stone block", () => {
@@ -138,9 +160,14 @@ for (const [filename, schematicType] of schematics) {
           // skip self-conversion (no-op, matches `if target is self: return`).
           return;
         }
-        const converted = targetClass.fromSchematic(schematic, targetClass.getDefaultVersion());
+        const converted = targetClass.fromSchematic(
+          schematic,
+          targetClass.getDefaultVersion(),
+        );
 
-        expect(converted.getRegion(0).getSize()).toEqual(schematic.getRegion(0).getSize());
+        expect(converted.getRegion(0).getSize()).toEqual(
+          schematic.getRegion(0).getSize(),
+        );
 
         const [origA, origB] = schematic.getRegion(0).getBoundingBox();
         const [convA, convB] = converted.getRegion(0).getBoundingBox();
