@@ -15,7 +15,7 @@ import * as nbt from "../schemlib/nbt";
 import { Entity } from "../schemlib/entities";
 
 const fixturePath = (filename: string): string =>
-  path.resolve(__dirname, "../../../../schemlib/tests/schematics/", filename);
+  path.resolve(__dirname, "fixtures", filename);
 
 const loadBytes = (filename: string): Uint8Array =>
   new Uint8Array(readFileSync(fixturePath(filename)));
