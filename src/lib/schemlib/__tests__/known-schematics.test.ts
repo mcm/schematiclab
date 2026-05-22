@@ -12,7 +12,7 @@ import {
   BuildingGadgetsV1Schematic,
   BuildingGadgetsV2Schematic,
 } from "../schematic-formats/building-gadgets";
-import { SpongeSchematicV1, SpongeSchematicV2 } from "../schematic-formats/sponge";
+import { SpongeSchematicV1, SpongeSchematicV2, SpongeSchematicV3 } from "../schematic-formats/sponge";
 
 // ── Fixtures ───────────────────────────────────────────────────────────────
 
@@ -35,6 +35,7 @@ const schematics: Array<[string, SchematicCtor]> = [
   ["one_stone_block_bg2.txt", BuildingGadgetsV2Schematic as unknown as SchematicCtor],
   ["one_stone_block_v1.schem", SpongeSchematicV1 as unknown as SchematicCtor],
   ["one_stone_block_v2.schem", SpongeSchematicV2 as unknown as SchematicCtor],
+  ["one_stone_block_v3.schem", SpongeSchematicV3 as unknown as SchematicCtor],
 ];
 
 // Conversion targets exclude BuildingGadgetsV0Schematic (matches Python's

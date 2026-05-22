@@ -338,6 +338,10 @@ export class LitematicSchematic extends AbstractSchematic {
     return safeGetVersionFromDataVersion(this.minecraftDataVersion);
   }
 
+  getDataVersion(): number {
+    return this.minecraftDataVersion;
+  }
+
   getName(): string {
     return this.metadata.Name || "unknown litematic schematic";
   }
@@ -473,9 +477,29 @@ export class LitematicSchematic extends AbstractSchematic {
         blockStates.writePackedUint(i, bits, v);
       }
 
-      // Convert entity / tile-entity lists.
+      // Convert entity / tile-entity lists. Tile entities arrive in chunk
+      // shape (id/x/y/z) but their x/y/z are in the source's coordinate space.
+      // We've already shifted blocks by `offset` (the bounding-box min) to put
+      // them at [0..size]; tile entities must follow the same shift or they
+      // land outside the region.
       const entityCompounds: nbt.Compound[] = entities.map((e) => e.toCompound());
-      const tileEntityCompounds: nbt.Compound[] = tileEntities.map((e) => e.toCompound());
+      const tileEntityCompounds: nbt.Compound[] = tileEntities.map((e) => {
+        const c = e.toCompound();
+        if (offset.equals(BlockPos.ORIGIN)) return c;
+        const shifted = new nbt.Compound();
+        for (const [k, v] of c.entries) {
+          if (k === "x" && v instanceof nbt.Int) {
+            shifted.set(k, new nbt.Int(v.value - offset.x));
+          } else if (k === "y" && v instanceof nbt.Int) {
+            shifted.set(k, new nbt.Int(v.value - offset.y));
+          } else if (k === "z" && v instanceof nbt.Int) {
+            shifted.set(k, new nbt.Int(v.value - offset.z));
+          } else {
+            shifted.set(k, v);
+          }
+        }
+        return shifted;
+      });
 
       regions.set(
         `Converted Region ${idx}`,
@@ -516,7 +540,7 @@ export class LitematicSchematic extends AbstractSchematic {
     const minecraftDataVersion =
       targetVersion !== null
         ? targetVersion.dataVersion
-        : schematic.getMinecraftVersion().dataVersion;
+        : schematic.getDataVersion();
 
     return new LitematicSchematic({
       metadata,

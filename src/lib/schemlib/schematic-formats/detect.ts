@@ -137,6 +137,20 @@ export function detectSchematicType(input: string | Uint8Array): string {
     return `Sponge[v${version}]`;
   }
 
+  // Sponge v3 wraps everything in a child "Schematic" compound under an
+  // unnamed root (v3 spec §Format), unlike v1/v2 which name the root itself.
+  if (parsed.kind === "nbt" && parsed.value.has("Schematic")) {
+    const inner = parsed.value.get("Schematic");
+    if (inner instanceof nbt.Compound) {
+      const versionTag = inner.get("Version");
+      if (versionTag === undefined) {
+        throw new Error("Sponge schematic missing 'Version' tag");
+      }
+      const version = versionTag.toObject();
+      return `Sponge[v${version}]`;
+    }
+  }
+
   if (parsed.kind === "nbt" && has(parsed, "blocks") && has(parsed, "DataVersion")) {
     return "Structure";
   }

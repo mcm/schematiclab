@@ -19,6 +19,56 @@ import {
   posKey,
 } from "../version-mapping";
 
+// ── BlockEntity shape translation ──────────────────────────────────────────
+//
+// v1 TileEntities are the same shape as v2 BlockEntities per spec:
+// { Id, Pos: IntArray[3], ...extra fields flat at top level }. We translate
+// to/from the chunk-format shape { id, x, y, z, ...flat } on the boundary so
+// cross-format conversion stays consistent.
+
+function v1TileEntityToChunkShape(c: nbt.Compound): nbt.Compound | null {
+  const idTag = c.get("Id");
+  const posTag = c.get("Pos");
+  if (!(idTag instanceof nbt.StringTag)) return null;
+  if (!(posTag instanceof nbt.IntArray)) return null;
+  const posArr = posTag.toObject() as number[];
+  if (posArr.length < 3) return null;
+  const [x, y, z] = posArr;
+
+  const out = new nbt.Compound();
+  for (const [k, v] of c.entries) {
+    if (k === "Id" || k === "Pos") continue;
+    out.set(k, v);
+  }
+  out.set("id", new nbt.StringTag(idTag.value));
+  out.set("x", new nbt.Int(x));
+  out.set("y", new nbt.Int(y));
+  out.set("z", new nbt.Int(z));
+  return out;
+}
+
+function chunkShapeToV1TileEntity(c: nbt.Compound): nbt.Compound | null {
+  const idTag = c.get("id") ?? c.get("Id");
+  if (!(idTag instanceof nbt.StringTag)) return null;
+
+  let x = 0, y = 0, z = 0;
+  const xt = c.get("x");
+  const yt = c.get("y");
+  const zt = c.get("z");
+  if (xt instanceof nbt.Int) x = xt.value;
+  if (yt instanceof nbt.Int) y = yt.value;
+  if (zt instanceof nbt.Int) z = zt.value;
+
+  const out = new nbt.Compound();
+  out.set("Id", new nbt.StringTag(idTag.value));
+  out.set("Pos", new nbt.IntArray([x, y, z]));
+  for (const [k, v] of c.entries) {
+    if (k === "id" || k === "Id" || k === "x" || k === "y" || k === "z") continue;
+    out.set(k, v);
+  }
+  return out;
+}
+
 // ── Metadata ──────────────────────────────────────────────────────────────
 
 export interface SpongeSchematicMetadataInit {
@@ -161,13 +211,18 @@ export class SpongeSchematicV1
     ) {
       throw new TypeError("Sponge v1: Width/Height/Length must be Short");
     }
+    // Offset is optional per spec; default to [0, 0, 0] when missing.
+    let offsetArr: [number, number, number] = [0, 0, 0];
     const offsetTag = compound.get("Offset");
-    if (!(offsetTag instanceof nbt.IntArray)) {
-      throw new TypeError("Sponge v1: Offset must be IntArray");
-    }
-    const offsetArr = offsetTag.toObject() as number[];
-    if (offsetArr.length < 3) {
-      throw new TypeError("Sponge v1: Offset must have 3 elements");
+    if (offsetTag !== undefined) {
+      if (!(offsetTag instanceof nbt.IntArray)) {
+        throw new TypeError("Sponge v1: Offset must be IntArray");
+      }
+      const arr = offsetTag.toObject() as number[];
+      if (arr.length < 3) {
+        throw new TypeError("Sponge v1: Offset must have 3 elements");
+      }
+      offsetArr = [arr[0], arr[1], arr[2]];
     }
 
     const paletteMaxTag = compound.get("PaletteMax");
@@ -204,9 +259,9 @@ export class SpongeSchematicV1
     const tileEntitiesTag = compound.get("TileEntities");
     if (tileEntitiesTag instanceof nbt.NbtList) {
       for (const item of tileEntitiesTag.items) {
-        if (item instanceof nbt.Compound) {
-          tileEntities.push(new Entity(item));
-        }
+        if (!(item instanceof nbt.Compound)) continue;
+        const chunkShape = v1TileEntityToChunkShape(item);
+        tileEntities.push(new Entity(chunkShape ?? item));
       }
     }
 
@@ -260,12 +315,16 @@ export class SpongeSchematicV1
     }
     entries.set("BlockData", new nbt.ByteArray(blockBytes));
 
-    if (this.TileEntities.length > 0) {
-      entries.set(
-        "TileEntities",
-        new nbt.NbtList(this.TileEntities.map((e) => e.toCompound())),
-      );
+    // TileEntities are stored in chunk-shape internally; translate back to v1
+    // wire shape on the way out. Always emit the tag (even when empty) since
+    // some Sponge readers bail with "Missing tag TileEntities" when it's
+    // absent.
+    const tileEntityItems: nbt.Compound[] = [];
+    for (const e of this.TileEntities) {
+      const v1 = chunkShapeToV1TileEntity(e.toCompound());
+      if (v1) tileEntityItems.push(v1);
     }
+    entries.set("TileEntities", new nbt.NbtList(tileEntityItems));
 
     return new nbt.Compound(entries);
   }
@@ -313,8 +372,20 @@ export class SpongeSchematicV1
   }
 
   getTileEntityMatrix(): Map<string, Entity> {
+    // TileEntities are stored in chunk-shape internally; key by x/y/z. The
+    // previous version went through Entity.blockPos, which assumes Pos:
+    // NbtList<Double> (entity format), so every TE collapsed to (0,0,0).
     const out = new Map<string, Entity>();
-    for (const e of this.TileEntities) out.set(posKey(e.blockPos), e);
+    for (const e of this.TileEntities) {
+      const c = e.toCompound();
+      const xt = c.get("x");
+      const yt = c.get("y");
+      const zt = c.get("z");
+      const x = xt instanceof nbt.Int ? xt.value : 0;
+      const y = yt instanceof nbt.Int ? yt.value : 0;
+      const z = zt instanceof nbt.Int ? zt.value : 0;
+      out.set(`${x},${y},${z}`, e);
+    }
     return out;
   }
 
@@ -354,6 +425,10 @@ export class SpongeSchematicV1
     return getVersion("1.13.1");
   }
 
+  getDataVersion(): number {
+    return this.getMinecraftVersion().dataVersion;
+  }
+
   static checkSize(_width: number, _height: number, _length: number): void {
     // Sponge v1 imposes no explicit size limit beyond NBT Short range.
   }
@@ -374,15 +449,15 @@ export class SpongeSchematicV1
 
     let sourcePalette: BlockState[];
     let sourceBlocks: Block[];
-    let sourceEntities: Entity[];
+    let sourceTileEntities: Entity[];
     if (targetVersion) {
       sourcePalette = region.getTranslatedPalette(targetVersion);
       sourceBlocks = region.getTranslatedBlocks(targetVersion);
-      sourceEntities = region.getTranslatedEntities(targetVersion);
+      sourceTileEntities = region.getTranslatedTileEntities(targetVersion);
     } else {
       sourcePalette = region.getPalette();
       sourceBlocks = region.getBlocks();
-      sourceEntities = region.getEntities();
+      sourceTileEntities = region.getTileEntities();
     }
 
     const [width, height, length] = region.getSize();
@@ -440,6 +515,16 @@ export class SpongeSchematicV1
       palette.set(sourcePalette[i].toString(), i);
     }
 
+    // Translate chunk-shape tile entities into Sponge v1 TileEntity shape.
+    // Internally we stored them in chunk-shape after parsing; format-shape
+    // serialization happens on dump via chunkShapeToV1TileEntity in
+    // toCompound. Here we keep the chunk-shape Entities so they go through
+    // the same path on output.
+    const tileEntities: Entity[] = [];
+    for (const e of sourceTileEntities) {
+      tileEntities.push(e);
+    }
+
     return new SpongeSchematicV1({
       Version: 1,
       Metadata: meta,
@@ -450,7 +535,7 @@ export class SpongeSchematicV1
       PaletteMax: sourcePalette.length,
       Palette: palette,
       BlockData: blockData,
-      TileEntities: sourceEntities,
+      TileEntities: tileEntities,
     });
   }
 }

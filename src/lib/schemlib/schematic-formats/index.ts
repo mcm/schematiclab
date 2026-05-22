@@ -17,3 +17,9 @@ export type { MinecraftVersion } from "./version-mapping";
 export { detectSchematicType } from "./detect";
 export { LitematicRegion, LitematicSchematic } from "./litematic";
 export { StructureSchematic } from "./structure";
+export {
+  SpongeSchematicMetadata,
+  SpongeSchematicV1,
+  SpongeSchematicV2,
+  SpongeSchematicV3,
+} from "./sponge";

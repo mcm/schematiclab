@@ -19,6 +19,7 @@ import {
 import {
   SpongeSchematicV1,
   SpongeSchematicV2,
+  SpongeSchematicV3,
 } from "./schemlib/schematic-formats/sponge";
 import {
   BuildingGadgetsV0Schematic,
@@ -37,6 +38,7 @@ export const SUPPORTED_FORMATS = [
   "Litematic",
   "Sponge[v1]",
   "Sponge[v2]",
+  "Sponge[v3]",
   "Structure",
   "BuildingGadgets[1.12]",
   "BuildingGadgets[1.14.4-1.19.3]",
@@ -90,6 +92,11 @@ const FORMAT_REGISTRY: Record<SchematicFormatId, FormatEntry> = {
   },
   "Sponge[v2]": {
     cls: SpongeSchematicV2 as unknown as SchematicClass,
+    extension: "schem",
+    mimeType: "application/octet-stream",
+  },
+  "Sponge[v3]": {
+    cls: SpongeSchematicV3 as unknown as SchematicClass,
     extension: "schem",
     mimeType: "application/octet-stream",
   },
