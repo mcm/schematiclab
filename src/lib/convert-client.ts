@@ -8,9 +8,11 @@
 import type { MinecraftVersion } from "./schemlib/schematic-formats";
 import type {
   ConvertResult,
+  ParsedSchematicProjection,
   ParseResult,
   SchematicFormatId,
 } from "./convert";
+import type { VersionMappingPreview } from "./advanced/version-mapping-preview";
 import type { WorkerRequest, WorkerResponse } from "./convert.worker";
 
 type Pending = {
@@ -142,6 +144,25 @@ export function parseInWorker(bytes: Uint8Array): Promise<ParseResult> {
   return send<ParseResult>(
     { type: "parse", payload: { bytes } },
     transfer,
+  );
+}
+
+/**
+ * Run a version-mapping preview pass in the worker against `schematic`. The
+ * input projection is structured-cloned (so the caller's reference is not
+ * mutated); the response is a fully serializable summary used by the Version
+ * Mapping panel before the user commits the translation (US-015).
+ */
+export function translatePreviewInWorker(
+  schematic: ParsedSchematicProjection,
+  targetVersion: MinecraftVersion,
+): Promise<VersionMappingPreview> {
+  return send<VersionMappingPreview>(
+    {
+      type: "translatePreview",
+      payload: { schematic, targetVersion },
+    },
+    [],
   );
 }
 

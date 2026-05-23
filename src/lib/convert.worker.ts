@@ -10,9 +10,14 @@ import {
   convertSchematic,
   parseSchematic,
   type ConvertResult,
+  type ParsedSchematicProjection,
   type ParseResult,
   type SchematicFormatId,
 } from "./convert";
+import {
+  previewVersionMapping,
+  type VersionMappingPreview,
+} from "./advanced/version-mapping-preview";
 
 // ── Wire protocol ─────────────────────────────────────────────────────────
 
@@ -31,15 +36,31 @@ export interface ParsePayload {
   bytes: Uint8Array;
 }
 
+export interface TranslatePreviewPayload {
+  schematic: ParsedSchematicProjection;
+  targetVersion: MinecraftVersion;
+}
+
 export type WorkerRequest =
   | { id: number; type: "detect"; payload: DetectPayload }
   | { id: number; type: "convert"; payload: ConvertPayload }
-  | { id: number; type: "parse"; payload: ParsePayload };
+  | { id: number; type: "parse"; payload: ParsePayload }
+  | {
+      id: number;
+      type: "translatePreview";
+      payload: TranslatePreviewPayload;
+    };
 
 export type WorkerResponse =
   | { id: number; ok: true; type: "detect"; result: string }
   | { id: number; ok: true; type: "convert"; result: ConvertResult }
   | { id: number; ok: true; type: "parse"; result: ParseResult }
+  | {
+      id: number;
+      ok: true;
+      type: "translatePreview";
+      result: VersionMappingPreview;
+    }
   | { id: number; ok: false; error: string };
 
 // ── Worker scope shim ─────────────────────────────────────────────────────
@@ -93,6 +114,13 @@ ctx.addEventListener("message", (event) => {
     if (type === "parse") {
       const result = parseSchematic(request.payload.bytes);
       ctx.postMessage({ id, ok: true, type: "parse", result });
+      return;
+    }
+
+    if (type === "translatePreview") {
+      const { schematic, targetVersion } = request.payload;
+      const result = previewVersionMapping(schematic, targetVersion);
+      ctx.postMessage({ id, ok: true, type: "translatePreview", result });
       return;
     }
 

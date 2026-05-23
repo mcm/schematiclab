@@ -22,6 +22,7 @@ import {
 } from "@/components/block-state-picker";
 import { MaterialList } from "@/components/material-list";
 import { ThreeDPreview } from "@/components/three-d-preview";
+import { VersionMappingPanel } from "@/components/version-mapping-panel";
 
 const NARROW_VIEWPORT_QUERY = "(max-width: 899.98px)";
 const GENERIC_PARSE_ERROR =
@@ -172,8 +173,7 @@ function materialListBody(
 
 function versionMappingBody(parseStatus: ParseStatus): React.ReactNode {
   if (parseStatus.status === "ready") {
-    const v = parseStatus.schematic.minecraftVersion;
-    return `Source version: ${v.versionNumber.join(".")} (data ${v.dataVersion})`;
+    return <VersionMappingPanel schematic={parseStatus.schematic} />;
   }
   if (parseStatus.status === "error") return UNAVAILABLE_LABEL;
   return <PanelSkeleton />;
