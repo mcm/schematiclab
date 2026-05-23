@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@iamthemcmaster/ui";
+import { IconArrowsExchange, IconCheck, IconX } from "@tabler/icons-react";
 import type { ParsedSchematicProjection } from "@/lib/convert";
 import { translatePreviewInWorker } from "@/lib/convert-client";
 import { KNOWN_VERSIONS } from "@/lib/schemlib/schematic-formats/version-mapping";
@@ -17,6 +18,11 @@ import type {
   ProblematicEntry,
   VersionMappingPreview,
 } from "@/lib/advanced/version-mapping-preview";
+import {
+  BlockStatePicker,
+  type BlockStatePickerResult,
+  type BlockStatePickerSource,
+} from "./block-state-picker";
 
 const TARGET_VERSION_TRIGGER_ID = "advanced-target-version-trigger";
 
@@ -32,6 +38,12 @@ type PreviewState =
   | { status: "ready"; targetVersionId: string; preview: VersionMappingPreview }
   | { status: "error"; targetVersionId: string; message: string };
 
+// Per-row decision. A row is "resolved" once it has either an accepted-default
+// or an override entry — see `allRowsResolved` below.
+type Decision =
+  | { kind: "accepted" }
+  | { kind: "override"; target: BlockStatePickerResult };
+
 export function VersionMappingPanel({ schematic }: VersionMappingPanelProps) {
   const [targetVersionId, setTargetVersionId] = React.useState<string | null>(
     null,
@@ -39,6 +51,14 @@ export function VersionMappingPanel({ schematic }: VersionMappingPanelProps) {
   const [previewState, setPreviewState] = React.useState<PreviewState>({
     status: "idle",
   });
+  // Decisions are scoped to the current target version selection. They reset
+  // whenever the target version changes or the schematic mutates (since both
+  // trigger a fresh preview pass below).
+  const [decisions, setDecisions] = React.useState<Record<string, Decision>>(
+    {},
+  );
+  const [pickerSource, setPickerSource] =
+    React.useState<BlockStatePickerSource | null>(null);
 
   // A monotonically increasing request key — we only commit a preview result
   // when the request that produced it is still the latest one. Handles the
@@ -49,7 +69,7 @@ export function VersionMappingPanel({ schematic }: VersionMappingPanelProps) {
   // Kick off a preview pass whenever the target version selection changes to
   // a non-null value. Setting it back to null returns the panel to idle.
   //
-  // Every `setPreviewState` lives behind an `await` inside the async IIFE so
+  // Every `setState` call lives behind an `await` inside the async IIFE so
   // the lint rule against synchronous setState-in-effect stays happy.
   React.useEffect(() => {
     requestKeyRef.current += 1;
@@ -60,6 +80,7 @@ export function VersionMappingPanel({ schematic }: VersionMappingPanelProps) {
         await Promise.resolve();
         if (requestKeyRef.current !== requestKey) return;
         setPreviewState({ status: "idle" });
+        setDecisions({});
       })();
       return;
     }
@@ -71,6 +92,9 @@ export function VersionMappingPanel({ schematic }: VersionMappingPanelProps) {
       await Promise.resolve();
       if (requestKeyRef.current !== requestKey) return;
       setPreviewState({ status: "loading", targetVersionId });
+      // A fresh preview pass invalidates prior decisions — their source-state
+      // keys belong to a stale palette/version pairing.
+      setDecisions({});
       try {
         const preview = await translatePreviewInWorker(schematic, target);
         if (requestKeyRef.current !== requestKey) return;
@@ -85,6 +109,63 @@ export function VersionMappingPanel({ schematic }: VersionMappingPanelProps) {
   }, [schematic, targetVersionId]);
 
   const sourceVersion = schematic.minecraftVersion;
+
+  const handleAccept = React.useCallback((entry: ProblematicEntry) => {
+    setDecisions((prev) => ({
+      ...prev,
+      [entry.sourceBlockState]: { kind: "accepted" },
+    }));
+  }, []);
+
+  const handlePickReplacement = React.useCallback((entry: ProblematicEntry) => {
+    setPickerSource({
+      blockState: entry.sourceBlockState,
+      blockId: entry.sourceBlockId,
+      properties: entry.sourceProperties,
+    });
+  }, []);
+
+  const handleConfirmReplacement = React.useCallback(
+    (target: BlockStatePickerResult) => {
+      if (pickerSource) {
+        setDecisions((prev) => ({
+          ...prev,
+          [pickerSource.blockState]: { kind: "override", target },
+        }));
+      }
+      setPickerSource(null);
+    },
+    [pickerSource],
+  );
+
+  const handleCancelPicker = React.useCallback(() => {
+    setPickerSource(null);
+  }, []);
+
+  const handleClearDecision = React.useCallback((entry: ProblematicEntry) => {
+    setDecisions((prev) => {
+      if (!(entry.sourceBlockState in prev)) return prev;
+      const next = { ...prev };
+      delete next[entry.sourceBlockState];
+      return next;
+    });
+  }, []);
+
+  // The "Apply translation" button is enabled when every problematic row has a
+  // decision (accept or override). A clean translation (no problematic rows)
+  // is also applyable. AC5 leaves room to enable earlier with a warning; we
+  // take the strict path — easier for the user to trust the button.
+  const allRowsResolved =
+    previewState.status === "ready" &&
+    previewState.preview.problematic.every(
+      (entry) => entry.sourceBlockState in decisions,
+    );
+  const undecidedCount =
+    previewState.status === "ready"
+      ? previewState.preview.problematic.filter(
+          (entry) => !(entry.sourceBlockState in decisions),
+        ).length
+      : 0;
 
   return (
     <div
@@ -142,7 +223,13 @@ export function VersionMappingPanel({ schematic }: VersionMappingPanelProps) {
       <PreviewSummary state={previewState} />
 
       {previewState.status === "ready" ? (
-        <ProblematicList preview={previewState.preview} />
+        <ProblematicList
+          preview={previewState.preview}
+          decisions={decisions}
+          onAccept={handleAccept}
+          onPickReplacement={handlePickReplacement}
+          onClearDecision={handleClearDecision}
+        />
       ) : (
         <div style={{ flex: 1 }} />
       )}
@@ -151,16 +238,46 @@ export function VersionMappingPanel({ schematic }: VersionMappingPanelProps) {
         type="button"
         variant="primary"
         size="md"
-        disabled
-        title="Resolve any flagged blocks first (coming in a later story)."
+        disabled={!allRowsResolved}
+        title={
+          previewState.status !== "ready"
+            ? "Pick a target version first."
+            : undecidedCount > 0
+              ? `${undecidedCount} flagged block${undecidedCount === 1 ? "" : "s"} still need a decision (accept the proposal or pick a replacement).`
+              : "Apply the translation (coming in a later story)."
+        }
       >
         Apply translation
       </Button>
+
+      {pickerSource !== null ? (
+        <BlockStatePicker
+          open
+          source={pickerSource}
+          onCancel={handleCancelPicker}
+          onConfirm={handleConfirmReplacement}
+          title="Pick replacement block"
+          description="Choose the block to substitute for this source state in the translated schematic. The choice overrides the mapper's proposal for this row only. Free-text input is accepted for identifiers outside the catalog."
+          confirmLabel="Set replacement"
+        />
+      ) : null}
     </div>
   );
 }
 
-function ProblematicList({ preview }: { preview: VersionMappingPreview }) {
+function ProblematicList({
+  preview,
+  decisions,
+  onAccept,
+  onPickReplacement,
+  onClearDecision,
+}: {
+  preview: VersionMappingPreview;
+  decisions: Record<string, Decision>;
+  onAccept: (entry: ProblematicEntry) => void;
+  onPickReplacement: (entry: ProblematicEntry) => void;
+  onClearDecision: (entry: ProblematicEntry) => void;
+}) {
   if (preview.problematic.length === 0) {
     return (
       <div
@@ -197,13 +314,32 @@ function ProblematicList({ preview }: { preview: VersionMappingPreview }) {
       }}
     >
       {preview.problematic.map((entry) => (
-        <ProblematicRow key={entry.sourceBlockState} entry={entry} />
+        <ProblematicRow
+          key={entry.sourceBlockState}
+          entry={entry}
+          decision={decisions[entry.sourceBlockState]}
+          onAccept={() => onAccept(entry)}
+          onPickReplacement={() => onPickReplacement(entry)}
+          onClearDecision={() => onClearDecision(entry)}
+        />
       ))}
     </div>
   );
 }
 
-function ProblematicRow({ entry }: { entry: ProblematicEntry }) {
+function ProblematicRow({
+  entry,
+  decision,
+  onAccept,
+  onPickReplacement,
+  onClearDecision,
+}: {
+  entry: ProblematicEntry;
+  decision: Decision | undefined;
+  onAccept: () => void;
+  onPickReplacement: () => void;
+  onClearDecision: () => void;
+}) {
   const sourceProps = formatProperties(entry.sourceProperties);
   const targetProps = formatProperties(entry.proposedTargetProperties);
 
@@ -263,6 +399,9 @@ function ProblematicRow({ entry }: { entry: ProblematicEntry }) {
           overflow: "hidden",
           textOverflow: "ellipsis",
           whiteSpace: "nowrap",
+          textDecoration:
+            decision?.kind === "override" ? "line-through" : "none",
+          opacity: decision?.kind === "override" ? 0.55 : 1,
         }}
         title={entry.proposedTargetBlockId + targetProps}
       >
@@ -285,8 +424,201 @@ function ProblematicRow({ entry }: { entry: ProblematicEntry }) {
           <li key={idx}>{warning}</li>
         ))}
       </ul>
+
+      <DecisionFooter
+        decision={decision}
+        onAccept={onAccept}
+        onPickReplacement={onPickReplacement}
+        onClearDecision={onClearDecision}
+      />
     </div>
   );
+}
+
+function DecisionFooter({
+  decision,
+  onAccept,
+  onPickReplacement,
+  onClearDecision,
+}: {
+  decision: Decision | undefined;
+  onAccept: () => void;
+  onPickReplacement: () => void;
+  onClearDecision: () => void;
+}) {
+  if (decision === undefined) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          gap: "var(--space-2)",
+          flexWrap: "wrap",
+          paddingTop: "var(--space-1)",
+        }}
+      >
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onAccept}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "var(--space-1)",
+            fontSize: "var(--text-xs)",
+          }}
+        >
+          <IconCheck size={14} aria-hidden="true" />
+          Accept proposal
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onPickReplacement}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "var(--space-1)",
+            fontSize: "var(--text-xs)",
+          }}
+        >
+          <IconArrowsExchange size={14} aria-hidden="true" />
+          Pick replacement…
+        </Button>
+      </div>
+    );
+  }
+
+  if (decision.kind === "accepted") {
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "var(--space-2)",
+          paddingTop: "var(--space-1)",
+        }}
+      >
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "var(--space-1)",
+            color: "var(--text-primary)",
+            fontSize: "var(--text-xs)",
+            fontWeight: 500,
+          }}
+        >
+          <IconCheck size={14} aria-hidden="true" />
+          Proposal accepted
+        </span>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onClearDecision}
+          aria-label="Clear decision"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "var(--space-1)",
+            fontSize: "var(--text-xs)",
+            marginLeft: "auto",
+          }}
+        >
+          <IconX size={14} aria-hidden="true" />
+          Clear
+        </Button>
+      </div>
+    );
+  }
+
+  const overrideDisplay = formatStateDisplay(
+    decision.target.blockId,
+    decision.target.properties,
+  );
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--space-1)",
+        paddingTop: "var(--space-1)",
+      }}
+    >
+      <div
+        style={{
+          color: "var(--text-primary)",
+          fontSize: "var(--text-xs)",
+          fontFamily: "var(--font-mono, ui-monospace, monospace)",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+        title={overrideDisplay}
+      >
+        <span style={{ color: "var(--text-tertiary)" }}>→ replace with </span>
+        <strong>{decision.target.blockId}</strong>
+        {Object.keys(decision.target.properties).length > 0 ? (
+          <span style={{ color: "var(--text-tertiary)" }}>
+            {formatProperties(decision.target.properties)}
+          </span>
+        ) : null}
+      </div>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "var(--space-2)",
+          flexWrap: "wrap",
+        }}
+      >
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onPickReplacement}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "var(--space-1)",
+            fontSize: "var(--text-xs)",
+          }}
+        >
+          <IconArrowsExchange size={14} aria-hidden="true" />
+          Pick replacement…
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onClearDecision}
+          aria-label="Clear override"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "var(--space-1)",
+            fontSize: "var(--text-xs)",
+            marginLeft: "auto",
+          }}
+        >
+          <IconX size={14} aria-hidden="true" />
+          Clear
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function formatStateDisplay(
+  blockId: string,
+  properties: Record<string, string>,
+): string {
+  const keys = Object.keys(properties).sort();
+  if (keys.length === 0) return blockId;
+  return `${blockId}[${keys.map((k) => `${k}=${properties[k]}`).join(",")}]`;
 }
 
 function formatProperties(properties: Record<string, string>): string {
