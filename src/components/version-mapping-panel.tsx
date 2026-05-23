@@ -13,7 +13,10 @@ import {
 import type { ParsedSchematicProjection } from "@/lib/convert";
 import { translatePreviewInWorker } from "@/lib/convert-client";
 import { KNOWN_VERSIONS } from "@/lib/schemlib/schematic-formats/version-mapping";
-import type { VersionMappingPreview } from "@/lib/advanced/version-mapping-preview";
+import type {
+  ProblematicEntry,
+  VersionMappingPreview,
+} from "@/lib/advanced/version-mapping-preview";
 
 const TARGET_VERSION_TRIGGER_ID = "advanced-target-version-trigger";
 
@@ -138,7 +141,11 @@ export function VersionMappingPanel({ schematic }: VersionMappingPanelProps) {
 
       <PreviewSummary state={previewState} />
 
-      <div style={{ flex: 1 }} />
+      {previewState.status === "ready" ? (
+        <ProblematicList preview={previewState.preview} />
+      ) : (
+        <div style={{ flex: 1 }} />
+      )}
 
       <Button
         type="button"
@@ -151,6 +158,141 @@ export function VersionMappingPanel({ schematic }: VersionMappingPanelProps) {
       </Button>
     </div>
   );
+}
+
+function ProblematicList({ preview }: { preview: VersionMappingPreview }) {
+  if (preview.problematic.length === 0) {
+    return (
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "var(--space-3)",
+          border: "1px dashed var(--border-subtle)",
+          borderRadius: "var(--radius-md)",
+          color: "var(--text-tertiary)",
+          fontSize: "var(--text-sm)",
+          textAlign: "center",
+        }}
+      >
+        No issues — translation is clean.
+      </div>
+    );
+  }
+
+  return (
+    <div
+      role="list"
+      aria-label="Problematic blocks"
+      style={{
+        flex: 1,
+        minHeight: 0,
+        overflowY: "auto",
+        border: "1px solid var(--border-subtle)",
+        borderRadius: "var(--radius-md)",
+        background: "var(--bg-page)",
+      }}
+    >
+      {preview.problematic.map((entry) => (
+        <ProblematicRow key={entry.sourceBlockState} entry={entry} />
+      ))}
+    </div>
+  );
+}
+
+function ProblematicRow({ entry }: { entry: ProblematicEntry }) {
+  const sourceProps = formatProperties(entry.sourceProperties);
+  const targetProps = formatProperties(entry.proposedTargetProperties);
+
+  return (
+    <div
+      role="listitem"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--space-1)",
+        padding: "var(--space-2) var(--space-3)",
+        borderBottom: "1px solid var(--border-subtle)",
+        fontSize: "var(--text-sm)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          justifyContent: "space-between",
+          gap: "var(--space-2)",
+        }}
+      >
+        <span
+          style={{
+            color: "var(--text-primary)",
+            fontFamily: "var(--font-mono, ui-monospace, monospace)",
+            fontSize: "var(--text-xs)",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            minWidth: 0,
+          }}
+          title={entry.sourceBlockId + sourceProps}
+        >
+          {entry.sourceBlockId}
+          {sourceProps ? (
+            <span style={{ color: "var(--text-tertiary)" }}>{sourceProps}</span>
+          ) : null}
+        </span>
+        <span
+          style={{
+            color: "var(--text-primary)",
+            fontVariantNumeric: "tabular-nums",
+            fontWeight: 500,
+            flexShrink: 0,
+          }}
+        >
+          {entry.sourceCount.toLocaleString()}
+        </span>
+      </div>
+      <div
+        style={{
+          color: "var(--text-secondary)",
+          fontSize: "var(--text-xs)",
+          fontFamily: "var(--font-mono, ui-monospace, monospace)",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+        title={entry.proposedTargetBlockId + targetProps}
+      >
+        <span style={{ color: "var(--text-tertiary)" }}>→ </span>
+        {entry.proposedTargetBlockId}
+        {targetProps ? (
+          <span style={{ color: "var(--text-tertiary)" }}>{targetProps}</span>
+        ) : null}
+      </div>
+      <ul
+        style={{
+          margin: 0,
+          paddingLeft: "var(--space-4)",
+          color: "var(--color-error)",
+          fontSize: "var(--text-xs)",
+          lineHeight: 1.4,
+        }}
+      >
+        {entry.warnings.map((warning, idx) => (
+          <li key={idx}>{warning}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function formatProperties(properties: Record<string, string>): string {
+  const keys = Object.keys(properties).sort();
+  if (keys.length === 0) return "";
+  return `[${keys.map((k) => `${k}=${properties[k]}`).join(",")}]`;
 }
 
 function PreviewSummary({ state }: { state: PreviewState }) {

@@ -86,12 +86,20 @@ function applyFlatten(
   const exact = FORGE_1_12_FLATTEN[state.toString()];
   if (exact !== undefined) {
     const flattened = FLATTEN_TABLE[exact];
-    return flattened ? BlockState.fromString(flattened) : state;
+    if (flattened) return BlockState.fromString(flattened);
+    opts?.onWarning?.(
+      `Forge name ${state.toString()} mapped to legacy id ${exact}, but no post-flatten mapping exists; leaving as-is`,
+    );
+    return state;
   }
   const bare = FORGE_1_12_FLATTEN[state.Name];
   if (bare !== undefined) {
     const flattened = FLATTEN_TABLE[bare];
-    return flattened ? BlockState.fromString(flattened) : state;
+    if (flattened) return BlockState.fromString(flattened);
+    opts?.onWarning?.(
+      `Forge name ${state.Name} mapped to legacy id ${bare}, but no post-flatten mapping exists; leaving as-is`,
+    );
+    return state;
   }
   // Unknown Forge name — pass through and let the diff walker have a try.
   return state;
@@ -169,7 +177,12 @@ function applyDiffForward(
   // sources during codegen, so a renamed block won't appear in removedBlocks).
   if (!renamed && diff.removedBlocks.includes(originalName)) {
     const fallback = diff.removedFallbacks[originalName];
-    if (fallback) return BlockState.fromString(fallback);
+    if (fallback) {
+      opts?.onWarning?.(
+        `Block ${originalName} was removed in ${diff.to}; substituting ${fallback}`,
+      );
+      return BlockState.fromString(fallback);
+    }
     opts?.onWarning?.(
       `Block ${originalName} was removed in ${diff.to}; replacing with air`,
     );
