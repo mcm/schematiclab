@@ -68,9 +68,19 @@ export interface ParsedSchematicPaletteEntry {
   count: number;
 }
 
+// A single block placement inside a region. `pos` is the absolute world
+// position as the parser sees it; `paletteIndex` references
+// `ParsedSchematicProjection.palette`. Air-like states are excluded so the
+// 3D renderer doesn't waste vertices on them.
+export interface ParsedSchematicBlockPlacement {
+  pos: [number, number, number];
+  paletteIndex: number;
+}
+
 export interface ParsedSchematicRegion {
   origin: [number, number, number];
   size: [number, number, number];
+  blocks: ParsedSchematicBlockPlacement[];
 }
 
 export interface ParsedSchematicProjection {
@@ -335,38 +345,79 @@ function projectSchematic(
   schematic: AbstractSchematic,
   inputFormat: SchematicFormatId,
 ): ParsedSchematicProjection {
-  const regions: ParsedSchematicRegion[] = [];
-  const paletteByKey = new Map<string, ParsedSchematicPaletteEntry>();
+  // First pass: build the per-region placement lists and a keyed palette
+  // accumulator. Palette indexes are assigned in insertion order so each
+  // placement can record a stable index; we re-sort and re-key afterwards.
+  type PaletteAccumulator = ParsedSchematicPaletteEntry & {
+    insertionIndex: number;
+  };
+  const paletteByKey = new Map<string, PaletteAccumulator>();
+  const regionAccumulators: Array<{
+    region: ParsedSchematicRegion;
+    placements: ParsedSchematicBlockPlacement[];
+  }> = [];
   let totalBlocks = 0;
 
   for (const region of schematic.getRegions()) {
     const origin = region.getOrigin().astuple();
     const size = region.getSize();
-    regions.push({
+    const placements: ParsedSchematicBlockPlacement[] = [];
+    const projectedRegion: ParsedSchematicRegion = {
       origin: [origin[0], origin[1], origin[2]],
       size: [size[0], size[1], size[2]],
-    });
+      blocks: placements,
+    };
+    regionAccumulators.push({ region: projectedRegion, placements });
 
     for (const block of region.getBlocks()) {
       totalBlocks += 1;
       const key = block.state.toString();
-      const existing = paletteByKey.get(key);
-      if (existing) {
-        existing.count += 1;
-      } else {
+      let entry = paletteByKey.get(key);
+      if (entry === undefined) {
         const properties: Record<string, string> = {};
         for (const [k, v] of block.state.Properties) properties[k] = v;
-        paletteByKey.set(key, {
+        entry = {
           blockState: key,
           blockId: block.state.Name,
           properties,
           count: 1,
-        });
+          insertionIndex: paletteByKey.size,
+        };
+        paletteByKey.set(key, entry);
+      } else {
+        entry.count += 1;
       }
+
+      const pos = block.pos.astuple();
+      placements.push({
+        pos: [pos[0], pos[1], pos[2]],
+        paletteIndex: entry.insertionIndex,
+      });
     }
   }
 
-  const palette = [...paletteByKey.values()].sort((a, b) => b.count - a.count);
+  // Sort the palette by count (most common first), then build a remap from
+  // insertion order to the final sorted order so per-block placements still
+  // resolve correctly.
+  const sortedEntries = [...paletteByKey.values()].sort(
+    (a, b) => b.count - a.count,
+  );
+  const indexRemap = new Array<number>(sortedEntries.length);
+  for (let finalIdx = 0; finalIdx < sortedEntries.length; finalIdx += 1) {
+    indexRemap[sortedEntries[finalIdx].insertionIndex] = finalIdx;
+  }
+  for (const { placements } of regionAccumulators) {
+    for (const placement of placements) {
+      placement.paletteIndex = indexRemap[placement.paletteIndex];
+    }
+  }
+
+  const palette: ParsedSchematicPaletteEntry[] = sortedEntries.map((e) => ({
+    blockState: e.blockState,
+    blockId: e.blockId,
+    properties: e.properties,
+    count: e.count,
+  }));
 
   return {
     name: schematic.getName(),
@@ -374,6 +425,6 @@ function projectSchematic(
     minecraftVersion: schematic.getMinecraftVersion(),
     totalBlocks,
     palette,
-    regions,
+    regions: regionAccumulators.map((r) => r.region),
   };
 }

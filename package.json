@@ -17,7 +17,9 @@
   "dependencies": {
     "@iamthemcmaster/ui": "^0.3.0",
     "@tabler/icons-react": "^3.40.0",
+    "deepslate": "^0.26.0",
     "fflate": "^0.8.3",
+    "gl-matrix": "^3.4.4",
     "next": "^16.1.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

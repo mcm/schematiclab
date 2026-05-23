@@ -408,6 +408,40 @@ describe("parseSchematic", () => {
     );
   });
 
+  it("emits per-region block placements that reference the sorted palette", () => {
+    const bytes = loadBytes("one_stone_block.litematic");
+
+    const result = parseSchematic(bytes);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const p = result.schematic;
+    const totalPlacements = p.regions.reduce(
+      (sum, region) => sum + region.blocks.length,
+      0,
+    );
+    expect(totalPlacements).toBe(p.totalBlocks);
+
+    // Every placement's paletteIndex must be a valid index into the
+    // post-sort palette.
+    for (const region of p.regions) {
+      for (const placement of region.blocks) {
+        expect(placement.paletteIndex).toBeGreaterThanOrEqual(0);
+        expect(placement.paletteIndex).toBeLessThan(p.palette.length);
+      }
+    }
+
+    // The single-stone fixture has exactly one placement and it must
+    // reference the stone palette entry.
+    const allPlacements = p.regions.flatMap((r) => r.blocks);
+    expect(allPlacements).toHaveLength(1);
+    const stoneIdx = p.palette.findIndex(
+      (e) => e.blockId === "minecraft:stone",
+    );
+    expect(stoneIdx).toBeGreaterThanOrEqual(0);
+    expect(allPlacements[0].paletteIndex).toBe(stoneIdx);
+  });
+
   it("returns a failure result when input cannot be detected", () => {
     const garbage = new TextEncoder().encode("not a schematic, just text");
 
