@@ -1,25 +1,39 @@
 "use client";
 
 import * as React from "react";
-import { BlockPos, Structure, StructureRenderer } from "deepslate";
+import {
+  BlockPos,
+  Structure,
+  StructureRenderer,
+  type Resources,
+} from "deepslate";
 import { mat4 } from "gl-matrix";
 import type { ParsedSchematicProjection } from "@/lib/convert";
 import {
-  createSmokeResources,
+  ensureMinecraftResourcesLoading,
+  getCachedMinecraftResources,
+  getMinecraftResourcesError,
   isInvisibleBlockId,
-} from "@/lib/render/smoke-resources";
+  subscribeMinecraftResources,
+} from "@/lib/render/minecraft-resources";
 
 interface ThreeDPreviewProps {
   projection: ParsedSchematicProjection;
 }
 
+// Matches `Renderer.getPerspective()` in deepslate — keep in sync if upstream
+// changes the FoV.
+const FIELD_OF_VIEW_DEG = 70;
+
+interface Bounds {
+  min: [number, number, number];
+  size: [number, number, number];
+}
+
 // Compute the smallest axis-aligned bounding box containing every visible
 // block placement. Returns null if the schematic has no visible blocks (all
 // air, or empty).
-function computeBounds(projection: ParsedSchematicProjection): {
-  min: [number, number, number];
-  size: [number, number, number];
-} | null {
+function computeBounds(projection: ParsedSchematicProjection): Bounds | null {
   let minX = Infinity;
   let minY = Infinity;
   let minZ = Infinity;
@@ -54,7 +68,7 @@ function computeBounds(projection: ParsedSchematicProjection): {
 // translated by `-bounds.min` so the structure sits at the origin.
 function buildStructure(
   projection: ParsedSchematicProjection,
-  bounds: { min: [number, number, number]; size: [number, number, number] },
+  bounds: Bounds,
 ): Structure {
   const structure = new Structure(
     BlockPos.create(bounds.size[0], bounds.size[1], bounds.size[2]),
@@ -74,17 +88,21 @@ function buildStructure(
   return structure;
 }
 
-// Place the camera so the whole bounding box is visible. We pull back to
-// 1.5× the longest dimension along -Z, then rotate slightly so the user can
-// see depth without any camera controls.
+// Auto-fit camera: pull back from the structure center by enough that the
+// bounding sphere (half the box diagonal) just fits inside the vertical FoV,
+// plus a small margin so the schematic isn't kissing the viewport edges.
 function buildViewMatrix(size: [number, number, number]): mat4 {
-  const maxDim = Math.max(size[0], size[1], size[2], 1);
-  const distance = -maxDim * 2.5;
+  const [Lx, Ly, Lz] = size;
+  const radius = 0.5 * Math.sqrt(Lx * Lx + Ly * Ly + Lz * Lz);
+  const halfFov = (FIELD_OF_VIEW_DEG * Math.PI) / 360;
+  const fitDistance = radius / Math.tan(halfFov);
+  const distance = -fitDistance * 1.25;
+
   const view = mat4.create();
   mat4.translate(view, view, [0, 0, distance]);
   mat4.rotateX(view, view, Math.PI / 6); // ~30° tilt down
   mat4.rotateY(view, view, Math.PI / 4); // ~45° yaw
-  mat4.translate(view, view, [-size[0] / 2, -size[1] / 2, -size[2] / 2]);
+  mat4.translate(view, view, [-Lx / 2, -Ly / 2, -Lz / 2]);
   return view;
 }
 
@@ -104,13 +122,39 @@ function isWebGLAvailable(): boolean {
   return webGLAvailableCache;
 }
 
+function useMinecraftResources(): {
+  resources: Resources | null;
+  error: Error | null;
+} {
+  const resources = React.useSyncExternalStore(
+    subscribeMinecraftResources,
+    getCachedMinecraftResources,
+    () => null,
+  );
+  const error = React.useSyncExternalStore(
+    subscribeMinecraftResources,
+    getMinecraftResourcesError,
+    () => null,
+  );
+
+  // Trigger the load on first mount. The function is idempotent — repeated
+  // calls share the same singleton promise — so it's safe to call from every
+  // mounted instance.
+  React.useEffect(() => {
+    ensureMinecraftResourcesLoading();
+  }, []);
+
+  return { resources, error };
+}
+
 export function ThreeDPreview({ projection }: ThreeDPreviewProps) {
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
   const bounds = React.useMemo(() => computeBounds(projection), [projection]);
   const webGLOk = React.useMemo(() => isWebGLAvailable(), []);
+  const { resources, error: resourcesError } = useMinecraftResources();
 
   React.useEffect(() => {
-    if (!webGLOk || bounds === null) return;
+    if (!webGLOk || bounds === null || resources === null) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const gl = canvas.getContext("webgl");
@@ -119,7 +163,6 @@ export function ThreeDPreview({ projection }: ThreeDPreviewProps) {
     let renderer: StructureRenderer | null = null;
     try {
       const structure = buildStructure(projection, bounds);
-      const resources = createSmokeResources();
       renderer = new StructureRenderer(gl, structure, resources, {
         chunkSize: 16,
         useInvisibleBlockBuffer: false,
@@ -154,7 +197,7 @@ export function ThreeDPreview({ projection }: ThreeDPreviewProps) {
       // second mount's StructureRenderer (shader compile returns no log).
       renderer = null;
     };
-  }, [projection, bounds, webGLOk]);
+  }, [projection, bounds, webGLOk, resources]);
 
   if (!webGLOk) {
     return (
@@ -181,6 +224,41 @@ export function ThreeDPreview({ projection }: ThreeDPreviewProps) {
         }}
       >
         Schematic contains no visible blocks to render.
+      </div>
+    );
+  }
+
+  if (resourcesError !== null) {
+    return (
+      <div
+        role="alert"
+        style={{
+          color: "var(--color-error)",
+          fontSize: "var(--text-sm)",
+          padding: "var(--space-3)",
+        }}
+      >
+        Failed to load Minecraft assets for the 3D preview.
+      </div>
+    );
+  }
+
+  if (resources === null) {
+    return (
+      <div
+        role="status"
+        aria-label="Loading 3D preview"
+        style={{
+          color: "var(--text-tertiary)",
+          fontSize: "var(--text-sm)",
+          padding: "var(--space-3)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100%",
+        }}
+      >
+        Loading 3D preview…
       </div>
     );
   }

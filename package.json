@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "gen:translations": "node --experimental-strip-types scripts/generate-block-translations.mts && node --experimental-strip-types scripts/generate-forge-1.12-flatten.mts",
+    "gen:mc-assets": "node --experimental-strip-types scripts/build-minecraft-assets.mts",
     "lint": "eslint",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
