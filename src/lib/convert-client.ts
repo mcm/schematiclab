@@ -167,6 +167,27 @@ export function translatePreviewInWorker(
 }
 
 /**
+ * Serialize an in-memory edited schematic to bytes in the chosen output format
+ * via the worker. The projection is structured-cloned (so the caller's
+ * reference survives); the resulting `Uint8Array` is transferred back, so the
+ * main thread can pass it straight to a `Blob` for download.
+ */
+export function exportInWorker(
+  schematic: ParsedSchematicProjection,
+  outputFormat: SchematicFormatId,
+  inputFilename: string,
+  targetVersion?: MinecraftVersion | string,
+): Promise<ConvertResult> {
+  return send<ConvertResult>(
+    {
+      type: "export",
+      payload: { schematic, outputFormat, targetVersion, inputFilename },
+    },
+    [],
+  );
+}
+
+/**
  * Terminate the active worker (if any) and reject every in-flight request.
  * The next `detectInWorker` / `convertInWorker` call lazily creates a new
  * worker.

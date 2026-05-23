@@ -9,6 +9,7 @@ import type { MinecraftVersion } from "./schemlib/schematic-formats";
 import {
   convertSchematic,
   parseSchematic,
+  serializeSchematic,
   type ConvertResult,
   type ParsedSchematicProjection,
   type ParseResult,
@@ -41,6 +42,13 @@ export interface TranslatePreviewPayload {
   targetVersion: MinecraftVersion;
 }
 
+export interface ExportPayload {
+  schematic: ParsedSchematicProjection;
+  outputFormat: SchematicFormatId;
+  targetVersion?: MinecraftVersion | string;
+  inputFilename: string;
+}
+
 export type WorkerRequest =
   | { id: number; type: "detect"; payload: DetectPayload }
   | { id: number; type: "convert"; payload: ConvertPayload }
@@ -49,7 +57,8 @@ export type WorkerRequest =
       id: number;
       type: "translatePreview";
       payload: TranslatePreviewPayload;
-    };
+    }
+  | { id: number; type: "export"; payload: ExportPayload };
 
 export type WorkerResponse =
   | { id: number; ok: true; type: "detect"; result: string }
@@ -61,6 +70,7 @@ export type WorkerResponse =
       type: "translatePreview";
       result: VersionMappingPreview;
     }
+  | { id: number; ok: true; type: "export"; result: ConvertResult }
   | { id: number; ok: false; error: string };
 
 // ── Worker scope shim ─────────────────────────────────────────────────────
@@ -121,6 +131,23 @@ ctx.addEventListener("message", (event) => {
       const { schematic, targetVersion } = request.payload;
       const result = previewVersionMapping(schematic, targetVersion);
       ctx.postMessage({ id, ok: true, type: "translatePreview", result });
+      return;
+    }
+
+    if (type === "export") {
+      const { schematic, outputFormat, targetVersion, inputFilename } =
+        request.payload;
+      const result = serializeSchematic({
+        schematic,
+        outputFormat,
+        targetVersion,
+        inputFilename,
+      });
+      const transfer: Transferable[] =
+        result.ok && result.bytes.buffer instanceof ArrayBuffer
+          ? [result.bytes.buffer]
+          : [];
+      ctx.postMessage({ id, ok: true, type: "export", result }, transfer);
       return;
     }
 

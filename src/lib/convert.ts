@@ -10,6 +10,7 @@ import {
   detectSchematicType,
   getVersion,
 } from "./schemlib/schematic-formats";
+import { Block, BlockPos, BlockState } from "./schemlib/blocks";
 import { LitematicSchematic } from "./schemlib/schematic-formats/litematic";
 import { StructureSchematic } from "./schemlib/schematic-formats/structure";
 import {
@@ -23,7 +24,10 @@ import {
   BuildingGadgetsV2Schematic,
 } from "./schemlib/schematic-formats/building-gadgets";
 import { StructurizeBlueprint } from "./schemlib/schematic-formats/structurize";
-import { IntermediateSchematic } from "./schemlib/schematic-formats/intermediate";
+import {
+  IntermediateRegion,
+  IntermediateSchematic,
+} from "./schemlib/schematic-formats/intermediate";
 
 // ── Public types ──────────────────────────────────────────────────────────
 
@@ -53,6 +57,13 @@ export interface ConvertSchematicOptions {
 export type ConvertResult =
   | { ok: true; bytes: Uint8Array; filename: string; mimeType: string }
   | { ok: false; error: string; cause?: unknown };
+
+export interface SerializeSchematicOptions {
+  schematic: ParsedSchematicProjection;
+  inputFilename: string;
+  outputFormat: SchematicFormatId;
+  targetVersion?: MinecraftVersion | string;
+}
 
 // ── Parse projection ──────────────────────────────────────────────────────
 //
@@ -339,6 +350,112 @@ export function parseSchematic(bytes: Uint8Array): ParseResult {
       cause,
     };
   }
+}
+
+/**
+ * Serialize an in-memory `ParsedSchematicProjection` to bytes in `outputFormat`,
+ * optionally version-mapping to `targetVersion` on the way out. Used by the
+ * Advanced Editor's Export panel after the user has applied edits to the
+ * projection in memory.
+ *
+ * The projection is first reified into an `IntermediateSchematic` (the
+ * schemlib canonical interchange shape) and then handed to the target format's
+ * `fromSchematic` constructor — same code path as `convertSchematic`, which is
+ * how cross-format conversion works in Simple Mode. Errors are reported via
+ * `{ ok: false }`, never thrown.
+ */
+export function serializeSchematic(
+  options: SerializeSchematicOptions,
+): ConvertResult {
+  const { schematic, inputFilename, outputFormat, targetVersion } = options;
+
+  const outputEntry = FORMAT_REGISTRY[outputFormat];
+  if (!outputEntry) {
+    return {
+      ok: false,
+      error: `Unsupported output format: ${String(outputFormat)}`,
+    };
+  }
+
+  let resolvedTarget: MinecraftVersion | null;
+  try {
+    resolvedTarget = resolveTargetVersion(targetVersion);
+  } catch (cause) {
+    return { ok: false, error: errorMessage(cause), cause };
+  }
+
+  let intermediate: IntermediateSchematic;
+  try {
+    intermediate = projectionToIntermediate(schematic);
+  } catch (cause) {
+    return {
+      ok: false,
+      error: `Failed to materialize in-memory schematic: ${errorMessage(cause)}`,
+      cause,
+    };
+  }
+
+  let converted: AbstractSchematic;
+  try {
+    converted = outputEntry.cls.fromSchematic(intermediate, resolvedTarget);
+  } catch (cause) {
+    return {
+      ok: false,
+      error: `Failed to convert to ${outputFormat}: ${errorMessage(cause)}`,
+      cause,
+    };
+  }
+
+  let outBytes: Uint8Array;
+  try {
+    outBytes = toBytes(converted.schematicDump());
+  } catch (cause) {
+    return {
+      ok: false,
+      error: `Failed to serialize ${outputFormat}: ${errorMessage(cause)}`,
+      cause,
+    };
+  }
+
+  const filename = `${stripExtension(inputFilename)}.${outputEntry.extension}`;
+
+  return {
+    ok: true,
+    bytes: outBytes,
+    filename,
+    mimeType: outputEntry.mimeType,
+  };
+}
+
+function projectionToIntermediate(
+  projection: ParsedSchematicProjection,
+): IntermediateSchematic {
+  const regions = projection.regions.map((region) => {
+    const blocks: Block[] = region.blocks.map((placement) => {
+      const entry = projection.palette[placement.paletteIndex];
+      const state = new BlockState({
+        Name: entry.blockId,
+        Properties: entry.properties,
+      });
+      return new Block(
+        new BlockPos(placement.pos[0], placement.pos[1], placement.pos[2]),
+        state,
+      );
+    });
+    return new IntermediateRegion(
+      projection.minecraftVersion,
+      new BlockPos(region.origin[0], region.origin[1], region.origin[2]),
+      [region.size[0], region.size[1], region.size[2]],
+      blocks,
+    );
+  });
+
+  return new IntermediateSchematic(
+    {},
+    projection.name,
+    regions,
+    projection.minecraftVersion,
+  );
 }
 
 function projectSchematic(

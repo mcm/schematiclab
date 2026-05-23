@@ -3,7 +3,12 @@ import path from "node:path";
 
 import { describe, it, expect } from "vitest";
 
-import { convertSchematic, parseSchematic } from "../convert";
+import {
+  convertSchematic,
+  parseSchematic,
+  serializeSchematic,
+  type ParsedSchematicProjection,
+} from "../convert";
 import { detectSchematicType } from "../schemlib/schematic-formats";
 import {
   SpongeSchematicMetadata,
@@ -449,5 +454,81 @@ describe("parseSchematic", () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error).toMatch(/detect/i);
+  });
+});
+
+describe("serializeSchematic", () => {
+  function parseFixture(filename: string): ParsedSchematicProjection {
+    const parsed = parseSchematic(loadBytes(filename));
+    if (!parsed.ok) throw new Error(parsed.error);
+    return parsed.schematic;
+  }
+
+  it("serializes an in-memory projection to the requested output format", () => {
+    const schematic = parseFixture("one_stone_block.litematic");
+
+    const result = serializeSchematic({
+      schematic,
+      inputFilename: "edited.litematic",
+      outputFormat: "Sponge[v2]",
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.filename).toBe("edited.schem");
+    expect(detectSchematicType(result.bytes)).toBe("Sponge[v2]");
+
+    const reloaded = SpongeSchematicV2.schematicLoad(result.bytes);
+    const blocks = reloaded.getRegion(0).getBlocks();
+    expect(blocks.length).toBe(1);
+    expect(blocks[0].state.Name).toBe("minecraft:stone");
+  });
+
+  it("applies an export-time targetVersion to the output", () => {
+    const schematic = parseFixture("one_stone_block.litematic");
+    const targetVersion = "1.20.1";
+    const expectedDataVersion = KNOWN_VERSIONS[targetVersion].dataVersion;
+
+    const result = serializeSchematic({
+      schematic,
+      inputFilename: "edited.litematic",
+      outputFormat: "Sponge[v2]",
+      targetVersion,
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const reloaded = SpongeSchematicV2.schematicLoad(result.bytes);
+    expect(reloaded.DataVersion).toBe(expectedDataVersion);
+  });
+
+  it("derives the output filename from the input basename and target extension", () => {
+    const schematic = parseFixture("one_stone_block.litematic");
+
+    const result = serializeSchematic({
+      schematic,
+      inputFilename: "/some/path/My Castle.litematic",
+      outputFormat: "Structure",
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.filename).toBe("My Castle.nbt");
+  });
+
+  it("re-exports to the same format as the input (no format restriction)", () => {
+    const schematic = parseFixture("one_stone_block.litematic");
+
+    const result = serializeSchematic({
+      schematic,
+      inputFilename: "edited.litematic",
+      outputFormat: "Litematic",
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.filename).toBe("edited.litematic");
+    expect(detectSchematicType(result.bytes)).toBe("Litematic");
   });
 });

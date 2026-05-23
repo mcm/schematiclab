@@ -20,6 +20,7 @@ import {
   type BlockStatePickerResult,
   type BlockStatePickerSource,
 } from "@/components/block-state-picker";
+import { ExportPanel } from "@/components/export-panel";
 import { MaterialList } from "@/components/material-list";
 import { ThreeDPreview } from "@/components/three-d-preview";
 import { VersionMappingPanel } from "@/components/version-mapping-panel";
@@ -179,8 +180,18 @@ function versionMappingBody(parseStatus: ParseStatus): React.ReactNode {
   return <PanelSkeleton />;
 }
 
-function exportBody(parseStatus: ParseStatus): React.ReactNode {
-  if (parseStatus.status === "ready") return "Output format and download go here.";
+function exportBody(
+  parseStatus: ParseStatus,
+  inputFilename: string | null,
+): React.ReactNode {
+  if (parseStatus.status === "ready") {
+    return (
+      <ExportPanel
+        schematic={parseStatus.schematic}
+        inputFilename={inputFilename ?? "schematic"}
+      />
+    );
+  }
   if (parseStatus.status === "error") return UNAVAILABLE_LABEL;
   return <PanelSkeleton />;
 }
@@ -190,11 +201,13 @@ function EditorShell({
   onRequestSwap,
   canUndoSwap,
   onUndoSwap,
+  inputFilename,
 }: {
   parseStatus: ParseStatus;
   onRequestSwap: (entry: ParsedSchematicPaletteEntry) => void;
   canUndoSwap: boolean;
   onUndoSwap: () => void;
+  inputFilename: string | null;
 }) {
   const isNarrow = useIsNarrowViewport();
 
@@ -282,7 +295,9 @@ function EditorShell({
         <PanelCard title="Version Mapping" flex={1}>
           {versionMappingBody(parseStatus)}
         </PanelCard>
-        <PanelCard title="Export">{exportBody(parseStatus)}</PanelCard>
+        <PanelCard title="Export">
+          {exportBody(parseStatus, inputFilename)}
+        </PanelCard>
       </div>
     </div>
   );
@@ -516,6 +531,7 @@ export default function AdvancedPage() {
           onRequestSwap={handleRequestSwap}
           canUndoSwap={lastSwapSnapshot !== null}
           onUndoSwap={handleUndoSwap}
+          inputFilename={stagedFilename}
         />
       ) : (
         <EmptyState />
