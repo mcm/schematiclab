@@ -4,6 +4,7 @@ import type { ParsedSchematicProjection } from "../convert";
 import {
   __resetEditorStateForTests,
   applyBlockSwap,
+  applyVersionMapping,
   clearEditorState,
   getEditorState,
   setOutputFormat,
@@ -11,8 +12,10 @@ import {
   setStagedFile,
   setTargetVersion,
   undoLastSwap,
+  undoLastTranslation,
   type StagedFile,
 } from "../editor-state";
+import type { MinecraftVersion } from "../schemlib/schematic-formats/version-mapping";
 
 const sampleStaged: StagedFile = {
   bytes: new Uint8Array([1, 2, 3]),
@@ -45,6 +48,7 @@ describe("editor-state store", () => {
       targetVersion: null,
       parseStatus: { status: "idle" },
       lastSwapSnapshot: null,
+      lastTranslationSnapshot: null,
     });
   });
 
@@ -74,6 +78,7 @@ describe("editor-state store", () => {
       targetVersion: null,
       parseStatus: { status: "idle" },
       lastSwapSnapshot: null,
+      lastTranslationSnapshot: null,
     });
   });
 
@@ -168,6 +173,187 @@ describe("editor-state store", () => {
       (e) => e.blockId === "minecraft:cobblestone",
     );
     expect(palette[cobblesIdx].count).toBe(1);
+  });
+
+  it("applyVersionMapping is a no-op when there is no ready parse", () => {
+    const targetVersion: MinecraftVersion = {
+      platform: "java",
+      versionNumber: [1, 17, 1],
+      dataVersion: 2730,
+    };
+    expect(applyVersionMapping(targetVersion)).toBe(false);
+    expect(getEditorState().lastTranslationSnapshot).toBeNull();
+  });
+
+  it("applyVersionMapping translates the schematic, stashes a snapshot, and bumps the version", () => {
+    const sourceVersion: MinecraftVersion = {
+      platform: "java",
+      versionNumber: [1, 16, 5],
+      dataVersion: 2586,
+    };
+    const targetVersion: MinecraftVersion = {
+      platform: "java",
+      versionNumber: [1, 17, 1],
+      dataVersion: 2730,
+    };
+    const projection: ParsedSchematicProjection = {
+      name: "build",
+      inputFormat: "Litematic",
+      minecraftVersion: sourceVersion,
+      totalBlocks: 1,
+      palette: [
+        {
+          blockState: "minecraft:grass_path",
+          blockId: "minecraft:grass_path",
+          properties: {},
+          count: 1,
+        },
+      ],
+      regions: [
+        {
+          origin: [0, 0, 0],
+          size: [1, 1, 1],
+          blocks: [{ pos: [0, 0, 0], paletteIndex: 0 }],
+        },
+      ],
+    };
+    setParseStatus({ status: "ready", schematic: projection });
+    expect(applyVersionMapping(targetVersion)).toBe(true);
+
+    const after = getEditorState();
+    expect(after.lastTranslationSnapshot).toBe(projection);
+    if (after.parseStatus.status !== "ready") throw new Error("expected ready");
+    expect(after.parseStatus.schematic.minecraftVersion).toEqual(targetVersion);
+    // 1.16.5 → 1.17.1 renames grass_path to dirt_path.
+    expect(after.parseStatus.schematic.palette.map((e) => e.blockId)).toEqual([
+      "minecraft:dirt_path",
+    ]);
+  });
+
+  it("applyVersionMapping honours per-state overrides", () => {
+    const sourceVersion: MinecraftVersion = {
+      platform: "java",
+      versionNumber: [1, 16, 5],
+      dataVersion: 2586,
+    };
+    const targetVersion: MinecraftVersion = {
+      platform: "java",
+      versionNumber: [1, 17, 1],
+      dataVersion: 2730,
+    };
+    const projection: ParsedSchematicProjection = {
+      name: "build",
+      inputFormat: "Litematic",
+      minecraftVersion: sourceVersion,
+      totalBlocks: 1,
+      palette: [
+        {
+          blockState: "minecraft:grass_path",
+          blockId: "minecraft:grass_path",
+          properties: {},
+          count: 1,
+        },
+      ],
+      regions: [
+        {
+          origin: [0, 0, 0],
+          size: [1, 1, 1],
+          blocks: [{ pos: [0, 0, 0], paletteIndex: 0 }],
+        },
+      ],
+    };
+    setParseStatus({ status: "ready", schematic: projection });
+    applyVersionMapping(targetVersion, {
+      "minecraft:grass_path": {
+        blockId: "minecraft:cobblestone",
+        properties: {},
+      },
+    });
+
+    const after = getEditorState();
+    if (after.parseStatus.status !== "ready") throw new Error("expected ready");
+    expect(after.parseStatus.schematic.palette.map((e) => e.blockId)).toEqual([
+      "minecraft:cobblestone",
+    ]);
+  });
+
+  it("undoLastTranslation restores the pre-translation projection and clears the snapshot", () => {
+    const sourceVersion: MinecraftVersion = {
+      platform: "java",
+      versionNumber: [1, 16, 5],
+      dataVersion: 2586,
+    };
+    const targetVersion: MinecraftVersion = {
+      platform: "java",
+      versionNumber: [1, 17, 1],
+      dataVersion: 2730,
+    };
+    const projection: ParsedSchematicProjection = {
+      name: "build",
+      inputFormat: "Litematic",
+      minecraftVersion: sourceVersion,
+      totalBlocks: 1,
+      palette: [
+        {
+          blockState: "minecraft:stone",
+          blockId: "minecraft:stone",
+          properties: {},
+          count: 1,
+        },
+      ],
+      regions: [
+        {
+          origin: [0, 0, 0],
+          size: [1, 1, 1],
+          blocks: [{ pos: [0, 0, 0], paletteIndex: 0 }],
+        },
+      ],
+    };
+    setParseStatus({ status: "ready", schematic: projection });
+    applyVersionMapping(targetVersion);
+    expect(undoLastTranslation()).toBe(true);
+    const s = getEditorState();
+    if (s.parseStatus.status !== "ready") throw new Error("expected ready");
+    expect(s.parseStatus.schematic).toBe(projection);
+    expect(s.lastTranslationSnapshot).toBeNull();
+    expect(undoLastTranslation()).toBe(false);
+  });
+
+  it("applyVersionMapping discards a stale swap-undo snapshot", () => {
+    const sourceVersion: MinecraftVersion = {
+      platform: "java",
+      versionNumber: [1, 20, 1],
+      dataVersion: 3463,
+    };
+    const projection: ParsedSchematicProjection = {
+      name: "build",
+      inputFormat: "Litematic",
+      minecraftVersion: sourceVersion,
+      totalBlocks: 1,
+      palette: [
+        {
+          blockState: "minecraft:stone",
+          blockId: "minecraft:stone",
+          properties: {},
+          count: 1,
+        },
+      ],
+      regions: [
+        {
+          origin: [0, 0, 0],
+          size: [1, 1, 1],
+          blocks: [{ pos: [0, 0, 0], paletteIndex: 0 }],
+        },
+      ],
+    };
+    setParseStatus({ status: "ready", schematic: projection });
+    applyBlockSwap("minecraft:stone", {
+      blockId: "minecraft:dirt",
+      properties: {},
+    });
+    expect(getEditorState().lastSwapSnapshot).not.toBeNull();
+    applyVersionMapping(sourceVersion);
+    expect(getEditorState().lastSwapSnapshot).toBeNull();
   });
 
   it("undoLastSwap restores the prior projection and clears the snapshot", () => {
