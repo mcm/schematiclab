@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@iamthemcmaster/ui";
 import schematiclabLogo from "../../public/schematiclab.png";
 import { FileDropzone } from "@/components/file-dropzone";
@@ -13,6 +14,7 @@ import {
   type DetectionState,
 } from "@/components/detected-format-hint";
 import { SubmitButton } from "@/components/submit-button";
+import { AdvancedEditorButton } from "@/components/advanced-editor-button";
 import { InlineError } from "@/components/inline-error";
 import type { SchematicFormatId } from "@/lib/convert";
 import { cancel, convertInWorker, detectInWorker } from "@/lib/convert-client";
@@ -40,6 +42,7 @@ function triggerDownload(
 }
 
 export default function HomePage() {
+  const router = useRouter();
   const [file, setFile] = React.useState<File | null>(null);
   const [detection, setDetection] = React.useState<DetectionState>({
     status: "idle",
@@ -125,6 +128,13 @@ export default function HomePage() {
     cancel();
   }, []);
 
+  const handleOpenAdvanced = React.useCallback(() => {
+    router.push("/advanced");
+  }, [router]);
+
+  const canOpenAdvanced =
+    !!file && detection.status === "ok" && !isConverting;
+
   return (
     <main
       style={{
@@ -185,6 +195,10 @@ export default function HomePage() {
               isConverting={isConverting}
               onClick={handleSubmit}
               onCancel={handleCancel}
+            />
+            <AdvancedEditorButton
+              disabled={!canOpenAdvanced}
+              onClick={handleOpenAdvanced}
             />
           </CardContent>
         </Card>

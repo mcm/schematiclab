@@ -63,7 +63,7 @@ export function SubmitButton({
       onClick={onClick}
       style={{ width: "100%" }}
     >
-      Submit
+      Quick Convert
     </Button>
   );
 }
