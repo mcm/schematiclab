@@ -3,18 +3,20 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { ParsedSchematicProjection } from "../convert";
 import {
   __resetEditorStateForTests,
-  applyBlockSwap,
-  applyVersionMapping,
   clearEditorState,
   getEditorState,
   setOutputFormat,
   setParseStatus,
   setStagedFile,
   setTargetVersion,
-  undoLastSwap,
-  undoLastTranslation,
   type StagedFile,
 } from "../editor-state";
+import {
+  applyBlockSwap,
+  applyVersionMapping,
+  undoLastSwap,
+  undoLastTranslation,
+} from "../editor-state-edits";
 import type { MinecraftVersion } from "../schemlib/schematic-formats/version-mapping";
 
 const sampleStaged: StagedFile = {

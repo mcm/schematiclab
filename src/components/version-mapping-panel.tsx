@@ -24,11 +24,11 @@ import type {
   VersionMappingPreview,
 } from "@/lib/advanced/version-mapping-preview";
 import type { VersionMappingOverrides } from "@/lib/advanced/edit";
+import { useEditorState } from "@/lib/editor-state";
 import {
   applyVersionMapping as applyVersionMappingAction,
   undoLastTranslation,
-  useEditorState,
-} from "@/lib/editor-state";
+} from "@/lib/editor-state-edits";
 import {
   BlockStatePicker,
   type BlockStatePickerResult,
