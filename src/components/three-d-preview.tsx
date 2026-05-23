@@ -36,9 +36,32 @@ const MIN_DISTANCE_FACTOR = 0.05; // relative to fitDistance
 const MAX_DISTANCE_FACTOR = 10;
 const FIT_DISTANCE_MARGIN = 1.25;
 
+// Hard ceiling for interactive preview. Past this many visible (non-air)
+// placements, even the chunked builder + GPU mesh upload starts to feel
+// painful, and a 1M-vertex draw can exceed mobile GPU limits. Showing an
+// inline notice is friendlier than freezing the browser. Defining the exact
+// threshold is out of scope for v1 — 100k is a conservative starting point
+// that still admits real-world builds.
+const MAX_PREVIEWABLE_BLOCKS = 100_000;
+
+// Chunk size matches the deepslate default we pass to StructureRenderer. Keep
+// these in lock-step.
+const CHUNK_SIZE = 16;
+
+// Number of chunks to build per yield. Each call iterates the full block list
+// once and only does mesh work for blocks in the supplied chunks, so larger
+// batches amortize iteration overhead at the cost of longer main-thread
+// occupancy. 4 keeps each pause under ~16ms on typical fixtures.
+const CHUNK_BUILD_BATCH = 4;
+
 interface Bounds {
   min: [number, number, number];
   size: [number, number, number];
+}
+
+interface ProjectionStats {
+  bounds: Bounds | null;
+  visibleBlockCount: number;
 }
 
 interface CameraState {
@@ -60,22 +83,29 @@ interface CameraApi {
 }
 
 // Compute the smallest axis-aligned bounding box containing every visible
-// block placement. Returns null if the schematic has no visible blocks (all
-// air, or empty).
-function computeBounds(projection: ParsedSchematicProjection): Bounds | null {
+// block placement and the total count of visible (non-air) placements. The
+// count drives the "too large to preview" guard.
+function computeProjectionStats(
+  projection: ParsedSchematicProjection,
+): ProjectionStats {
   let minX = Infinity;
   let minY = Infinity;
   let minZ = Infinity;
   let maxX = -Infinity;
   let maxY = -Infinity;
   let maxZ = -Infinity;
-  let any = false;
+  let visibleBlockCount = 0;
+
+  // Pre-compute visibility per palette entry so the inner loop is one map
+  // lookup + one boolean check rather than a Set probe per placement.
+  const visibleMask = projection.palette.map(
+    (entry) => !isInvisibleBlockId(entry.blockId),
+  );
 
   for (const region of projection.regions) {
     for (const placement of region.blocks) {
-      const entry = projection.palette[placement.paletteIndex];
-      if (entry === undefined || isInvisibleBlockId(entry.blockId)) continue;
-      any = true;
+      if (!visibleMask[placement.paletteIndex]) continue;
+      visibleBlockCount += 1;
       const [x, y, z] = placement.pos;
       if (x < minX) minX = x;
       if (y < minY) minY = y;
@@ -86,10 +116,15 @@ function computeBounds(projection: ParsedSchematicProjection): Bounds | null {
     }
   }
 
-  if (!any) return null;
+  if (visibleBlockCount === 0) {
+    return { bounds: null, visibleBlockCount: 0 };
+  }
   return {
-    min: [minX, minY, minZ],
-    size: [maxX - minX + 1, maxY - minY + 1, maxZ - minZ + 1],
+    bounds: {
+      min: [minX, minY, minZ],
+      size: [maxX - minX + 1, maxY - minY + 1, maxZ - minZ + 1],
+    },
+    visibleBlockCount,
   };
 }
 
@@ -115,6 +150,26 @@ function buildStructure(
     }
   }
   return structure;
+}
+
+// Enumerate every chunk position the structure occupies (in `CHUNK_SIZE`
+// units). The chunk builder lazy-allocates chunks on demand, so this list just
+// drives the batched build loop.
+function listChunkPositions(
+  size: [number, number, number],
+): Array<[number, number, number]> {
+  const cx = Math.max(1, Math.ceil(size[0] / CHUNK_SIZE));
+  const cy = Math.max(1, Math.ceil(size[1] / CHUNK_SIZE));
+  const cz = Math.max(1, Math.ceil(size[2] / CHUNK_SIZE));
+  const out: Array<[number, number, number]> = [];
+  for (let x = 0; x < cx; x += 1) {
+    for (let y = 0; y < cy; y += 1) {
+      for (let z = 0; z < cz; z += 1) {
+        out.push([x, y, z]);
+      }
+    }
+  }
+  return out;
 }
 
 // Auto-fit: pull back enough that the bounding sphere fits in the vertical FoV,
@@ -198,29 +253,94 @@ function useMinecraftResources(): {
   return { resources, error };
 }
 
+// Yields control to the browser so layout, input, and other tasks can run.
+// `requestAnimationFrame` is preferred over `setTimeout(0)` because it
+// guarantees a paint between batches — the user sees the structure assemble
+// chunk-by-chunk rather than appearing in one jump after every yield is done.
+function yieldToMainThread(): Promise<void> {
+  return new Promise((resolve) => {
+    if (typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(() => resolve());
+    } else {
+      setTimeout(resolve, 0);
+    }
+  });
+}
+
+// Deepslate's StructureRenderer rebuilds every chunk in its constructor and
+// in `setStructure()`. For large schematics that single pass is exactly what
+// blocks the main thread. We dodge it by constructing the renderer over an
+// empty stand-in structure (one chunk's worth of nothing → cheap), then
+// reaching into the private `structure` / `chunkBuilder.structure` fields to
+// swap in the real one. After that we drive `chunkBuilder.updateStructureBuffers`
+// per-chunk so the work is broken up into yields. The cast lives in this one
+// helper so the rest of the component doesn't care about deepslate internals.
+interface PrivateChunkBuilder {
+  structure: Structure;
+  updateStructureBuffers: (positions?: Array<[number, number, number]>) => void;
+}
+interface PrivateStructureRenderer {
+  structure: Structure;
+  chunkBuilder: PrivateChunkBuilder;
+  gridMesh: unknown;
+  invisibleBlocksMesh: unknown;
+  getGridMesh: () => unknown;
+  getInvisibleBlocksMesh: () => unknown;
+}
+
+function swapStructureWithoutFullRebuild(
+  renderer: StructureRenderer,
+  realStructure: Structure,
+): void {
+  const priv = renderer as unknown as PrivateStructureRenderer;
+  priv.structure = realStructure;
+  priv.chunkBuilder.structure = realStructure;
+  // The grid and invisible-blocks line meshes are sized from the structure,
+  // so they need to be rebuilt after the swap. Both rebuilds are O(perimeter)
+  // and don't touch block meshes.
+  priv.gridMesh = priv.getGridMesh();
+  priv.invisibleBlocksMesh = priv.getInvisibleBlocksMesh();
+}
+
 export function ThreeDPreview({ projection }: ThreeDPreviewProps) {
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
   const apiRef = React.useRef<CameraApi | null>(null);
-  const bounds = React.useMemo(() => computeBounds(projection), [projection]);
+  const stats = React.useMemo(
+    () => computeProjectionStats(projection),
+    [projection],
+  );
   const webGLOk = React.useMemo(() => isWebGLAvailable(), []);
   const { resources, error: resourcesError } = useMinecraftResources();
 
+  // Cleared back to false once the chunked builder finishes (or aborts via
+  // cleanup). Drives the "Building preview…" overlay.
+  const [isBuilding, setIsBuilding] = React.useState(false);
+  const tooLarge =
+    stats.bounds !== null && stats.visibleBlockCount > MAX_PREVIEWABLE_BLOCKS;
+
   React.useEffect(() => {
-    if (!webGLOk || bounds === null || resources === null) return;
+    if (!webGLOk || stats.bounds === null || resources === null || tooLarge) {
+      return;
+    }
     const canvasMaybe = canvasRef.current;
     if (!canvasMaybe) return;
     const canvas: HTMLCanvasElement = canvasMaybe;
     const gl = canvas.getContext("webgl");
     if (gl === null) return;
 
+    const bounds = stats.bounds;
     let renderer: StructureRenderer | null = null;
     let scheduledFrame = 0;
     const initial = computeInitialCamera(bounds.size);
     const camera: CameraState = { ...initial.camera };
+    // Set to true by the cleanup function; the async build loop checks this
+    // between batches and bails out so an unmount mid-build (or a new
+    // projection arriving) doesn't leak work onto the next effect.
+    let cancelled = false;
 
     function render() {
       if (!renderer || !gl) return;
-      const view = buildViewMatrix(camera, bounds!.size);
+      const view = buildViewMatrix(camera, bounds.size);
       gl.clearColor(0.07, 0.08, 0.1, 1);
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
       renderer.drawGrid(view);
@@ -244,14 +364,16 @@ export function ThreeDPreview({ projection }: ThreeDPreviewProps) {
       if (renderer) renderer.setViewport(0, 0, canvas.width, canvas.height);
     }
 
+    // Construct the renderer over an empty 0×0×0 stub so the constructor's
+    // mandatory full-mesh pass is a no-op. The real structure is poked in
+    // afterwards and built chunk-by-chunk below.
     try {
-      const structure = buildStructure(projection, bounds);
-      renderer = new StructureRenderer(gl, structure, resources, {
-        chunkSize: 16,
+      const emptyStub = new Structure(BlockPos.ZERO);
+      renderer = new StructureRenderer(gl, emptyStub, resources, {
+        chunkSize: CHUNK_SIZE,
         useInvisibleBlockBuffer: false,
       });
       resizeCanvas();
-      render();
     } catch (err) {
       // Renderer construction failures here would be deepslate-internal
       // (shader compile, mesh build) and are not user-actionable. Log so
@@ -401,7 +523,7 @@ export function ThreeDPreview({ projection }: ThreeDPreviewProps) {
 
     apiRef.current = {
       reset: () => {
-        const fresh = computeInitialCamera(bounds!.size).camera;
+        const fresh = computeInitialCamera(bounds.size).camera;
         camera.yaw = fresh.yaw;
         camera.pitch = fresh.pitch;
         camera.distance = fresh.distance;
@@ -411,7 +533,46 @@ export function ThreeDPreview({ projection }: ThreeDPreviewProps) {
       },
     };
 
+    // Kick off the chunked build. Structure-build itself is a single O(N)
+    // pass (deepslate's `Structure.addBlock` does a per-call palette
+    // findIndex — fine for ≤100k blocks). Then we yield once and walk the
+    // chunk list in batches, rendering between each so the structure visibly
+    // assembles instead of appearing all at once.
+    //
+    // All `setIsBuilding` calls happen inside async callbacks (after a
+    // `yieldToMainThread` / `await`) — never synchronously inside the effect
+    // body — so the lint rule against synchronous setState-in-effect stays
+    // happy. The very first `setIsBuilding(true)` is itself behind an `await`.
+    const realStructure = buildStructure(projection, bounds);
+    const chunkPositions = listChunkPositions(bounds.size);
+
+    void (async () => {
+      try {
+        await yieldToMainThread();
+        if (cancelled || !renderer) return;
+        setIsBuilding(true);
+        swapStructureWithoutFullRebuild(renderer, realStructure);
+        const builder = (renderer as unknown as PrivateStructureRenderer)
+          .chunkBuilder;
+
+        for (let i = 0; i < chunkPositions.length; i += CHUNK_BUILD_BATCH) {
+          if (cancelled) return;
+          const batch = chunkPositions.slice(i, i + CHUNK_BUILD_BATCH);
+          builder.updateStructureBuffers(batch);
+          requestRender();
+          if (i + CHUNK_BUILD_BATCH < chunkPositions.length) {
+            await yieldToMainThread();
+          }
+        }
+        if (!cancelled) setIsBuilding(false);
+      } catch (err) {
+        console.error("ThreeDPreview chunk build failed", err);
+        if (!cancelled) setIsBuilding(false);
+      }
+    })();
+
     return () => {
+      cancelled = true;
       canvas.removeEventListener("pointerdown", onPointerDown);
       canvas.removeEventListener("pointermove", onPointerMove);
       canvas.removeEventListener("pointerup", onPointerUp);
@@ -429,7 +590,7 @@ export function ThreeDPreview({ projection }: ThreeDPreviewProps) {
       // second mount's StructureRenderer (shader compile returns no log).
       renderer = null;
     };
-  }, [projection, bounds, webGLOk, resources]);
+  }, [projection, stats, webGLOk, resources, tooLarge]);
 
   if (!webGLOk) {
     return (
@@ -446,7 +607,7 @@ export function ThreeDPreview({ projection }: ThreeDPreviewProps) {
     );
   }
 
-  if (bounds === null) {
+  if (stats.bounds === null) {
     return (
       <div
         style={{
@@ -456,6 +617,34 @@ export function ThreeDPreview({ projection }: ThreeDPreviewProps) {
         }}
       >
         Schematic contains no visible blocks to render.
+      </div>
+    );
+  }
+
+  if (tooLarge) {
+    return (
+      <div
+        role="alert"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "var(--space-2)",
+          padding: "var(--space-4)",
+          height: "100%",
+          color: "var(--text-secondary)",
+          fontSize: "var(--text-sm)",
+          textAlign: "center",
+        }}
+      >
+        <span style={{ color: "var(--text-primary)", fontWeight: 500 }}>
+          This schematic is too large to preview interactively.
+        </span>
+        <span>
+          {stats.visibleBlockCount.toLocaleString()} visible blocks exceeds the{" "}
+          {MAX_PREVIEWABLE_BLOCKS.toLocaleString()}-block preview limit.
+        </span>
       </div>
     );
   }
@@ -509,6 +698,27 @@ export function ThreeDPreview({ projection }: ThreeDPreviewProps) {
           cursor: "grab",
         }}
       />
+      {isBuilding ? (
+        <div
+          role="status"
+          aria-label="Building 3D preview"
+          style={{
+            position: "absolute",
+            top: "var(--space-2)",
+            left: "var(--space-2)",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "var(--space-2)",
+            padding: "var(--space-2) var(--space-3)",
+            borderRadius: "var(--radius-md)",
+            background: "color-mix(in srgb, var(--bg-page) 75%, transparent)",
+            color: "var(--text-secondary)",
+            fontSize: "var(--text-sm)",
+          }}
+        >
+          Building preview…
+        </div>
+      ) : null}
       <Button
         type="button"
         variant="secondary"
