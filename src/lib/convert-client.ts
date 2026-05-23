@@ -6,7 +6,11 @@
 // call lazily creates a fresh worker.
 
 import type { MinecraftVersion } from "./schemlib/schematic-formats";
-import type { ConvertResult, SchematicFormatId } from "./convert";
+import type {
+  ConvertResult,
+  ParseResult,
+  SchematicFormatId,
+} from "./convert";
 import type { WorkerRequest, WorkerResponse } from "./convert.worker";
 
 type Pending = {
@@ -121,6 +125,22 @@ export function convertInWorker(
       type: "convert",
       payload: { bytes, outputFormat, targetVersion, inputFilename },
     },
+    transfer,
+  );
+}
+
+/**
+ * Parse `bytes` in the worker and return a serializable projection of the
+ * resulting `AbstractSchematic`. Used by the Advanced Editor on mount.
+ *
+ * `bytes.buffer` is transferred (no copy); the caller's view becomes detached
+ * after this call.
+ */
+export function parseInWorker(bytes: Uint8Array): Promise<ParseResult> {
+  const transfer: Transferable[] =
+    bytes.buffer instanceof ArrayBuffer ? [bytes.buffer] : [];
+  return send<ParseResult>(
+    { type: "parse", payload: { bytes } },
     transfer,
   );
 }

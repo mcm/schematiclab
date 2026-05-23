@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { describe, it, expect } from "vitest";
 
-import { convertSchematic } from "../convert";
+import { convertSchematic, parseSchematic } from "../convert";
 import { detectSchematicType } from "../schemlib/schematic-formats";
 import {
   SpongeSchematicMetadata,
@@ -381,5 +381,39 @@ describe("convertSchematic", () => {
     expect(be.get("z")).toBeUndefined();
     const pos = (be.get("Pos") as nbt.IntArray).toObject() as number[];
     expect(pos).toEqual([1, 0, 0]);
+  });
+});
+
+describe("parseSchematic", () => {
+  it("returns a worker-serializable projection of the parsed schematic", () => {
+    const bytes = loadBytes("one_stone_block.litematic");
+
+    const result = parseSchematic(bytes);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const p = result.schematic;
+    expect(p.inputFormat).toBe("Litematic");
+    expect(p.totalBlocks).toBeGreaterThan(0);
+    expect(p.regions.length).toBeGreaterThan(0);
+    expect(p.palette.length).toBeGreaterThan(0);
+
+    const stone = p.palette.find((e) => e.blockId === "minecraft:stone");
+    expect(stone).toBeDefined();
+    expect(stone?.count).toBeGreaterThan(0);
+
+    // Projection must be structured-clone-safe (no class instances, no Maps).
+    expect(JSON.parse(JSON.stringify(p))).toEqual(
+      JSON.parse(JSON.stringify(p)),
+    );
+  });
+
+  it("returns a failure result when input cannot be detected", () => {
+    const garbage = new TextEncoder().encode("not a schematic, just text");
+
+    const result = parseSchematic(garbage);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toMatch(/detect/i);
   });
 });
