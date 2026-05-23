@@ -11,6 +11,7 @@ import {
   useEditorState,
   type ParseStatus,
 } from "@/lib/editor-state";
+import { MaterialList } from "@/components/material-list";
 import { ThreeDPreview } from "@/components/three-d-preview";
 
 const NARROW_VIEWPORT_QUERY = "(max-width: 899.98px)";
@@ -146,7 +147,7 @@ function previewBody(parseStatus: ParseStatus): React.ReactNode {
 
 function materialListBody(parseStatus: ParseStatus): React.ReactNode {
   if (parseStatus.status === "ready") {
-    return `${parseStatus.schematic.palette.length} unique block states · ${parseStatus.schematic.totalBlocks.toLocaleString()} blocks`;
+    return <MaterialList palette={parseStatus.schematic.palette} />;
   }
   if (parseStatus.status === "error") return UNAVAILABLE_LABEL;
   return <PanelSkeleton />;
