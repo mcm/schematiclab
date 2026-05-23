@@ -33,6 +33,12 @@ interface BlockStatePickerProps {
   source: BlockStatePickerSource | null;
   onCancel: () => void;
   onConfirm: (target: BlockStatePickerResult) => void;
+  // Optional copy overrides so the picker can be reused outside of the
+  // material-list "swap every instance" flow (e.g. the version-mapping
+  // override picker in US-014 reads "Pick replacement block").
+  title?: string;
+  description?: string;
+  confirmLabel?: string;
 }
 
 const INPUT_ID = "block-state-picker-input";
@@ -82,6 +88,9 @@ export function BlockStatePicker({
   source,
   onCancel,
   onConfirm,
+  title = "Swap block state",
+  description = "Replace every instance of the source block state with a new target. Type a block identifier — autocomplete suggestions come from the schemlib catalog. Free-text input is accepted for identifiers outside the catalog.",
+  confirmLabel = "Confirm swap",
 }: BlockStatePickerProps) {
   const [query, setQuery] = React.useState("");
   const [highlightIndex, setHighlightIndex] = React.useState(0);
@@ -147,13 +156,8 @@ export function BlockStatePicker({
         }}
       >
         <DialogHeader>
-          <DialogTitle>Swap block state</DialogTitle>
-          <DialogDescription>
-            Replace every instance of the source block state with a new target.
-            Type a block identifier — autocomplete suggestions come from the
-            schemlib catalog. Free-text input is accepted for identifiers
-            outside the catalog.
-          </DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
         <div
@@ -295,7 +299,7 @@ export function BlockStatePicker({
             onClick={handleConfirm}
             disabled={!targetValid || source === null}
           >
-            Confirm swap
+            {confirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>
