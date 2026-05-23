@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Label,
   Select,
   SelectContent,
   SelectItem,
@@ -10,6 +11,7 @@ import {
 import { KNOWN_VERSIONS } from "@/lib/schemlib/schematic-formats/version-mapping";
 
 const VERSION_IDS: readonly string[] = Object.keys(KNOWN_VERSIONS);
+const TRIGGER_ID = "target-version-trigger";
 
 interface VersionSelectorProps {
   value: string | null;
@@ -25,14 +27,12 @@ export function VersionSelector({ value, onChange }: VersionSelectorProps) {
         gap: "var(--space-1)",
       }}
     >
+      <Label htmlFor={TRIGGER_ID}>Target Minecraft version</Label>
       <Select
         value={value ?? undefined}
         onValueChange={(next) => onChange(next)}
       >
-        <SelectTrigger
-          style={{ width: "100%" }}
-          aria-label="Target Minecraft version"
-        >
+        <SelectTrigger id={TRIGGER_ID} style={{ width: "100%" }}>
           <SelectValue placeholder="Choose a target Minecraft version" />
         </SelectTrigger>
         <SelectContent>

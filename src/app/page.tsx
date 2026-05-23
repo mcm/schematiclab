@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Card, CardContent } from "@iamthemcmaster/ui";
 import schematiclabLogo from "../../public/schematiclab.png";
 import { FileDropzone } from "@/components/file-dropzone";
+import { UrlImport } from "@/components/url-import";
 import { FormatSelector } from "@/components/format-selector";
 import { VersionSelector } from "@/components/version-selector";
 import {
@@ -13,7 +14,7 @@ import {
 } from "@/components/detected-format-hint";
 import { SubmitButton } from "@/components/submit-button";
 import { InlineError } from "@/components/inline-error";
-import { SUPPORTED_FORMATS, type SchematicFormatId } from "@/lib/convert";
+import type { SchematicFormatId } from "@/lib/convert";
 import { cancel, convertInWorker, detectInWorker } from "@/lib/convert-client";
 
 const UNRECOGNIZED_INPUT_MESSAGE =
@@ -21,12 +22,6 @@ const UNRECOGNIZED_INPUT_MESSAGE =
 const GENERIC_CONVERSION_ERROR =
   "Something went wrong during conversion. Please try again.";
 const WORKER_CANCELLED_MESSAGE = "Worker cancelled";
-
-function asSchematicFormatId(value: string): SchematicFormatId | null {
-  return (SUPPORTED_FORMATS as readonly string[]).includes(value)
-    ? (value as SchematicFormatId)
-    : null;
-}
 
 function triggerDownload(
   bytes: Uint8Array,
@@ -94,19 +89,6 @@ export default function HomePage() {
       cancelled = true;
     };
   }, [file]);
-
-  const detectedFormat: SchematicFormatId | null =
-    detection.status === "ok" ? asSchematicFormatId(detection.formatId) : null;
-
-  // Adjust state during render when detected format collides with selected
-  // output format. See https://react.dev/learn/you-might-not-need-an-effect
-  const [prevDetected, setPrevDetected] = React.useState(detectedFormat);
-  if (prevDetected !== detectedFormat) {
-    setPrevDetected(detectedFormat);
-    if (detectedFormat !== null && outputFormat === detectedFormat) {
-      setOutputFormat(null);
-    }
-  }
 
   const handleSubmit = React.useCallback(async () => {
     if (!file || !outputFormat || isConverting) return;
@@ -183,11 +165,15 @@ export default function HomePage() {
             }}
           >
             <FileDropzone file={file} onFileChange={handleFileChange} />
+            <UrlImport
+              onFileImported={handleFileChange}
+              onError={setError}
+              disabled={isConverting}
+            />
             <DetectedFormatHint state={detection} />
             <FormatSelector
               value={outputFormat}
               onChange={handleOutputFormatChange}
-              excludedFormat={detectedFormat}
             />
             <VersionSelector
               value={targetVersion}

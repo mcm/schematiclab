@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Label,
   Select,
   SelectContent,
   SelectItem,
@@ -30,40 +31,45 @@ const FORMAT_OPTIONS: readonly FormatOption[] = [
   { id: "JSON", label: "schemlib JSON (.json)" },
 ];
 
+const TRIGGER_ID = "output-format-trigger";
+
 interface FormatSelectorProps {
   value: SchematicFormatId | null;
   onChange: (value: SchematicFormatId) => void;
-  excludedFormat?: SchematicFormatId | null;
 }
 
-export function FormatSelector({
-  value,
-  onChange,
-  excludedFormat,
-}: FormatSelectorProps) {
+export function FormatSelector({ value, onChange }: FormatSelectorProps) {
   const isDev = process.env.NODE_ENV === "development";
 
   const options = FORMAT_OPTIONS.filter((option) => {
     if (option.id === "JSON" && !isDev) return false;
-    if (excludedFormat && option.id === excludedFormat) return false;
     return true;
   });
 
   return (
-    <Select
-      value={value ?? undefined}
-      onValueChange={(next) => onChange(next as SchematicFormatId)}
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--space-1)",
+      }}
     >
-      <SelectTrigger style={{ width: "100%" }} aria-label="Output format">
-        <SelectValue placeholder="Choose a schematic type to output" />
-      </SelectTrigger>
-      <SelectContent>
-        {options.map((option) => (
-          <SelectItem key={option.id} value={option.id}>
-            {option.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+      <Label htmlFor={TRIGGER_ID}>Output format</Label>
+      <Select
+        value={value ?? undefined}
+        onValueChange={(next) => onChange(next as SchematicFormatId)}
+      >
+        <SelectTrigger id={TRIGGER_ID} style={{ width: "100%" }}>
+          <SelectValue placeholder="Choose a schematic type to output" />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem key={option.id} value={option.id}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }
