@@ -8,6 +8,11 @@
 import * as React from "react";
 import type { ParsedSchematicProjection, SchematicFormatId } from "./convert";
 import { swapBlockState, type SwapTarget } from "./swap-projection";
+import {
+  applyVersionMapping as applyVersionMappingTransform,
+  type VersionMappingOverrides,
+} from "./advanced/edit";
+import type { MinecraftVersion } from "./schemlib/schematic-formats/version-mapping";
 
 export interface StagedFile {
   bytes: Uint8Array;
@@ -33,6 +38,10 @@ export interface EditorState {
   // by the "Undo last swap" affordance. Reset whenever a new parse lands or
   // the staged file changes — undo doesn't survive a reload of the source.
   lastSwapSnapshot: ParsedSchematicProjection | null;
+  // Snapshot of the projection prior to the most recent version-mapping apply
+  // (US-015). Tracked separately from `lastSwapSnapshot` so swap-undo and
+  // translation-undo don't clobber each other. Same reset rules.
+  lastTranslationSnapshot: ParsedSchematicProjection | null;
 }
 
 const IDLE_PARSE: ParseStatus = { status: "idle" };
@@ -43,6 +52,7 @@ const EMPTY_STATE: EditorState = {
   targetVersion: null,
   parseStatus: IDLE_PARSE,
   lastSwapSnapshot: null,
+  lastTranslationSnapshot: null,
 };
 
 let state: EditorState = EMPTY_STATE;
@@ -80,13 +90,19 @@ export function setStagedFile(stagedFile: StagedFile | null): void {
     stagedFile,
     parseStatus: IDLE_PARSE,
     lastSwapSnapshot: null,
+    lastTranslationSnapshot: null,
   });
 }
 
 export function setParseStatus(parseStatus: ParseStatus): void {
   if (state.parseStatus === parseStatus) return;
   // A fresh parse result discards any undo snapshot from a previous projection.
-  emit({ ...state, parseStatus, lastSwapSnapshot: null });
+  emit({
+    ...state,
+    parseStatus,
+    lastSwapSnapshot: null,
+    lastTranslationSnapshot: null,
+  });
 }
 
 // Apply a global block swap. Every placement whose state matches
@@ -121,6 +137,47 @@ export function undoLastSwap(): boolean {
   emit({
     ...state,
     parseStatus: { status: "ready", schematic: snapshot },
+    lastSwapSnapshot: null,
+  });
+  return true;
+}
+
+// Commit a version-mapping translation (with optional overrides) to the
+// in-memory schematic. The pre-translation projection is stashed as
+// `lastTranslationSnapshot` for the single-step undo affordance.
+//
+// No-op when there is no ready parse. Returns true if a translation was
+// applied so callers can drive UI affordances off the same signal.
+export function applyVersionMapping(
+  targetVersion: MinecraftVersion,
+  overrides: VersionMappingOverrides = {},
+): boolean {
+  if (state.parseStatus.status !== "ready") return false;
+  const prior = state.parseStatus.schematic;
+  const next = applyVersionMappingTransform(prior, targetVersion, overrides);
+  emit({
+    ...state,
+    parseStatus: { status: "ready", schematic: next },
+    lastTranslationSnapshot: prior,
+    // A subsequent translation supersedes any prior swap-undo — its snapshot
+    // refers to a palette that no longer matches the active schematic.
+    lastSwapSnapshot: null,
+  });
+  return true;
+}
+
+// Restore the projection from before the most recent translation. Drops the
+// snapshot — v1 is single-level undo only, per AC. Returns true on success.
+export function undoLastTranslation(): boolean {
+  if (state.lastTranslationSnapshot === null) return false;
+  if (state.parseStatus.status !== "ready") return false;
+  const snapshot = state.lastTranslationSnapshot;
+  emit({
+    ...state,
+    parseStatus: { status: "ready", schematic: snapshot },
+    lastTranslationSnapshot: null,
+    // Any swap layered onto the translated schematic is implicitly undone
+    // as part of restoring the pre-translation state — drop its snapshot too.
     lastSwapSnapshot: null,
   });
   return true;

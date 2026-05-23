@@ -10,7 +10,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@iamthemcmaster/ui";
-import { IconArrowsExchange, IconCheck, IconX } from "@tabler/icons-react";
+import {
+  IconArrowBackUp,
+  IconArrowsExchange,
+  IconCheck,
+  IconX,
+} from "@tabler/icons-react";
 import type { ParsedSchematicProjection } from "@/lib/convert";
 import { translatePreviewInWorker } from "@/lib/convert-client";
 import { KNOWN_VERSIONS } from "@/lib/schemlib/schematic-formats/version-mapping";
@@ -18,6 +23,12 @@ import type {
   ProblematicEntry,
   VersionMappingPreview,
 } from "@/lib/advanced/version-mapping-preview";
+import type { VersionMappingOverrides } from "@/lib/advanced/edit";
+import {
+  applyVersionMapping as applyVersionMappingAction,
+  undoLastTranslation,
+  useEditorState,
+} from "@/lib/editor-state";
 import {
   BlockStatePicker,
   type BlockStatePickerResult,
@@ -45,29 +56,50 @@ type Decision =
   | { kind: "override"; target: BlockStatePickerResult };
 
 export function VersionMappingPanel({ schematic }: VersionMappingPanelProps) {
+  const { lastTranslationSnapshot } = useEditorState();
+  const canUndoTranslation = lastTranslationSnapshot !== null;
+
   const [targetVersionId, setTargetVersionId] = React.useState<string | null>(
     null,
   );
   const [previewState, setPreviewState] = React.useState<PreviewState>({
     status: "idle",
   });
-  // Decisions are scoped to the current target version selection. They reset
-  // whenever the target version changes or the schematic mutates (since both
-  // trigger a fresh preview pass below).
-  const [decisions, setDecisions] = React.useState<Record<string, Decision>>(
-    {},
-  );
+  // Decisions keyed by target version id, then by source block-state string.
+  // Persisting per-version means switching the dropdown away and back to a
+  // previously-decorated target restores the user's earlier choices (AC4).
+  // Reset wholesale when the schematic mutates — stale palette keys aren't
+  // safe to apply to a different state set.
+  const [decisionsByVersion, setDecisionsByVersion] = React.useState<
+    Record<string, Record<string, Decision>>
+  >({});
   const [pickerSource, setPickerSource] =
     React.useState<BlockStatePickerSource | null>(null);
 
   // A monotonically increasing request key — we only commit a preview result
   // when the request that produced it is still the latest one. Handles the
-  // user changing the target version (or the schematic mutating from US-010)
-  // while a preview is in flight.
+  // user changing the target version (or the schematic mutating from US-010
+  // / US-015) while a preview is in flight.
   const requestKeyRef = React.useRef(0);
 
+  const decisions = React.useMemo<Record<string, Decision>>(() => {
+    if (targetVersionId === null) return {};
+    return decisionsByVersion[targetVersionId] ?? {};
+  }, [decisionsByVersion, targetVersionId]);
+
+  // The schematic just mutated (initial mount, swap from US-010, apply from
+  // US-015, or undo of either). Drop every stored decision — keys belong to
+  // a palette / version pairing that may no longer exist.
+  React.useEffect(() => {
+    void (async () => {
+      await Promise.resolve();
+      setDecisionsByVersion({});
+    })();
+  }, [schematic]);
+
   // Kick off a preview pass whenever the target version selection changes to
-  // a non-null value. Setting it back to null returns the panel to idle.
+  // a non-null value, or the schematic mutates underneath us. Setting the
+  // selection back to null returns the panel to idle.
   //
   // Every `setState` call lives behind an `await` inside the async IIFE so
   // the lint rule against synchronous setState-in-effect stays happy.
@@ -80,7 +112,6 @@ export function VersionMappingPanel({ schematic }: VersionMappingPanelProps) {
         await Promise.resolve();
         if (requestKeyRef.current !== requestKey) return;
         setPreviewState({ status: "idle" });
-        setDecisions({});
       })();
       return;
     }
@@ -92,9 +123,6 @@ export function VersionMappingPanel({ schematic }: VersionMappingPanelProps) {
       await Promise.resolve();
       if (requestKeyRef.current !== requestKey) return;
       setPreviewState({ status: "loading", targetVersionId });
-      // A fresh preview pass invalidates prior decisions — their source-state
-      // keys belong to a stale palette/version pairing.
-      setDecisions({});
       try {
         const preview = await translatePreviewInWorker(schematic, target);
         if (requestKeyRef.current !== requestKey) return;
@@ -110,12 +138,34 @@ export function VersionMappingPanel({ schematic }: VersionMappingPanelProps) {
 
   const sourceVersion = schematic.minecraftVersion;
 
-  const handleAccept = React.useCallback((entry: ProblematicEntry) => {
-    setDecisions((prev) => ({
-      ...prev,
-      [entry.sourceBlockState]: { kind: "accepted" },
-    }));
-  }, []);
+  const setDecisionForCurrentVersion = React.useCallback(
+    (key: string, decision: Decision | null) => {
+      if (targetVersionId === null) return;
+      setDecisionsByVersion((prev) => {
+        const current = prev[targetVersionId] ?? {};
+        if (decision === null) {
+          if (!(key in current)) return prev;
+          const next = { ...current };
+          delete next[key];
+          return { ...prev, [targetVersionId]: next };
+        }
+        return {
+          ...prev,
+          [targetVersionId]: { ...current, [key]: decision },
+        };
+      });
+    },
+    [targetVersionId],
+  );
+
+  const handleAccept = React.useCallback(
+    (entry: ProblematicEntry) => {
+      setDecisionForCurrentVersion(entry.sourceBlockState, {
+        kind: "accepted",
+      });
+    },
+    [setDecisionForCurrentVersion],
+  );
 
   const handlePickReplacement = React.useCallback((entry: ProblematicEntry) => {
     setPickerSource({
@@ -128,27 +178,55 @@ export function VersionMappingPanel({ schematic }: VersionMappingPanelProps) {
   const handleConfirmReplacement = React.useCallback(
     (target: BlockStatePickerResult) => {
       if (pickerSource) {
-        setDecisions((prev) => ({
-          ...prev,
-          [pickerSource.blockState]: { kind: "override", target },
-        }));
+        setDecisionForCurrentVersion(pickerSource.blockState, {
+          kind: "override",
+          target,
+        });
       }
       setPickerSource(null);
     },
-    [pickerSource],
+    [pickerSource, setDecisionForCurrentVersion],
   );
 
   const handleCancelPicker = React.useCallback(() => {
     setPickerSource(null);
   }, []);
 
-  const handleClearDecision = React.useCallback((entry: ProblematicEntry) => {
-    setDecisions((prev) => {
-      if (!(entry.sourceBlockState in prev)) return prev;
-      const next = { ...prev };
-      delete next[entry.sourceBlockState];
-      return next;
-    });
+  const handleClearDecision = React.useCallback(
+    (entry: ProblematicEntry) => {
+      setDecisionForCurrentVersion(entry.sourceBlockState, null);
+    },
+    [setDecisionForCurrentVersion],
+  );
+
+  const handleApplyTranslation = React.useCallback(() => {
+    if (previewState.status !== "ready") return;
+    const target = KNOWN_VERSIONS[previewState.targetVersionId];
+    if (!target) return;
+    const currentDecisions =
+      decisionsByVersion[previewState.targetVersionId] ?? {};
+    const overrides: VersionMappingOverrides = {};
+    for (const entry of previewState.preview.problematic) {
+      const decision = currentDecisions[entry.sourceBlockState];
+      if (decision?.kind === "override") {
+        overrides[entry.sourceBlockState] = {
+          blockId: decision.target.blockId,
+          properties: decision.target.properties,
+        };
+      }
+    }
+    const applied = applyVersionMappingAction(target, overrides);
+    if (applied) {
+      // Reset the panel: clear the target selection so the dropdown returns
+      // to its placeholder and the preview goes back to idle. The schematic
+      // also mutated, so the [schematic] effect drops every stored decision
+      // (their palette / version pairing is no longer current).
+      setTargetVersionId(null);
+    }
+  }, [previewState, decisionsByVersion]);
+
+  const handleUndoTranslation = React.useCallback(() => {
+    undoLastTranslation();
   }, []);
 
   // The "Apply translation" button is enabled when every problematic row has a
@@ -234,21 +312,48 @@ export function VersionMappingPanel({ schematic }: VersionMappingPanelProps) {
         <div style={{ flex: 1 }} />
       )}
 
-      <Button
-        type="button"
-        variant="primary"
-        size="md"
-        disabled={!allRowsResolved}
-        title={
-          previewState.status !== "ready"
-            ? "Pick a target version first."
-            : undecidedCount > 0
-              ? `${undecidedCount} flagged block${undecidedCount === 1 ? "" : "s"} still need a decision (accept the proposal or pick a replacement).`
-              : "Apply the translation (coming in a later story)."
-        }
+      <div
+        style={{
+          display: "flex",
+          gap: "var(--space-2)",
+          alignItems: "center",
+        }}
       >
-        Apply translation
-      </Button>
+        {canUndoTranslation ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="md"
+            onClick={handleUndoTranslation}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "var(--space-1)",
+            }}
+            title="Restore the schematic to its state before the most recent translation."
+          >
+            <IconArrowBackUp size={14} aria-hidden="true" />
+            Undo translation
+          </Button>
+        ) : null}
+        <Button
+          type="button"
+          variant="primary"
+          size="md"
+          onClick={handleApplyTranslation}
+          disabled={!allRowsResolved}
+          style={{ flex: 1 }}
+          title={
+            previewState.status !== "ready"
+              ? "Pick a target version first."
+              : undecidedCount > 0
+                ? `${undecidedCount} flagged block${undecidedCount === 1 ? "" : "s"} still need a decision (accept the proposal or pick a replacement).`
+                : "Commit this translation to the in-memory schematic."
+          }
+        >
+          Apply translation
+        </Button>
+      </div>
 
       {pickerSource !== null ? (
         <BlockStatePicker
