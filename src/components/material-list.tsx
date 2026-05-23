@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { Input, Label, NativeSelect } from "@iamthemcmaster/ui";
+import { Button, Input, Label, NativeSelect } from "@iamthemcmaster/ui";
+import { IconArrowsExchange } from "@tabler/icons-react";
 import type { ParsedSchematicPaletteEntry } from "@/lib/convert";
 import { isInvisibleBlockId } from "@/lib/render/minecraft-resources";
 
@@ -9,12 +10,13 @@ type SortOrder = "count-desc" | "id-asc";
 
 interface MaterialListProps {
   palette: readonly ParsedSchematicPaletteEntry[];
+  onRequestSwap?: (entry: ParsedSchematicPaletteEntry) => void;
 }
 
 const SEARCH_INPUT_ID = "material-list-search";
 const SORT_SELECT_ID = "material-list-sort";
 
-export function MaterialList({ palette }: MaterialListProps) {
+export function MaterialList({ palette, onRequestSwap }: MaterialListProps) {
   const [search, setSearch] = React.useState("");
   const [sort, setSort] = React.useState<SortOrder>("count-desc");
 
@@ -141,7 +143,11 @@ export function MaterialList({ palette }: MaterialListProps) {
           </div>
         ) : (
           filtered.map((entry) => (
-            <PaletteRow key={entry.blockState} entry={entry} />
+            <PaletteRow
+              key={entry.blockState}
+              entry={entry}
+              onRequestSwap={onRequestSwap}
+            />
           ))
         )}
       </div>
@@ -172,7 +178,13 @@ export function MaterialList({ palette }: MaterialListProps) {
   );
 }
 
-function PaletteRow({ entry }: { entry: ParsedSchematicPaletteEntry }) {
+function PaletteRow({
+  entry,
+  onRequestSwap,
+}: {
+  entry: ParsedSchematicPaletteEntry;
+  onRequestSwap?: (entry: ParsedSchematicPaletteEntry) => void;
+}) {
   const propertyKeys = Object.keys(entry.properties);
   const propertiesLabel = formatProperties(entry.properties, propertyKeys);
   const swatch = swatchColorFor(entry.blockState);
@@ -182,7 +194,7 @@ function PaletteRow({ entry }: { entry: ParsedSchematicPaletteEntry }) {
       role="listitem"
       style={{
         display: "grid",
-        gridTemplateColumns: "20px minmax(0, 1fr) auto",
+        gridTemplateColumns: "20px minmax(0, 1fr) auto auto",
         alignItems: "center",
         gap: "var(--space-3)",
         padding: "var(--space-2) var(--space-3)",
@@ -248,6 +260,25 @@ function PaletteRow({ entry }: { entry: ParsedSchematicPaletteEntry }) {
       >
         {entry.count.toLocaleString()}
       </span>
+      {onRequestSwap ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => onRequestSwap(entry)}
+          aria-label={`Swap ${entry.blockState}`}
+          title="Swap this block state…"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "var(--space-1)",
+            fontSize: "var(--text-xs)",
+          }}
+        >
+          <IconArrowsExchange size={14} aria-hidden="true" />
+          Swap…
+        </Button>
+      ) : null}
     </div>
   );
 }

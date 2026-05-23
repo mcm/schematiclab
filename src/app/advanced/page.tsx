@@ -4,13 +4,22 @@ import * as React from "react";
 import Link from "next/link";
 import { Button, Card, CardContent } from "@iamthemcmaster/ui";
 import { IconAlertCircle, IconArrowLeft } from "@tabler/icons-react";
+import { IconArrowBackUp } from "@tabler/icons-react";
 import { parseInWorker } from "@/lib/convert-client";
 import {
+  applyBlockSwap,
   getEditorState,
   setParseStatus,
+  undoLastSwap,
   useEditorState,
   type ParseStatus,
 } from "@/lib/editor-state";
+import type { ParsedSchematicPaletteEntry } from "@/lib/convert";
+import {
+  BlockStatePicker,
+  type BlockStatePickerResult,
+  type BlockStatePickerSource,
+} from "@/components/block-state-picker";
 import { MaterialList } from "@/components/material-list";
 import { ThreeDPreview } from "@/components/three-d-preview";
 
@@ -145,9 +154,17 @@ function previewBody(parseStatus: ParseStatus): React.ReactNode {
   return <PanelSkeleton />;
 }
 
-function materialListBody(parseStatus: ParseStatus): React.ReactNode {
+function materialListBody(
+  parseStatus: ParseStatus,
+  onRequestSwap: (entry: ParsedSchematicPaletteEntry) => void,
+): React.ReactNode {
   if (parseStatus.status === "ready") {
-    return <MaterialList palette={parseStatus.schematic.palette} />;
+    return (
+      <MaterialList
+        palette={parseStatus.schematic.palette}
+        onRequestSwap={onRequestSwap}
+      />
+    );
   }
   if (parseStatus.status === "error") return UNAVAILABLE_LABEL;
   return <PanelSkeleton />;
@@ -168,7 +185,17 @@ function exportBody(parseStatus: ParseStatus): React.ReactNode {
   return <PanelSkeleton />;
 }
 
-function EditorShell({ parseStatus }: { parseStatus: ParseStatus }) {
+function EditorShell({
+  parseStatus,
+  onRequestSwap,
+  canUndoSwap,
+  onUndoSwap,
+}: {
+  parseStatus: ParseStatus;
+  onRequestSwap: (entry: ParsedSchematicPaletteEntry) => void;
+  canUndoSwap: boolean;
+  onUndoSwap: () => void;
+}) {
   const isNarrow = useIsNarrowViewport();
 
   return (
@@ -224,7 +251,33 @@ function EditorShell({ parseStatus }: { parseStatus: ParseStatus }) {
         }}
       >
         <PanelCard title="Material List" flex={1}>
-          {materialListBody(parseStatus)}
+          {parseStatus.status === "ready" ? (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                marginBottom: "calc(-1 * var(--space-1))",
+              }}
+            >
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={onUndoSwap}
+                disabled={!canUndoSwap}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "var(--space-1)",
+                  fontSize: "var(--text-xs)",
+                }}
+              >
+                <IconArrowBackUp size={14} aria-hidden="true" />
+                Undo last swap
+              </Button>
+            </div>
+          ) : null}
+          {materialListBody(parseStatus, onRequestSwap)}
         </PanelCard>
         <PanelCard title="Version Mapping" flex={1}>
           {versionMappingBody(parseStatus)}
@@ -325,9 +378,41 @@ function EmptyState() {
 }
 
 export default function AdvancedPage() {
-  const { stagedFile, parseStatus } = useEditorState();
+  const { stagedFile, parseStatus, lastSwapSnapshot } = useEditorState();
   const stagedFilename = stagedFile?.filename ?? null;
   const hasStagedFile = stagedFile !== null;
+
+  const [pickerSource, setPickerSource] =
+    React.useState<BlockStatePickerSource | null>(null);
+
+  const handleRequestSwap = React.useCallback(
+    (entry: ParsedSchematicPaletteEntry) => {
+      setPickerSource({
+        blockState: entry.blockState,
+        blockId: entry.blockId,
+        properties: entry.properties,
+      });
+    },
+    [],
+  );
+
+  const handleConfirmSwap = React.useCallback(
+    (target: BlockStatePickerResult) => {
+      if (pickerSource) {
+        applyBlockSwap(pickerSource.blockState, target);
+      }
+      setPickerSource(null);
+    },
+    [pickerSource],
+  );
+
+  const handleCancelSwap = React.useCallback(() => {
+    setPickerSource(null);
+  }, []);
+
+  const handleUndoSwap = React.useCallback(() => {
+    undoLastSwap();
+  }, []);
 
   // Kick off the worker parse when we have staged bytes and no parse has run
   // yet for them (parseStatus reset to idle by setStagedFile). Copy the bytes
@@ -425,7 +510,25 @@ export default function AdvancedPage() {
         <ErrorBanner message={parseStatus.error} />
       ) : null}
 
-      {hasStagedFile ? <EditorShell parseStatus={parseStatus} /> : <EmptyState />}
+      {hasStagedFile ? (
+        <EditorShell
+          parseStatus={parseStatus}
+          onRequestSwap={handleRequestSwap}
+          canUndoSwap={lastSwapSnapshot !== null}
+          onUndoSwap={handleUndoSwap}
+        />
+      ) : (
+        <EmptyState />
+      )}
+
+      {pickerSource !== null ? (
+        <BlockStatePicker
+          open
+          source={pickerSource}
+          onCancel={handleCancelSwap}
+          onConfirm={handleConfirmSwap}
+        />
+      ) : null}
     </main>
   );
 }

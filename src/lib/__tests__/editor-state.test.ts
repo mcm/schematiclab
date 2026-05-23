@@ -3,12 +3,14 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { ParsedSchematicProjection } from "../convert";
 import {
   __resetEditorStateForTests,
+  applyBlockSwap,
   clearEditorState,
   getEditorState,
   setOutputFormat,
   setParseStatus,
   setStagedFile,
   setTargetVersion,
+  undoLastSwap,
   type StagedFile,
 } from "../editor-state";
 
@@ -42,6 +44,7 @@ describe("editor-state store", () => {
       outputFormat: null,
       targetVersion: null,
       parseStatus: { status: "idle" },
+      lastSwapSnapshot: null,
     });
   });
 
@@ -70,6 +73,7 @@ describe("editor-state store", () => {
       outputFormat: null,
       targetVersion: null,
       parseStatus: { status: "idle" },
+      lastSwapSnapshot: null,
     });
   });
 
@@ -97,5 +101,111 @@ describe("editor-state store", () => {
       inputFormat: "Litematic",
     });
     expect(getEditorState().parseStatus).toEqual({ status: "idle" });
+  });
+
+  it("applyBlockSwap is a no-op when there is no ready parse", () => {
+    expect(
+      applyBlockSwap("minecraft:stone", {
+        blockId: "minecraft:dirt",
+        properties: {},
+      }),
+    ).toBe(false);
+    expect(getEditorState().lastSwapSnapshot).toBeNull();
+  });
+
+  it("applyBlockSwap mutates the ready projection and stashes a snapshot", () => {
+    const projection: ParsedSchematicProjection = {
+      name: "build",
+      inputFormat: "Litematic",
+      minecraftVersion: {
+        platform: "java",
+        versionNumber: [1, 20, 1],
+        dataVersion: 3463,
+      },
+      totalBlocks: 2,
+      palette: [
+        {
+          blockState: "minecraft:stone",
+          blockId: "minecraft:stone",
+          properties: {},
+          count: 1,
+        },
+        {
+          blockState: "minecraft:dirt",
+          blockId: "minecraft:dirt",
+          properties: {},
+          count: 1,
+        },
+      ],
+      regions: [
+        {
+          origin: [0, 0, 0],
+          size: [2, 1, 1],
+          blocks: [
+            { pos: [0, 0, 0], paletteIndex: 0 },
+            { pos: [1, 0, 0], paletteIndex: 1 },
+          ],
+        },
+      ],
+    };
+    setParseStatus({ status: "ready", schematic: projection });
+    const applied = applyBlockSwap("minecraft:stone", {
+      blockId: "minecraft:cobblestone",
+      properties: {},
+    });
+    expect(applied).toBe(true);
+
+    const after = getEditorState();
+    expect(after.lastSwapSnapshot).toBe(projection);
+    if (after.parseStatus.status !== "ready") throw new Error("expected ready");
+    const palette = after.parseStatus.schematic.palette;
+    expect(palette.map((e) => e.blockId).sort()).toEqual([
+      "minecraft:cobblestone",
+      "minecraft:dirt",
+    ]);
+    // Counts preserved across the swap.
+    const cobblesIdx = palette.findIndex(
+      (e) => e.blockId === "minecraft:cobblestone",
+    );
+    expect(palette[cobblesIdx].count).toBe(1);
+  });
+
+  it("undoLastSwap restores the prior projection and clears the snapshot", () => {
+    const projection: ParsedSchematicProjection = {
+      name: "build",
+      inputFormat: "Litematic",
+      minecraftVersion: {
+        platform: "java",
+        versionNumber: [1, 20, 1],
+        dataVersion: 3463,
+      },
+      totalBlocks: 1,
+      palette: [
+        {
+          blockState: "minecraft:stone",
+          blockId: "minecraft:stone",
+          properties: {},
+          count: 1,
+        },
+      ],
+      regions: [
+        {
+          origin: [0, 0, 0],
+          size: [1, 1, 1],
+          blocks: [{ pos: [0, 0, 0], paletteIndex: 0 }],
+        },
+      ],
+    };
+    setParseStatus({ status: "ready", schematic: projection });
+    applyBlockSwap("minecraft:stone", {
+      blockId: "minecraft:dirt",
+      properties: {},
+    });
+    expect(undoLastSwap()).toBe(true);
+    const s = getEditorState();
+    if (s.parseStatus.status !== "ready") throw new Error("expected ready");
+    expect(s.parseStatus.schematic).toBe(projection);
+    expect(s.lastSwapSnapshot).toBeNull();
+    expect(undoLastSwap()).toBe(false);
   });
 });
