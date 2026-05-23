@@ -14,7 +14,7 @@ import type {
   ParsedSchematicProjection,
   ParsedSchematicRegion,
 } from "./convert";
-import { isInvisibleBlockId } from "./render/minecraft-resources";
+import { isInvisibleBlockId } from "./invisible-blocks";
 
 export interface SwapTarget {
   blockId: string;

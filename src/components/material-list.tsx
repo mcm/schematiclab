@@ -4,7 +4,7 @@ import * as React from "react";
 import { Button, Input, Label, NativeSelect } from "@iamthemcmaster/ui";
 import { IconArrowsExchange } from "@tabler/icons-react";
 import type { ParsedSchematicPaletteEntry } from "@/lib/convert";
-import { isInvisibleBlockId } from "@/lib/render/minecraft-resources";
+import { isInvisibleBlockId } from "@/lib/invisible-blocks";
 
 type SortOrder = "count-desc" | "id-asc";
 

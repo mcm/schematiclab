@@ -15,7 +15,7 @@ import type {
 import { BlockState } from "../schemlib/blocks";
 import { translateBlockState } from "../schemlib/data/translate";
 import type { MinecraftVersion } from "../schemlib/schematic-formats/version-mapping";
-import { isInvisibleBlockId } from "../render/minecraft-resources";
+import { isInvisibleBlockId } from "../invisible-blocks";
 
 // ── Public types ──────────────────────────────────────────────────────────
 

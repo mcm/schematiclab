@@ -7,13 +7,12 @@ import { IconAlertCircle, IconArrowLeft } from "@tabler/icons-react";
 import { IconArrowBackUp } from "@tabler/icons-react";
 import { parseInWorker } from "@/lib/convert-client";
 import {
-  applyBlockSwap,
   getEditorState,
   setParseStatus,
-  undoLastSwap,
   useEditorState,
   type ParseStatus,
 } from "@/lib/editor-state";
+import { applyBlockSwap, undoLastSwap } from "@/lib/editor-state-edits";
 import type { ParsedSchematicPaletteEntry } from "@/lib/convert";
 import {
   BlockStatePicker,

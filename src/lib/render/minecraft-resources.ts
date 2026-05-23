@@ -17,6 +17,12 @@ import {
   type UV,
 } from "deepslate";
 
+// Re-export so existing render-path callers keep their import site. The
+// canonical home is now `@/lib/invisible-blocks` — modules that DON'T need
+// deepslate (editor-state edits, swap mutator, material list) import from
+// there directly so the dep doesn't leak into `/`'s initial chunk.
+export { isInvisibleBlockId } from "../invisible-blocks";
+
 const ASSETS_BASE = "/minecraft-assets";
 
 // mcmeta `atlas/blocks/data.min.json` shape: `{ "<path>": [x, y, w, h] }` in
@@ -26,20 +32,6 @@ type McmetaAtlasUVs = Record<string, [number, number, number, number]>;
 
 interface OpaqueBlocksFile {
   opaque: string[];
-}
-
-// Block IDs that contribute no visible mesh and should be skipped before
-// reaching deepslate. Skipping at the boundary keeps the chunk builder fast
-// for large schematics.
-const INVISIBLE_BLOCK_IDS = new Set<string>([
-  "minecraft:air",
-  "minecraft:cave_air",
-  "minecraft:void_air",
-  "minecraft:structure_void",
-]);
-
-export function isInvisibleBlockId(blockId: string): boolean {
-  return INVISIBLE_BLOCK_IDS.has(blockId);
 }
 
 // Module-level cache. `cachedResources` flips to non-null once the singleton
