@@ -54,6 +54,38 @@ export type ConvertResult =
   | { ok: true; bytes: Uint8Array; filename: string; mimeType: string }
   | { ok: false; error: string; cause?: unknown };
 
+// ── Parse projection ──────────────────────────────────────────────────────
+//
+// `AbstractSchematic` instances are class graphs (methods, Maps, BlockState
+// objects) and don't survive structured cloning across the worker boundary.
+// The worker parses and then projects the bits the editor needs into this
+// plain-object shape. Future stories (3D preview, transforms) extend it.
+
+export interface ParsedSchematicPaletteEntry {
+  blockState: string;
+  blockId: string;
+  properties: Record<string, string>;
+  count: number;
+}
+
+export interface ParsedSchematicRegion {
+  origin: [number, number, number];
+  size: [number, number, number];
+}
+
+export interface ParsedSchematicProjection {
+  name: string;
+  inputFormat: SchematicFormatId;
+  minecraftVersion: MinecraftVersion;
+  totalBlocks: number;
+  palette: ParsedSchematicPaletteEntry[];
+  regions: ParsedSchematicRegion[];
+}
+
+export type ParseResult =
+  | { ok: true; schematic: ParsedSchematicProjection }
+  | { ok: false; error: string; cause?: unknown };
+
 // ── Format registry ───────────────────────────────────────────────────────
 
 // Each entry pairs a detection id with the concrete schematic class that
@@ -248,5 +280,100 @@ export function convertSchematic(
     bytes: outBytes,
     filename,
     mimeType: outputEntry.mimeType,
+  };
+}
+
+/**
+ * Detect + parse `bytes` into an `AbstractSchematic` and return a
+ * worker-serializable projection. Used by the Advanced Editor to populate
+ * editor state on entry. Errors are reported via `{ ok: false }`, never thrown.
+ */
+export function parseSchematic(bytes: Uint8Array): ParseResult {
+  let detectedId: string;
+  try {
+    detectedId = detectSchematicType(bytes);
+  } catch (cause) {
+    return {
+      ok: false,
+      error: `Could not detect schematic format: ${errorMessage(cause)}`,
+      cause,
+    };
+  }
+
+  if (!isSchematicFormatId(detectedId)) {
+    return {
+      ok: false,
+      error: `Detected format '${detectedId}' is not supported`,
+    };
+  }
+
+  const entry = FORMAT_REGISTRY[detectedId];
+
+  let loaded: AbstractSchematic;
+  try {
+    loaded = entry.cls.schematicLoad(bytes);
+  } catch (cause) {
+    return {
+      ok: false,
+      error: `Failed to parse ${detectedId} input: ${errorMessage(cause)}`,
+      cause,
+    };
+  }
+
+  try {
+    return { ok: true, schematic: projectSchematic(loaded, detectedId) };
+  } catch (cause) {
+    return {
+      ok: false,
+      error: `Failed to project ${detectedId} schematic: ${errorMessage(cause)}`,
+      cause,
+    };
+  }
+}
+
+function projectSchematic(
+  schematic: AbstractSchematic,
+  inputFormat: SchematicFormatId,
+): ParsedSchematicProjection {
+  const regions: ParsedSchematicRegion[] = [];
+  const paletteByKey = new Map<string, ParsedSchematicPaletteEntry>();
+  let totalBlocks = 0;
+
+  for (const region of schematic.getRegions()) {
+    const origin = region.getOrigin().astuple();
+    const size = region.getSize();
+    regions.push({
+      origin: [origin[0], origin[1], origin[2]],
+      size: [size[0], size[1], size[2]],
+    });
+
+    for (const block of region.getBlocks()) {
+      totalBlocks += 1;
+      const key = block.state.toString();
+      const existing = paletteByKey.get(key);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        const properties: Record<string, string> = {};
+        for (const [k, v] of block.state.Properties) properties[k] = v;
+        paletteByKey.set(key, {
+          blockState: key,
+          blockId: block.state.Name,
+          properties,
+          count: 1,
+        });
+      }
+    }
+  }
+
+  const palette = [...paletteByKey.values()].sort((a, b) => b.count - a.count);
+
+  return {
+    name: schematic.getName(),
+    inputFormat,
+    minecraftVersion: schematic.getMinecraftVersion(),
+    totalBlocks,
+    palette,
+    regions,
   };
 }

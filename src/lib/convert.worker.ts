@@ -8,7 +8,9 @@ import { detectSchematicType } from "./schemlib/schematic-formats";
 import type { MinecraftVersion } from "./schemlib/schematic-formats";
 import {
   convertSchematic,
+  parseSchematic,
   type ConvertResult,
+  type ParseResult,
   type SchematicFormatId,
 } from "./convert";
 
@@ -25,13 +27,19 @@ export interface ConvertPayload {
   inputFilename?: string;
 }
 
+export interface ParsePayload {
+  bytes: Uint8Array;
+}
+
 export type WorkerRequest =
   | { id: number; type: "detect"; payload: DetectPayload }
-  | { id: number; type: "convert"; payload: ConvertPayload };
+  | { id: number; type: "convert"; payload: ConvertPayload }
+  | { id: number; type: "parse"; payload: ParsePayload };
 
 export type WorkerResponse =
   | { id: number; ok: true; type: "detect"; result: string }
   | { id: number; ok: true; type: "convert"; result: ConvertResult }
+  | { id: number; ok: true; type: "parse"; result: ParseResult }
   | { id: number; ok: false; error: string };
 
 // ── Worker scope shim ─────────────────────────────────────────────────────
@@ -79,6 +87,12 @@ ctx.addEventListener("message", (event) => {
           : [];
 
       ctx.postMessage({ id, ok: true, type: "convert", result }, transfer);
+      return;
+    }
+
+    if (type === "parse") {
+      const result = parseSchematic(request.payload.bytes);
+      ctx.postMessage({ id, ok: true, type: "parse", result });
       return;
     }
 

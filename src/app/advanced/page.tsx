@@ -3,10 +3,18 @@
 import * as React from "react";
 import Link from "next/link";
 import { Button, Card, CardContent } from "@iamthemcmaster/ui";
-import { IconArrowLeft } from "@tabler/icons-react";
-import { useEditorState } from "@/lib/editor-state";
+import { IconAlertCircle, IconArrowLeft } from "@tabler/icons-react";
+import { parseInWorker } from "@/lib/convert-client";
+import {
+  getEditorState,
+  setParseStatus,
+  useEditorState,
+  type ParseStatus,
+} from "@/lib/editor-state";
 
 const NARROW_VIEWPORT_QUERY = "(max-width: 899.98px)";
+const GENERIC_PARSE_ERROR =
+  "Something went wrong while loading the schematic. Please try again.";
 
 function useIsNarrowViewport(): boolean {
   const subscribe = React.useCallback((callback: () => void) => {
@@ -22,6 +30,59 @@ function useIsNarrowViewport(): boolean {
   }, []);
 
   return React.useSyncExternalStore(subscribe, getSnapshot, () => false);
+}
+
+function PanelSkeleton() {
+  return (
+    <div
+      role="status"
+      aria-label="Loading schematic"
+      style={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--space-2)",
+        minHeight: 80,
+      }}
+    >
+      <div
+        style={{
+          height: 12,
+          borderRadius: "var(--radius-sm)",
+          background: "var(--bg-elevated)",
+          width: "60%",
+          opacity: 0.6,
+        }}
+      />
+      <div
+        style={{
+          height: 12,
+          borderRadius: "var(--radius-sm)",
+          background: "var(--bg-elevated)",
+          width: "85%",
+          opacity: 0.5,
+        }}
+      />
+      <div
+        style={{
+          height: 12,
+          borderRadius: "var(--radius-sm)",
+          background: "var(--bg-elevated)",
+          width: "40%",
+          opacity: 0.45,
+        }}
+      />
+      <span
+        style={{
+          marginTop: "var(--space-2)",
+          color: "var(--text-tertiary)",
+          fontSize: "var(--text-sm)",
+        }}
+      >
+        Loading schematic…
+      </span>
+    </div>
+  );
 }
 
 function PanelCard({
@@ -75,7 +136,38 @@ function PanelCard({
   );
 }
 
-function EditorShell() {
+const UNAVAILABLE_LABEL = "Unavailable — see error above.";
+
+function previewBody(parseStatus: ParseStatus): React.ReactNode {
+  if (parseStatus.status === "ready") return "Preview will render here.";
+  if (parseStatus.status === "error") return UNAVAILABLE_LABEL;
+  return <PanelSkeleton />;
+}
+
+function materialListBody(parseStatus: ParseStatus): React.ReactNode {
+  if (parseStatus.status === "ready") {
+    return `${parseStatus.schematic.palette.length} unique block states · ${parseStatus.schematic.totalBlocks.toLocaleString()} blocks`;
+  }
+  if (parseStatus.status === "error") return UNAVAILABLE_LABEL;
+  return <PanelSkeleton />;
+}
+
+function versionMappingBody(parseStatus: ParseStatus): React.ReactNode {
+  if (parseStatus.status === "ready") {
+    const v = parseStatus.schematic.minecraftVersion;
+    return `Source version: ${v.versionNumber.join(".")} (data ${v.dataVersion})`;
+  }
+  if (parseStatus.status === "error") return UNAVAILABLE_LABEL;
+  return <PanelSkeleton />;
+}
+
+function exportBody(parseStatus: ParseStatus): React.ReactNode {
+  if (parseStatus.status === "ready") return "Output format and download go here.";
+  if (parseStatus.status === "error") return UNAVAILABLE_LABEL;
+  return <PanelSkeleton />;
+}
+
+function EditorShell({ parseStatus }: { parseStatus: ParseStatus }) {
   const isNarrow = useIsNarrowViewport();
 
   return (
@@ -100,9 +192,10 @@ function EditorShell() {
             border: "1px dashed var(--border-subtle)",
             borderRadius: "var(--radius-md)",
             minHeight: 200,
+            padding: "var(--space-4)",
           }}
         >
-          Preview will render here.
+          {previewBody(parseStatus)}
         </div>
       </PanelCard>
 
@@ -115,15 +208,52 @@ function EditorShell() {
         }}
       >
         <PanelCard title="Material List" flex={1}>
-          Palette and counts go here.
+          {materialListBody(parseStatus)}
         </PanelCard>
         <PanelCard title="Version Mapping" flex={1}>
-          Target version and overrides go here.
+          {versionMappingBody(parseStatus)}
         </PanelCard>
-        <PanelCard title="Export">
-          Output format and download go here.
-        </PanelCard>
+        <PanelCard title="Export">{exportBody(parseStatus)}</PanelCard>
       </div>
+    </div>
+  );
+}
+
+function ErrorBanner({ message }: { message: string }) {
+  return (
+    <div
+      role="alert"
+      style={{
+        display: "flex",
+        alignItems: "flex-start",
+        gap: "var(--space-3)",
+        padding: "var(--space-3) var(--space-4)",
+        borderBottom: "1px solid var(--color-error)",
+        background: "color-mix(in srgb, var(--color-error) 10%, transparent)",
+        color: "var(--color-error)",
+        fontSize: "var(--text-sm)",
+        lineHeight: 1.4,
+      }}
+    >
+      <IconAlertCircle
+        size={18}
+        aria-hidden
+        style={{ flexShrink: 0, marginTop: 2 }}
+      />
+      <span style={{ flex: 1 }}>{message}</span>
+      <Button asChild variant="secondary" size="sm">
+        <Link
+          href="/"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "var(--space-2)",
+          }}
+        >
+          <IconArrowLeft size={14} aria-hidden="true" />
+          Back to Quick Convert
+        </Link>
+      </Button>
     </div>
   );
 }
@@ -179,9 +309,45 @@ function EmptyState() {
 }
 
 export default function AdvancedPage() {
-  const { stagedFile } = useEditorState();
+  const { stagedFile, parseStatus } = useEditorState();
   const stagedFilename = stagedFile?.filename ?? null;
   const hasStagedFile = stagedFile !== null;
+
+  // Kick off the worker parse when we have staged bytes and no parse has run
+  // yet for them (parseStatus reset to idle by setStagedFile). Copy the bytes
+  // before transferring so the store's view stays intact for downstream uses
+  // (export later, browser back to `/`, etc.).
+  //
+  // We don't use a `cancelled` flag — under React strict mode the effect
+  // mount/unmount/remount sequence would cancel the only in-flight parse and
+  // leave the store stuck on "parsing". Instead we check store identity at
+  // write time: if `stagedFile` no longer matches the bytes we parsed, drop
+  // the result on the floor (a fresh effect will re-parse the new file).
+  React.useEffect(() => {
+    if (!stagedFile) return;
+    if (parseStatus.status !== "idle") return;
+
+    const targetStaged = stagedFile;
+    setParseStatus({ status: "parsing" });
+
+    const bytesCopy = new Uint8Array(stagedFile.bytes);
+
+    void (async () => {
+      try {
+        const result = await parseInWorker(bytesCopy);
+        if (getEditorState().stagedFile !== targetStaged) return;
+        if (result.ok) {
+          setParseStatus({ status: "ready", schematic: result.schematic });
+        } else {
+          setParseStatus({ status: "error", error: result.error });
+        }
+      } catch (err) {
+        if (getEditorState().stagedFile !== targetStaged) return;
+        const message = err instanceof Error ? err.message : GENERIC_PARSE_ERROR;
+        setParseStatus({ status: "error", error: message });
+      }
+    })();
+  }, [stagedFile, parseStatus.status]);
 
   return (
     <main
@@ -239,7 +405,11 @@ export default function AdvancedPage() {
         </span>
       </header>
 
-      {hasStagedFile ? <EditorShell /> : <EmptyState />}
+      {parseStatus.status === "error" ? (
+        <ErrorBanner message={parseStatus.error} />
+      ) : null}
+
+      {hasStagedFile ? <EditorShell parseStatus={parseStatus} /> : <EmptyState />}
     </main>
   );
 }
