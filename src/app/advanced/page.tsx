@@ -4,11 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { Button, Card, CardContent } from "@iamthemcmaster/ui";
 import { IconArrowLeft } from "@tabler/icons-react";
-
-// US-003 will replace this with reads from the shared editor-state store.
-// For now there is no in-memory hand-off, so the page always renders the
-// empty state.
-const STAGED_FILENAME: string | null = null;
+import { useEditorState } from "@/lib/editor-state";
 
 const NARROW_VIEWPORT_QUERY = "(max-width: 899.98px)";
 
@@ -183,8 +179,9 @@ function EmptyState() {
 }
 
 export default function AdvancedPage() {
-  const stagedFilename = STAGED_FILENAME;
-  const hasStagedFile = stagedFilename !== null;
+  const { stagedFile } = useEditorState();
+  const stagedFilename = stagedFile?.filename ?? null;
+  const hasStagedFile = stagedFile !== null;
 
   return (
     <main

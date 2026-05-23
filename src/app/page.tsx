@@ -18,6 +18,12 @@ import { AdvancedEditorButton } from "@/components/advanced-editor-button";
 import { InlineError } from "@/components/inline-error";
 import type { SchematicFormatId } from "@/lib/convert";
 import { cancel, convertInWorker, detectInWorker } from "@/lib/convert-client";
+import {
+  setOutputFormat as storeSetOutputFormat,
+  setStagedFile as storeSetStagedFile,
+  setTargetVersion as storeSetTargetVersion,
+  useEditorState,
+} from "@/lib/editor-state";
 
 const UNRECOGNIZED_INPUT_MESSAGE =
   "We couldn't recognize this file as a supported schematic format.";
@@ -43,68 +49,99 @@ function triggerDownload(
 
 export default function HomePage() {
   const router = useRouter();
-  const [file, setFile] = React.useState<File | null>(null);
-  const [detection, setDetection] = React.useState<DetectionState>({
-    status: "idle",
-  });
-  const [outputFormat, setOutputFormat] =
-    React.useState<SchematicFormatId | null>(null);
-  const [targetVersion, setTargetVersion] = React.useState<string | null>(null);
+  const editorState = useEditorState();
+
+  // `pendingFile` is the locally-selected File while detection is in flight.
+  // After detection succeeds it is written through to the shared store as
+  // `stagedFile` (bytes + filename + inputFormat). On remount we may have a
+  // stagedFile already (user navigated back from `/advanced`); we synthesize
+  // a File for display so `FileDropzone` can show the filename/size without
+  // re-running detection.
+  const [pendingFile, setPendingFile] = React.useState<File | null>(null);
+  const [detection, setDetection] = React.useState<DetectionState>(() =>
+    editorState.stagedFile
+      ? { status: "ok", formatId: editorState.stagedFile.inputFormat }
+      : { status: "idle" },
+  );
   const [isConverting, setIsConverting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const cancelledRef = React.useRef(false);
 
+  const displayFile = React.useMemo<File | null>(() => {
+    if (pendingFile) return pendingFile;
+    const staged = editorState.stagedFile;
+    if (!staged) return null;
+    return new File([staged.bytes as BlobPart], staged.filename);
+  }, [pendingFile, editorState.stagedFile]);
+
   const handleFileChange = React.useCallback((next: File | null) => {
-    setFile(next);
     setError(null);
-    setDetection(next ? { status: "detecting" } : { status: "idle" });
+    if (!next) {
+      setPendingFile(null);
+      setDetection({ status: "idle" });
+      storeSetStagedFile(null);
+      return;
+    }
+    setPendingFile(next);
+    setDetection({ status: "detecting" });
   }, []);
 
   const handleOutputFormatChange = React.useCallback(
     (next: SchematicFormatId | null) => {
-      setOutputFormat(next);
+      storeSetOutputFormat(next);
       setError(null);
     },
     [],
   );
 
   const handleTargetVersionChange = React.useCallback((next: string | null) => {
-    setTargetVersion(next);
+    storeSetTargetVersion(next);
     setError(null);
   }, []);
 
   React.useEffect(() => {
-    if (!file) return;
+    if (!pendingFile) return;
     let cancelled = false;
     (async () => {
       try {
-        const buffer = await file.arrayBuffer();
-        const detected = await detectInWorker(new Uint8Array(buffer));
-        if (!cancelled) setDetection({ status: "ok", formatId: detected });
+        const buffer = await pendingFile.arrayBuffer();
+        const bytes = new Uint8Array(buffer);
+        const detected = await detectInWorker(bytes);
+        if (cancelled) return;
+        // `detectInWorker` returns `string` but the runtime value is one of the
+        // canonical `SchematicFormatId`s (mirrors `detectSchematicType` output).
+        const formatId = detected as SchematicFormatId;
+        storeSetStagedFile({
+          bytes,
+          filename: pendingFile.name,
+          inputFormat: formatId,
+        });
+        setDetection({ status: "ok", formatId });
       } catch {
-        if (!cancelled) {
-          setDetection({ status: "failed" });
-          setError(UNRECOGNIZED_INPUT_MESSAGE);
-        }
+        if (cancelled) return;
+        storeSetStagedFile(null);
+        setDetection({ status: "failed" });
+        setError(UNRECOGNIZED_INPUT_MESSAGE);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [file]);
+  }, [pendingFile]);
 
   const handleSubmit = React.useCallback(async () => {
-    if (!file || !outputFormat || isConverting) return;
+    const staged = editorState.stagedFile;
+    const outputFormat = editorState.outputFormat;
+    if (!staged || !outputFormat || isConverting) return;
     cancelledRef.current = false;
     setError(null);
     setIsConverting(true);
     try {
-      const buffer = await file.arrayBuffer();
       const result = await convertInWorker(
-        new Uint8Array(buffer),
+        staged.bytes,
         outputFormat,
-        targetVersion ?? undefined,
-        file.name,
+        editorState.targetVersion ?? undefined,
+        staged.filename,
       );
       if (cancelledRef.current) return;
       if (result.ok) {
@@ -121,7 +158,12 @@ export default function HomePage() {
       setIsConverting(false);
       cancelledRef.current = false;
     }
-  }, [file, outputFormat, targetVersion, isConverting]);
+  }, [
+    editorState.stagedFile,
+    editorState.outputFormat,
+    editorState.targetVersion,
+    isConverting,
+  ]);
 
   const handleCancel = React.useCallback(() => {
     cancelledRef.current = true;
@@ -132,8 +174,7 @@ export default function HomePage() {
     router.push("/advanced");
   }, [router]);
 
-  const canOpenAdvanced =
-    !!file && detection.status === "ok" && !isConverting;
+  const canOpenAdvanced = !!editorState.stagedFile && !isConverting;
 
   return (
     <main
@@ -174,7 +215,7 @@ export default function HomePage() {
               gap: "var(--space-4)",
             }}
           >
-            <FileDropzone file={file} onFileChange={handleFileChange} />
+            <FileDropzone file={displayFile} onFileChange={handleFileChange} />
             <UrlImport
               onFileImported={handleFileChange}
               onError={setError}
@@ -182,16 +223,16 @@ export default function HomePage() {
             />
             <DetectedFormatHint state={detection} />
             <FormatSelector
-              value={outputFormat}
+              value={editorState.outputFormat}
               onChange={handleOutputFormatChange}
             />
             <VersionSelector
-              value={targetVersion}
+              value={editorState.targetVersion}
               onChange={handleTargetVersionChange}
             />
             <InlineError message={error} />
             <SubmitButton
-              disabled={!file || !outputFormat}
+              disabled={!editorState.stagedFile || !editorState.outputFormat}
               isConverting={isConverting}
               onClick={handleSubmit}
               onCancel={handleCancel}
