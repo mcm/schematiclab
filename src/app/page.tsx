@@ -106,7 +106,10 @@ export default function HomePage() {
       try {
         const buffer = await pendingFile.arrayBuffer();
         const bytes = new Uint8Array(buffer);
-        const detected = await detectInWorker(bytes);
+        // Copy before transferring — `bytes` is about to be stored as the
+        // canonical staged buffer that both convert and /advanced parse use.
+        // Letting detectInWorker transfer this view would detach it.
+        const detected = await detectInWorker(new Uint8Array(bytes));
         if (cancelled) return;
         // `detectInWorker` returns `string` but the runtime value is one of the
         // canonical `SchematicFormatId`s (mirrors `detectSchematicType` output).
@@ -137,8 +140,10 @@ export default function HomePage() {
     setError(null);
     setIsConverting(true);
     try {
+      // Copy before transferring — keep the store's bytes intact so a
+      // subsequent "Open in Advanced Editor" still has parseable input.
       const result = await convertInWorker(
-        staged.bytes,
+        new Uint8Array(staged.bytes),
         outputFormat,
         editorState.targetVersion ?? undefined,
         staged.filename,

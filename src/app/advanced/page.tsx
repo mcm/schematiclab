@@ -11,6 +11,7 @@ import {
   useEditorState,
   type ParseStatus,
 } from "@/lib/editor-state";
+import { ThreeDPreview } from "@/components/three-d-preview";
 
 const NARROW_VIEWPORT_QUERY = "(max-width: 899.98px)";
 const GENERIC_PARSE_ERROR =
@@ -139,7 +140,6 @@ function PanelCard({
 const UNAVAILABLE_LABEL = "Unavailable — see error above.";
 
 function previewBody(parseStatus: ParseStatus): React.ReactNode {
-  if (parseStatus.status === "ready") return "Preview will render here.";
   if (parseStatus.status === "error") return UNAVAILABLE_LABEL;
   return <PanelSkeleton />;
 }
@@ -183,20 +183,35 @@ function EditorShell({ parseStatus }: { parseStatus: ParseStatus }) {
       }}
     >
       <PanelCard title="3D Preview">
-        <div
-          style={{
-            flex: 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            border: "1px dashed var(--border-subtle)",
-            borderRadius: "var(--radius-md)",
-            minHeight: 200,
-            padding: "var(--space-4)",
-          }}
-        >
-          {previewBody(parseStatus)}
-        </div>
+        {parseStatus.status === "ready" ? (
+          <div
+            style={{
+              flex: 1,
+              minHeight: 200,
+              border: "1px solid var(--border-subtle)",
+              borderRadius: "var(--radius-md)",
+              overflow: "hidden",
+              background: "var(--bg-page)",
+            }}
+          >
+            <ThreeDPreview projection={parseStatus.schematic} />
+          </div>
+        ) : (
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              border: "1px dashed var(--border-subtle)",
+              borderRadius: "var(--radius-md)",
+              minHeight: 200,
+              padding: "var(--space-4)",
+            }}
+          >
+            {previewBody(parseStatus)}
+          </div>
+        )}
       </PanelCard>
 
       <div
