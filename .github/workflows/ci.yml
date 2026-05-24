@@ -46,7 +46,6 @@ permissions:
 
 env:
   NODE_PRIMARY: "22"
-  PNPM_VERSION: "11"
   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
 jobs:
