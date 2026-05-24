@@ -17,19 +17,11 @@ import type {
 } from "@/lib/convert";
 import { SUPPORTED_FORMATS } from "@/lib/convert";
 import { cancel, exportInWorker } from "@/lib/convert-client";
-import {
-  setOutputFormat,
-  setTargetVersion,
-  useEditorState,
-} from "@/lib/editor-state";
-import { KNOWN_VERSIONS } from "@/lib/schemlib/schematic-formats/version-mapping";
+import { setOutputFormat, useEditorState } from "@/lib/editor-state";
 import { InlineError } from "./inline-error";
 
 const OUTPUT_FORMAT_TRIGGER_ID = "advanced-export-format-trigger";
-const TARGET_VERSION_TRIGGER_ID = "advanced-export-target-version-trigger";
 
-const KEEP_SOURCE_VERSION = "__keep__";
-const VERSION_IDS: readonly string[] = Object.keys(KNOWN_VERSIONS);
 const WORKER_CANCELLED_MESSAGE = "Worker cancelled";
 const GENERIC_EXPORT_ERROR =
   "Something went wrong during export. Please try again.";
@@ -84,7 +76,7 @@ interface ExportPanelProps {
 }
 
 export function ExportPanel({ schematic, inputFilename }: ExportPanelProps) {
-  const { outputFormat, targetVersion } = useEditorState();
+  const { outputFormat } = useEditorState();
 
   const [isExporting, setIsExporting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -106,11 +98,6 @@ export function ExportPanel({ schematic, inputFilename }: ExportPanelProps) {
     setError(null);
   }, []);
 
-  const handleTargetVersionChange = React.useCallback((next: string) => {
-    setTargetVersion(next === KEEP_SOURCE_VERSION ? null : next);
-    setError(null);
-  }, []);
-
   const handleExport = React.useCallback(async () => {
     if (!outputFormat || isExporting) return;
     cancelledRef.current = false;
@@ -121,7 +108,6 @@ export function ExportPanel({ schematic, inputFilename }: ExportPanelProps) {
         schematic,
         outputFormat,
         inputFilename,
-        targetVersion ?? undefined,
       );
       if (cancelledRef.current) return;
       if (result.ok) {
@@ -138,7 +124,7 @@ export function ExportPanel({ schematic, inputFilename }: ExportPanelProps) {
       setIsExporting(false);
       cancelledRef.current = false;
     }
-  }, [schematic, inputFilename, outputFormat, targetVersion, isExporting]);
+  }, [schematic, inputFilename, outputFormat, isExporting]);
 
   const handleCancel = React.useCallback(() => {
     cancelledRef.current = true;
@@ -187,53 +173,6 @@ export function ExportPanel({ schematic, inputFilename }: ExportPanelProps) {
             ))}
           </SelectContent>
         </Select>
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "var(--space-1)",
-        }}
-      >
-        <Label
-          htmlFor={TARGET_VERSION_TRIGGER_ID}
-          style={{ fontSize: "var(--text-xs)" }}
-        >
-          Final target Minecraft version (optional)
-        </Label>
-        <Select
-          value={targetVersion ?? KEEP_SOURCE_VERSION}
-          onValueChange={handleTargetVersionChange}
-        >
-          <SelectTrigger
-            id={TARGET_VERSION_TRIGGER_ID}
-            style={{ width: "100%" }}
-            disabled={isExporting}
-          >
-            <SelectValue placeholder="Keep the current version" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={KEEP_SOURCE_VERSION}>
-              Keep the current version
-            </SelectItem>
-            {VERSION_IDS.map((id) => (
-              <SelectItem key={id} value={id}>
-                {id}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <p
-          style={{
-            margin: 0,
-            fontSize: "var(--text-xs)",
-            color: "var(--text-tertiary)",
-          }}
-        >
-          Applies a fresh version-map at export time on top of any in-editor
-          edits.
-        </p>
       </div>
 
       <InlineError message={error} />

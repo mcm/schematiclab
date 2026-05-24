@@ -2,7 +2,15 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Button, Card, CardContent } from "@iamthemcmaster/ui";
+import {
+  Button,
+  Card,
+  CardContent,
+  TabsContent,
+  TabsLine,
+  TabsLineList,
+  TabsLineTrigger,
+} from "@iamthemcmaster/ui";
 import { IconAlertCircle, IconArrowLeft } from "@tabler/icons-react";
 import { IconArrowBackUp } from "@tabler/icons-react";
 import { parseInWorker } from "@/lib/convert-client";
@@ -100,14 +108,18 @@ function PanelSkeleton() {
 function PanelCard({
   title,
   children,
-  flex,
 }: {
   title: string;
   children?: React.ReactNode;
-  flex?: number;
 }) {
   return (
-    <Card style={{ display: "flex", flexDirection: "column", flex }}>
+    <Card
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        minHeight: 0,
+      }}
+    >
       <CardContent
         style={{
           padding: "var(--space-4)",
@@ -201,15 +213,15 @@ function EditorShell({
   canUndoSwap,
   onUndoSwap,
   inputFilename,
+  isNarrow,
 }: {
   parseStatus: ParseStatus;
   onRequestSwap: (entry: ParsedSchematicPaletteEntry) => void;
   canUndoSwap: boolean;
   onUndoSwap: () => void;
   inputFilename: string | null;
+  isNarrow: boolean;
 }) {
-  const isNarrow = useIsNarrowViewport();
-
   return (
     <div
       style={{
@@ -219,7 +231,10 @@ function EditorShell({
         gap: "var(--space-4)",
         padding: "var(--space-4)",
         gridTemplateColumns: isNarrow ? "1fr" : "minmax(0, 2fr) minmax(280px, 1fr)",
-        gridTemplateRows: isNarrow ? "minmax(320px, 60vh) auto" : "1fr",
+        gridTemplateRows: isNarrow
+          ? "minmax(320px, 60vh) minmax(0, 1fr)"
+          : "1fr",
+        overflow: "hidden",
       }}
     >
       <PanelCard title="3D Preview">
@@ -254,51 +269,145 @@ function EditorShell({
         )}
       </PanelCard>
 
-      <div
+      <RightTabs
+        parseStatus={parseStatus}
+        onRequestSwap={onRequestSwap}
+        canUndoSwap={canUndoSwap}
+        onUndoSwap={onUndoSwap}
+        inputFilename={inputFilename}
+      />
+    </div>
+  );
+}
+
+type RightTabId = "materials" | "version" | "export";
+
+function RightTabs({
+  parseStatus,
+  onRequestSwap,
+  canUndoSwap,
+  onUndoSwap,
+  inputFilename,
+}: {
+  parseStatus: ParseStatus;
+  onRequestSwap: (entry: ParsedSchematicPaletteEntry) => void;
+  canUndoSwap: boolean;
+  onUndoSwap: () => void;
+  inputFilename: string | null;
+}) {
+  // forceMount on each TabsContent keeps internal state (search/sort,
+  // selected target version + per-version decisions, in-flight export) alive
+  // when the user flips between tabs. Visibility is driven by an inline
+  // display toggle keyed off `activeTab` so the active panel can still
+  // participate in flex layout.
+  const [activeTab, setActiveTab] = React.useState<RightTabId>("materials");
+
+  return (
+    <Card
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        minHeight: 0,
+      }}
+    >
+      <CardContent
         style={{
+          padding: "var(--space-4)",
+          flex: 1,
+          minHeight: 0,
           display: "flex",
           flexDirection: "column",
-          gap: "var(--space-4)",
-          minHeight: 0,
         }}
       >
-        <PanelCard title="Material List" flex={1}>
-          {parseStatus.status === "ready" ? (
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                marginBottom: "calc(-1 * var(--space-1))",
-              }}
-            >
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={onUndoSwap}
-                disabled={!canUndoSwap}
+        <TabsLine
+          value={activeTab}
+          onValueChange={(next) => setActiveTab(next as RightTabId)}
+          style={{
+            flex: 1,
+            minHeight: 0,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <TabsLineList>
+            <TabsLineTrigger value="materials">Material List</TabsLineTrigger>
+            <TabsLineTrigger value="version">Version Mapping</TabsLineTrigger>
+            <TabsLineTrigger value="export">Export</TabsLineTrigger>
+          </TabsLineList>
+          <TabsContent
+            value="materials"
+            forceMount
+            style={{
+              flex: 1,
+              minHeight: 0,
+              display: activeTab === "materials" ? "flex" : "none",
+              flexDirection: "column",
+              gap: "var(--space-2)",
+              color: "var(--text-tertiary)",
+              fontSize: "var(--text-sm)",
+            }}
+          >
+            {parseStatus.status === "ready" ? (
+              <div
                 style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "var(--space-1)",
-                  fontSize: "var(--text-xs)",
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  marginBottom: "calc(-1 * var(--space-1))",
                 }}
               >
-                <IconArrowBackUp size={14} aria-hidden="true" />
-                Undo last swap
-              </Button>
-            </div>
-          ) : null}
-          {materialListBody(parseStatus, onRequestSwap)}
-        </PanelCard>
-        <PanelCard title="Version Mapping" flex={1}>
-          {versionMappingBody(parseStatus)}
-        </PanelCard>
-        <PanelCard title="Export">
-          {exportBody(parseStatus, inputFilename)}
-        </PanelCard>
-      </div>
-    </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={onUndoSwap}
+                  disabled={!canUndoSwap}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "var(--space-1)",
+                    fontSize: "var(--text-xs)",
+                  }}
+                >
+                  <IconArrowBackUp size={14} aria-hidden="true" />
+                  Undo last swap
+                </Button>
+              </div>
+            ) : null}
+            {materialListBody(parseStatus, onRequestSwap)}
+          </TabsContent>
+          <TabsContent
+            value="version"
+            forceMount
+            style={{
+              flex: 1,
+              minHeight: 0,
+              display: activeTab === "version" ? "flex" : "none",
+              flexDirection: "column",
+              gap: "var(--space-2)",
+              color: "var(--text-tertiary)",
+              fontSize: "var(--text-sm)",
+            }}
+          >
+            {versionMappingBody(parseStatus)}
+          </TabsContent>
+          <TabsContent
+            value="export"
+            forceMount
+            style={{
+              flex: 1,
+              minHeight: 0,
+              display: activeTab === "export" ? "flex" : "none",
+              flexDirection: "column",
+              gap: "var(--space-2)",
+              color: "var(--text-tertiary)",
+              fontSize: "var(--text-sm)",
+            }}
+          >
+            {exportBody(parseStatus, inputFilename)}
+          </TabsContent>
+        </TabsLine>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -395,6 +504,7 @@ export default function AdvancedPage() {
   const { stagedFile, parseStatus, lastSwapSnapshot } = useEditorState();
   const stagedFilename = stagedFile?.filename ?? null;
   const hasStagedFile = stagedFile !== null;
+  const isNarrow = useIsNarrowViewport();
 
   const [pickerSource, setPickerSource] =
     React.useState<BlockStatePickerSource | null>(null);
@@ -467,9 +577,10 @@ export default function AdvancedPage() {
   return (
     <main
       style={{
-        minHeight: "100vh",
+        height: "100vh",
         display: "flex",
         flexDirection: "column",
+        overflow: "hidden",
       }}
     >
       <header
@@ -531,6 +642,7 @@ export default function AdvancedPage() {
           canUndoSwap={lastSwapSnapshot !== null}
           onUndoSwap={handleUndoSwap}
           inputFilename={stagedFilename}
+          isNarrow={isNarrow}
         />
       ) : (
         <EmptyState />
