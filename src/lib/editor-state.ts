@@ -128,7 +128,11 @@ export function clearEditorState(): void {
 }
 
 export function useEditorState(): EditorState {
-  return React.useSyncExternalStore(subscribe, getEditorState, getServerSnapshot);
+  return React.useSyncExternalStore(
+    subscribe,
+    getEditorState,
+    getServerSnapshot,
+  );
 }
 
 // Test-only: reset module state between tests.

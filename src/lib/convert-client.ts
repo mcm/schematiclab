@@ -141,10 +141,7 @@ export function convertInWorker(
 export function parseInWorker(bytes: Uint8Array): Promise<ParseResult> {
   const transfer: Transferable[] =
     bytes.buffer instanceof ArrayBuffer ? [bytes.buffer] : [];
-  return send<ParseResult>(
-    { type: "parse", payload: { bytes } },
-    transfer,
-  );
+  return send<ParseResult>({ type: "parse", payload: { bytes } }, transfer);
 }
 
 /**

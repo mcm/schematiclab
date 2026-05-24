@@ -37,7 +37,8 @@ export function UrlImport({
         onError(body?.error ?? GENERIC_IMPORT_ERROR);
         return;
       }
-      const encodedFilename = res.headers.get("X-Source-Filename") ?? "imported";
+      const encodedFilename =
+        res.headers.get("X-Source-Filename") ?? "imported";
       const filename = decodeURIComponent(encodedFilename);
       const buffer = await res.arrayBuffer();
       const file = new File([buffer], filename);

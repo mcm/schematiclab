@@ -69,11 +69,16 @@ export function previewVersionMapping(
       Name: entry.blockId,
       Properties: entry.properties,
     });
-    const translated = translateBlockState(source, sourceVersion, targetVersion, {
-      onWarning: (message) => {
-        warnings.push(message);
+    const translated = translateBlockState(
+      source,
+      sourceVersion,
+      targetVersion,
+      {
+        onWarning: (message) => {
+          warnings.push(message);
+        },
       },
-    });
+    );
 
     if (warnings.length === 0) {
       cleanCount += 1;

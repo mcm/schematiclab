@@ -34,8 +34,7 @@ export interface SchematicRegion extends ParsedSchematicRegion {
   tileEntities?: SchematicTileEntity[];
 }
 
-export interface Schematic
-  extends Omit<ParsedSchematicProjection, "regions"> {
+export interface Schematic extends Omit<ParsedSchematicProjection, "regions"> {
   regions: SchematicRegion[];
 }
 
@@ -66,7 +65,10 @@ function isTileEntityCompatible(
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
-function blockStateKey(blockId: string, properties: Record<string, string>): string {
+function blockStateKey(
+  blockId: string,
+  properties: Record<string, string>,
+): string {
   const keys = Object.keys(properties).sort();
   if (keys.length === 0) return blockId;
   const props = keys.map((k) => `${k}=${properties[k]}`).join(",");
@@ -308,7 +310,11 @@ export function applyVersionMapping(
       Name: entry.blockId,
       Properties: entry.properties,
     });
-    const translated = translateBlockState(source, sourceVersion, targetVersion);
+    const translated = translateBlockState(
+      source,
+      sourceVersion,
+      targetVersion,
+    );
     targetByIndex[i] = {
       key: translated.toString(),
       blockId: translated.Name,

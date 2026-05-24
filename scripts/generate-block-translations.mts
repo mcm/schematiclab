@@ -327,7 +327,13 @@ function main(): void {
     const to = ANCHOR_VERSIONS[i + 1];
     process.stderr.write(`Diffing ${from} → ${to}…\n`);
     diffs.push(
-      computeDiff(from, to, schemas[from], schemas[to], overrideByPair.get(`${from}→${to}`)),
+      computeDiff(
+        from,
+        to,
+        schemas[from],
+        schemas[to],
+        overrideByPair.get(`${from}→${to}`),
+      ),
     );
   }
 
@@ -345,7 +351,9 @@ function main(): void {
         `${Object.keys(d.renamedBlocks).length} renames, ${np} blocks with prop changes\n`,
     );
   }
-  process.stderr.write(`  flatten table: ${Object.keys(flattenTable).length} entries\n`);
+  process.stderr.write(
+    `  flatten table: ${Object.keys(flattenTable).length} entries\n`,
+  );
 }
 
 main();

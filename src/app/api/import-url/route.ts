@@ -53,22 +53,26 @@ function normalize(input: string): Normalized {
     if (!id || !/^[A-Za-z0-9]+$/.test(id)) {
       throw new Error("Couldn't find a paste id in that pastebin URL.");
     }
-    return { fetchUrl: `https://pastebin.com/raw/${id}`, source: "pastebin", id };
+    return {
+      fetchUrl: `https://pastebin.com/raw/${id}`,
+      source: "pastebin",
+      id,
+    };
   }
 
   if (parsed.hostname === "gist.github.com") {
     const parts = parsed.pathname.split("/").filter(Boolean);
     // Anonymous gists: /<id>. Named gists: /<user>/<id> (optionally /<sha>).
     const id =
-      parts.length === 1
-        ? parts[0]
-        : parts.length >= 2
-          ? parts[1]
-          : undefined;
+      parts.length === 1 ? parts[0] : parts.length >= 2 ? parts[1] : undefined;
     if (!id || !/^[a-fA-F0-9]+$/.test(id)) {
       throw new Error("Couldn't find a gist id in that URL.");
     }
-    return { fetchUrl: `https://api.github.com/gists/${id}`, source: "gist", id };
+    return {
+      fetchUrl: `https://api.github.com/gists/${id}`,
+      source: "gist",
+      id,
+    };
   }
 
   throw new Error("Only pastebin.com and gist.github.com URLs are allowed.");
@@ -84,7 +88,9 @@ async function fetchPastebin(fetchUrl: string, id: string): Promise<Fetched> {
   }
   const buf = await res.arrayBuffer();
   if (buf.byteLength > MAX_BYTES) {
-    throw new Error(`Paste is larger than the ${MAX_BYTES / (1024 * 1024)} MB limit.`);
+    throw new Error(
+      `Paste is larger than the ${MAX_BYTES / (1024 * 1024)} MB limit.`,
+    );
   }
   return { bytes: new Uint8Array(buf), filename: `pastebin-${id}.txt` };
 }
@@ -130,14 +136,18 @@ async function fetchGist(fetchUrl: string): Promise<Fetched> {
     }
     const buf = await rawRes.arrayBuffer();
     if (buf.byteLength > MAX_BYTES) {
-      throw new Error(`File is larger than the ${MAX_BYTES / (1024 * 1024)} MB limit.`);
+      throw new Error(
+        `File is larger than the ${MAX_BYTES / (1024 * 1024)} MB limit.`,
+      );
     }
     return { bytes: new Uint8Array(buf), filename: file.filename };
   }
 
   const bytes = new TextEncoder().encode(file.content);
   if (bytes.byteLength > MAX_BYTES) {
-    throw new Error(`File is larger than the ${MAX_BYTES / (1024 * 1024)} MB limit.`);
+    throw new Error(
+      `File is larger than the ${MAX_BYTES / (1024 * 1024)} MB limit.`,
+    );
   }
   return { bytes, filename: file.filename };
 }

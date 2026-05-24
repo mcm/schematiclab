@@ -210,7 +210,8 @@ function PaletteRow({
           height: 20,
           borderRadius: "var(--radius-sm)",
           background: swatch,
-          border: "1px solid color-mix(in srgb, var(--text-primary) 18%, transparent)",
+          border:
+            "1px solid color-mix(in srgb, var(--text-primary) 18%, transparent)",
           flexShrink: 0,
         }}
       />

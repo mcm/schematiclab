@@ -10,18 +10,29 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { FORGE_1_12_SPECS, type BlockSpec } from "../src/lib/schemlib/data/forge-1.12-specs.ts";
+import {
+  FORGE_1_12_SPECS,
+  type BlockSpec,
+} from "../src/lib/schemlib/data/forge-1.12-specs.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, "..");
-const OUT_PATH = join(REPO_ROOT, "src/lib/schemlib/data/forge-1.12-flatten.generated.ts");
+const OUT_PATH = join(
+  REPO_ROOT,
+  "src/lib/schemlib/data/forge-1.12-flatten.generated.ts",
+);
 const MINECRAFT_DATA =
-  process.env.MINECRAFT_DATA_PATH ?? join(process.env.HOME ?? "", "projects/minecraft-data");
+  process.env.MINECRAFT_DATA_PATH ??
+  join(process.env.HOME ?? "", "projects/minecraft-data");
 
 interface McdataBlock {
   id: number;
   name: string;
-  variations?: { metadata: number; displayName?: string; description?: string }[];
+  variations?: {
+    metadata: number;
+    displayName?: string;
+    description?: string;
+  }[];
 }
 
 function loadBlocks(): McdataBlock[] {
@@ -57,13 +68,18 @@ function decode(_block: McdataBlock, spec: BlockSpec, meta: number): Decoded {
       return meta === 0 ? {} : null;
 
     case "variants":
-      return meta < spec.values.length ? { [spec.prop]: spec.values[meta] } : null;
+      return meta < spec.values.length
+        ? { [spec.prop]: spec.values[meta] }
+        : null;
 
     case "variants_with_stage": {
       const variant = meta & 0x7;
       const stage = (meta >> 3) & 0x1;
       if (variant >= spec.values.length) return null;
-      return { [spec.prop]: spec.values[variant], [spec.stageProp]: String(stage) };
+      return {
+        [spec.prop]: spec.values[variant],
+        [spec.stageProp]: String(stage),
+      };
     }
 
     case "leaves": {
@@ -79,7 +95,14 @@ function decode(_block: McdataBlock, spec: BlockSpec, meta: number): Decoded {
     }
 
     case "double_plant": {
-      const variants = ["sunflower", "syringa", "double_grass", "double_fern", "double_rose", "paeonia"];
+      const variants = [
+        "sunflower",
+        "syringa",
+        "double_grass",
+        "double_fern",
+        "double_rose",
+        "paeonia",
+      ];
       const upper = (meta & 0x8) !== 0;
       if (upper) {
         // Upper half just records facing; variant lives on lower half.
@@ -96,7 +119,9 @@ function decode(_block: McdataBlock, spec: BlockSpec, meta: number): Decoded {
       return meta === 0 ? {} : null;
 
     case "connected_variant":
-      return meta < spec.values.length ? { [spec.prop]: spec.values[meta] } : null;
+      return meta < spec.values.length
+        ? { [spec.prop]: spec.values[meta] }
+        : null;
 
     case "quartz_block": {
       const map = ["default", "chiseled", "lines_y", "lines_x", "lines_z"];
@@ -107,11 +132,16 @@ function decode(_block: McdataBlock, spec: BlockSpec, meta: number): Decoded {
       const variant = meta & 0x7;
       const top = (meta & 0x8) !== 0;
       if (variant >= spec.values.length) return null;
-      return { [spec.prop]: spec.values[variant], half: top ? "top" : "bottom" };
+      return {
+        [spec.prop]: spec.values[variant],
+        half: top ? "top" : "bottom",
+      };
     }
 
     case "double_slab":
-      return meta < spec.values.length ? { [spec.prop]: spec.values[meta] } : null;
+      return meta < spec.values.length
+        ? { [spec.prop]: spec.values[meta] }
+        : null;
 
     case "slab_seamless": {
       // Stone slabs add a `seamless=true` flag in the high bit only for
@@ -119,14 +149,20 @@ function decode(_block: McdataBlock, spec: BlockSpec, meta: number): Decoded {
       const variant = meta & 0x7;
       const top = (meta & 0x8) !== 0;
       if (variant >= spec.values.length) return null;
-      return { [spec.prop]: spec.values[variant], half: top ? "top" : "bottom" };
+      return {
+        [spec.prop]: spec.values[variant],
+        half: top ? "top" : "bottom",
+      };
     }
 
     case "double_slab_seamless": {
       const variant = meta & 0x7;
       const seamless = (meta & 0x8) !== 0;
       if (variant >= spec.values.length) return null;
-      return { [spec.prop]: spec.values[variant], seamless: seamless ? "true" : "false" };
+      return {
+        [spec.prop]: spec.values[variant],
+        seamless: seamless ? "true" : "false",
+      };
     }
 
     case "log": {
@@ -152,12 +188,24 @@ function decode(_block: McdataBlock, spec: BlockSpec, meta: number): Decoded {
       if (meta <= 7) {
         const facing = ["east", "south", "west", "north"][meta & 0x3];
         const open = (meta & 0x4) !== 0;
-        return { facing, half: "lower", open: open ? "true" : "false", hinge: "left", powered: "false" };
+        return {
+          facing,
+          half: "lower",
+          open: open ? "true" : "false",
+          hinge: "left",
+          powered: "false",
+        };
       }
       if (meta === 8 || meta === 9) {
         const hinge = meta === 8 ? "left" : "right";
         // Upper-half forge state omits facing/open/powered.
-        return { half: "upper", hinge, powered: "false", facing: "north", open: "false" };
+        return {
+          half: "upper",
+          hinge,
+          powered: "false",
+          facing: "north",
+          open: "false",
+        };
       }
       return null;
     }
@@ -167,14 +215,23 @@ function decode(_block: McdataBlock, spec: BlockSpec, meta: number): Decoded {
       const facing = ["north", "south", "west", "east"][meta & 0x3];
       const open = (meta & 0x4) !== 0;
       const top = (meta & 0x8) !== 0;
-      return { facing, open: open ? "true" : "false", half: top ? "top" : "bottom" };
+      return {
+        facing,
+        open: open ? "true" : "false",
+        half: top ? "top" : "bottom",
+      };
     }
 
     case "fence_gate": {
       if (meta > 7) return null;
       const facing = ["south", "west", "north", "east"][meta & 0x3];
       const open = (meta & 0x4) !== 0;
-      return { facing, open: open ? "true" : "false", in_wall: "false", powered: "false" };
+      return {
+        facing,
+        open: open ? "true" : "false",
+        in_wall: "false",
+        powered: "false",
+      };
     }
 
     case "facing4": {
@@ -265,7 +322,9 @@ function decode(_block: McdataBlock, spec: BlockSpec, meta: number): Decoded {
     }
 
     case "hopper": {
-      const facing = ["down", "down", "north", "south", "west", "east"][meta & 0x7];
+      const facing = ["down", "down", "north", "south", "west", "east"][
+        meta & 0x7
+      ];
       if (!facing || (meta & 0x7) === 1) return null; // 1 is unused
       const enabled = (meta & 0x8) === 0;
       return { facing, enabled: enabled ? "true" : "false" };
@@ -274,9 +333,26 @@ function decode(_block: McdataBlock, spec: BlockSpec, meta: number): Decoded {
     case "rail": {
       // Straight rails: 0-5 directions, optional 6-9 for curves.
       const shapes = spec.withDir6
-        ? ["north_south", "east_west", "ascending_east", "ascending_west", "ascending_north", "ascending_south",
-           "south_east", "south_west", "north_west", "north_east"]
-        : ["north_south", "east_west", "ascending_east", "ascending_west", "ascending_north", "ascending_south"];
+        ? [
+            "north_south",
+            "east_west",
+            "ascending_east",
+            "ascending_west",
+            "ascending_north",
+            "ascending_south",
+            "south_east",
+            "south_west",
+            "north_west",
+            "north_east",
+          ]
+        : [
+            "north_south",
+            "east_west",
+            "ascending_east",
+            "ascending_west",
+            "ascending_north",
+            "ascending_south",
+          ];
       const shapeIdx = spec.powered ? meta & 0x7 : meta;
       if (shapeIdx >= shapes.length) return null;
       if (spec.powered) {
@@ -310,10 +386,10 @@ function decode(_block: McdataBlock, spec: BlockSpec, meta: number): Decoded {
       const map = ["down", "east", "west", "south", "north", "up"];
       const idx = meta & 0x7;
       if (idx >= map.length) return null;
-      const facing = map[idx] === "down" || map[idx] === "up"
-        ? "north"
-        : map[idx];
-      const face = map[idx] === "down" ? "ceiling" : map[idx] === "up" ? "floor" : "wall";
+      const facing =
+        map[idx] === "down" || map[idx] === "up" ? "north" : map[idx];
+      const face =
+        map[idx] === "down" ? "ceiling" : map[idx] === "up" ? "floor" : "wall";
       const powered = (meta & 0x8) !== 0;
       return { facing, face, powered: powered ? "true" : "false" };
     }
@@ -438,20 +514,132 @@ const RUNTIME_PROPS: Record<string, Record<string, readonly string[]>> = {
   // grass_path: stateless in Forge, no snowy property.
 
   // Stairs: shape computed from neighbor stairs.
-  oak_stairs: { shape: ["straight", "inner_left", "inner_right", "outer_left", "outer_right"] },
-  spruce_stairs: { shape: ["straight", "inner_left", "inner_right", "outer_left", "outer_right"] },
-  birch_stairs: { shape: ["straight", "inner_left", "inner_right", "outer_left", "outer_right"] },
-  jungle_stairs: { shape: ["straight", "inner_left", "inner_right", "outer_left", "outer_right"] },
-  acacia_stairs: { shape: ["straight", "inner_left", "inner_right", "outer_left", "outer_right"] },
-  dark_oak_stairs: { shape: ["straight", "inner_left", "inner_right", "outer_left", "outer_right"] },
-  stone_stairs: { shape: ["straight", "inner_left", "inner_right", "outer_left", "outer_right"] },
-  sandstone_stairs: { shape: ["straight", "inner_left", "inner_right", "outer_left", "outer_right"] },
-  red_sandstone_stairs: { shape: ["straight", "inner_left", "inner_right", "outer_left", "outer_right"] },
-  brick_stairs: { shape: ["straight", "inner_left", "inner_right", "outer_left", "outer_right"] },
-  stone_brick_stairs: { shape: ["straight", "inner_left", "inner_right", "outer_left", "outer_right"] },
-  nether_brick_stairs: { shape: ["straight", "inner_left", "inner_right", "outer_left", "outer_right"] },
-  quartz_stairs: { shape: ["straight", "inner_left", "inner_right", "outer_left", "outer_right"] },
-  purpur_stairs: { shape: ["straight", "inner_left", "inner_right", "outer_left", "outer_right"] },
+  oak_stairs: {
+    shape: [
+      "straight",
+      "inner_left",
+      "inner_right",
+      "outer_left",
+      "outer_right",
+    ],
+  },
+  spruce_stairs: {
+    shape: [
+      "straight",
+      "inner_left",
+      "inner_right",
+      "outer_left",
+      "outer_right",
+    ],
+  },
+  birch_stairs: {
+    shape: [
+      "straight",
+      "inner_left",
+      "inner_right",
+      "outer_left",
+      "outer_right",
+    ],
+  },
+  jungle_stairs: {
+    shape: [
+      "straight",
+      "inner_left",
+      "inner_right",
+      "outer_left",
+      "outer_right",
+    ],
+  },
+  acacia_stairs: {
+    shape: [
+      "straight",
+      "inner_left",
+      "inner_right",
+      "outer_left",
+      "outer_right",
+    ],
+  },
+  dark_oak_stairs: {
+    shape: [
+      "straight",
+      "inner_left",
+      "inner_right",
+      "outer_left",
+      "outer_right",
+    ],
+  },
+  stone_stairs: {
+    shape: [
+      "straight",
+      "inner_left",
+      "inner_right",
+      "outer_left",
+      "outer_right",
+    ],
+  },
+  sandstone_stairs: {
+    shape: [
+      "straight",
+      "inner_left",
+      "inner_right",
+      "outer_left",
+      "outer_right",
+    ],
+  },
+  red_sandstone_stairs: {
+    shape: [
+      "straight",
+      "inner_left",
+      "inner_right",
+      "outer_left",
+      "outer_right",
+    ],
+  },
+  brick_stairs: {
+    shape: [
+      "straight",
+      "inner_left",
+      "inner_right",
+      "outer_left",
+      "outer_right",
+    ],
+  },
+  stone_brick_stairs: {
+    shape: [
+      "straight",
+      "inner_left",
+      "inner_right",
+      "outer_left",
+      "outer_right",
+    ],
+  },
+  nether_brick_stairs: {
+    shape: [
+      "straight",
+      "inner_left",
+      "inner_right",
+      "outer_left",
+      "outer_right",
+    ],
+  },
+  quartz_stairs: {
+    shape: [
+      "straight",
+      "inner_left",
+      "inner_right",
+      "outer_left",
+      "outer_right",
+    ],
+  },
+  purpur_stairs: {
+    shape: [
+      "straight",
+      "inner_left",
+      "inner_right",
+      "outer_left",
+      "outer_right",
+    ],
+  },
 
   // Fence connections (4 booleans).
   fence: { east: BOOL, north: BOOL, south: BOOL, west: BOOL },
@@ -463,13 +651,26 @@ const RUNTIME_PROPS: Record<string, Record<string, readonly string[]>> = {
   nether_brick_fence: { east: BOOL, north: BOOL, south: BOOL, west: BOOL },
   iron_bars: { east: BOOL, north: BOOL, south: BOOL, west: BOOL },
   glass_pane: { east: BOOL, north: BOOL, south: BOOL, west: BOOL },
-  chorus_plant: { down: BOOL, east: BOOL, north: BOOL, south: BOOL, up: BOOL, west: BOOL },
+  chorus_plant: {
+    down: BOOL,
+    east: BOOL,
+    north: BOOL,
+    south: BOOL,
+    up: BOOL,
+    west: BOOL,
+  },
 
   // Stained glass pane has connections too.
   stained_glass_pane: { east: BOOL, north: BOOL, south: BOOL, west: BOOL },
 
   // Cobblestone wall: 4 connections + up bit (auto-set when adjacent to tall block).
-  cobblestone_wall: { east: BOOL, north: BOOL, south: BOOL, up: BOOL, west: BOOL },
+  cobblestone_wall: {
+    east: BOOL,
+    north: BOOL,
+    south: BOOL,
+    up: BOOL,
+    west: BOOL,
+  },
 
   // Tripwire connections.
   tripwire: { east: BOOL, north: BOOL, south: BOOL, west: BOOL },
@@ -523,11 +724,14 @@ function main(): void {
   const skipped: Array<[string, number, string]> = [];
 
   for (const block of blocks) {
-    const spec: BlockSpec = FORGE_1_12_SPECS[block.name] ?? { kind: "stateless" };
+    const spec: BlockSpec = FORGE_1_12_SPECS[block.name] ?? {
+      kind: "stateless",
+    };
 
     // Determine the metadata range to enumerate. If the spec is stateless we
     // emit one entry at meta=0. Otherwise we enumerate 0..15 and skip nulls.
-    const metas = spec.kind === "stateless" ? [0] : Array.from({ length: 16 }, (_, i) => i);
+    const metas =
+      spec.kind === "stateless" ? [0] : Array.from({ length: 16 }, (_, i) => i);
 
     for (const meta of metas) {
       const decoded = decode(block, spec, meta);
@@ -536,7 +740,11 @@ function main(): void {
         const key = stateString(block.name, expanded);
         const value = `${block.id}:${meta}`;
         if (table[key] !== undefined && table[key] !== value) {
-          skipped.push([key, meta, `collision (was ${table[key]}, now ${value})`]);
+          skipped.push([
+            key,
+            meta,
+            `collision (was ${table[key]}, now ${value})`,
+          ]);
           continue;
         }
         table[key] = value;
@@ -556,7 +764,9 @@ function main(): void {
 
   process.stderr.write(`Wrote ${Object.keys(table).length} entries\n`);
   process.stderr.write(`Skipped ${skipped.length} collisions/errors\n`);
-  process.stderr.write(`${unreached} minecraft-data variations have no matching spec entry (the rest is covered)\n`);
+  process.stderr.write(
+    `${unreached} minecraft-data variations have no matching spec entry (the rest is covered)\n`,
+  );
 
   const header = `// AUTO-GENERATED by scripts/generate-forge-1.12-flatten.mts — do NOT edit.
 // Regenerate with: pnpm gen:forge-1.12
