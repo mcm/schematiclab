@@ -12,10 +12,7 @@ import {
   Input,
   Label,
 } from "@iamthemcmaster/ui";
-import {
-  isCatalogedBlockId,
-  searchBlockCatalog,
-} from "@/lib/block-catalog";
+import { isCatalogedBlockId, searchBlockCatalog } from "@/lib/block-catalog";
 
 export interface BlockStatePickerSource {
   blockState: string;
@@ -105,7 +102,8 @@ export function BlockStatePicker({
   );
 
   const parsedTarget = parseTargetEntry(query);
-  const targetValid = parsedTarget !== null && isValidBlockId(parsedTarget.blockId);
+  const targetValid =
+    parsedTarget !== null && isValidBlockId(parsedTarget.blockId);
   const targetDisplay =
     parsedTarget && parsedTarget.blockId
       ? formatStateDisplay(parsedTarget.blockId, parsedTarget.properties)
@@ -127,7 +125,10 @@ export function BlockStatePicker({
     } else if (e.key === "Enter") {
       // Enter inside the input commits the highlighted suggestion as the
       // typed value (the user can hit Confirm to apply, or press Enter again).
-      if (suggestions[highlightIndex] && query.trim() !== suggestions[highlightIndex]) {
+      if (
+        suggestions[highlightIndex] &&
+        query.trim() !== suggestions[highlightIndex]
+      ) {
         e.preventDefault();
         selectSuggestion(suggestions[highlightIndex]);
       }
@@ -140,7 +141,12 @@ export function BlockStatePicker({
   }
 
   return (
-    <Dialog open={open} onOpenChange={(next) => { if (!next) onCancel(); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) onCancel();
+      }}
+    >
       <DialogContent
         style={{
           maxWidth: 640,
@@ -260,8 +266,7 @@ export function BlockStatePicker({
                     style={{
                       padding: "var(--space-1) var(--space-3)",
                       fontSize: "var(--text-sm)",
-                      fontFamily:
-                        "var(--font-mono, ui-monospace, monospace)",
+                      fontFamily: "var(--font-mono, ui-monospace, monospace)",
                       cursor: "pointer",
                       background: isHighlighted
                         ? "var(--bg-elevated)"

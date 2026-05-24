@@ -132,7 +132,11 @@ function buildStructure(
       if (entry === undefined || isInvisibleBlockId(entry.blockId)) continue;
       const [x, y, z] = placement.pos;
       structure.addBlock(
-        BlockPos.create(x - bounds.min[0], y - bounds.min[1], z - bounds.min[2]),
+        BlockPos.create(
+          x - bounds.min[0],
+          y - bounds.min[1],
+          z - bounds.min[2],
+        ),
         entry.blockId,
         entry.properties,
       );
@@ -424,7 +428,10 @@ export function ThreeDPreview({ projection }: ThreeDPreviewProps) {
       });
       if (activePointers.size === 2) {
         const pts = [...activePointers.values()];
-        lastPinchDistance = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+        lastPinchDistance = Math.hypot(
+          pts[0].x - pts[1].x,
+          pts[0].y - pts[1].y,
+        );
         lastPinchMidpoint = {
           x: (pts[0].x + pts[1].x) / 2,
           y: (pts[0].y + pts[1].y) / 2,

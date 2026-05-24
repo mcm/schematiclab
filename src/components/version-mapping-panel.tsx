@@ -787,10 +787,10 @@ function PreviewSummary({ state }: { state: PreviewState }) {
       }}
     >
       Translating to <strong>{targetVersionId}</strong>:{" "}
-      <strong>{preview.cleanCount.toLocaleString()}</strong>{" "}
-      state{preview.cleanCount === 1 ? "" : "s"} translated cleanly,{" "}
-      <strong>{preview.problematicCount.toLocaleString()}</strong>{" "}
-      state{preview.problematicCount === 1 ? "" : "s"} need attention.
+      <strong>{preview.cleanCount.toLocaleString()}</strong> state
+      {preview.cleanCount === 1 ? "" : "s"} translated cleanly,{" "}
+      <strong>{preview.problematicCount.toLocaleString()}</strong> state
+      {preview.problematicCount === 1 ? "" : "s"} need attention.
     </div>
   );
 }

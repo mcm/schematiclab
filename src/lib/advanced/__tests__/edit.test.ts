@@ -109,9 +109,7 @@ describe("applyBlockSwap", () => {
 
   it("applies the swap to every region", () => {
     const before = schematic(
-      [
-        { blockState: "minecraft:stone", blockId: "minecraft:stone", count: 4 },
-      ],
+      [{ blockState: "minecraft:stone", blockId: "minecraft:stone", count: 4 }],
       [
         {
           blocks: [

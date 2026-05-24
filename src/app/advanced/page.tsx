@@ -230,7 +230,9 @@ function EditorShell({
         display: "grid",
         gap: "var(--space-4)",
         padding: "var(--space-4)",
-        gridTemplateColumns: isNarrow ? "1fr" : "minmax(0, 2fr) minmax(280px, 1fr)",
+        gridTemplateColumns: isNarrow
+          ? "1fr"
+          : "minmax(0, 2fr) minmax(280px, 1fr)",
         gridTemplateRows: isNarrow
           ? "minmax(320px, 60vh) minmax(0, 1fr)"
           : "1fr",
@@ -568,7 +570,8 @@ export default function AdvancedPage() {
         }
       } catch (err) {
         if (getEditorState().stagedFile !== targetStaged) return;
-        const message = err instanceof Error ? err.message : GENERIC_PARSE_ERROR;
+        const message =
+          err instanceof Error ? err.message : GENERIC_PARSE_ERROR;
         setParseStatus({ status: "error", error: message });
       }
     })();
@@ -618,7 +621,9 @@ export default function AdvancedPage() {
         <span
           style={{
             fontSize: "var(--text-sm)",
-            color: hasStagedFile ? "var(--text-primary)" : "var(--text-tertiary)",
+            color: hasStagedFile
+              ? "var(--text-primary)"
+              : "var(--text-tertiary)",
             fontWeight: hasStagedFile ? 500 : 400,
             overflow: "hidden",
             textOverflow: "ellipsis",
