@@ -36,14 +36,6 @@ const MIN_DISTANCE_FACTOR = 0.05; // relative to fitDistance
 const MAX_DISTANCE_FACTOR = 10;
 const FIT_DISTANCE_MARGIN = 1.25;
 
-// Hard ceiling for interactive preview. Past this many visible (non-air)
-// placements, even the chunked builder + GPU mesh upload starts to feel
-// painful, and a 1M-vertex draw can exceed mobile GPU limits. Showing an
-// inline notice is friendlier than freezing the browser. Defining the exact
-// threshold is out of scope for v1 — 100k is a conservative starting point
-// that still admits real-world builds.
-const MAX_PREVIEWABLE_BLOCKS = 100_000;
-
 // Chunk size matches the deepslate default we pass to StructureRenderer. Keep
 // these in lock-step.
 const CHUNK_SIZE = 16;
@@ -61,7 +53,6 @@ interface Bounds {
 
 interface ProjectionStats {
   bounds: Bounds | null;
-  visibleBlockCount: number;
 }
 
 interface CameraState {
@@ -83,8 +74,7 @@ interface CameraApi {
 }
 
 // Compute the smallest axis-aligned bounding box containing every visible
-// block placement and the total count of visible (non-air) placements. The
-// count drives the "too large to preview" guard.
+// (non-air) block placement. Returns null bounds if no visible blocks exist.
 function computeProjectionStats(
   projection: ParsedSchematicProjection,
 ): ProjectionStats {
@@ -94,7 +84,7 @@ function computeProjectionStats(
   let maxX = -Infinity;
   let maxY = -Infinity;
   let maxZ = -Infinity;
-  let visibleBlockCount = 0;
+  let any = false;
 
   // Pre-compute visibility per palette entry so the inner loop is one map
   // lookup + one boolean check rather than a Set probe per placement.
@@ -105,7 +95,7 @@ function computeProjectionStats(
   for (const region of projection.regions) {
     for (const placement of region.blocks) {
       if (!visibleMask[placement.paletteIndex]) continue;
-      visibleBlockCount += 1;
+      any = true;
       const [x, y, z] = placement.pos;
       if (x < minX) minX = x;
       if (y < minY) minY = y;
@@ -116,15 +106,14 @@ function computeProjectionStats(
     }
   }
 
-  if (visibleBlockCount === 0) {
-    return { bounds: null, visibleBlockCount: 0 };
+  if (!any) {
+    return { bounds: null };
   }
   return {
     bounds: {
       min: [minX, minY, minZ],
       size: [maxX - minX + 1, maxY - minY + 1, maxZ - minZ + 1],
     },
-    visibleBlockCount,
   };
 }
 
@@ -315,11 +304,9 @@ export function ThreeDPreview({ projection }: ThreeDPreviewProps) {
   // Cleared back to false once the chunked builder finishes (or aborts via
   // cleanup). Drives the "Building preview…" overlay.
   const [isBuilding, setIsBuilding] = React.useState(false);
-  const tooLarge =
-    stats.bounds !== null && stats.visibleBlockCount > MAX_PREVIEWABLE_BLOCKS;
 
   React.useEffect(() => {
-    if (!webGLOk || stats.bounds === null || resources === null || tooLarge) {
+    if (!webGLOk || stats.bounds === null || resources === null) {
       return;
     }
     const canvasMaybe = canvasRef.current;
@@ -535,9 +522,9 @@ export function ThreeDPreview({ projection }: ThreeDPreviewProps) {
 
     // Kick off the chunked build. Structure-build itself is a single O(N)
     // pass (deepslate's `Structure.addBlock` does a per-call palette
-    // findIndex — fine for ≤100k blocks). Then we yield once and walk the
-    // chunk list in batches, rendering between each so the structure visibly
-    // assembles instead of appearing all at once.
+    // findIndex). Then we yield once and walk the chunk list in batches,
+    // rendering between each so the structure visibly assembles instead of
+    // appearing all at once.
     //
     // All `setIsBuilding` calls happen inside async callbacks (after a
     // `yieldToMainThread` / `await`) — never synchronously inside the effect
@@ -590,7 +577,7 @@ export function ThreeDPreview({ projection }: ThreeDPreviewProps) {
       // second mount's StructureRenderer (shader compile returns no log).
       renderer = null;
     };
-  }, [projection, stats, webGLOk, resources, tooLarge]);
+  }, [projection, stats, webGLOk, resources]);
 
   if (!webGLOk) {
     return (
@@ -617,34 +604,6 @@ export function ThreeDPreview({ projection }: ThreeDPreviewProps) {
         }}
       >
         Schematic contains no visible blocks to render.
-      </div>
-    );
-  }
-
-  if (tooLarge) {
-    return (
-      <div
-        role="alert"
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "var(--space-2)",
-          padding: "var(--space-4)",
-          height: "100%",
-          color: "var(--text-secondary)",
-          fontSize: "var(--text-sm)",
-          textAlign: "center",
-        }}
-      >
-        <span style={{ color: "var(--text-primary)", fontWeight: 500 }}>
-          This schematic is too large to preview interactively.
-        </span>
-        <span>
-          {stats.visibleBlockCount.toLocaleString()} visible blocks exceeds the{" "}
-          {MAX_PREVIEWABLE_BLOCKS.toLocaleString()}-block preview limit.
-        </span>
       </div>
     );
   }
