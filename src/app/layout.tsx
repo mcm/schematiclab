@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import "@iamthemcmaster/ui/styles";
 import "./globals.css";
 import { AppShell } from "@/components/app-shell";
@@ -37,6 +38,7 @@ export default function RootLayout({
       </head>
       <body>
         <AppShell>{children}</AppShell>
+        <Analytics />
       </body>
     </html>
   );

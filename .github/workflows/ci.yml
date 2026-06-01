@@ -11,7 +11,6 @@
 #   • Markdown linting (markdownlint — advisory)
 #   • Unused dependency detection (knip — advisory)
 #   • Unit tests (Vitest w/ coverage)
-#   • E2E tests (Playwright)
 #   • Coverage upload (Codecov)
 #   • Build verification
 #   • Bundle size tracking (PR comment)
