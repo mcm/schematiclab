@@ -80,13 +80,24 @@ export async function GET(
     ) {
       indexes.push(index);
     }
-    // A failed later page shouldn't discard the rest: serve what arrived,
-    // just don't cache it.
-    const rest = await Promise.allSettled(indexes.map(fetchPage));
-    for (const page of rest) {
-      if (page.status === "fulfilled") raw.push(...page.value.data);
-      else partial = true;
-    }
+    // A failed later page shouldn't discard the rest. Retry it once (these
+    // are usually transient 429/5xx); if it still fails, serve what arrived
+    // uncached. The client auto-picks the newest file, so a missing page
+    // could mean an older pick — hence the retry and the log.
+    const rest = await Promise.allSettled(
+      indexes.map((index) => fetchPage(index).catch(() => fetchPage(index))),
+    );
+    rest.forEach((page, i) => {
+      if (page.status === "fulfilled") {
+        raw.push(...page.value.data);
+        return;
+      }
+      partial = true;
+      console.warn(
+        `CurseForge files page ${indexes[i]} for mod ${modId} failed; serving a partial list.`,
+        page.reason,
+      );
+    });
   } catch (err) {
     return upstreamFailed(err);
   }
