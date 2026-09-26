@@ -234,6 +234,10 @@ export async function downloadModJar(
 
   const header = Number(response.headers.get("Content-Length"));
   const total = Number.isFinite(header) && header > 0 ? header : null;
+  // With a known length, fill one buffer as chunks arrive instead of
+  // concatenating at the end (which briefly needs twice the jar's size).
+  // Fall back to collecting chunks if the body outgrows the header.
+  let buffer: Uint8Array | null = total !== null ? new Uint8Array(total) : null;
   const chunks: Uint8Array[] = [];
   let received = 0;
   onProgress({ received, total });
@@ -242,7 +246,13 @@ export async function downloadModJar(
     for (;;) {
       const { done, value } = await reader.read();
       if (done) break;
-      chunks.push(value);
+      if (buffer !== null && received + value.byteLength <= buffer.length) {
+        buffer.set(value, received);
+      } else {
+        if (buffer !== null) chunks.push(buffer.subarray(0, received));
+        buffer = null;
+        chunks.push(value);
+      }
       received += value.byteLength;
       onProgress({ received, total });
     }
@@ -251,6 +261,10 @@ export async function downloadModJar(
     throw new CurseForgeRequestError("Download interrupted.");
   }
 
+  if (buffer !== null) {
+    // Exact-length view when the body was shorter than advertised.
+    return received === buffer.length ? buffer : buffer.slice(0, received);
+  }
   const bytes = new Uint8Array(received);
   let offset = 0;
   for (const chunk of chunks) {

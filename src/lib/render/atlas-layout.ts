@@ -249,10 +249,16 @@ export function planAtlas(input: AtlasPlanInput): AtlasPlan {
       return w > CELL_SIZE || h > CELL_SIZE;
     });
     if (downscaled) {
-      // Keep the first attempt's width: downscaling shrinks the widest
-      // texture, which would otherwise narrow the atlas and drop more.
-      const retry = pack(true, result.width);
-      if (retry.overflow.length <= result.overflow.length) result = retry;
+      // Downscaling shrinks the widest texture, so the retry may pick a
+      // narrower atlas. Use it unless that drops more than keeping the
+      // first attempt's width.
+      let retry = pack(true);
+      if (retry.width < result.width) {
+        const wide = pack(true, result.width);
+        if (wide.overflow.length < retry.overflow.length) retry = wide;
+      }
+      // Only give up resolution if it actually saves textures.
+      if (retry.overflow.length < result.overflow.length) result = retry;
       else downscaled = false;
     }
     const dropped = result.overflow.length;

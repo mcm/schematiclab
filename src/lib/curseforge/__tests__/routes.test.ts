@@ -325,6 +325,22 @@ describe("curseforge proxy routes", () => {
       expect(body).toHaveLength(10);
     });
 
+    it("serves the pages that loaded, uncached, when a later page fails", async () => {
+      fetchMock.mockImplementation(async (input: string) => {
+        const index = Number(new URL(input).searchParams.get("index"));
+        if (index === 100) return new Response("busy", { status: 429 });
+        return jsonResponse({
+          data: [{ id: index + 1, fileDate: "2020-01-01T00:00:00Z" }],
+          pagination: { totalCount: 150 },
+        });
+      });
+      const res = await files("328085", "gameVersion=1.20.1");
+      expect(res.status).toBe(200);
+      expect(res.headers.get("Cache-Control")).toBe("no-store");
+      const body = (await res.json()) as { id: number }[];
+      expect(body.map((f) => f.id).sort((a, b) => a - b)).toEqual([1, 51]);
+    });
+
     it("stops after one page when totalCount fits", async () => {
       fetchMock.mockResolvedValue(
         jsonResponse({ data: RAW_FILES, pagination: { totalCount: 2 } }),
