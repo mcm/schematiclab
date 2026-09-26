@@ -31,3 +31,8 @@ next-env.d.ts
 # local env / auth
 .npmrc
 .chief/
+
+# agent / tooling state
+.ralph-tui/
+.claude/settings.local.json
+coverage/
