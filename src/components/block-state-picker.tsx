@@ -13,6 +13,11 @@ import {
   Label,
 } from "@iamthemcmaster/ui";
 import { isCatalogedBlockId, searchBlockCatalog } from "@/lib/block-catalog";
+import {
+  getLoadedModBlock,
+  getModForBlockId,
+  useLoadedMods,
+} from "@/lib/mods/registry";
 
 export interface BlockStatePickerSource {
   blockState: string;
@@ -86,7 +91,7 @@ export function BlockStatePicker({
   onCancel,
   onConfirm,
   title = "Swap block state",
-  description = "Replace every instance of the source block state with a new target. Type a block identifier — autocomplete suggestions come from the schemlib catalog. Free-text input is accepted for identifiers outside the catalog.",
+  description = "Replace every instance of the source block state with a new target. Type a block identifier — autocomplete suggestions come from the schemlib catalog and loaded mods. Free-text input is accepted for identifiers outside the catalog.",
   confirmLabel = "Confirm swap",
 }: BlockStatePickerProps) {
   const [query, setQuery] = React.useState("");
@@ -96,10 +101,13 @@ export function BlockStatePicker({
   // mounted while `source !== null`, so each open creates a fresh component
   // instance with fresh `useState` values (avoiding setState-in-effect).
 
-  const suggestions = React.useMemo(
-    () => searchBlockCatalog(query, MAX_SUGGESTIONS),
-    [query],
-  );
+  // Re-run the search whenever the set of loaded mods changes so modded
+  // blocks appear (or disappear) without reopening the picker.
+  const loadedMods = useLoadedMods();
+  const suggestions = React.useMemo(() => {
+    void loadedMods;
+    return searchBlockCatalog(query, MAX_SUGGESTIONS);
+  }, [query, loadedMods]);
 
   const parsedTarget = parseTargetEntry(query);
   const targetValid =
@@ -108,6 +116,12 @@ export function BlockStatePicker({
     parsedTarget && parsedTarget.blockId
       ? formatStateDisplay(parsedTarget.blockId, parsedTarget.properties)
       : "—";
+  const targetModBlock = parsedTarget
+    ? getLoadedModBlock(parsedTarget.blockId)
+    : null;
+  const targetMod = parsedTarget
+    ? getModForBlockId(parsedTarget.blockId)
+    : null;
 
   function selectSuggestion(id: string) {
     setQuery(id);
@@ -250,6 +264,7 @@ export function BlockStatePicker({
             ) : (
               suggestions.map((id, i) => {
                 const isHighlighted = i === highlightIndex;
+                const mod = getModForBlockId(id);
                 return (
                   <li
                     key={id}
@@ -272,9 +287,32 @@ export function BlockStatePicker({
                         ? "var(--bg-elevated)"
                         : "transparent",
                       color: "var(--text-primary)",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: "var(--space-2)",
                     }}
                   >
-                    {id}
+                    <span
+                      style={{
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {id}
+                    </span>
+                    {mod ? (
+                      <span
+                        style={{
+                          flexShrink: 0,
+                          fontFamily: "var(--font-sans, inherit)",
+                          fontSize: "var(--text-xs)",
+                          color: "var(--text-tertiary)",
+                        }}
+                      >
+                        {mod.modName}
+                      </span>
+                    ) : null}
                   </li>
                 );
               })
@@ -291,6 +329,13 @@ export function BlockStatePicker({
                 ? `"${parsedTarget.blockId}" isn't in the catalog — it'll be used as-is.`
                 : "Identifier must look like `namespace:path`."}
             </span>
+          ) : null}
+          {targetModBlock ? (
+            <ModBlockHint
+              displayName={targetModBlock.displayName}
+              modName={targetMod?.modName ?? null}
+              properties={targetModBlock.properties}
+            />
           ) : null}
         </div>
 
@@ -309,6 +354,55 @@ export function BlockStatePicker({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// Known properties/values for a loaded mod block, derived from its blockstates
+// file. Shown as a hint so users can type a valid `[prop=value]` suffix.
+function ModBlockHint({
+  displayName,
+  modName,
+  properties,
+}: {
+  displayName: string;
+  modName: string | null;
+  properties: Record<string, string[]>;
+}) {
+  const names = Object.keys(properties).sort();
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--space-1)",
+        fontSize: "var(--text-xs)",
+        color: "var(--text-tertiary)",
+      }}
+    >
+      <span>
+        {displayName}
+        {modName ? ` · from ${modName}` : null}
+      </span>
+      {names.length === 0 ? (
+        <span>No block-state properties.</span>
+      ) : (
+        <ul
+          aria-label="Known block-state properties"
+          style={{
+            listStyle: "none",
+            margin: 0,
+            padding: 0,
+            fontFamily: "var(--font-mono, ui-monospace, monospace)",
+          }}
+        >
+          {names.map((name) => (
+            <li key={name}>
+              {name} = {properties[name].join(" | ")}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 

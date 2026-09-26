@@ -1,6 +1,7 @@
 // Aggregated catalog of every bare block identifier (e.g. "minecraft:stone")
 // schemlib knows about across all anchor versions. Used by the Advanced
-// Editor's block-state picker for autocomplete.
+// Editor's block-state picker for autocomplete. Blocks from loaded mods
+// (`./mods/registry`) are merged in at query time.
 //
 // Sources (in `block-translations.generated.ts`):
 //   - FLATTEN_TABLE         values are post-flatten block-state strings
@@ -16,6 +17,10 @@ import {
   REVERSE_FLATTEN_TABLE,
   VERSION_DIFFS,
 } from "./schemlib/data/block-translations.generated";
+import {
+  getLoadedModBlockIds,
+  subscribe as subscribeLoadedMods,
+} from "./mods/registry";
 
 function stripProperties(blockState: string): string {
   const bracket = blockState.indexOf("[");
@@ -53,20 +58,55 @@ function buildCatalog(): readonly string[] {
 }
 
 const CATALOG = buildCatalog();
+const CATALOG_SET: ReadonlySet<string> = new Set(CATALOG);
 
+// Loaded mod blocks layer on top of the static vanilla catalog. The sorted
+// list is cached per registry block-id set (whose identity changes only when
+// the loaded-mod set changes).
+let modCache: { for: ReadonlySet<string>; ids: readonly string[] } | null =
+  null;
+
+function getModBlockIds(): readonly string[] {
+  const set = getLoadedModBlockIds();
+  if (modCache?.for !== set) {
+    modCache = {
+      for: set,
+      ids: [...set].filter((id) => !CATALOG_SET.has(id)).sort(),
+    };
+  }
+  return modCache.ids;
+}
+
+/**
+ * Subscribe to catalog changes (loaded mods added/removed). Compatible with
+ * `useSyncExternalStore`; pair with `getLoadedModBlockIds` as the snapshot.
+ */
+export const subscribeBlockCatalog = subscribeLoadedMods;
+
+/** Vanilla ids, then ids from loaded mods. */
 export function getBlockCatalog(): readonly string[] {
-  return CATALOG;
+  const modIds = getModBlockIds();
+  return modIds.length === 0 ? CATALOG : CATALOG.concat(modIds);
+}
+
+function barePath(id: string): string {
+  const colon = id.indexOf(":");
+  return colon === -1 ? id : id.slice(colon + 1);
 }
 
 // Case-insensitive substring/prefix scoring. Prefix matches rank above
-// substring matches; ties broken by identifier order. Caller decides how many
+// substring matches; vanilla ids rank above mod ids within each tier; ties
+// broken by identifier order. A query matches as a prefix of the full id or
+// of the bare path (`andesite` → `create:andesite_casing`), so namespace
+// queries (`create:`) list that mod's blocks. Caller decides how many
 // matches to show.
 export function searchBlockCatalog(
   query: string,
   limit = 50,
 ): readonly string[] {
+  const modIds = getModBlockIds();
   const needle = query.trim().toLowerCase();
-  if (needle.length === 0) return CATALOG.slice(0, limit);
+  if (needle.length === 0) return getBlockCatalog().slice(0, limit);
 
   const prefix: string[] = [];
   const substring: string[] = [];
@@ -80,10 +120,21 @@ export function searchBlockCatalog(
     if (prefix.length >= limit) break;
   }
 
-  const combined = prefix.concat(substring);
-  return combined.slice(0, limit);
+  const modPrefix: string[] = [];
+  const modSubstring: string[] = [];
+  for (const id of modIds) {
+    if (prefix.length + modPrefix.length >= limit) break;
+    const lower = id.toLowerCase();
+    if (lower.startsWith(needle) || barePath(lower).startsWith(needle)) {
+      modPrefix.push(id);
+    } else if (lower.includes(needle)) {
+      modSubstring.push(id);
+    }
+  }
+
+  return prefix.concat(modPrefix, substring, modSubstring).slice(0, limit);
 }
 
 export function isCatalogedBlockId(id: string): boolean {
-  return CATALOG.includes(id);
+  return CATALOG_SET.has(id) || getLoadedModBlockIds().has(id);
 }
