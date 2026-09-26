@@ -24,7 +24,9 @@ import type {
   VersionMappingPreview,
 } from "@/lib/advanced/version-mapping-preview";
 import type { VersionMappingOverrides } from "@/lib/advanced/edit";
+import { useAdvancedTargetVersion } from "@/lib/advanced/target-version-state";
 import { useEditorState } from "@/lib/editor-state";
+import { useLoadedMods } from "@/lib/mods/registry";
 import {
   applyVersionMapping as applyVersionMappingAction,
   undoLastTranslation,
@@ -59,8 +61,13 @@ export function VersionMappingPanel({ schematic }: VersionMappingPanelProps) {
   const { lastTranslationSnapshot } = useEditorState();
   const canUndoTranslation = lastTranslationSnapshot !== null;
 
-  const [targetVersionId, setTargetVersionId] = React.useState<string | null>(
-    null,
+  const [targetVersionId, setTargetVersionId] = useAdvancedTargetVersion();
+  // Block ids from loaded mods pass through the mapping untouched. Identity
+  // changes only when the loaded-mod set does, which re-runs the preview.
+  const loadedMods = useLoadedMods();
+  const loadedModBlockIds = React.useMemo(
+    () => loadedMods.flatMap((mod) => mod.blocks.map((block) => block.id)),
+    [loadedMods],
   );
   const [previewState, setPreviewState] = React.useState<PreviewState>({
     status: "idle",
@@ -124,7 +131,11 @@ export function VersionMappingPanel({ schematic }: VersionMappingPanelProps) {
       if (requestKeyRef.current !== requestKey) return;
       setPreviewState({ status: "loading", targetVersionId });
       try {
-        const preview = await translatePreviewInWorker(schematic, target);
+        const preview = await translatePreviewInWorker(
+          schematic,
+          target,
+          loadedModBlockIds,
+        );
         if (requestKeyRef.current !== requestKey) return;
         setPreviewState({ status: "ready", targetVersionId, preview });
       } catch (err) {
@@ -134,7 +145,7 @@ export function VersionMappingPanel({ schematic }: VersionMappingPanelProps) {
         setPreviewState({ status: "error", targetVersionId, message });
       }
     })();
-  }, [schematic, targetVersionId]);
+  }, [schematic, targetVersionId, loadedModBlockIds]);
 
   const sourceVersion = schematic.minecraftVersion;
 
@@ -215,7 +226,11 @@ export function VersionMappingPanel({ schematic }: VersionMappingPanelProps) {
         };
       }
     }
-    const applied = applyVersionMappingAction(target, overrides);
+    const applied = applyVersionMappingAction(
+      target,
+      overrides,
+      loadedModBlockIds,
+    );
     if (applied) {
       // Reset the panel: clear the target selection so the dropdown returns
       // to its placeholder and the preview goes back to idle. The schematic
@@ -223,7 +238,7 @@ export function VersionMappingPanel({ schematic }: VersionMappingPanelProps) {
       // (their palette / version pairing is no longer current).
       setTargetVersionId(null);
     }
-  }, [previewState, decisionsByVersion]);
+  }, [previewState, decisionsByVersion, loadedModBlockIds, setTargetVersionId]);
 
   const handleUndoTranslation = React.useCallback(() => {
     undoLastTranslation();

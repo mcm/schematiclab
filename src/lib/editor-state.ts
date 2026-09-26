@@ -12,6 +12,7 @@
 // `advanced/edit.ts` into `/`'s bundle. See US-017.
 
 import * as React from "react";
+import { setAdvancedTargetVersion } from "./advanced/target-version-state";
 import type { ParsedSchematicProjection, SchematicFormatId } from "./convert";
 
 export interface StagedFile {
@@ -91,7 +92,10 @@ export function setStagedFile(stagedFile: StagedFile | null): void {
   if (state.stagedFile === stagedFile) return;
   // Replacing the staged file invalidates any prior parse result — it belongs
   // to the previous bytes. Reset parseStatus so /advanced re-parses cleanly.
-  // Also discard any pending undo snapshot — it referenced the old projection.
+  // Also discard any pending undo snapshot — it referenced the old projection,
+  // and the Advanced Editor target version, which the Version Mapping panel
+  // used to reset on remount for a new file.
+  setAdvancedTargetVersion(null);
   emit({
     ...state,
     stagedFile,
@@ -124,6 +128,7 @@ export function setTargetVersion(targetVersion: string | null): void {
 
 export function clearEditorState(): void {
   if (state === EMPTY_STATE) return;
+  setAdvancedTargetVersion(null);
   emit(EMPTY_STATE);
 }
 

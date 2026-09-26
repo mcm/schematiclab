@@ -16,6 +16,7 @@ import { BlockState } from "../schemlib/blocks";
 import { translateBlockState } from "../schemlib/data/translate";
 import type { MinecraftVersion } from "../schemlib/schematic-formats/version-mapping";
 import { isInvisibleBlockId } from "../invisible-blocks";
+import { toIdSet } from "./version-mapping-preview";
 
 // ── Public types ──────────────────────────────────────────────────────────
 
@@ -263,6 +264,8 @@ export function applyBlockSwap(
  *    used (and the natural mapper is bypassed for that source state).
  *  - Otherwise, the natural per-version diff walker (`translateBlockState`)
  *    computes the target state.
+ *  - Otherwise, if the block id is in `loadedModBlockIds`, the entry passes
+ *    through unchanged (modded ids aren't translated between versions).
  *
  * The whole palette is rewritten in a single pass — chains like
  * `foo(source) → bar(natural) → baz(natural)` don't apply, because each source
@@ -282,9 +285,11 @@ export function applyVersionMapping(
   schematic: Schematic,
   targetVersion: MinecraftVersion,
   overrides: VersionMappingOverrides = {},
+  loadedModBlockIds: ReadonlySet<string> | readonly string[] = [],
 ): Schematic {
   const sourceVersion = schematic.minecraftVersion;
   const sourceCount = schematic.palette.length;
+  const modBlockIds = toIdSet(loadedModBlockIds);
 
   // Step 1: compute the post-mapping state for every source palette entry.
   // Overrides win; otherwise the natural mapper runs.
@@ -302,6 +307,15 @@ export function applyVersionMapping(
       targetByIndex[i] = {
         key: blockStateKey(override.blockId, props),
         blockId: override.blockId,
+        properties: props,
+      };
+      continue;
+    }
+    if (modBlockIds.has(entry.blockId)) {
+      const props = { ...entry.properties };
+      targetByIndex[i] = {
+        key: blockStateKey(entry.blockId, props),
+        blockId: entry.blockId,
         properties: props,
       };
       continue;
