@@ -209,6 +209,34 @@ describe("mod file helpers", () => {
   });
 
   it.each([
+    ["shorter than", "5"],
+    ["longer than", "2"],
+    ["without", null],
+  ])(
+    "returns exactly the received bytes for a body %s Content-Length",
+    async (_label, length) => {
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new Uint8Array([1, 2]));
+          controller.enqueue(new Uint8Array([3]));
+          controller.close();
+        },
+      });
+      const headers: Record<string, string> =
+        length === null ? {} : { "Content-Length": length };
+      const bytes = await downloadModJar(
+        1,
+        2,
+        () => {},
+        undefined,
+        vi.fn(async () => new Response(body, { headers })),
+      );
+      expect([...bytes]).toEqual([1, 2, 3]);
+      expect(bytes.byteLength).toBe(bytes.buffer.byteLength);
+    },
+  );
+
+  it.each([
     [403, "disallows third-party downloads"],
     [404, "no longer exists"],
     [413, "too large"],

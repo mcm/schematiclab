@@ -235,7 +235,9 @@ describe("planAtlas", () => {
       width: 16,
       height: 16,
     }));
-    modTextures.push({ id: "m:block/hd", width: 64, height: 64 });
+    // At full size the 32px texture takes a 32-tall shelf, leaving room for
+    // only 2 small ones beside it (7 dropped); downscaled, 8 of 10 fit.
+    modTextures.push({ id: "m:block/hd", width: 32, height: 32 });
     const plan = planAtlas({
       baseWidth: 64,
       baseHeight: 32,
@@ -249,6 +251,44 @@ describe("planAtlas", () => {
     expect(warn.mock.calls[0][0]).toMatch(/2 texture\(s\) still did not fit/);
     expect(plan.placements).toHaveLength(8);
     expect(plan.dropped).toHaveLength(2);
+  });
+
+  it("keeps full resolution when downscaling drops just as many", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const modTextures = Array.from({ length: 9 }, (_, i) => ({
+      id: `m:block/t${i}`,
+      width: 16,
+      height: 16,
+    }));
+    modTextures.push({ id: "m:block/hd", width: 64, height: 64 });
+    // Both layouts drop two textures; the downscaled one only trades the
+    // 64px texture for a small one.
+    const plan = planAtlas({
+      baseWidth: 64,
+      baseHeight: 32,
+      vanillaRects: {},
+      modTextures,
+      maxSize: 64,
+    });
+    expect(plan.downscaled).toBe(false);
+    expect(warn.mock.calls[0][0]).not.toMatch(/downscaled/);
+    expect(plan.placements).toHaveLength(8);
+    expect(plan.dropped).toHaveLength(2);
+    expect(plan.dropped).toContain("m:block/hd");
+  });
+
+  it("does not keep a wider atlas than the downscaled textures need", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const plan = planAtlas({
+      baseWidth: 32,
+      baseHeight: 32,
+      vanillaRects: {},
+      modTextures: [{ id: "m:block/hd", width: 64, height: 64 }],
+      maxSize: 64,
+    });
+    expect(plan.downscaled).toBe(true);
+    expect(plan.dropped).toEqual([]);
+    expect(plan.width).toBe(32);
   });
 
   it("keeps the atlas width when downscaling a texture wider than the base", () => {

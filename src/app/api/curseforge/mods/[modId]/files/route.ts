@@ -68,6 +68,7 @@ export async function GET(
   };
 
   const raw: unknown[] = [];
+  let partial = false;
   try {
     const first = await fetchPage(0);
     raw.push(...first.data);
@@ -79,8 +80,13 @@ export async function GET(
     ) {
       indexes.push(index);
     }
-    const rest = await Promise.all(indexes.map(fetchPage));
-    for (const page of rest) raw.push(...page.data);
+    // A failed later page shouldn't discard the rest: serve what arrived,
+    // just don't cache it.
+    const rest = await Promise.allSettled(indexes.map(fetchPage));
+    for (const page of rest) {
+      if (page.status === "fulfilled") raw.push(...page.value.data);
+      else partial = true;
+    }
   } catch (err) {
     return upstreamFailed(err);
   }
@@ -90,5 +96,7 @@ export async function GET(
     .sort(
       (a, b) => Date.parse(b.fileDate) - Date.parse(a.fileDate) || b.id - a.id,
     );
-  return jsonOk(files);
+  const response = jsonOk(files);
+  if (partial) response.headers.set("Cache-Control", "no-store");
+  return response;
 }
