@@ -298,6 +298,12 @@ function swapStructureWithoutFullRebuild(
 export function ThreeDPreview({ projection }: ThreeDPreviewProps) {
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
   const apiRef = React.useRef<CameraApi | null>(null);
+  // Camera of the last mesh build. Reused when only the resources change
+  // (e.g. a mod was loaded or removed) so re-meshing doesn't reset the view.
+  const cameraMemoRef = React.useRef<{
+    projection: ParsedSchematicProjection;
+    camera: CameraState;
+  } | null>(null);
   const stats = React.useMemo(
     () => computeProjectionStats(projection),
     [projection],
@@ -323,7 +329,10 @@ export function ThreeDPreview({ projection }: ThreeDPreviewProps) {
     let renderer: StructureRenderer | null = null;
     let scheduledFrame = 0;
     const initial = computeInitialCamera(bounds.size);
-    const camera: CameraState = { ...initial.camera };
+    const memo = cameraMemoRef.current;
+    const camera: CameraState =
+      memo?.projection === projection ? memo.camera : { ...initial.camera };
+    cameraMemoRef.current = { projection, camera };
     // Set to true by the cleanup function; the async build loop checks this
     // between batches and bails out so an unmount mid-build (or a new
     // projection arriving) doesn't leak work onto the next effect.
