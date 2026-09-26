@@ -69,6 +69,12 @@ export function nextPowerOfTwo(n: number): number {
   return p;
 }
 
+function prevPowerOfTwo(n: number): number {
+  let p = 1;
+  while (p * 2 <= n) p *= 2;
+  return p;
+}
+
 /**
  * Convert vanilla pixel rects to normalized UVs keyed `minecraft:<path>`.
  * Animated textures (frames stacked vertically) use only the first frame.
@@ -212,7 +218,9 @@ function toPackItem(texture: ModTextureSize, downscale: boolean): PackItem {
  */
 export function planAtlas(input: AtlasPlanInput): AtlasPlan {
   const { baseWidth, baseHeight, vanillaRects } = input;
-  const maxSize = input.maxSize ?? DEFAULT_MAX_TEXTURE_SIZE;
+  // Atlas sides are rounded up to powers of two, so cap at the largest power
+  // of two within the limit; otherwise rounding could overshoot it.
+  const maxSize = prevPowerOfTwo(input.maxSize ?? DEFAULT_MAX_TEXTURE_SIZE);
   const textures = input.modTextures.filter(
     (t) => t.width > 0 && t.height > 0 && t.id !== MISSING_TEXTURE_ID,
   );

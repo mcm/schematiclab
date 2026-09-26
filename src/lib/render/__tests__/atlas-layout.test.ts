@@ -314,6 +314,25 @@ describe("planAtlas", () => {
     expect(plan.dropped).toHaveLength(1);
   });
 
+  it("never exceeds a limit that isn't a power of two", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const modTextures = Array.from({ length: 12 }, (_, i) => ({
+      id: `m:block/t${i}`,
+      width: 16,
+      height: 16,
+    }));
+    modTextures.push({ id: "m:block/hd", width: 64, height: 64 });
+    const plan = planAtlas({
+      baseWidth: 64,
+      baseHeight: 32,
+      vanillaRects: {},
+      modTextures,
+      maxSize: 100,
+    });
+    expect(plan.width).toBeLessThanOrEqual(100);
+    expect(plan.height).toBeLessThanOrEqual(100);
+  });
+
   it("does not warn when everything fits", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     planAtlas({
