@@ -6,7 +6,6 @@ import {
   getBlockCatalog,
   isCatalogedBlockId,
   searchBlockCatalog,
-  subscribeBlockCatalog,
 } from "../block-catalog";
 import * as registry from "../mods/registry";
 import * as store from "../mods/store";
@@ -109,7 +108,9 @@ describe("block-catalog with loaded mods", () => {
 
   it("matches a bare path prefix, after vanilla prefix matches", () => {
     const results = searchBlockCatalog("andesite", 50);
-    const vanillaPrefix = results.filter((id) =>
+    // Expected set comes from the catalog itself, not the search output, so
+    // a dropped vanilla prefix match would fail here.
+    const vanillaPrefix = getBlockCatalog().filter((id) =>
       id.startsWith("minecraft:andesite"),
     );
     expect(vanillaPrefix.length).toBeGreaterThan(0);
@@ -144,6 +145,24 @@ describe("block-catalog with loaded mods", () => {
   it("includes mod blocks in the full catalog", () => {
     expect(getBlockCatalog()).toContain("create:cogwheel");
   });
+
+  it("keeps the full catalog sorted and unique with mods loaded", () => {
+    const catalog = getBlockCatalog();
+    expect(catalog.indexOf("create:cogwheel")).toBeLessThan(
+      catalog.indexOf("minecraft:stone"),
+    );
+    for (let i = 1; i < catalog.length; i += 1) {
+      expect(catalog[i] > catalog[i - 1]).toBe(true);
+    }
+  });
+
+  it("lists vanilla ids before mod ids for an empty query", () => {
+    expect(searchBlockCatalog("", 5)).toEqual(
+      getBlockCatalog()
+        .filter((id) => id.startsWith("minecraft:"))
+        .slice(0, 5),
+    );
+  });
 });
 
 describe("isCatalogedBlockId and registry changes", () => {
@@ -154,11 +173,6 @@ describe("isCatalogedBlockId and registry changes", () => {
   });
 
   it("reflects mods being added and removed without reload", async () => {
-    let notified = 0;
-    const unsubscribe = subscribeBlockCatalog(() => {
-      notified += 1;
-    });
-
     expect(isCatalogedBlockId("create:cogwheel")).toBe(false);
     expect(searchBlockCatalog("cogwheel", 10)).toEqual([]);
 
@@ -166,13 +180,9 @@ describe("isCatalogedBlockId and registry changes", () => {
     await registry.addLoadedMod(mod, EMPTY_ASSETS);
     expect(isCatalogedBlockId("create:cogwheel")).toBe(true);
     expect(searchBlockCatalog("cogwheel", 10)).toEqual(["create:cogwheel"]);
-    expect(notified).toBe(1);
 
     await registry.removeLoadedMod(mod.key);
     expect(isCatalogedBlockId("create:cogwheel")).toBe(false);
     expect(searchBlockCatalog("cogwheel", 10)).toEqual([]);
-    expect(notified).toBe(2);
-
-    unsubscribe();
   });
 });

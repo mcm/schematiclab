@@ -92,15 +92,16 @@ describe("curseforge download route", () => {
     expect(resolveUrl).toBe(
       "https://api.curseforge.com/v1/mods/328085/files/100/download-url",
     );
-    expect((resolveInit.headers as Record<string, string>)["x-api-key"]).toBe(
-      KEY,
-    );
+    expect(new Headers(resolveInit.headers).get("x-api-key")).toBe(KEY);
     const [cdnUrl, cdnInit] = fetchMock.mock.calls[1];
     expect(String(cdnUrl)).toBe(CDN);
     expect(cdnInit.redirect).toBe("manual");
     expect(cdnInit.signal).toBeInstanceOf(AbortSignal);
-    // The API key must never be forwarded to the CDN.
-    expect(JSON.stringify(cdnInit.headers ?? {})).not.toContain(KEY);
+    // The API key must never be forwarded to the CDN. Normalize first: a
+    // `Headers` instance JSON-stringifies to `{}`.
+    const cdnHeaders = new Headers(cdnInit.headers);
+    expect(cdnHeaders.has("x-api-key")).toBe(false);
+    expect([...cdnHeaders.values()].join("\n")).not.toContain(KEY);
   });
 
   it("follows an allowlisted redirect", async () => {
@@ -148,15 +149,50 @@ describe("curseforge download route", () => {
     expect(res.status).toBe(502);
   });
 
-  it.each([
-    ["null download URL", () => resolved(null)],
-    ["404 from download-url", () => new Response("nope", { status: 404 })],
-  ])("%s → 403", async (_label, make) => {
-    fetchMock.mockResolvedValueOnce(make());
+  it("null download URL → 403", async () => {
+    fetchMock.mockResolvedValueOnce(resolved(null));
     const res = await download();
     expect(res.status).toBe(403);
     expect(await res.json()).toEqual({ error: "distribution_disallowed" });
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ["file exists", () => resolved({ id: 100 })],
+    ["file lookup fails", () => new Response("boom", { status: 500 })],
+  ])("404 from download-url, %s → 403", async (_label, make) => {
+    fetchMock
+      .mockResolvedValueOnce(new Response("nope", { status: 404 }))
+      .mockResolvedValueOnce(make());
+    const res = await download();
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: "distribution_disallowed" });
+    expect(fetchMock.mock.calls[1][0]).toBe(
+      "https://api.curseforge.com/v1/mods/328085/files/100",
+    );
+  });
+
+  it("404 from download-url and file lookup → 404", async () => {
+    fetchMock
+      .mockResolvedValueOnce(new Response("nope", { status: 404 }))
+      .mockResolvedValueOnce(new Response("nope", { status: 404 }));
+    const res = await download();
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: "file_not_found" });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("drops Content-Length when the CDN response was content-encoded", async () => {
+    const bytes = new Uint8Array([1, 2, 3, 4, 5, 6]);
+    fetchMock.mockResolvedValueOnce(resolved(CDN)).mockResolvedValueOnce(
+      new Response(bytes, {
+        headers: { "Content-Encoding": "gzip", "Content-Length": "3" },
+      }),
+    );
+    const res = await download();
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Content-Length")).toBeNull();
+    expect(new Uint8Array(await res.arrayBuffer())).toEqual(bytes);
   });
 
   it("oversize Content-Length → 413 before streaming", async () => {

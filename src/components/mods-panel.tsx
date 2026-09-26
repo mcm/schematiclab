@@ -1,13 +1,18 @@
 "use client";
 
 import * as React from "react";
-import { Button, Input, Label, NativeSelect } from "@iamthemcmaster/ui";
+import { Badge, Button, Input, Label, NativeSelect } from "@iamthemcmaster/ui";
 import {
+  IconAlertTriangle,
   IconCheck,
   IconDownload,
   IconExternalLink,
+  IconLoader2,
   IconPackage,
   IconPlus,
+  IconRefresh,
+  IconTrash,
+  IconX,
 } from "@tabler/icons-react";
 import type { ParsedSchematicProjection } from "@/lib/convert";
 import { getEffectiveModVersion } from "@/lib/advanced/effective-mod-version";
@@ -22,7 +27,15 @@ import {
   type CurseForgeModSummary,
   type ModLoader,
 } from "@/lib/curseforge/types";
-import { useLoadedMods } from "@/lib/mods/registry";
+import {
+  describeModLoadState,
+  dismissModLoad,
+  startModLoad,
+  useModLoads,
+  type ModLoadEntry,
+} from "@/lib/mods/load-mod";
+import { removeLoadedMod, useLoadedMods } from "@/lib/mods/registry";
+import type { LoadedModMeta } from "@/lib/mods/types";
 
 const SEARCH_INPUT_ID = "mods-panel-search";
 const LOADER_SELECT_ID = "mods-panel-loader";
@@ -55,6 +68,9 @@ type SearchState =
       status: "ready";
       key: string;
       mods: CurseForgeModSummary[];
+      // CurseForge offset for the next page. Tracked separately from
+      // `mods.length` because duplicate ids across pages are dropped.
+      nextIndex: number;
       totalCount: number;
       loadingMore: boolean;
       loadMoreError: string | null;
@@ -125,6 +141,7 @@ export function ModsPanel({ schematic, searchRequest = null }: ModsPanelProps) {
           status: "ready",
           key: searchKey,
           mods: result.data.mods,
+          nextIndex: result.data.mods.length,
           totalCount: result.data.pagination.totalCount,
           loadingMore: false,
           loadMoreError: null,
@@ -140,7 +157,7 @@ export function ModsPanel({ schematic, searchRequest = null }: ModsPanelProps) {
 
   const loadMore = React.useCallback(() => {
     if (state.status !== "ready" || state.loadingMore) return;
-    const { key, mods } = state;
+    const { key, nextIndex } = state;
     const controller = new AbortController();
     loadMoreAbortRef.current = controller;
     setState({ ...state, loadingMore: true, loadMoreError: null });
@@ -152,7 +169,7 @@ export function ModsPanel({ schematic, searchRequest = null }: ModsPanelProps) {
             q: debouncedQuery,
             gameVersion: versionId,
             loader,
-            index: mods.length,
+            index: nextIndex,
           },
           controller.signal,
         );
@@ -177,10 +194,11 @@ export function ModsPanel({ schematic, searchRequest = null }: ModsPanelProps) {
         return {
           ...prev,
           mods: [...prev.mods, ...appended],
+          nextIndex: prev.nextIndex + result.data.mods.length,
           // An empty page means we've run out regardless of the reported total.
           totalCount:
             result.data.mods.length === 0
-              ? prev.mods.length
+              ? prev.nextIndex
               : result.data.pagination.totalCount,
           loadingMore: false,
         };
@@ -188,10 +206,13 @@ export function ModsPanel({ schematic, searchRequest = null }: ModsPanelProps) {
     })();
   }, [state, debouncedQuery, versionId, loader]);
 
-  const handleAdd = React.useCallback((mod: CurseForgeModSummary) => {
-    // Wired up in the load-mod story; intentionally a no-op for now.
-    void mod;
-  }, []);
+  const modLoads = useModLoads();
+  const handleAdd = React.useCallback(
+    (mod: CurseForgeModSummary) => {
+      void startModLoad({ mod, gameVersion: versionId, loader });
+    },
+    [versionId, loader],
+  );
 
   // Show the loading state immediately when inputs change, before the effect
   // for the new key has run.
@@ -208,6 +229,12 @@ export function ModsPanel({ schematic, searchRequest = null }: ModsPanelProps) {
         minHeight: 0,
       }}
     >
+      <LoadedModsSection
+        loadedMods={loadedMods}
+        modLoads={modLoads}
+        versionId={versionId}
+      />
+
       <div
         style={{
           display: "flex",
@@ -314,13 +341,14 @@ export function ModsPanel({ schematic, searchRequest = null }: ModsPanelProps) {
                 key={mod.id}
                 mod={mod}
                 loaded={loadedModIds.has(mod.id)}
+                load={modLoads.get(mod.id) ?? null}
                 onAdd={handleAdd}
               />
             ))}
             {view.loadMoreError ? (
               <StatusMessage tone="error">{view.loadMoreError}</StatusMessage>
             ) : null}
-            {hasMoreResults(view.mods.length, view.totalCount) ? (
+            {hasMoreResults(view.nextIndex, view.totalCount) ? (
               <div
                 style={{
                   display: "flex",
@@ -371,10 +399,12 @@ function StatusMessage({
 function ModRow({
   mod,
   loaded,
+  load,
   onAdd,
 }: {
   mod: CurseForgeModSummary;
   loaded: boolean;
+  load: ModLoadEntry | null;
   onAdd: (mod: CurseForgeModSummary) => void;
 }) {
   const author = mod.authors[0] ?? null;
@@ -515,6 +545,14 @@ function ModRow({
             Author disallows third-party downloads
           </span>
         ) : null}
+        {load?.state.phase === "error" && !loaded ? (
+          <span
+            role="alert"
+            style={{ color: "var(--color-error)", fontSize: "var(--text-xs)" }}
+          >
+            {load.state.message}
+          </span>
+        ) : null}
       </div>
       {loaded ? (
         <span
@@ -530,6 +568,8 @@ function ModRow({
           <IconCheck size={14} aria-hidden="true" />
           Loaded
         </span>
+      ) : load !== null && load.state.phase !== "error" ? (
+        <LoadProgress entry={load} />
       ) : (
         <Button
           type="button"
@@ -537,17 +577,307 @@ function ModRow({
           size="sm"
           onClick={() => onAdd(mod)}
           disabled={restricted}
-          aria-label={`Add ${mod.name}`}
+          aria-label={`${load ? "Retry adding" : "Add"} ${mod.name}`}
           style={{
             display: "inline-flex",
             alignItems: "center",
             gap: "var(--space-1)",
           }}
         >
-          <IconPlus size={14} aria-hidden="true" />
-          Add
+          {load ? (
+            <IconRefresh size={14} aria-hidden="true" />
+          ) : (
+            <IconPlus size={14} aria-hidden="true" />
+          )}
+          {load ? "Retry" : "Add"}
         </Button>
       )}
+    </div>
+  );
+}
+
+function LoadProgress({ entry }: { entry: ModLoadEntry }) {
+  return (
+    <span
+      role="status"
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 4,
+        color: "var(--text-secondary)",
+        fontSize: "var(--text-xs)",
+        padding: "var(--space-1) 0",
+        whiteSpace: "nowrap",
+      }}
+    >
+      <IconLoader2
+        size={14}
+        aria-hidden="true"
+        style={{ animation: "schematiclab-spin 0.9s linear infinite" }}
+      />
+      {describeModLoadState(entry.state)}
+    </span>
+  );
+}
+
+const LOADER_LABELS: Record<string, string> = Object.fromEntries(
+  LOADER_OPTIONS.map((option) => [option.value, option.label]),
+);
+
+function SectionHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <h3
+      style={{
+        margin: 0,
+        fontSize: "var(--text-xs)",
+        fontWeight: 600,
+        color: "var(--text-secondary)",
+        textTransform: "uppercase",
+        letterSpacing: "0.04em",
+      }}
+    >
+      {children}
+    </h3>
+  );
+}
+
+function LoadedModsSection({
+  loadedMods,
+  modLoads,
+  versionId,
+}: {
+  loadedMods: readonly LoadedModMeta[];
+  modLoads: ReadonlyMap<number, ModLoadEntry>;
+  versionId: string;
+}) {
+  // A load stays pending until persisted, but the registry lists it sooner.
+  const pending = [...modLoads.values()].filter(
+    (entry) => !loadedMods.some((mod) => mod.modId === entry.request.mod.id),
+  );
+  const empty = loadedMods.length === 0 && pending.length === 0;
+
+  return (
+    <section
+      aria-label="Loaded mods"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--space-1)",
+        flexShrink: 0,
+      }}
+    >
+      <SectionHeading>Loaded mods</SectionHeading>
+      {empty ? (
+        <p
+          style={{
+            margin: 0,
+            color: "var(--text-tertiary)",
+            fontSize: "var(--text-xs)",
+          }}
+        >
+          No mods loaded. Search CurseForge below and click Add.
+        </p>
+      ) : (
+        <div
+          role="list"
+          aria-label="Loaded mods"
+          style={{
+            maxHeight: "40vh",
+            overflowY: "auto",
+            border: "1px solid var(--border-subtle)",
+            borderRadius: "var(--radius-md)",
+            background: "var(--bg-page)",
+          }}
+        >
+          {loadedMods.map((mod) => (
+            <LoadedModRow key={mod.key} mod={mod} versionId={versionId} />
+          ))}
+          {pending.map((entry) => (
+            <PendingModRow key={entry.request.mod.id} entry={entry} />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+const ROW_STYLE: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "minmax(0, 1fr) auto",
+  alignItems: "start",
+  gap: "var(--space-2)",
+  padding: "var(--space-2) var(--space-3)",
+  borderBottom: "1px solid var(--border-subtle)",
+  fontSize: "var(--text-sm)",
+};
+
+const NAME_STYLE: React.CSSProperties = {
+  color: "var(--text-primary)",
+  fontWeight: 500,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+};
+
+const META_STYLE: React.CSSProperties = {
+  color: "var(--text-tertiary)",
+  fontSize: "var(--text-xs)",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+};
+
+function LoadedModRow({
+  mod,
+  versionId,
+}: {
+  mod: LoadedModMeta;
+  versionId: string;
+}) {
+  const [removing, setRemoving] = React.useState(false);
+  const warnings = mod.warnings ?? [];
+  const versionMismatch =
+    mod.gameVersions.length > 0 && !mod.gameVersions.includes(versionId);
+  const blockCount = mod.blocks.length;
+
+  return (
+    <div role="listitem" style={ROW_STYLE}>
+      <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "var(--space-2)",
+            minWidth: 0,
+          }}
+        >
+          <span style={NAME_STYLE} title={mod.modName}>
+            {mod.modName}
+          </span>
+          {versionMismatch ? (
+            <Badge
+              variant="warning"
+              size="sm"
+              title={`This file was built for Minecraft ${mod.gameVersions.join(", ")}, not ${versionId}`}
+              style={{
+                flexShrink: 0,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 2,
+              }}
+            >
+              <IconAlertTriangle size={12} aria-hidden="true" />
+              Built for {mod.gameVersions.join(", ")}
+            </Badge>
+          ) : null}
+        </div>
+        <span style={META_STYLE} title={mod.fileDisplayName}>
+          {mod.fileDisplayName}
+        </span>
+        <span style={META_STYLE}>
+          {[
+            mod.gameVersions.join(", ") || "Unknown version",
+            mod.loader ? LOADER_LABELS[mod.loader] : null,
+            `${blockCount.toLocaleString()} ${blockCount === 1 ? "block" : "blocks"}`,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+        </span>
+        {warnings.length > 0 ? (
+          <details style={{ fontSize: "var(--text-xs)" }}>
+            <summary
+              style={{ cursor: "pointer", color: "var(--text-secondary)" }}
+            >
+              {warnings.length} {warnings.length === 1 ? "warning" : "warnings"}
+            </summary>
+            <ul
+              style={{
+                margin: "var(--space-1) 0 0",
+                paddingLeft: "var(--space-4)",
+                maxHeight: 160,
+                overflowY: "auto",
+                color: "var(--text-tertiary)",
+                wordBreak: "break-all",
+              }}
+            >
+              {warnings.map((warning, i) => (
+                <li key={i}>{warning}</li>
+              ))}
+            </ul>
+          </details>
+        ) : null}
+      </div>
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        disabled={removing}
+        onClick={() => {
+          setRemoving(true);
+          void removeLoadedMod(mod.key);
+        }}
+        aria-label={`Remove ${mod.modName}`}
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "var(--space-1)",
+        }}
+      >
+        <IconTrash size={14} aria-hidden="true" />
+        Remove
+      </Button>
+    </div>
+  );
+}
+
+function PendingModRow({ entry }: { entry: ModLoadEntry }) {
+  const { request, state } = entry;
+  const failed = state.phase === "error";
+  return (
+    <div role="listitem" style={ROW_STYLE}>
+      <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+        <span style={NAME_STYLE} title={request.mod.name}>
+          {request.mod.name}
+        </span>
+        {failed ? (
+          <span
+            role="alert"
+            style={{ color: "var(--color-error)", fontSize: "var(--text-xs)" }}
+          >
+            {state.message}
+          </span>
+        ) : (
+          <LoadProgress entry={entry} />
+        )}
+      </div>
+      {failed ? (
+        <div style={{ display: "flex", gap: "var(--space-1)" }}>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => void startModLoad(request)}
+            aria-label={`Retry adding ${request.mod.name}`}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "var(--space-1)",
+            }}
+          >
+            <IconRefresh size={14} aria-hidden="true" />
+            Retry
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => dismissModLoad(request.mod.id)}
+            aria-label={`Dismiss error for ${request.mod.name}`}
+          >
+            <IconX size={14} aria-hidden="true" />
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 }

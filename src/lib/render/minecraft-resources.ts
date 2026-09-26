@@ -182,24 +182,31 @@ async function buildResources(
   }).resources;
 }
 
-// Decode every mod texture. Undecodable images are skipped (blocks using them
-// fall back to the placeholder cube). Later mods win on id collisions.
-async function decodeModTextures(
+// Decode every mod texture. Later mods win on id collisions, falling back to
+// an earlier mod's copy if theirs won't decode; ids with no decodable copy are
+// skipped (blocks using them fall back to the placeholder cube).
+export async function decodeModTextures(
   mods: readonly LoadedModAssets[],
 ): Promise<Map<string, ImageBitmap>> {
-  const entries = new Map<string, Blob>();
+  // Candidates per id, highest priority (latest mod) first.
+  const entries = new Map<string, Blob[]>();
   for (const mod of mods) {
-    for (const [id, blob] of Object.entries(mod.textures))
-      entries.set(id, blob);
+    for (const [id, blob] of Object.entries(mod.textures)) {
+      entries.set(id, [blob, ...(entries.get(id) ?? [])]);
+    }
   }
   const bitmaps = new Map<string, ImageBitmap>();
   await Promise.all(
-    [...entries].map(async ([id, blob]) => {
-      try {
-        bitmaps.set(id, await createImageBitmap(blob));
-      } catch {
-        console.warn(`Could not decode mod texture ${id}`);
+    [...entries].map(async ([id, blobs]) => {
+      for (const blob of blobs) {
+        try {
+          bitmaps.set(id, await createImageBitmap(blob));
+          return;
+        } catch {
+          // Try the next candidate.
+        }
       }
+      console.warn(`Could not decode mod texture ${id}`);
     }),
   );
   return bitmaps;

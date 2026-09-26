@@ -44,6 +44,29 @@ function maxJarBytes(): number {
   );
 }
 
+/** True only when CurseForge positively reports the mod/file as not found. */
+async function fileMissing(
+  apiKey: string,
+  modId: number,
+  fileId: number,
+  signal: AbortSignal,
+): Promise<boolean> {
+  try {
+    const res = await fetch(
+      `${CURSEFORGE_API_BASE}/v1/mods/${modId}/files/${fileId}`,
+      {
+        headers: { "x-api-key": apiKey, Accept: "application/json" },
+        signal,
+        redirect: "error",
+      },
+    );
+    await res.body?.cancel();
+    return res.status === 404;
+  } catch {
+    return false;
+  }
+}
+
 async function resolveDownloadUrl(
   apiKey: string,
   modId: number,
@@ -63,7 +86,14 @@ async function resolveDownloadUrl(
   } catch {
     throw new DownloadError(502, "CurseForge request failed.");
   }
+  // download-url answers 404 both for unknown ids and for files whose author
+  // disallows third-party distribution; ask for the file itself to tell them
+  // apart.
   if (res.status === 404) {
+    await res.body?.cancel();
+    if (await fileMissing(apiKey, modId, fileId, signal)) {
+      throw new DownloadError(404, "file_not_found");
+    }
     throw new DownloadError(403, "distribution_disallowed");
   }
   if (!res.ok) {
@@ -176,8 +206,14 @@ export async function GET(
     return jsonError(502, `CDN returned HTTP ${res.status}.`);
   }
 
+  // fetch transparently decodes a compressed body, but Content-Length stays
+  // the encoded size — only trust it for identity responses.
+  const encoding = res.headers.get("Content-Encoding");
+  const identity = !encoding || encoding.trim().toLowerCase() === "identity";
   const limit = maxJarBytes();
-  const length = parseNonNegativeInt(res.headers.get("Content-Length"));
+  const length = identity
+    ? parseNonNegativeInt(res.headers.get("Content-Length"))
+    : null;
   if (length !== null && length > limit) {
     await res.body.cancel().catch(() => {});
     upstream.abort();

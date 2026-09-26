@@ -238,12 +238,20 @@ export function planAtlas(input: AtlasPlanInput): AtlasPlan {
   let result = pack(false);
   let downscaled = false;
   if (result.overflow.length > 0) {
-    downscaled = true;
-    result = pack(true);
+    // Retrying only helps if some texture is actually larger than 16×16.
+    downscaled = textures.some((t) => {
+      const { w, h } = toPackItem(t, false);
+      return w > CELL_SIZE || h > CELL_SIZE;
+    });
+    if (downscaled) result = pack(true);
+    const dropped = result.overflow.length;
     console.warn(
-      `Mod textures exceed the ${maxSize}px texture atlas limit; textures larger than 16×16 were downscaled to 16×16.` +
-        (result.overflow.length > 0
-          ? ` ${result.overflow.length} texture(s) still did not fit and will render as missing.`
+      `Mod textures exceed the ${maxSize}px texture atlas limit;` +
+        (downscaled
+          ? " textures larger than 16×16 were downscaled to 16×16."
+          : "") +
+        (dropped > 0
+          ? ` ${dropped} texture(s) ${downscaled ? "still " : ""}did not fit and will render as missing.`
           : ""),
     );
   }

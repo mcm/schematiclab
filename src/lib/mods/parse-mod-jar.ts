@@ -14,6 +14,15 @@ const ASSET_PATH_RE =
 /** Max `parent` hops followed per model (guards against cycles). */
 const MAX_PARENT_DEPTH = 32;
 
+/**
+ * Zip-bomb guards, checked against each entry's declared size before it is
+ * inflated. fflate allocates exactly the declared size and never grows past
+ * it, so declared sizes bound memory even when they lie. Large mods (e.g.
+ * Create) carry ~15–30 MB of client assets.
+ */
+export const MAX_ASSET_ENTRIES = 100_000;
+export const MAX_ASSET_BYTES = 512 * 1024 * 1024;
+
 export const NO_BLOCKS_WARNING = "No blocks found in this mod";
 
 /** True if a zip entry should be inflated by `parseModJar`. */
@@ -25,12 +34,25 @@ export function isModAssetEntry(name: string): boolean {
 /**
  * Parse a mod jar's bytes into block definitions and render assets.
  *
- * Malformed JSON entries are skipped with a warning. Throws only if the bytes
- * are not a readable zip archive.
+ * Malformed JSON entries are skipped with a warning. Throws if the bytes are
+ * not a readable zip archive or its assets exceed the size/entry budget.
  */
 export function parseModJar(bytes: Uint8Array): ParsedModAssets {
+  let entryCount = 0;
+  let totalBytes = 0;
   const entries = unzipSync(bytes, {
-    filter: (file: UnzipFileInfo) => isModAssetEntry(file.name),
+    filter: (file: UnzipFileInfo) => {
+      if (!isModAssetEntry(file.name)) return false;
+      entryCount += 1;
+      // Stored entries are copied at their compressed size.
+      totalBytes += Math.max(file.originalSize, file.size);
+      if (entryCount > MAX_ASSET_ENTRIES || totalBytes > MAX_ASSET_BYTES) {
+        throw new Error(
+          `Mod jar is too large to read: its assets exceed ${MAX_ASSET_ENTRIES} files or ${MAX_ASSET_BYTES / (1024 * 1024)} MB uncompressed`,
+        );
+      }
+      return true;
+    },
   });
 
   const warnings: string[] = [];
@@ -265,11 +287,11 @@ export function extractProperties(
     }
   }
 
-  const out: Record<string, string[]> = {};
-  for (const key of [...props.keys()].sort()) {
-    out[key] = [...props.get(key)!].sort();
-  }
-  return out;
+  // fromEntries defines own properties, so a `__proto__` key isn't swallowed by
+  // the inherited setter.
+  return Object.fromEntries(
+    [...props.keys()].sort().map((key) => [key, [...props.get(key)!].sort()]),
+  );
 }
 
 /** Normalized model ids referenced by a blockstate's variants / multipart. */

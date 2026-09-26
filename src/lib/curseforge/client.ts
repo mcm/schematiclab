@@ -1,6 +1,10 @@
 // Browser-side helpers for the `/api/curseforge/*` proxy routes (SCHEM-11).
 
-import type { CurseForgeSearchResponse, ModLoader } from "./types";
+import type {
+  CurseForgeModFile,
+  CurseForgeSearchResponse,
+  ModLoader,
+} from "./types";
 
 export interface CurseForgeSearchParams {
   q: string;
@@ -46,7 +50,8 @@ export async function searchCurseForgeMods(
   let body: unknown = null;
   try {
     body = await response.json();
-  } catch {
+  } catch (err) {
+    if (signal?.aborted) throw err;
     // Fall through with a null body.
   }
 
@@ -84,4 +89,173 @@ const MAX_SEARCH_INDEX = 10_000 - 20;
 /** True while more results exist beyond what's been loaded. */
 export function hasMoreResults(loaded: number, totalCount: number): boolean {
   return loaded < totalCount && loaded <= MAX_SEARCH_INDEX;
+}
+
+export interface CurseForgeFilesParams {
+  modId: number;
+  gameVersion: string;
+  loader: ModLoader | null;
+}
+
+export function buildFilesUrl(params: CurseForgeFilesParams): string {
+  const query = new URLSearchParams({ gameVersion: params.gameVersion });
+  if (params.loader) query.set("loader", params.loader);
+  return `/api/curseforge/mods/${params.modId}/files?${query.toString()}`;
+}
+
+export function buildDownloadUrl(modId: number, fileId: number): string {
+  return `/api/curseforge/mods/${modId}/files/${fileId}/download`;
+}
+
+/** Thrown by the mod-file helpers below; `message` is user-facing. */
+export class CurseForgeRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status: number | null = null,
+  ) {
+    super(message);
+    this.name = "CurseForgeRequestError";
+  }
+}
+
+async function errorBodyCode(
+  response: Response,
+  signal?: AbortSignal,
+): Promise<string | null> {
+  try {
+    const body: unknown = await response.json();
+    const error = (body as { error?: unknown } | null)?.error;
+    return typeof error === "string" ? error : null;
+  } catch (err) {
+    if (signal?.aborted) throw err;
+    return null;
+  }
+}
+
+/**
+ * List a mod's files for a version/loader, newest first. Rejects with
+ * `CurseForgeRequestError` on failure (or the abort reason when aborted).
+ */
+export async function fetchCurseForgeModFiles(
+  params: CurseForgeFilesParams,
+  signal?: AbortSignal,
+  fetchImpl: typeof fetch = fetch,
+): Promise<CurseForgeModFile[]> {
+  let response: Response;
+  try {
+    response = await fetchImpl(buildFilesUrl(params), { signal });
+  } catch (err) {
+    if (signal?.aborted) throw err;
+    throw new CurseForgeRequestError("Could not reach the server.");
+  }
+  if (response.status === 503) {
+    throw new CurseForgeRequestError(
+      "CurseForge integration is not configured on this server.",
+      503,
+    );
+  }
+  if (!response.ok) {
+    const code = await errorBodyCode(response, signal);
+    throw new CurseForgeRequestError(
+      code ?? `Could not list mod files (HTTP ${response.status}).`,
+      response.status,
+    );
+  }
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch (err) {
+    if (signal?.aborted) throw err;
+    body = null;
+  }
+  if (!Array.isArray(body)) {
+    throw new CurseForgeRequestError("Unexpected response from server.");
+  }
+  return body as CurseForgeModFile[];
+}
+
+/** The newest downloadable file, or null. Doesn't assume input order. */
+export function pickDownloadableFile(
+  files: readonly CurseForgeModFile[],
+): CurseForgeModFile | null {
+  let best: CurseForgeModFile | null = null;
+  for (const file of files) {
+    if (!file.downloadable) continue;
+    if (
+      best === null ||
+      Date.parse(file.fileDate) > Date.parse(best.fileDate) ||
+      (file.fileDate === best.fileDate && file.id > best.id)
+    ) {
+      best = file;
+    }
+  }
+  return best;
+}
+
+const DOWNLOAD_ERROR_MESSAGES: Record<number, string> = {
+  403: "The author disallows third-party downloads of this file.",
+  404: "This mod file no longer exists on CurseForge.",
+  413: "The mod file is too large to load.",
+  503: "CurseForge integration is not configured on this server.",
+};
+
+export interface DownloadProgress {
+  received: number;
+  /** From `Content-Length`; null when the server didn't send one. */
+  total: number | null;
+}
+
+/**
+ * Download a mod file's jar through the streaming proxy, reporting progress
+ * as chunks arrive. Rejects with `CurseForgeRequestError` on failure.
+ */
+export async function downloadModJar(
+  modId: number,
+  fileId: number,
+  onProgress: (progress: DownloadProgress) => void,
+  signal?: AbortSignal,
+  fetchImpl: typeof fetch = fetch,
+): Promise<Uint8Array> {
+  let response: Response;
+  try {
+    response = await fetchImpl(buildDownloadUrl(modId, fileId), { signal });
+  } catch (err) {
+    if (signal?.aborted) throw err;
+    throw new CurseForgeRequestError("Download failed: network error.");
+  }
+  if (!response.ok || !response.body) {
+    const known = DOWNLOAD_ERROR_MESSAGES[response.status];
+    const code = known ? null : await errorBodyCode(response, signal);
+    throw new CurseForgeRequestError(
+      known ?? code ?? `Download failed (HTTP ${response.status}).`,
+      response.status,
+    );
+  }
+
+  const header = Number(response.headers.get("Content-Length"));
+  const total = Number.isFinite(header) && header > 0 ? header : null;
+  const chunks: Uint8Array[] = [];
+  let received = 0;
+  onProgress({ received, total });
+  const reader = response.body.getReader();
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      received += value.byteLength;
+      onProgress({ received, total });
+    }
+  } catch (err) {
+    if (signal?.aborted) throw err;
+    throw new CurseForgeRequestError("Download interrupted.");
+  }
+
+  const bytes = new Uint8Array(received);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return bytes;
 }

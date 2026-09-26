@@ -37,7 +37,10 @@ function createWorker(): Worker {
     }
   });
 
+  // A terminated worker can still deliver a queued error; ignore it so it
+  // cannot reject requests on (or tear down) a replacement worker.
   w.addEventListener("error", (event) => {
+    if (worker !== w) return;
     const message =
       typeof (event as ErrorEvent).message === "string" &&
       (event as ErrorEvent).message.length > 0
@@ -48,6 +51,7 @@ function createWorker(): Worker {
   });
 
   w.addEventListener("messageerror", () => {
+    if (worker !== w) return;
     rejectAllPending(new Error("Worker message could not be deserialized"));
     discardWorker();
   });
@@ -70,8 +74,10 @@ function discardWorker(): void {
 /**
  * Parse a mod jar in the worker, returning its blocks and render assets.
  *
- * `bytes.buffer` is transferred (no copy); the caller's view becomes detached
- * after this call. Texture buffers in the result are transferred back.
+ * When `bytes` spans its whole `ArrayBuffer`, that buffer is transferred (no
+ * copy) and the caller's view becomes detached; a view into a larger buffer is
+ * copied instead so other views stay intact. Texture buffers in the result are
+ * transferred back.
  */
 export function parseModJarInWorker(
   bytes: Uint8Array,
@@ -79,16 +85,30 @@ export function parseModJarInWorker(
   if (worker === null) worker = createWorker();
   const w = worker;
   const id = nextId++;
-  const transfer: Transferable[] =
-    bytes.buffer instanceof ArrayBuffer ? [bytes.buffer] : [];
+  let transfer: Transferable[] = [];
+  if (bytes.buffer instanceof ArrayBuffer) {
+    if (
+      bytes.byteOffset !== 0 ||
+      bytes.byteLength !== bytes.buffer.byteLength
+    ) {
+      bytes = bytes.slice();
+    }
+    transfer = [bytes.buffer];
+  }
+  const message: ModJarWorkerRequest = {
+    id,
+    type: "parseJar",
+    payload: { bytes },
+  };
   return new Promise<ParsedModAssets>((resolve, reject) => {
     pending.set(id, { resolve, reject });
-    const message: ModJarWorkerRequest = {
-      id,
-      type: "parseJar",
-      payload: { bytes },
-    };
-    w.postMessage(message, transfer);
+    try {
+      w.postMessage(message, transfer);
+    } catch (err) {
+      // e.g. DataCloneError for an already-detached buffer.
+      pending.delete(id);
+      reject(err);
+    }
   });
 }
 

@@ -48,7 +48,15 @@ interface VersionMappingPanelProps {
 type PreviewState =
   | { status: "idle" }
   | { status: "loading"; targetVersionId: string }
-  | { status: "ready"; targetVersionId: string; preview: VersionMappingPreview }
+  | {
+      status: "ready";
+      targetVersionId: string;
+      preview: VersionMappingPreview;
+      // Inputs the preview was computed from, so a stale result can be
+      // detected during render (see `previewState` below).
+      schematic: ParsedSchematicProjection;
+      modBlockIds: readonly string[];
+    }
   | { status: "error"; targetVersionId: string; message: string };
 
 // Per-row decision. A row is "resolved" once it has either an accepted-default
@@ -69,9 +77,26 @@ export function VersionMappingPanel({ schematic }: VersionMappingPanelProps) {
     () => loadedMods.flatMap((mod) => mod.blocks.map((block) => block.id)),
     [loadedMods],
   );
-  const [previewState, setPreviewState] = React.useState<PreviewState>({
+  const [storedPreviewState, setPreviewState] = React.useState<PreviewState>({
     status: "idle",
   });
+  // The effect below only marks a preview loading after a microtask, so a
+  // `ready` result can briefly outlive its inputs (e.g. a mod unloads). Treat
+  // any mismatch as loading so Apply never uses a preview computed against a
+  // different schematic, target, or loaded-mod set.
+  const previewState = React.useMemo<PreviewState>(() => {
+    if (
+      storedPreviewState.status !== "ready" ||
+      (storedPreviewState.schematic === schematic &&
+        storedPreviewState.modBlockIds === loadedModBlockIds &&
+        storedPreviewState.targetVersionId === targetVersionId)
+    ) {
+      return storedPreviewState;
+    }
+    return targetVersionId === null
+      ? { status: "idle" }
+      : { status: "loading", targetVersionId };
+  }, [storedPreviewState, schematic, loadedModBlockIds, targetVersionId]);
   // Decisions keyed by target version id, then by source block-state string.
   // Persisting per-version means switching the dropdown away and back to a
   // previously-decorated target restores the user's earlier choices (AC4).
@@ -137,7 +162,13 @@ export function VersionMappingPanel({ schematic }: VersionMappingPanelProps) {
           loadedModBlockIds,
         );
         if (requestKeyRef.current !== requestKey) return;
-        setPreviewState({ status: "ready", targetVersionId, preview });
+        setPreviewState({
+          status: "ready",
+          targetVersionId,
+          preview,
+          schematic,
+          modBlockIds: loadedModBlockIds,
+        });
       } catch (err) {
         if (requestKeyRef.current !== requestKey) return;
         const message =

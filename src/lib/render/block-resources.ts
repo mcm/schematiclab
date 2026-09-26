@@ -134,6 +134,8 @@ export function blockstateModelRefs(blockstate: unknown): string[] | null {
   if (!isRecord(blockstate)) return null;
   const refs: string[] = [];
   const addVariant = (variant: unknown): boolean => {
+    // deepslate's `getModelVariants` only ever renders the first weighted
+    // choice, so later entries are never meshed and needn't validate.
     const first = Array.isArray(variant) ? (variant[0] as unknown) : variant;
     if (!isRecord(first) || typeof first.model !== "string") return false;
     refs.push(first.model);
@@ -267,7 +269,15 @@ export function assembleResources(
   };
   // Vanilla models are already flattened, so this only resolves mod chains
   // (which may parent vanilla models such as `minecraft:block/cube_all`).
-  for (const model of modModels.values()) model.flatten(modelProvider);
+  // `flatten` throws on malformed shapes (e.g. a string `textures`); drop
+  // those so blocks using them fall back to the placeholder.
+  for (const [id, model] of modModels) {
+    try {
+      model.flatten(modelProvider);
+    } catch {
+      modModels.delete(id);
+    }
+  }
 
   const placeholder = BlockDefinition.fromJson(PLACEHOLDER_DEFINITION_JSON);
   const modDefinitions = new Map<string, BlockDefinition>();
@@ -286,7 +296,9 @@ export function assembleResources(
   }
 
   const missingUv = uvMap[MISSING_TEXTURE_ID];
-  const pixelSize = 1 / atlasImage.width;
+  // Shader half-texel inset; the atlas may be non-square once mod textures
+  // are packed in, so use the larger per-axis texel (smaller dimension).
+  const pixelSize = 1 / Math.min(atlasImage.width, atlasImage.height);
   const placeholderFlags: BlockFlags = { opaque: true };
 
   const resources: Resources = {

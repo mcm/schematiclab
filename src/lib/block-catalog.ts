@@ -17,10 +17,7 @@ import {
   REVERSE_FLATTEN_TABLE,
   VERSION_DIFFS,
 } from "./schemlib/data/block-translations.generated";
-import {
-  getLoadedModBlockIds,
-  subscribe as subscribeLoadedMods,
-} from "./mods/registry";
+import { getLoadedModBlockIds } from "./mods/registry";
 
 function stripProperties(blockState: string): string {
   const bracket = blockState.indexOf("[");
@@ -61,32 +58,30 @@ const CATALOG = buildCatalog();
 const CATALOG_SET: ReadonlySet<string> = new Set(CATALOG);
 
 // Loaded mod blocks layer on top of the static vanilla catalog. The sorted
-// list is cached per registry block-id set (whose identity changes only when
-// the loaded-mod set changes).
-let modCache: { for: ReadonlySet<string>; ids: readonly string[] } | null =
-  null;
+// lists are cached per registry block-id set (whose identity changes only
+// when the loaded-mod set changes).
+let modCache: {
+  for: ReadonlySet<string>;
+  ids: readonly string[];
+  all: readonly string[];
+} | null = null;
 
-function getModBlockIds(): readonly string[] {
+function getModCache(): NonNullable<typeof modCache> {
   const set = getLoadedModBlockIds();
   if (modCache?.for !== set) {
+    const ids = [...set].filter((id) => !CATALOG_SET.has(id)).sort();
     modCache = {
       for: set,
-      ids: [...set].filter((id) => !CATALOG_SET.has(id)).sort(),
+      ids,
+      all: ids.length === 0 ? CATALOG : CATALOG.concat(ids).sort(),
     };
   }
-  return modCache.ids;
+  return modCache;
 }
 
-/**
- * Subscribe to catalog changes (loaded mods added/removed). Compatible with
- * `useSyncExternalStore`; pair with `getLoadedModBlockIds` as the snapshot.
- */
-export const subscribeBlockCatalog = subscribeLoadedMods;
-
-/** Vanilla ids, then ids from loaded mods. */
+/** Every known id (vanilla and loaded mods), sorted. */
 export function getBlockCatalog(): readonly string[] {
-  const modIds = getModBlockIds();
-  return modIds.length === 0 ? CATALOG : CATALOG.concat(modIds);
+  return getModCache().all;
 }
 
 function barePath(id: string): string {
@@ -104,9 +99,12 @@ export function searchBlockCatalog(
   query: string,
   limit = 50,
 ): readonly string[] {
-  const modIds = getModBlockIds();
+  const modIds = getModCache().ids;
   const needle = query.trim().toLowerCase();
-  if (needle.length === 0) return getBlockCatalog().slice(0, limit);
+  // Empty query: vanilla ids first, then mod ids (same tiering as below).
+  if (needle.length === 0) {
+    return CATALOG.slice(0, limit).concat(modIds).slice(0, limit);
+  }
 
   const prefix: string[] = [];
   const substring: string[] = [];
