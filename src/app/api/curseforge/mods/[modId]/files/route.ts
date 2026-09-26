@@ -114,7 +114,9 @@ export async function GET(
       }
       partial = true;
       console.warn(
-        `CurseForge files page ${indexes[i]} for mod ${modId} failed; serving a partial list.`,
+        "CurseForge files page %d for mod %d failed; serving a partial list.",
+        indexes[i],
+        modId,
         page.reason,
       );
     });
