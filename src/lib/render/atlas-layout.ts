@@ -146,15 +146,19 @@ interface PackResult {
 
 // Shelf packing below the base atlas: tallest first, left to right, a new
 // shelf when the row is full. Items that would push the atlas past `maxSize`
-// are returned in `overflow`.
+// are returned in `overflow`. The atlas is at least `minWidth` wide.
 function shelfPack(
   items: readonly PackItem[],
   baseWidth: number,
   baseHeight: number,
   maxSize: number,
+  minWidth = 0,
 ): PackResult {
   const widest = items.reduce((max, item) => Math.max(max, item.w), 0);
-  const width = Math.min(maxSize, nextPowerOfTwo(Math.max(baseWidth, widest)));
+  const width = Math.min(
+    maxSize,
+    nextPowerOfTwo(Math.max(baseWidth, widest, minWidth)),
+  );
   const sorted = [...items].sort(
     (a, b) => b.h - a.h || b.w - a.w || a.id.localeCompare(b.id),
   );
@@ -224,7 +228,7 @@ export function planAtlas(input: AtlasPlanInput): AtlasPlan {
     w: CELL_SIZE,
     h: CELL_SIZE,
   };
-  const pack = (downscale: boolean): PackResult =>
+  const pack = (downscale: boolean, minWidth?: number): PackResult =>
     shelfPack(
       [
         ...(freeCell === null ? [missingItem] : []),
@@ -233,6 +237,7 @@ export function planAtlas(input: AtlasPlanInput): AtlasPlan {
       baseWidth,
       baseHeight,
       maxSize,
+      minWidth,
     );
 
   let result = pack(false);
@@ -243,7 +248,13 @@ export function planAtlas(input: AtlasPlanInput): AtlasPlan {
       const { w, h } = toPackItem(t, false);
       return w > CELL_SIZE || h > CELL_SIZE;
     });
-    if (downscaled) result = pack(true);
+    if (downscaled) {
+      // Keep the first attempt's width: downscaling shrinks the widest
+      // texture, which would otherwise narrow the atlas and drop more.
+      const retry = pack(true, result.width);
+      if (retry.overflow.length <= result.overflow.length) result = retry;
+      else downscaled = false;
+    }
     const dropped = result.overflow.length;
     console.warn(
       `Mod textures exceed the ${maxSize}px texture atlas limit;` +
