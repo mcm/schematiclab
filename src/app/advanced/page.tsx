@@ -322,6 +322,10 @@ function RightTabs({
   // driven by an inline display toggle keyed off `activeTab` so the active
   // panel can still participate in flex layout.
   const [activeTab, setActiveTab] = React.useState<RightTabId>("materials");
+  // The Mods panel searches CurseForge on mount, so defer mounting it until
+  // the tab is first opened; after that it stays mounted like the others.
+  const [modsTabOpened, setModsTabOpened] = React.useState(false);
+  if (activeTab === "mods" && !modsTabOpened) setModsTabOpened(true);
   // "Search CurseForge" from a Material List row: jump to the Mods tab with
   // the block's namespace as the search text. A fresh object per click so
   // repeating the same namespace still re-applies it.
@@ -434,7 +438,7 @@ function RightTabs({
               fontSize: "var(--text-sm)",
             }}
           >
-            {modsBody(parseStatus, modSearchRequest)}
+            {modsTabOpened ? modsBody(parseStatus, modSearchRequest) : null}
           </TabsContent>
           <TabsContent
             value="export"

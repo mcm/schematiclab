@@ -301,6 +301,38 @@ describe("curseforge proxy routes", () => {
       ]);
     });
 
+    it("fetches later pages (capped) so the newest file isn't missed", async () => {
+      const page = (ids: number[], totalCount: number) =>
+        jsonResponse({
+          data: ids.map((id) => ({
+            id,
+            fileDate: new Date(Date.UTC(2020, 0, id)).toISOString(),
+          })),
+          pagination: { totalCount },
+        });
+      fetchMock.mockImplementation(async (input: string) => {
+        const index = Number(new URL(input).searchParams.get("index"));
+        return page([index + 1, index + 2], 1000);
+      });
+      const body = (await (
+        await files("328085", "gameVersion=1.20.1")
+      ).json()) as { id: number }[];
+      const indexes = fetchMock.mock.calls.map((c) =>
+        new URL(c[0] as string).searchParams.get("index"),
+      );
+      expect(indexes).toEqual(["0", "50", "100", "150", "200"]);
+      expect(body[0].id).toBe(202);
+      expect(body).toHaveLength(10);
+    });
+
+    it("stops after one page when totalCount fits", async () => {
+      fetchMock.mockResolvedValue(
+        jsonResponse({ data: RAW_FILES, pagination: { totalCount: 2 } }),
+      );
+      await files("328085", "gameVersion=1.20.1");
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
     it("upstream non-2xx → 502 without leaking body", async () => {
       fetchMock.mockResolvedValue(
         new Response("nope: internal", { status: 500 }),

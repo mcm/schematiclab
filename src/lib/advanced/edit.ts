@@ -262,10 +262,10 @@ export function applyBlockSwap(
  * For each palette entry:
  *  - If `overrides[entry.blockState]` is present, the user's chosen target is
  *    used (and the natural mapper is bypassed for that source state).
- *  - Otherwise, the natural per-version diff walker (`translateBlockState`)
- *    computes the target state.
  *  - Otherwise, if the block id is in `loadedModBlockIds`, the entry passes
  *    through unchanged (modded ids aren't translated between versions).
+ *  - Otherwise, the natural per-version diff walker (`translateBlockState`)
+ *    computes the target state.
  *
  * The whole palette is rewritten in a single pass — chains like
  * `foo(source) → bar(natural) → baz(natural)` don't apply, because each source
@@ -292,7 +292,7 @@ export function applyVersionMapping(
   const modBlockIds = toIdSet(loadedModBlockIds);
 
   // Step 1: compute the post-mapping state for every source palette entry.
-  // Overrides win; otherwise the natural mapper runs.
+  // Overrides win, then loaded-mod passthrough, then the natural mapper.
   interface ResolvedTarget {
     key: string;
     blockId: string;

@@ -52,6 +52,8 @@ export interface LoadedModMeta {
   /** Non-`minecraft` asset namespaces the jar provides. */
   namespaces: string[];
   blocks: ModBlock[];
+  /** Non-fatal parse warnings (skipped files). Absent on older records. */
+  warnings?: string[];
   /** `Date.now()` when the mod was loaded. */
   loadedAt: number;
 }

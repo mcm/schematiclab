@@ -1,7 +1,9 @@
-import { strToU8, zipSync } from "fflate";
+import { strFromU8, strToU8, zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 
 import {
+  extractProperties,
+  MAX_ASSET_BYTES,
   NO_BLOCKS_WARNING,
   parseModJar,
   textureTransferables,
@@ -9,6 +11,24 @@ import {
 
 // Minimal bytes standing in for PNGs — the parser never decodes them.
 const PNG = (tag: number) => new Uint8Array([0x89, 0x50, 0x4e, 0x47, tag]);
+
+/** Overwrite `name`'s declared uncompressed size in the central directory. */
+function withDeclaredSize(
+  zip: Uint8Array,
+  name: string,
+  size: number,
+): Uint8Array {
+  const out = zip.slice();
+  const view = new DataView(out.buffer);
+  for (let i = 0; i + 46 <= out.length; i++) {
+    if (view.getUint32(i, true) !== 0x02014b50) continue;
+    const nameLength = view.getUint16(i + 28, true);
+    if (strFromU8(out.subarray(i + 46, i + 46 + nameLength)) === name) {
+      view.setUint32(i + 24, size, true);
+    }
+  }
+  return out;
+}
 
 function jar(files: Record<string, string | Uint8Array | object>): Uint8Array {
   const entries: Record<string, Uint8Array> = {};
@@ -220,6 +240,60 @@ describe("parseModJar", () => {
 
     expect(result.blocks).toEqual([]);
     expect(result.warnings).toEqual([NO_BLOCKS_WARNING]);
+  });
+  it("keeps a blockstate property named __proto__ as an own property", () => {
+    const props = extractProperties({
+      variants: {
+        "__proto__=a": { model: "testmod:block/x" },
+        "__proto__=b,facing=north": { model: "testmod:block/x" },
+      },
+    });
+
+    expect(Object.keys(props)).toEqual(["__proto__", "facing"]);
+    expect(Object.getPrototypeOf(props)).toBe(Object.prototype);
+    expect(Object.getOwnPropertyDescriptor(props, "__proto__")?.value).toEqual([
+      "a",
+      "b",
+    ]);
+    // Survives the worker → main thread structured clone.
+    const cloned = structuredClone(props);
+    expect(Object.entries(cloned)).toEqual([
+      ["__proto__", ["a", "b"]],
+      ["facing", ["north"]],
+    ]);
+  });
+
+  it("rejects archives whose declared asset sizes exceed the budget", () => {
+    const name = "assets/testmod/blockstates/x.json";
+    const bomb = withDeclaredSize(
+      jar({ [name]: { variants: {} } }),
+      name,
+      MAX_ASSET_BYTES + 1,
+    );
+
+    expect(() => parseModJar(bomb)).toThrow(/too large/);
+  });
+
+  it("never inflates an entry past its declared size", () => {
+    // 1 MiB of zeros declared as 16 bytes: output is capped, not grown.
+    const name = "assets/testmod/textures/block/x.png";
+    const lying = withDeclaredSize(
+      jar({
+        "assets/testmod/blockstates/x.json": {
+          variants: { "": { model: "testmod:block/x" } },
+        },
+        "assets/testmod/models/block/x.json": {
+          textures: { all: "testmod:block/x" },
+        },
+        [name]: new Uint8Array(1 << 20),
+      }),
+      name,
+      16,
+    );
+
+    const result = parseModJar(lying);
+
+    expect(result.textures["testmod:block/x"].byteLength).toBe(16);
   });
 });
 

@@ -204,7 +204,7 @@ describe("planAtlas", () => {
     }
   });
 
-  it("drops textures that still overflow after downscaling", () => {
+  it("drops overflowing textures without claiming a downscale when none are oversized", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const modTextures = Array.from({ length: 5 }, (_, i) => ({
       id: `m:block/t${i}`,
@@ -219,10 +219,36 @@ describe("planAtlas", () => {
       maxSize: 64,
     });
     expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).not.toMatch(/downscaled/);
+    expect(warn.mock.calls[0][0]).toMatch(/1 texture\(s\) did not fit/);
+    expect(plan.downscaled).toBe(false);
     expect(plan.placements).toHaveLength(4);
     expect(plan.dropped).toEqual(["m:block/t4"]);
     expect(plan.uvMap["m:block/t4"]).toBeUndefined();
     expect(plan.height).toBe(64);
+  });
+
+  it("drops textures that still overflow after downscaling", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const modTextures = Array.from({ length: 9 }, (_, i) => ({
+      id: `m:block/t${i}`,
+      width: 16,
+      height: 16,
+    }));
+    modTextures.push({ id: "m:block/hd", width: 64, height: 64 });
+    const plan = planAtlas({
+      baseWidth: 64,
+      baseHeight: 32,
+      vanillaRects: {},
+      modTextures,
+      maxSize: 64,
+    });
+    expect(plan.downscaled).toBe(true);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toMatch(/downscaled to 16×16/);
+    expect(warn.mock.calls[0][0]).toMatch(/2 texture\(s\) still did not fit/);
+    expect(plan.placements).toHaveLength(8);
+    expect(plan.dropped).toHaveLength(2);
   });
 
   it("does not warn when everything fits", () => {

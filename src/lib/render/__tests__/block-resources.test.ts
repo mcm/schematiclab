@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { Identifier, type Resources, type UV } from "deepslate";
 
 import vanillaBlockstates from "../../../../public/minecraft-assets/blockstates.json";
@@ -15,11 +15,13 @@ import {
 const MISSING_UV: UV = [0.5, 0.5, 0.75, 0.75];
 const CASING_UV: UV = [0, 0.5, 0.25, 0.75];
 const STONE_UV: UV = [0.25, 0, 0.5, 0.25];
+const GLASS_UV: UV = [0.75, 0, 1, 0.25];
 
 const UV_MAP: Record<string, UV> = {
   [MISSING_TEXTURE_ID]: MISSING_UV,
   "create:block/casing": CASING_UV,
   "minecraft:block/stone": STONE_UV,
+  "minecraft:block/black_stained_glass": GLASS_UV,
 };
 const ATLAS = { width: 4, height: 4 } as unknown as ImageData;
 
@@ -31,6 +33,10 @@ beforeAll(() => {
     vanillaModels as Record<string, unknown>,
     ["minecraft:stone"],
   );
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
 function assemble(mods: ModBlockAssets[]) {
@@ -95,6 +101,26 @@ describe("blockstateModelRefs", () => {
     ).toEqual(["a:block/post", "a:block/side"]);
   });
 
+  it("uses only the first weighted choice, as deepslate renders", () => {
+    expect(
+      blockstateModelRefs({
+        multipart: [
+          { apply: [{ model: "a:block/post" }, { model: "a:block/post2" }] },
+          {
+            when: { north: "true" },
+            apply: [{ model: "a:block/side" }, { model: "a:block/side2" }],
+          },
+        ],
+      }),
+    ).toEqual(["a:block/post", "a:block/side"]);
+    // A malformed later choice is never meshed, so it doesn't reject the file.
+    expect(
+      blockstateModelRefs({
+        multipart: [{ apply: [{ model: "a:block/post" }, {}] }],
+      }),
+    ).toEqual(["a:block/post"]);
+  });
+
   it("rejects forge_marker and malformed blockstates", () => {
     expect(
       blockstateModelRefs({ forge_marker: 1, defaults: { model: "x" } }),
@@ -143,6 +169,9 @@ describe("assembleResources", () => {
     const { resources } = assemble([]);
     // `black_stained_glass` uses `{ sprite, force_translucent }` (1.21.4+).
     expect(quadCount(resources, "minecraft:black_stained_glass")).toBe(6);
+    expect(
+      meshTextureRects(resources, "minecraft:black_stained_glass"),
+    ).toEqual([JSON.stringify(GLASS_UV)]);
   });
 
   it("renders a mod model that uses sprite-object textures", () => {
@@ -252,6 +281,16 @@ describe("assembleResources", () => {
       },
     ],
     [
+      "model whose shape deepslate can't flatten",
+      {
+        blockstates: {
+          "m:bad": { variants: { "": { model: "m:block/bad" } } },
+        },
+        // `flatten` throws assigning inherited textures onto a string.
+        models: { "m:block/bad": { parent: "block/cube_all", textures: "x" } },
+      },
+    ],
+    [
       "forge_marker blockstate",
       {
         blockstates: {
@@ -265,7 +304,7 @@ describe("assembleResources", () => {
   it.each(placeholderCases)(
     "renders a placeholder cube for a %s",
     (_label, mod) => {
-      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+      vi.spyOn(console, "warn").mockImplementation(() => {});
       const { resources, placeholderBlocks } = assemble([mod]);
       const [id] = Object.keys(mod.blockstates);
       expect(placeholderBlocks).toEqual([id]);
@@ -276,9 +315,19 @@ describe("assembleResources", () => {
       expect(resources.getBlockFlags(Identifier.parse(id))).toEqual({
         opaque: true,
       });
-      warn.mockRestore();
     },
   );
+
+  it("sizes the shader pixel inset by the atlas's smaller dimension", () => {
+    const atlasImage = { width: 64, height: 256 } as unknown as ImageData;
+    const { resources } = assembleResources({
+      vanilla,
+      mods: [],
+      uvMap: UV_MAP,
+      atlasImage,
+    });
+    expect(resources.getPixelSize?.()).toBe(1 / 64);
+  });
 
   it("renders a placeholder for modded ids with no blockstate (e.g. mod removed)", () => {
     const { resources } = assemble([]);

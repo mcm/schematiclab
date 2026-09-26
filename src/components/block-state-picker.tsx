@@ -108,6 +108,13 @@ export function BlockStatePicker({
     void loadedMods;
     return searchBlockCatalog(query, MAX_SUGGESTIONS);
   }, [query, loadedMods]);
+  // The list can shrink underneath a stale highlight (e.g. a mod unloads
+  // while the picker is open), so clamp during render rather than trusting
+  // the stored index.
+  const activeIndex = Math.max(
+    0,
+    Math.min(highlightIndex, suggestions.length - 1),
+  );
 
   const parsedTarget = parseTargetEntry(query);
   const targetValid =
@@ -132,19 +139,19 @@ export function BlockStatePicker({
     if (suggestions.length === 0) return;
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setHighlightIndex((i) => Math.min(i + 1, suggestions.length - 1));
+      setHighlightIndex(Math.min(activeIndex + 1, suggestions.length - 1));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setHighlightIndex((i) => Math.max(i - 1, 0));
+      setHighlightIndex(Math.max(activeIndex - 1, 0));
     } else if (e.key === "Enter") {
       // Enter inside the input commits the highlighted suggestion as the
       // typed value (the user can hit Confirm to apply, or press Enter again).
       if (
-        suggestions[highlightIndex] &&
-        query.trim() !== suggestions[highlightIndex]
+        suggestions[activeIndex] &&
+        query.trim() !== suggestions[activeIndex]
       ) {
         e.preventDefault();
-        selectSuggestion(suggestions[highlightIndex]);
+        selectSuggestion(suggestions[activeIndex]);
       }
     }
   }
@@ -231,7 +238,7 @@ export function BlockStatePicker({
             aria-controls="block-state-picker-suggestions"
             aria-activedescendant={
               suggestions.length > 0
-                ? `block-state-picker-option-${highlightIndex}`
+                ? `block-state-picker-option-${activeIndex}`
                 : undefined
             }
           />
@@ -263,7 +270,7 @@ export function BlockStatePicker({
               </li>
             ) : (
               suggestions.map((id, i) => {
-                const isHighlighted = i === highlightIndex;
+                const isHighlighted = i === activeIndex;
                 const mod = getModForBlockId(id);
                 return (
                   <li
