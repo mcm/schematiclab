@@ -12,6 +12,7 @@ import {
   parsePositiveInt,
   trimFile,
   upstreamFailed,
+  UpstreamError,
   validateGameVersion,
   validateLoader,
 } from "@/lib/curseforge/server";
@@ -25,6 +26,18 @@ import {
 // newest file could sit past page one for mods with many releases.
 const PAGE_SIZE = 50;
 const MAX_PAGES = 5;
+// A failed later page gets one retry, only for 429/5xx, after `Retry-After`
+// (or a short default). Longer waits aren't worth holding the request for.
+const RETRY_DEFAULT_MS = 1000;
+const RETRY_MAX_WAIT_MS = 5000;
+
+/** Delay before retrying `err`, or null if it isn't worth retrying. */
+function retryDelay(err: unknown): number | null {
+  if (!(err instanceof UpstreamError) || err.status === undefined) return null;
+  if (err.status !== 429 && err.status < 500) return null;
+  const wait = err.retryAfterMs ?? RETRY_DEFAULT_MS;
+  return wait <= RETRY_MAX_WAIT_MS ? wait : null;
+}
 
 export async function GET(
   request: Request,
@@ -80,12 +93,19 @@ export async function GET(
     ) {
       indexes.push(index);
     }
-    // A failed later page shouldn't discard the rest. Retry it once (these
-    // are usually transient 429/5xx); if it still fails, serve what arrived
-    // uncached. The client auto-picks the newest file, so a missing page
-    // could mean an older pick — hence the retry and the log.
+    // A failed later page shouldn't discard the rest. Retry transient
+    // failures once; if it still fails, serve what arrived uncached. The
+    // client auto-picks the newest file, so a missing page could mean an
+    // older pick — hence the retry and the log.
     const rest = await Promise.allSettled(
-      indexes.map((index) => fetchPage(index).catch(() => fetchPage(index))),
+      indexes.map((index) =>
+        fetchPage(index).catch(async (err: unknown) => {
+          const delay = retryDelay(err);
+          if (delay === null) throw err;
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          return fetchPage(index);
+        }),
+      ),
     );
     rest.forEach((page, i) => {
       if (page.status === "fulfilled") {
