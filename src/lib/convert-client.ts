@@ -153,11 +153,16 @@ export function parseInWorker(bytes: Uint8Array): Promise<ParseResult> {
 export function translatePreviewInWorker(
   schematic: ParsedSchematicProjection,
   targetVersion: MinecraftVersion,
+  loadedModBlockIds: ReadonlySet<string> | readonly string[] = [],
 ): Promise<VersionMappingPreview> {
   return send<VersionMappingPreview>(
     {
       type: "translatePreview",
-      payload: { schematic, targetVersion },
+      payload: {
+        schematic,
+        targetVersion,
+        loadedModBlockIds: [...loadedModBlockIds],
+      },
     },
     [],
   );

@@ -40,6 +40,8 @@ export interface ParsePayload {
 export interface TranslatePreviewPayload {
   schematic: ParsedSchematicProjection;
   targetVersion: MinecraftVersion;
+  // Block ids provided by loaded mods; counted clean and left untranslated.
+  loadedModBlockIds: string[];
 }
 
 export interface ExportPayload {
@@ -128,8 +130,12 @@ ctx.addEventListener("message", (event) => {
     }
 
     if (type === "translatePreview") {
-      const { schematic, targetVersion } = request.payload;
-      const result = previewVersionMapping(schematic, targetVersion);
+      const { schematic, targetVersion, loadedModBlockIds } = request.payload;
+      const result = previewVersionMapping(
+        schematic,
+        targetVersion,
+        loadedModBlockIds,
+      );
       ctx.postMessage({ id, ok: true, type: "translatePreview", result });
       return;
     }

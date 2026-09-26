@@ -234,6 +234,84 @@ describe("applyBlockSwap", () => {
 });
 
 describe("applyVersionMapping", () => {
+  it("leaves loaded mod block ids and properties unchanged", () => {
+    const before = schematic(
+      [
+        {
+          blockState: "create:andesite_casing[axis=y]",
+          blockId: "create:andesite_casing",
+          properties: { axis: "y" },
+          count: 2,
+        },
+        {
+          blockState: "minecraft:grass_path",
+          blockId: "minecraft:grass_path",
+          count: 1,
+        },
+      ],
+      [
+        {
+          blocks: [
+            { pos: [0, 0, 0], paletteIndex: 0 },
+            { pos: [1, 0, 0], paletteIndex: 0 },
+            { pos: [2, 0, 0], paletteIndex: 1 },
+          ],
+        },
+      ],
+      V_1_16_5,
+    );
+
+    const after = applyVersionMapping(before, V_1_17_1, {}, [
+      "create:andesite_casing",
+    ]);
+
+    const modded = after.palette.find(
+      (e) => e.blockId === "create:andesite_casing",
+    );
+    expect(modded).toEqual({
+      blockState: "create:andesite_casing[axis=y]",
+      blockId: "create:andesite_casing",
+      properties: { axis: "y" },
+      count: 2,
+    });
+    // Vanilla entries still translate.
+    const ids = new Set(after.palette.map((e) => e.blockId));
+    expect(ids.has("minecraft:dirt_path")).toBe(true);
+  });
+
+  it("keeps loaded mod blocks across the flattening instead of mapping to air", () => {
+    const before = schematic(
+      [
+        {
+          blockState: "create:andesite_casing[axis=y]",
+          blockId: "create:andesite_casing",
+          properties: { axis: "y" },
+          count: 1,
+        },
+      ],
+      [{ blocks: [{ pos: [0, 0, 0], paletteIndex: 0 }] }],
+      V_1_16_5,
+    );
+    const V_1_12_2: MinecraftVersion = {
+      platform: "java",
+      versionNumber: [1, 12, 2],
+      dataVersion: 1343,
+    };
+
+    const withIds = applyVersionMapping(before, V_1_12_2, {}, [
+      "create:andesite_casing",
+    ]);
+    expect(withIds.palette.map((e) => e.blockState)).toEqual([
+      "create:andesite_casing[axis=y]",
+    ]);
+    expect(withIds.regions[0].blocks).toHaveLength(1);
+
+    const withoutIds = applyVersionMapping(before, V_1_12_2);
+    expect(
+      withoutIds.palette.some((e) => e.blockId === "create:andesite_casing"),
+    ).toBe(false);
+  });
+
   it("renames blocks naturally via the version diff walker", () => {
     // grass_path → dirt_path is a real 1.16 → 1.17 rename in the diff chain.
     const before = schematic(

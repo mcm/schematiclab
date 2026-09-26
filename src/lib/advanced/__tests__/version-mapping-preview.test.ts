@@ -4,6 +4,13 @@ import type { ParsedSchematicProjection } from "../../convert";
 import type { MinecraftVersion } from "../../schemlib/schematic-formats/version-mapping";
 import { previewVersionMapping } from "../version-mapping-preview";
 
+// Unknown (modded) ids only warn across the 1.13 flattening boundary.
+const V_1_12_2: MinecraftVersion = {
+  platform: "java",
+  versionNumber: [1, 12, 2],
+  dataVersion: 1343,
+};
+
 const V_1_16_5: MinecraftVersion = {
   platform: "java",
   versionNumber: [1, 16, 5],
@@ -131,5 +138,43 @@ describe("previewVersionMapping", () => {
     expect(result.problematicCount).toBe(2);
     expect(result.problematic[0].sourceBlockId).toBe("minecraft:cherry_planks");
     expect(result.problematic[1].sourceBlockId).toBe("minecraft:bamboo_planks");
+  });
+
+  describe("loaded mod blocks", () => {
+    const moddedPalette = [
+      {
+        blockState: "create:andesite_casing[axis=y]",
+        blockId: "create:andesite_casing",
+        properties: { axis: "y" },
+        count: 4,
+      },
+      { blockState: "minecraft:stone", blockId: "minecraft:stone", count: 1 },
+    ];
+
+    it("counts entries provided by a loaded mod as clean with no warnings", () => {
+      const schematic = projection(moddedPalette, V_1_20_1);
+
+      for (const ids of [
+        ["create:andesite_casing"],
+        new Set(["create:andesite_casing"]),
+      ]) {
+        const result = previewVersionMapping(schematic, V_1_12_2, ids);
+        expect(result.cleanCount).toBe(2);
+        expect(result.problematicCount).toBe(0);
+        expect(result.problematic).toEqual([]);
+      }
+    });
+
+    it("flags the modded entry as before when loaded ids are not passed", () => {
+      const schematic = projection(moddedPalette, V_1_20_1);
+
+      const result = previewVersionMapping(schematic, V_1_12_2);
+      expect(result.cleanCount).toBe(1);
+      expect(result.problematicCount).toBe(1);
+      expect(result.problematic[0].sourceBlockId).toBe(
+        "create:andesite_casing",
+      );
+      expect(result.problematic[0].warnings.length).toBeGreaterThanOrEqual(1);
+    });
   });
 });

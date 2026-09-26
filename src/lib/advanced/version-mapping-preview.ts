@@ -8,7 +8,9 @@
 // `applyVersionMapping` from `./edit`.
 //
 // "Problematic" follows US-013: any source `BlockState` whose translation
-// emitted ≥1 warning. Everything else is "clean."
+// emitted ≥1 warning. Everything else is "clean." Block ids provided by a
+// loaded mod (passed in as plain data) are always clean and pass through
+// unchanged — modded ids aren't translated between versions.
 //
 // Pure TS, no DOM, Worker-safe.
 
@@ -47,23 +49,36 @@ function propsRecordFromBlockState(state: BlockState): Record<string, string> {
   return out;
 }
 
+export function toIdSet(
+  ids: ReadonlySet<string> | readonly string[],
+): ReadonlySet<string> {
+  return ids instanceof Set ? ids : new Set(ids);
+}
+
 /**
  * Walk `schematic.palette` and translate each entry to `targetVersion`,
  * collecting per-entry warnings. The schematic is NOT mutated.
  *
  * If the source and target versions are identical, every entry is treated as
- * clean (the translator short-circuits).
+ * clean (the translator short-circuits). Entries whose block id is in
+ * `loadedModBlockIds` are clean too.
  */
 export function previewVersionMapping(
   schematic: ParsedSchematicProjection,
   targetVersion: MinecraftVersion,
+  loadedModBlockIds: ReadonlySet<string> | readonly string[] = [],
 ): VersionMappingPreview {
   const sourceVersion = schematic.minecraftVersion;
+  const modBlockIds = toIdSet(loadedModBlockIds);
 
   let cleanCount = 0;
   const problematic: ProblematicEntry[] = [];
 
   for (const entry of schematic.palette) {
+    if (modBlockIds.has(entry.blockId)) {
+      cleanCount += 1;
+      continue;
+    }
     const warnings: string[] = [];
     const source = new BlockState({
       Name: entry.blockId,

@@ -62,11 +62,17 @@ export function undoLastSwap(): boolean {
 export function applyVersionMapping(
   targetVersion: MinecraftVersion,
   overrides: VersionMappingOverrides = {},
+  loadedModBlockIds: ReadonlySet<string> | readonly string[] = [],
 ): boolean {
   const state = getEditorState();
   if (state.parseStatus.status !== "ready") return false;
   const prior = state.parseStatus.schematic;
-  const next = applyVersionMappingTransform(prior, targetVersion, overrides);
+  const next = applyVersionMappingTransform(
+    prior,
+    targetVersion,
+    overrides,
+    loadedModBlockIds,
+  );
   _emitEditorState({
     ...state,
     parseStatus: { status: "ready", schematic: next },

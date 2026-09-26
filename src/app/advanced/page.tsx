@@ -29,6 +29,7 @@ import {
 } from "@/components/block-state-picker";
 import { ExportPanel } from "@/components/export-panel";
 import { MaterialList } from "@/components/material-list";
+import { ModsPanel, type ModSearchRequest } from "@/components/mods-panel";
 import { ThreeDPreview } from "@/components/three-d-preview";
 import { VersionMappingPanel } from "@/components/version-mapping-panel";
 
@@ -170,12 +171,14 @@ function previewBody(parseStatus: ParseStatus): React.ReactNode {
 function materialListBody(
   parseStatus: ParseStatus,
   onRequestSwap: (entry: ParsedSchematicPaletteEntry) => void,
+  onSearchMod: (namespace: string) => void,
 ): React.ReactNode {
   if (parseStatus.status === "ready") {
     return (
       <MaterialList
         palette={parseStatus.schematic.palette}
         onRequestSwap={onRequestSwap}
+        onSearchMod={onSearchMod}
       />
     );
   }
@@ -186,6 +189,22 @@ function materialListBody(
 function versionMappingBody(parseStatus: ParseStatus): React.ReactNode {
   if (parseStatus.status === "ready") {
     return <VersionMappingPanel schematic={parseStatus.schematic} />;
+  }
+  if (parseStatus.status === "error") return UNAVAILABLE_LABEL;
+  return <PanelSkeleton />;
+}
+
+function modsBody(
+  parseStatus: ParseStatus,
+  searchRequest: ModSearchRequest | null,
+): React.ReactNode {
+  if (parseStatus.status === "ready") {
+    return (
+      <ModsPanel
+        schematic={parseStatus.schematic}
+        searchRequest={searchRequest}
+      />
+    );
   }
   if (parseStatus.status === "error") return UNAVAILABLE_LABEL;
   return <PanelSkeleton />;
@@ -282,7 +301,7 @@ function EditorShell({
   );
 }
 
-type RightTabId = "materials" | "version" | "export";
+type RightTabId = "materials" | "version" | "mods" | "export";
 
 function RightTabs({
   parseStatus,
@@ -298,11 +317,20 @@ function RightTabs({
   inputFilename: string | null;
 }) {
   // forceMount on each TabsContent keeps internal state (search/sort,
-  // selected target version + per-version decisions, in-flight export) alive
-  // when the user flips between tabs. Visibility is driven by an inline
-  // display toggle keyed off `activeTab` so the active panel can still
-  // participate in flex layout.
+  // selected target version + per-version decisions, mod search results,
+  // in-flight export) alive when the user flips between tabs. Visibility is
+  // driven by an inline display toggle keyed off `activeTab` so the active
+  // panel can still participate in flex layout.
   const [activeTab, setActiveTab] = React.useState<RightTabId>("materials");
+  // "Search CurseForge" from a Material List row: jump to the Mods tab with
+  // the block's namespace as the search text. A fresh object per click so
+  // repeating the same namespace still re-applies it.
+  const [modSearchRequest, setModSearchRequest] =
+    React.useState<ModSearchRequest | null>(null);
+  const handleSearchMod = React.useCallback((namespace: string) => {
+    setModSearchRequest({ text: namespace });
+    setActiveTab("mods");
+  }, []);
 
   return (
     <Card
@@ -334,6 +362,7 @@ function RightTabs({
           <TabsLineList>
             <TabsLineTrigger value="materials">Material List</TabsLineTrigger>
             <TabsLineTrigger value="version">Version Mapping</TabsLineTrigger>
+            <TabsLineTrigger value="mods">Mods</TabsLineTrigger>
             <TabsLineTrigger value="export">Export</TabsLineTrigger>
           </TabsLineList>
           <TabsContent
@@ -375,7 +404,7 @@ function RightTabs({
                 </Button>
               </div>
             ) : null}
-            {materialListBody(parseStatus, onRequestSwap)}
+            {materialListBody(parseStatus, onRequestSwap, handleSearchMod)}
           </TabsContent>
           <TabsContent
             value="version"
@@ -391,6 +420,21 @@ function RightTabs({
             }}
           >
             {versionMappingBody(parseStatus)}
+          </TabsContent>
+          <TabsContent
+            value="mods"
+            forceMount
+            style={{
+              flex: 1,
+              minHeight: 0,
+              display: activeTab === "mods" ? "flex" : "none",
+              flexDirection: "column",
+              gap: "var(--space-2)",
+              color: "var(--text-tertiary)",
+              fontSize: "var(--text-sm)",
+            }}
+          >
+            {modsBody(parseStatus, modSearchRequest)}
           </TabsContent>
           <TabsContent
             value="export"
