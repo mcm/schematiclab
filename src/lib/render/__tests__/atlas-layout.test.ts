@@ -251,6 +251,29 @@ describe("planAtlas", () => {
     expect(plan.dropped).toHaveLength(2);
   });
 
+  it("keeps the atlas width when downscaling a texture wider than the base", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const modTextures = Array.from({ length: 8 }, (_, i) => ({
+      id: `m:block/t${i}`,
+      width: 16,
+      height: 16,
+    }));
+    // A 64-wide strip widens the atlas to 64; downscaling it must not shrink
+    // the retry back to the 32-wide base (4 free cells instead of 8).
+    modTextures.push({ id: "m:block/strip", width: 64, height: 16 });
+    const plan = planAtlas({
+      baseWidth: 32,
+      baseHeight: 32,
+      vanillaRects: {},
+      modTextures,
+      maxSize: 64,
+    });
+    expect(plan.downscaled).toBe(true);
+    expect(plan.width).toBe(64);
+    expect(plan.placements).toHaveLength(8);
+    expect(plan.dropped).toHaveLength(1);
+  });
+
   it("does not warn when everything fits", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     planAtlas({
