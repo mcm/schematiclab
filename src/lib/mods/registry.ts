@@ -12,7 +12,7 @@
 import * as React from "react";
 
 import * as store from "./store";
-import type { LoadedModAssets, LoadedModMeta } from "./types";
+import type { LoadedModAssets, LoadedModMeta, ModBlock } from "./types";
 
 export type LoadedModsSnapshot = readonly LoadedModMeta[];
 
@@ -24,6 +24,7 @@ export interface ModForBlock {
 interface Derived {
   blockIds: ReadonlySet<string>;
   blockToMod: ReadonlyMap<string, ModForBlock>;
+  blocks: ReadonlyMap<string, ModBlock>;
   namespaces: ReadonlySet<string>;
 }
 
@@ -183,15 +184,20 @@ function getDerived(): Derived {
   const snapshot = getSnapshot();
   if (derived?.for === snapshot) return derived.value;
   const blockToMod = new Map<string, ModForBlock>();
+  const blocks = new Map<string, ModBlock>();
   const namespaces = new Set<string>();
   for (const mod of snapshot) {
     for (const ns of mod.namespaces) namespaces.add(ns);
     const owner: ModForBlock = { key: mod.key, modName: mod.modName };
-    for (const block of mod.blocks) blockToMod.set(block.id, owner);
+    for (const block of mod.blocks) {
+      blockToMod.set(block.id, owner);
+      blocks.set(block.id, block);
+    }
   }
   const value: Derived = {
     blockIds: new Set(blockToMod.keys()),
     blockToMod,
+    blocks,
     namespaces,
   };
   derived = { for: snapshot, value };
@@ -206,6 +212,11 @@ export function getLoadedModBlockIds(): ReadonlySet<string> {
 /** The loaded mod providing `id`, or null for vanilla/unknown blocks. */
 export function getModForBlockId(id: string): ModForBlock | null {
   return getDerived().blockToMod.get(id) ?? null;
+}
+
+/** The loaded mod block definition for `id`, or null for vanilla/unknown. */
+export function getLoadedModBlock(id: string): ModBlock | null {
+  return getDerived().blocks.get(id) ?? null;
 }
 
 /** Asset namespaces provided by loaded mods. Stable identity per snapshot. */
