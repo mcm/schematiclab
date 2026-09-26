@@ -139,6 +139,36 @@ describe("assembleResources", () => {
     ).toBeNull();
   });
 
+  it("meshes vanilla models that use sprite-object textures", () => {
+    const { resources } = assemble([]);
+    // `black_stained_glass` uses `{ sprite, force_translucent }` (1.21.4+).
+    expect(quadCount(resources, "minecraft:black_stained_glass")).toBe(6);
+  });
+
+  it("renders a mod model that uses sprite-object textures", () => {
+    const { resources, placeholderBlocks } = assemble([
+      {
+        blockstates: {
+          "create:glassy": {
+            variants: { "": { model: "create:block/glassy" } },
+          },
+        },
+        models: {
+          "create:block/glassy": {
+            parent: "block/cube_all",
+            textures: {
+              all: { sprite: "create:block/casing", force_translucent: true },
+            },
+          },
+        },
+      },
+    ]);
+    expect(placeholderBlocks).toEqual([]);
+    expect(meshTextureRects(resources, "create:glassy")).toEqual([
+      JSON.stringify(CASING_UV),
+    ]);
+  });
+
   it("falls back to the missing texture for unknown texture ids", () => {
     const { resources } = assemble([]);
     expect(

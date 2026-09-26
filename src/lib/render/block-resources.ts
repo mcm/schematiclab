@@ -82,6 +82,23 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /**
+ * `BlockModel.fromJson`, but first reduces 1.21.4+ texture objects
+ * (`{ "sprite": "ns:path", "force_translucent": true }`) to their sprite id,
+ * since deepslate only understands plain string texture values.
+ */
+function blockModelFromJson(data: unknown): BlockModel {
+  if (!isRecord(data) || !isRecord(data.textures)) {
+    return BlockModel.fromJson(data);
+  }
+  const textures: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(data.textures)) {
+    const sprite = isRecord(value) ? value.sprite : value;
+    if (typeof sprite === "string") textures[key] = sprite;
+  }
+  return BlockModel.fromJson({ ...data, textures });
+}
+
+/**
  * Build vanilla block data from the static asset bundle. `models` keys are
  * paths under `models/block/` (e.g. `cube_all`); `blockstates` keys are block
  * paths (e.g. `stone`). Models are flattened here once.
@@ -99,7 +116,7 @@ export function createVanillaBlockData(
   // keys include the `block/` prefix.
   const blockModels = new Map<string, BlockModel>();
   for (const [path, data] of Object.entries(models)) {
-    blockModels.set(`minecraft:block/${path}`, BlockModel.fromJson(data));
+    blockModels.set(`minecraft:block/${path}`, blockModelFromJson(data));
   }
   const provider = {
     getBlockModel: (id: Identifier) => blockModels.get(id.toString()) ?? null,
@@ -236,7 +253,7 @@ export function assembleResources(
 
   const modModels = new Map<string, BlockModel>();
   for (const [id, json] of resolvableModModels(mods, vanilla.blockModels)) {
-    modModels.set(id, BlockModel.fromJson(json));
+    modModels.set(id, blockModelFromJson(json));
   }
   const placeholderModel = BlockModel.fromJson(
     structuredClone(PLACEHOLDER_MODEL_JSON),
