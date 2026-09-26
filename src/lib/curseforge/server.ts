@@ -34,7 +34,27 @@ export function notConfigured(): NextResponse {
   return jsonError(503, "curseforge_not_configured");
 }
 
-export class UpstreamError extends Error {}
+export class UpstreamError extends Error {
+  constructor(
+    message: string,
+    /** Upstream HTTP status, when CurseForge responded at all. */
+    readonly status?: number,
+    /** Parsed `Retry-After`, in milliseconds. */
+    readonly retryAfterMs?: number,
+  ) {
+    super(message);
+  }
+}
+
+function parseRetryAfter(value: string | null): number | undefined {
+  if (value === null) return undefined;
+  const seconds = Number(value);
+  if (value.trim() !== "" && Number.isFinite(seconds) && seconds >= 0) {
+    return seconds * 1000;
+  }
+  const date = Date.parse(value);
+  return Number.isNaN(date) ? undefined : Math.max(0, date - Date.now());
+}
 
 /**
  * GET a CurseForge API path. Throws `UpstreamError` with a generic message on
@@ -58,7 +78,11 @@ export async function curseForgeGet(
     throw new UpstreamError("CurseForge request failed.");
   }
   if (!res.ok) {
-    throw new UpstreamError(`CurseForge returned HTTP ${res.status}.`);
+    throw new UpstreamError(
+      `CurseForge returned HTTP ${res.status}.`,
+      res.status,
+      parseRetryAfter(res.headers.get("Retry-After")),
+    );
   }
   try {
     return await res.json();

@@ -330,7 +330,10 @@ describe("curseforge proxy routes", () => {
       fetchMock.mockImplementation(async (input: string) => {
         const index = Number(new URL(input).searchParams.get("index"));
         if (index === 50 && failures++ === 0) {
-          return new Response("busy", { status: 429 });
+          return new Response("busy", {
+            status: 429,
+            headers: { "Retry-After": "0" },
+          });
         }
         return jsonResponse({
           data: [{ id: index + 1, fileDate: "2020-01-01T00:00:00Z" }],
@@ -347,7 +350,12 @@ describe("curseforge proxy routes", () => {
       const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
       fetchMock.mockImplementation(async (input: string) => {
         const index = Number(new URL(input).searchParams.get("index"));
-        if (index === 100) return new Response("busy", { status: 429 });
+        if (index === 100) {
+          return new Response("busy", {
+            status: 503,
+            headers: { "Retry-After": "0" },
+          });
+        }
         return jsonResponse({
           data: [{ id: index + 1, fileDate: "2020-01-01T00:00:00Z" }],
           pagination: { totalCount: 150 },
@@ -363,6 +371,33 @@ describe("curseforge proxy routes", () => {
       );
       expect(retried).toHaveLength(2);
       expect(warn).toHaveBeenCalledTimes(1);
+      warn.mockRestore();
+    });
+
+    it.each([
+      ["a non-transient status", 404, null],
+      ["a Retry-After beyond the cap", 429, "60"],
+    ])("does not retry %s", async (_label, status, retryAfter) => {
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+      fetchMock.mockImplementation(async (input: string) => {
+        const index = Number(new URL(input).searchParams.get("index"));
+        if (index === 50) {
+          return new Response("no", {
+            status,
+            headers: retryAfter === null ? {} : { "Retry-After": retryAfter },
+          });
+        }
+        return jsonResponse({
+          data: [{ id: index + 1, fileDate: "2020-01-01T00:00:00Z" }],
+          pagination: { totalCount: 100 },
+        });
+      });
+      const res = await files("328085", "gameVersion=1.20.1");
+      expect(res.headers.get("Cache-Control")).toBe("no-store");
+      const page50 = fetchMock.mock.calls.filter(
+        (c) => new URL(c[0] as string).searchParams.get("index") === "50",
+      );
+      expect(page50).toHaveLength(1);
       warn.mockRestore();
     });
 
