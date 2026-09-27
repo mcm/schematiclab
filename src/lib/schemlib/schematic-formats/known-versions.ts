@@ -50,4 +50,6 @@ export const KNOWN_VERSIONS: Record<string, MinecraftVersion> = {
   "26.1": { platform: "java", versionNumber: [26, 1, 0], dataVersion: 4786 },
   "26.1.1": { platform: "java", versionNumber: [26, 1, 1], dataVersion: 4788 },
   "26.1.2": { platform: "java", versionNumber: [26, 1, 2], dataVersion: 4790 },
+  "26.2": { platform: "java", versionNumber: [26, 2, 0], dataVersion: 4903 },
+  "26.3": { platform: "java", versionNumber: [26, 3, 0], dataVersion: 5023 },
 };

@@ -43,7 +43,7 @@ This is a TypeScript port of a Python library, and file headers name the Python 
 
 **`FORMATS.md` is the source of truth** for format ids, canonical extensions (one per format family) and output rules. The `JSON` intermediate format is dev-only and must never appear as an output choice in production UI.
 
-Version translation lives in `schematic-formats/version-mapping.ts` and `data/translate.ts`. It walks a codegen'd chain of per-anchor-version block-state diffs (one anchor per major.minor), uses a flatten table for 1.12 ↔ 1.13, and chains Forge 1.12 `name[variant=...]` states through `id:meta`. Lossy translations report through `onWarning`. Doors get a cross-block fixup (`fixupDoors`) after per-block mapping.
+Version translation lives in `schematic-formats/version-mapping.ts` and `data/translate.ts`. It walks a codegen'd chain of per-anchor-version block-state diffs (one anchor per major.minor up to 1.20.1, then one per release that changed blocks, since Mojang now ships block changes in patch "drops"; add new ones to `ANCHOR_VERSIONS` in `data/types.ts` and regenerate), uses a flatten table for 1.12 ↔ 1.13, and chains Forge 1.12 `name[variant=...]` states through `id:meta`. Lossy translations report through `onWarning`. Doors get a cross-block fixup (`fixupDoors`) after per-block mapping.
 
 ### Worker boundary
 

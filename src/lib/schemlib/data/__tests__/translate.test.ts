@@ -10,15 +10,31 @@ import { anchorFor, translateBlockState } from "../translate";
 const V = getVersion;
 
 describe("anchorFor", () => {
-  it("buckets patch versions to their major.minor anchor", () => {
+  it("buckets pre-1.20 patch versions to their major.minor anchor", () => {
     expect(anchorFor(V("1.13.1"))).toBe("1.13.2");
     expect(anchorFor(V("1.16.2"))).toBe("1.16.5");
-    expect(anchorFor(V("1.20.4"))).toBe("1.20.1");
+  });
+
+  it("uses the newest same-major.minor anchor at or below the version", () => {
+    expect(anchorFor(V("1.20"))).toBe("1.20.1");
+    expect(anchorFor(V("1.20.4"))).toBe("1.20.3");
+    expect(anchorFor(V("1.21.8"))).toBe("1.21.6");
+    expect(anchorFor(V("1.21.11"))).toBe("1.21.9");
+    expect(anchorFor(V("26.1.2"))).toBe("26.1");
+  });
+
+  it("falls back to the newest anchor below when none shares major.minor", () => {
+    // 1.21 and 1.21.1 have the same blocks as 1.20.5.
+    expect(anchorFor(V("1.21.1"))).toBe("1.20.5");
   });
 
   it("clamps newer-than-latest to the latest anchor", () => {
-    // 1.21.9 is in KNOWN_VERSIONS; our anchor only goes to 1.21.4.
-    expect(anchorFor(V("1.21.9"))).toBe("1.21.4");
+    const snapshot = {
+      platform: "java",
+      versionNumber: [26, 4, 0],
+      dataVersion: 5119,
+    } as const;
+    expect(anchorFor(snapshot)).toBe("26.3");
   });
 });
 
@@ -99,5 +115,56 @@ describe("translateBlockState", () => {
       V("1.21.4"),
     );
     expect(out.Name).toBe("minecraft:short_grass");
+  });
+});
+
+describe("translateBlockState across 1.20+ drops", () => {
+  it("renames grass → short_grass from 1.20.3", () => {
+    const grass = new BlockState({ Name: "minecraft:grass" });
+    expect(translateBlockState(grass, V("1.20.2"), V("1.20.3")).Name).toBe(
+      "minecraft:short_grass",
+    );
+    const short = new BlockState({ Name: "minecraft:short_grass" });
+    expect(translateBlockState(short, V("1.20.4"), V("1.20.1")).Name).toBe(
+      "minecraft:grass",
+    );
+  });
+
+  it("renames chain ↔ iron_chain across 1.21.9", () => {
+    const chain = new BlockState({
+      Name: "minecraft:chain",
+      Properties: { axis: "y", waterlogged: "false" },
+    });
+    const forward = translateBlockState(chain, V("1.21.4"), V("26.3"));
+    expect(forward.toString()).toBe(
+      "minecraft:iron_chain[axis=y,waterlogged=false]",
+    );
+    expect(translateBlockState(forward, V("26.3"), V("1.21.8")).Name).toBe(
+      "minecraft:chain",
+    );
+  });
+
+  it("replaces active with creaking_heart_state from 1.21.5", () => {
+    const heart = new BlockState({
+      Name: "minecraft:creaking_heart",
+      Properties: { active: "true", axis: "y", natural: "true" },
+    });
+    expect(
+      translateBlockState(heart, V("1.21.4"), V("1.21.5")).toString(),
+    ).toBe(
+      "minecraft:creaking_heart[axis=y,creaking_heart_state=uprooted,natural=true]",
+    );
+  });
+
+  it("drops blocks from a later 1.21 drop when targeting an earlier one", () => {
+    const warnings: string[] = [];
+    const out = translateBlockState(
+      new BlockState({ Name: "minecraft:pale_oak_planks" }),
+      V("1.21.4"),
+      V("1.21.1"),
+      { onWarning: (m) => warnings.push(m) },
+    );
+    expect(out.Name).toBe("minecraft:air");
+    expect(warnings).toHaveLength(1);
   });
 });

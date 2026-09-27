@@ -75,14 +75,31 @@ export const MANUAL_OVERRIDES: readonly ManualVersionOverride[] = [
     },
   },
 
-  // ── 1.20.1 → 1.21.4 ────────────────────────────────────────────────────
-  // In 1.20.5 Mojang renamed `minecraft:grass` (the short grass plant) to
+  // ── 1.20.2 → 1.20.3 ────────────────────────────────────────────────────
+  // In 1.20.3 Mojang renamed `minecraft:grass` (the short grass plant) to
   // `minecraft:short_grass` to disambiguate from `minecraft:grass_block`.
   {
-    from: "1.20.1",
-    to: "1.21.4",
+    from: "1.20.2",
+    to: "1.20.3",
     renamedBlocks: {
       "minecraft:grass": "minecraft:short_grass",
+    },
+  },
+
+  // ── 1.21.4 → 1.21.5 ────────────────────────────────────────────────────
+  // `creaking_heart[active=true|false]` became `creaking_heart_state` with
+  // `uprooted` / `dormant` / `awake`. Overrides can't map one property onto
+  // another, so forward translation drops `active` and uses the vanilla
+  // default `uprooted` (codegen's first-value default); backward drops
+  // `creaking_heart_state` and restores `active=false`.
+
+  // ── 1.21.6 → 1.21.9 ────────────────────────────────────────────────────
+  // The Copper Age drop added copper chains and renamed the original chain.
+  {
+    from: "1.21.6",
+    to: "1.21.9",
+    renamedBlocks: {
+      "minecraft:chain": "minecraft:iron_chain",
     },
   },
 

@@ -96,6 +96,13 @@ describe("toDisplayProjection", () => {
     }
   });
 
+  it("applies renames from 1.21+ drops", () => {
+    const display = toDisplayProjection(
+      projection("1.21.4", [entry("minecraft:chain", { axis: "x" })]),
+    );
+    expect(display.palette[0]?.blockId).toBe("minecraft:iron_chain");
+  });
+
   it("flattens Forge 1.12 block states", () => {
     const display = toDisplayProjection(
       projection("1.12.2", [entry("minecraft:planks", { variant: "spruce" })]),
