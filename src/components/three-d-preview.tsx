@@ -18,6 +18,7 @@ import {
   isInvisibleBlockId,
   subscribeMinecraftResources,
 } from "@/lib/render/minecraft-resources";
+import { toDisplayProjection } from "@/lib/render/display-translation";
 
 interface ThreeDPreviewProps {
   projection: ParsedSchematicProjection;
@@ -295,7 +296,15 @@ function swapStructureWithoutFullRebuild(
   priv.invisibleBlocksMesh = priv.getInvisibleBlocksMesh();
 }
 
-export function ThreeDPreview({ projection }: ThreeDPreviewProps) {
+export function ThreeDPreview({
+  projection: editedProjection,
+}: ThreeDPreviewProps) {
+  // Render a copy translated to the asset bundle's Minecraft version, so
+  // blocks renamed since the schematic's version still find their models.
+  const projection = React.useMemo(
+    () => toDisplayProjection(editedProjection),
+    [editedProjection],
+  );
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
   const apiRef = React.useRef<CameraApi | null>(null);
   // Camera of the last mesh build. Reused when only the resources change
