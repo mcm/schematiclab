@@ -10,13 +10,14 @@ import { anchorFor, translateBlockState } from "../translate";
 const V = getVersion;
 
 describe("anchorFor", () => {
-  it("buckets pre-1.20 patch versions to their major.minor anchor", () => {
+  it("buckets versions up to 1.20.1 to their major.minor line anchor", () => {
     expect(anchorFor(V("1.13.1"))).toBe("1.13.2");
     expect(anchorFor(V("1.16.2"))).toBe("1.16.5");
+    // 1.20.1 is above 1.20 but is the anchor for the whole 1.20 line start.
+    expect(anchorFor(V("1.20"))).toBe("1.20.1");
   });
 
   it("uses the newest same-major.minor anchor at or below the version", () => {
-    expect(anchorFor(V("1.20"))).toBe("1.20.1");
     expect(anchorFor(V("1.20.4"))).toBe("1.20.3");
     expect(anchorFor(V("1.21.8"))).toBe("1.21.6");
     expect(anchorFor(V("1.21.11"))).toBe("1.21.9");
@@ -24,8 +25,9 @@ describe("anchorFor", () => {
   });
 
   it("falls back to the newest anchor below when none shares major.minor", () => {
-    // 1.21 and 1.21.1 have the same blocks as 1.20.5.
+    // 1.21–1.21.3 have the same (non-experimental) blocks as 1.20.5.
     expect(anchorFor(V("1.21.1"))).toBe("1.20.5");
+    expect(anchorFor(V("1.21.3"))).toBe("1.20.5");
   });
 
   it("clamps newer-than-latest to the latest anchor", () => {
@@ -161,7 +163,7 @@ describe("translateBlockState across 1.20+ drops", () => {
     const out = translateBlockState(
       new BlockState({ Name: "minecraft:pale_oak_planks" }),
       V("1.21.4"),
-      V("1.21.1"),
+      V("1.21.3"),
       { onWarning: (m) => warnings.push(m) },
     );
     expect(out.Name).toBe("minecraft:air");

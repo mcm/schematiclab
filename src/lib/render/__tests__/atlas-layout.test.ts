@@ -116,14 +116,26 @@ describe("planAtlas", () => {
       ...rest
     } = plan.uvMap;
     expect(rest).toEqual(legacyUvMap(VANILLA, 1024, 1024));
-    // The reserved cells reuse free space inside the vanilla atlas.
     expect(missingUv).toBeDefined();
     expect(transparentUv).toBeDefined();
-    expect(findFreeCells(Object.values(VANILLA), 1024, 1024, 2)).toEqual([
-      plan.missing,
-      plan.transparent,
-    ]);
-    expect(plan.missing[2]).toBe(CELL_SIZE);
+    // The reserved cells reuse free space inside the vanilla atlas: whole
+    // cells within bounds, clear of every vanilla texture and of each other.
+    const overlaps = (a: PixelRect, b: PixelRect) =>
+      a[0] < b[0] + b[2] &&
+      b[0] < a[0] + a[2] &&
+      a[1] < b[1] + b[3] &&
+      b[1] < a[1] + a[3];
+    for (const cell of [plan.missing, plan.transparent]) {
+      expect(cell[2]).toBe(CELL_SIZE);
+      expect(cell[3]).toBe(CELL_SIZE);
+      expect(cell[0] + cell[2]).toBeLessThanOrEqual(1024);
+      expect(cell[1] + cell[3]).toBeLessThanOrEqual(1024);
+      const clashes = Object.entries(VANILLA).filter(([, rect]) =>
+        overlaps(cell, rect),
+      );
+      expect(clashes).toEqual([]);
+    }
+    expect(overlaps(plan.missing, plan.transparent)).toBe(false);
   });
 
   it("shelf-packs mod textures below the vanilla atlas", () => {

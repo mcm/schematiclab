@@ -17,7 +17,12 @@ export function unappliedTargetVersionId(
   targetVersionId: string | null,
   current: MinecraftVersion,
 ): string | null {
-  if (targetVersionId === null) return null;
+  if (
+    targetVersionId === null ||
+    !Object.hasOwn(KNOWN_VERSIONS, targetVersionId)
+  ) {
+    return null;
+  }
   const target = KNOWN_VERSIONS[targetVersionId];
   if (!target || versionsEqual(target, current)) return null;
   return targetVersionId;

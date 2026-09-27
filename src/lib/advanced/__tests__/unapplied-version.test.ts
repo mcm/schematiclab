@@ -20,5 +20,7 @@ describe("unappliedTargetVersionId", () => {
 
   it("is null for an unknown version id", () => {
     expect(unappliedTargetVersionId("0.0.1", V1_21)).toBeNull();
+    // Inherited object keys aren't version ids.
+    expect(unappliedTargetVersionId("toString", V1_21)).toBeNull();
   });
 });
