@@ -132,13 +132,19 @@ export function detectSchematicType(input: string | Uint8Array): string {
     return "StructurizeBlueprint";
   }
 
-  if (parsed.kind === "nbt" && parsed.value.name === "Schematic") {
-    const versionTag = parsed.value.get("Version");
-    if (versionTag === undefined) {
-      throw new Error("Sponge schematic missing 'Version' tag");
-    }
-    const version = versionTag.toObject();
-    return `Sponge[v${version}]`;
+  // Sponge v1/v2 keep the schematic fields directly in the root compound.
+  // WorldEdit (and our writers) name that root "Schematic", but the spec
+  // doesn't require it and other tools write it unnamed, so detect by the
+  // required `Version` and `BlockData` fields rather than the name (the
+  // Python original checks only the name). Legacy MCEdit `.schematic` roots
+  // are also named "Schematic" but have neither, so they stay unrecognized.
+  if (
+    parsed.kind === "nbt" &&
+    has(parsed, "Version") &&
+    has(parsed, "BlockData")
+  ) {
+    const version = parsed.value.get("Version")?.toObject();
+    return `Sponge[v${String(version)}]`;
   }
 
   // Sponge v3 wraps everything in a child "Schematic" compound under an
