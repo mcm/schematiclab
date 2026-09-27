@@ -21,8 +21,6 @@ import {
   type ParseStatus,
 } from "@/lib/editor-state";
 import { applyBlockSwap, undoLastSwap } from "@/lib/editor-state-edits";
-import { useAdvancedTargetVersion } from "@/lib/advanced/target-version-state";
-import { unappliedTargetVersionId } from "@/lib/advanced/unapplied-version";
 import type { ParsedSchematicPaletteEntry } from "@/lib/convert";
 import {
   BlockStatePicker,
@@ -33,7 +31,6 @@ import { ExportPanel } from "@/components/export-panel";
 import { MaterialList } from "@/components/material-list";
 import { ModsPanel, type ModSearchRequest } from "@/components/mods-panel";
 import { ThreeDPreview } from "@/components/three-d-preview";
-import { UnappliedVersionDialog } from "@/components/unapplied-version-dialog";
 import { VersionMappingPanel } from "@/components/version-mapping-panel";
 
 const NARROW_VIEWPORT_QUERY = "(max-width: 899.98px)";
@@ -216,12 +213,14 @@ function modsBody(
 function exportBody(
   parseStatus: ParseStatus,
   inputFilename: string | null,
+  onGoToVersionMapping: () => void,
 ): React.ReactNode {
   if (parseStatus.status === "ready") {
     return (
       <ExportPanel
         schematic={parseStatus.schematic}
         inputFilename={inputFilename ?? "schematic"}
+        onGoToVersionMapping={onGoToVersionMapping}
       />
     );
   }
@@ -338,33 +337,9 @@ function RightTabs({
     setModSearchRequest({ text: namespace });
     setActiveTab("mods");
   }, []);
-
-  // Export writes the schematic as-is, so leaving Version Mapping for Export
-  // with a target version picked but not applied asks for confirmation.
-  const [targetVersionId] = useAdvancedTargetVersion();
-  const currentVersion =
-    parseStatus.status === "ready"
-      ? parseStatus.schematic.minecraftVersion
-      : null;
-  const unappliedVersion =
-    currentVersion === null
-      ? null
-      : unappliedTargetVersionId(targetVersionId, currentVersion);
-  const [confirmingExport, setConfirmingExport] = React.useState(false);
-  const handleTabChange = React.useCallback(
-    (next: string) => {
-      if (
-        activeTab === "version" &&
-        next === "export" &&
-        unappliedVersion !== null
-      ) {
-        setConfirmingExport(true);
-        return;
-      }
-      setActiveTab(next as RightTabId);
-    },
-    [activeTab, unappliedVersion],
-  );
+  const handleGoToVersionMapping = React.useCallback(() => {
+    setActiveTab("version");
+  }, []);
 
   return (
     <Card
@@ -385,7 +360,7 @@ function RightTabs({
       >
         <TabsLine
           value={activeTab}
-          onValueChange={handleTabChange}
+          onValueChange={(next) => setActiveTab(next as RightTabId)}
           style={{
             flex: 1,
             minHeight: 0,
@@ -483,21 +458,9 @@ function RightTabs({
               fontSize: "var(--text-sm)",
             }}
           >
-            {exportBody(parseStatus, inputFilename)}
+            {exportBody(parseStatus, inputFilename, handleGoToVersionMapping)}
           </TabsContent>
         </TabsLine>
-        {unappliedVersion !== null && currentVersion !== null ? (
-          <UnappliedVersionDialog
-            open={confirmingExport}
-            targetVersion={unappliedVersion}
-            currentVersion={currentVersion.versionNumber.join(".")}
-            onStay={() => setConfirmingExport(false)}
-            onContinue={() => {
-              setConfirmingExport(false);
-              setActiveTab("export");
-            }}
-          />
-        ) : null}
       </CardContent>
     </Card>
   );

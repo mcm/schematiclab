@@ -10,12 +10,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@iamthemcmaster/ui";
-import { IconDownload, IconLoader2 } from "@tabler/icons-react";
+import { IconDownload, IconInfoCircle, IconLoader2 } from "@tabler/icons-react";
 import type {
   ParsedSchematicProjection,
   SchematicFormatId,
 } from "@/lib/convert";
 import { SUPPORTED_FORMATS } from "@/lib/convert";
+import { useAdvancedTargetVersion } from "@/lib/advanced/target-version-state";
+import { unappliedTargetVersionId } from "@/lib/advanced/unapplied-version";
 import { cancel, exportInWorker } from "@/lib/convert-client";
 import { setOutputFormat, useEditorState } from "@/lib/editor-state";
 import { InlineError } from "./inline-error";
@@ -73,10 +75,24 @@ function triggerDownload(
 interface ExportPanelProps {
   schematic: ParsedSchematicProjection;
   inputFilename: string;
+  /** Switches to the Version Mapping tab. */
+  onGoToVersionMapping: () => void;
 }
 
-export function ExportPanel({ schematic, inputFilename }: ExportPanelProps) {
+export function ExportPanel({
+  schematic,
+  inputFilename,
+  onGoToVersionMapping,
+}: ExportPanelProps) {
   const { outputFormat } = useEditorState();
+  // Export writes the schematic in its current version. A target picked in
+  // Version Mapping but never applied gets a notice and a labelled button.
+  const [targetVersionId] = useAdvancedTargetVersion();
+  const unappliedVersion = unappliedTargetVersionId(
+    targetVersionId,
+    schematic.minecraftVersion,
+  );
+  const currentVersion = schematic.minecraftVersion.versionNumber.join(".");
 
   const [isExporting, setIsExporting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -175,6 +191,14 @@ export function ExportPanel({ schematic, inputFilename }: ExportPanelProps) {
         </Select>
       </div>
 
+      {unappliedVersion !== null ? (
+        <UnappliedVersionNotice
+          targetVersion={unappliedVersion}
+          currentVersion={currentVersion}
+          onGoToVersionMapping={onGoToVersionMapping}
+        />
+      ) : null}
+
       <InlineError message={error} />
 
       <div style={{ flex: 1 }} />
@@ -241,9 +265,64 @@ export function ExportPanel({ schematic, inputFilename }: ExportPanelProps) {
           }
         >
           <IconDownload size={16} aria-hidden="true" />
-          Export
+          {unappliedVersion !== null ? `Export as ${currentVersion}` : "Export"}
         </Button>
       )}
+    </div>
+  );
+}
+
+function UnappliedVersionNotice({
+  targetVersion,
+  currentVersion,
+  onGoToVersionMapping,
+}: {
+  targetVersion: string;
+  currentVersion: string;
+  onGoToVersionMapping: () => void;
+}) {
+  return (
+    <div
+      role="status"
+      style={{
+        display: "flex",
+        alignItems: "flex-start",
+        gap: "var(--space-2)",
+        padding: "var(--space-3) var(--space-4)",
+        borderRadius: "var(--radius-md)",
+        border: "1px solid var(--border-accent)",
+        background: "var(--accent-tint)",
+        color: "var(--text-primary)",
+        fontSize: "var(--text-sm)",
+        lineHeight: 1.4,
+      }}
+    >
+      <IconInfoCircle
+        size={18}
+        aria-hidden
+        style={{ flexShrink: 0, marginTop: 1, color: "var(--text-accent)" }}
+      />
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-start",
+          gap: "var(--space-2)",
+        }}
+      >
+        <span>
+          Minecraft {targetVersion} is selected in Version Mapping but not
+          applied. This export will be Minecraft {currentVersion}.
+        </span>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onGoToVersionMapping}
+        >
+          Go to Version Mapping
+        </Button>
+      </div>
     </div>
   );
 }

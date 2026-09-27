@@ -1,6 +1,6 @@
 // Whether the Version Mapping tab holds a target version the user picked but
-// never applied. Export writes the schematic as-is, so the Advanced Editor
-// confirms before moving from Version Mapping to Export in that state.
+// never applied. Export writes the schematic as-is, so the Export panel shows
+// a notice (and names the version on its button) in that state.
 
 import {
   KNOWN_VERSIONS,
