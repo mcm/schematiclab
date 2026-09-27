@@ -283,7 +283,6 @@ function UnappliedVersionNotice({
 }) {
   return (
     <div
-      role="status"
       style={{
         display: "flex",
         alignItems: "flex-start",
@@ -310,7 +309,8 @@ function UnappliedVersionNotice({
           gap: "var(--space-2)",
         }}
       >
-        <span>
+        {/* Only the message is a live region; the button stays outside it. */}
+        <span role="status">
           Minecraft {targetVersion} is selected in Version Mapping but not
           applied. This export will be Minecraft {currentVersion}.
         </span>
