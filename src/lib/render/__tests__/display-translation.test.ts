@@ -5,6 +5,7 @@ import type {
   ParsedSchematicPaletteEntry,
   ParsedSchematicProjection,
 } from "../../convert";
+import { ANCHOR_VERSIONS } from "../../schemlib/data/types";
 import { KNOWN_VERSIONS } from "../../schemlib/schematic-formats/version-mapping";
 import {
   BUNDLE_MINECRAFT_VERSION,
@@ -68,8 +69,15 @@ describe("minecraftVersionFromMcmeta", () => {
     ).toThrow("24w14a");
   });
 
-  it("describes the committed bundle", () => {
-    expect(BUNDLE_MINECRAFT_VERSION.versionNumber).toEqual([26, 2, 0]);
+  // Regenerating the bundle for a version newer than the translation data
+  // leaves blocks renamed in between unmapped: add an anchor to
+  // ANCHOR_VERSIONS and run `pnpm gen:translations`.
+  it("is covered by the translation anchors", () => {
+    const [major, minor] = BUNDLE_MINECRAFT_VERSION.versionNumber;
+    const anchorLines = ANCHOR_VERSIONS.map((anchor) =>
+      anchor.split(".").slice(0, 2).join("."),
+    );
+    expect(anchorLines).toContain(`${major}.${minor}`);
   });
 });
 
