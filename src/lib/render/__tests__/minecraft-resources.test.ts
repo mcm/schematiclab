@@ -1,7 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { strToU8, zipSync } from "fflate";
+
 import type { LoadedModAssets } from "../../mods/types";
-import { decodeModTextures } from "../minecraft-resources";
+import {
+  decodeModTextures,
+  entityTexturesFromZip,
+} from "../minecraft-resources";
 
 function mod(textures: Record<string, Blob>): LoadedModAssets {
   return { blockstates: {}, models: {}, textures, textureMeta: {} };
@@ -30,5 +35,20 @@ describe("decodeModTextures", () => {
     expect(bitmaps.get("m:block/b")).toEqual({ source: later });
     expect(bitmaps.has("m:block/c")).toBe(false);
     expect(warn).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("entityTexturesFromZip", () => {
+  it("keys PNGs by minecraft texture id and skips other files", async () => {
+    const textures = entityTexturesFromZip(
+      zipSync({
+        "entity/chest/normal.png": strToU8("chest"),
+        "entity/readme.txt": strToU8("skip me"),
+      }),
+    );
+    expect(Object.keys(textures)).toEqual(["minecraft:entity/chest/normal"]);
+    const blob = textures["minecraft:entity/chest/normal"];
+    expect(blob?.type).toBe("image/png");
+    expect(await blob?.text()).toBe("chest");
   });
 });

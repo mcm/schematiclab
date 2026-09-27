@@ -5,7 +5,9 @@
 // Modded blocks that can't be rendered faithfully (no blockstate, missing or
 // cyclic model, custom `loader` model, no geometry, missing texture) fall back
 // to a full cube with the magenta/black "missing" texture so they never
-// silently disappear from the preview.
+// silently disappear from the preview. So do `minecraft:` ids the vanilla
+// bundle doesn't know (blocks renamed or removed since the schematic's
+// version, typos in a swap target).
 
 import {
   BlockDefinition,
@@ -16,7 +18,12 @@ import {
   type UV,
 } from "deepslate";
 
-import { MISSING_TEXTURE_ID, qualifyId } from "./atlas-layout";
+import {
+  MISSING_TEXTURE_ID,
+  TRANSPARENT_TEXTURE_ID,
+  qualifyId,
+} from "./atlas-layout";
+import { isSupersededEntityTexture } from "./special-textures";
 
 /** Model id of the placeholder cube. */
 export const MISSING_MODEL_ID = "schematiclab:block/missing";
@@ -66,7 +73,10 @@ export interface ModBlockAssets {
 export interface AssembleResourcesInput {
   vanilla: VanillaBlockData;
   mods: readonly ModBlockAssets[];
-  /** Texture id → normalized UV; must contain `MISSING_TEXTURE_ID`. */
+  /**
+   * Texture id → normalized UV; must contain `MISSING_TEXTURE_ID`. Without
+   * `TRANSPARENT_TEXTURE_ID`, superseded entity textures render as missing.
+   */
   uvMap: Readonly<Record<string, UV>>;
   atlasImage: ImageData;
 }
@@ -245,8 +255,8 @@ function isRenderableBlockstate(
 
 /**
  * Assemble a deepslate `Resources` from vanilla data, loaded mods' assets and
- * a prebuilt atlas. Any non-`minecraft` block id without a renderable
- * blockstate resolves to the placeholder cube.
+ * a prebuilt atlas. Any block id without a renderable blockstate resolves
+ * to the placeholder cube.
  */
 export function assembleResources(
   input: AssembleResourcesInput,
@@ -296,6 +306,7 @@ export function assembleResources(
   }
 
   const missingUv = uvMap[MISSING_TEXTURE_ID];
+  const transparentUv = uvMap[TRANSPARENT_TEXTURE_ID] ?? missingUv;
   // Shader half-texel inset; the atlas may be non-square once mod textures
   // are packed in, so use the larger per-axis texel (smaller dimension).
   const pixelSize = 1 / Math.min(atlasImage.width, atlasImage.height);
@@ -306,8 +317,7 @@ export function assembleResources(
       const key = id.toString();
       const definition =
         vanilla.blockDefinitions.get(key) ?? modDefinitions.get(key);
-      if (definition !== undefined) return definition;
-      return id.namespace === "minecraft" ? null : placeholder;
+      return definition ?? placeholder;
     },
     getBlockModel(id: Identifier) {
       return getModel(id.toString());
@@ -316,14 +326,17 @@ export function assembleResources(
       return atlasImage;
     },
     getTextureUV(id: Identifier) {
-      return uvMap[id.toString()] ?? missingUv;
+      const key = id.toString();
+      const uv = uvMap[key];
+      if (uv !== undefined) return uv;
+      return isSupersededEntityTexture(key) ? transparentUv : missingUv;
     },
     getPixelSize() {
       return pixelSize;
     },
     getBlockFlags(id: Identifier): BlockFlags | null {
       const key = id.toString();
-      if (id.namespace === "minecraft") {
+      if (vanilla.blockDefinitions.has(key)) {
         return { opaque: vanilla.opaque.has(key) };
       }
       const definition = modDefinitions.get(key);
