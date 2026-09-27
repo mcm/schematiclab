@@ -21,7 +21,6 @@ export type AnchorVersion =
   | "1.20.2"
   | "1.20.3"
   | "1.20.5"
-  | "1.21.2"
   | "1.21.4"
   | "1.21.5"
   | "1.21.6"
@@ -35,7 +34,10 @@ export type AnchorVersion =
  * Up to 1.20 there is one anchor per major.minor. From 1.20 on Mojang changes
  * blocks in patch releases ("drops"), so there is an anchor at every release
  * whose block registry or properties changed; releases in between share the
- * previous anchor's schema.
+ * previous anchor's schema. Blocks that only shipped behind an experimental
+ * datapack don't count: 1.21.2's registry added the pale garden for the
+ * `winter_drop` experiment, but it only became vanilla in 1.21.4, so 1.21.2
+ * and 1.21.3 share 1.20.5's anchor.
  */
 export const ANCHOR_VERSIONS = [
   "1.12.2",
@@ -50,7 +52,6 @@ export const ANCHOR_VERSIONS = [
   "1.20.2",
   "1.20.3",
   "1.20.5",
-  "1.21.2",
   "1.21.4",
   "1.21.5",
   "1.21.6",

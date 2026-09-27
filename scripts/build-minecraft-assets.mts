@@ -21,8 +21,10 @@
 //   node --experimental-strip-types scripts/build-minecraft-assets.mts
 //   (wired up as `pnpm gen:mc-assets`). Builds the newest version on mcmeta;
 //   set MCMETA_VERSION (e.g. `26.2-snapshot-8`) to rebuild a specific one.
+//   Outputs are staged and only copied into `public/minecraft-assets/` once
+//   every download has succeeded, so a failed run leaves the bundle as it was.
 
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import {
   copyFileSync,
   mkdirSync,
@@ -51,7 +53,15 @@ const OPAQUE_BLOCKS_URL =
   "https://raw.githubusercontent.com/misode/deepslate/main/website/src/components/blocks.json";
 
 function curl(url: string, outPath: string) {
-  execSync(`curl -sfL "${url}" -o "${outPath}"`, { stdio: "inherit" });
+  execFileSync("curl", ["-sfL", url, "-o", outPath], { stdio: "inherit" });
+}
+
+/** mcmeta version ids (`26.3`, `26.2-snapshot-8`) are used in tag URLs. */
+function checkVersionId(id: string, source: string): string {
+  if (!/^[0-9A-Za-z][0-9A-Za-z._-]*$/.test(id)) {
+    throw new Error(`Invalid Minecraft version id from ${source}: ${id}`);
+  }
+  return id;
 }
 
 function readJsonDir(dir: string): Record<string, unknown> {
@@ -65,16 +75,19 @@ function readJsonDir(dir: string): Record<string, unknown> {
   return out;
 }
 
-mkdirSync(OUT_DIR, { recursive: true });
-
 const tmpRoot = "/tmp/schematiclab-mcmeta";
 const tmpZip = `${tmpRoot}/assets-json.zip`;
 const tmpExtract = `${tmpRoot}/extracted`;
+const STAGE_DIR = `${tmpRoot}/out`;
 // Start clean so a previous run's extraction can't be picked up below.
 rmSync(tmpRoot, { recursive: true, force: true });
 mkdirSync(tmpExtract, { recursive: true });
+mkdirSync(STAGE_DIR, { recursive: true });
 
-const requestedVersion = process.env.MCMETA_VERSION;
+const requestedVersion =
+  process.env.MCMETA_VERSION === undefined
+    ? undefined
+    : checkVersionId(process.env.MCMETA_VERSION, "MCMETA_VERSION");
 console.log(
   `Downloading mcmeta assets-json (${requestedVersion ?? "latest"})...`,
 );
@@ -85,7 +98,7 @@ curl(
   tmpZip,
 );
 console.log("Extracting...");
-execSync(`unzip -q -o ${tmpZip} -d ${tmpExtract}`);
+execFileSync("unzip", ["-q", "-o", tmpZip, "-d", tmpExtract]);
 const extractedRoot = readdirSync(tmpExtract).find((n) =>
   n.startsWith("misode-mcmeta-"),
 );
@@ -93,11 +106,12 @@ if (!extractedRoot) throw new Error("Failed to locate extracted mcmeta root");
 const mcRoot = join(tmpExtract, extractedRoot, "assets", "minecraft");
 
 const versionFile = join(tmpExtract, extractedRoot, "version.json");
-const { id: versionId } = JSON.parse(readFileSync(versionFile, "utf8")) as {
-  id: string;
-};
+const versionId = checkVersionId(
+  (JSON.parse(readFileSync(versionFile, "utf8")) as { id: string }).id,
+  "mcmeta version.json",
+);
 console.log(`  Minecraft ${versionId}`);
-copyFileSync(versionFile, join(OUT_DIR, "version.json"));
+copyFileSync(versionFile, join(STAGE_DIR, "version.json"));
 
 console.log("Reading blockstates...");
 const blockstates = readJsonDir(join(mcRoot, "blockstates"));
@@ -107,40 +121,61 @@ console.log("Reading block models...");
 const blockModels = readJsonDir(join(mcRoot, "models", "block"));
 console.log(`  ${Object.keys(blockModels).length} entries`);
 
-writeFileSync(join(OUT_DIR, "blockstates.json"), JSON.stringify(blockstates));
-writeFileSync(join(OUT_DIR, "models.json"), JSON.stringify(blockModels));
+writeFileSync(join(STAGE_DIR, "blockstates.json"), JSON.stringify(blockstates));
+writeFileSync(join(STAGE_DIR, "models.json"), JSON.stringify(blockModels));
 
 console.log("Downloading texture atlas + UVs...");
 const atlasBase = `${MCMETA_RAW_BASE}/${versionId}-atlas/blocks`;
-curl(`${atlasBase}/atlas.png`, join(OUT_DIR, "atlas.png"));
-curl(`${atlasBase}/data.min.json`, join(OUT_DIR, "atlas-uvs.json"));
+curl(`${atlasBase}/atlas.png`, join(STAGE_DIR, "atlas.png"));
+curl(`${atlasBase}/data.min.json`, join(STAGE_DIR, "atlas-uvs.json"));
 
 console.log("Downloading block-entity textures...");
 const blockAtlas = JSON.parse(
-  readFileSync(join(OUT_DIR, "atlas-uvs.json"), "utf8"),
+  readFileSync(join(STAGE_DIR, "atlas-uvs.json"), "utf8"),
 ) as Record<string, unknown>;
 const entityTextures: Record<string, Uint8Array> = {};
+const missingTextures: string[] = [];
 for (const id of [...specialRendererTextures(blockstates)].sort()) {
   const path = id.replace(/^minecraft:/, "");
   if (path in blockAtlas || isSupersededEntityTexture(id)) continue;
   const file = join(tmpRoot, "textures", `${path}.png`);
   mkdirSync(dirname(file), { recursive: true });
-  // `curl -f` fails on a 404, i.e. deepslate asks for a texture this
-  // Minecraft version doesn't ship; see SUPERSEDED_ENTITY_TEXTURE_PREFIXES.
-  curl(
-    `${MCMETA_RAW_BASE}/${versionId}-assets/assets/minecraft/textures/${path}.png`,
-    file,
-  );
+  try {
+    curl(
+      `${MCMETA_RAW_BASE}/${versionId}-assets/assets/minecraft/textures/${path}.png`,
+      file,
+    );
+  } catch {
+    // `curl -f` fails on a 404: this version doesn't ship the texture.
+    missingTextures.push(id);
+    continue;
+  }
   entityTextures[`${path}.png`] = readFileSync(file);
 }
+if (missingTextures.length > 0) {
+  throw new Error(
+    `deepslate's block-entity renderers request textures Minecraft ` +
+      `${versionId} doesn't ship: ${missingTextures.join(", ")}. If Minecraft ` +
+      `replaced them with block models, add their prefix to ` +
+      `SUPERSEDED_ENTITY_TEXTURE_PREFIXES in src/lib/render/special-textures.ts. ` +
+      `public/minecraft-assets was not modified.`,
+  );
+}
 console.log(`  ${Object.keys(entityTextures).length} textures`);
-// PNGs are already compressed.
+// PNGs are already compressed. A fixed mtime keeps the zip byte-identical
+// across runs, so regenerating an unchanged version produces no diff.
 writeFileSync(
-  join(OUT_DIR, "entity-textures.zip"),
-  zipSync(entityTextures, { level: 0 }),
+  join(STAGE_DIR, "entity-textures.zip"),
+  zipSync(entityTextures, { level: 0, mtime: "1980-01-01T00:00:00Z" }),
 );
 
 console.log("Downloading opaque-blocks list...");
-curl(OPAQUE_BLOCKS_URL, join(OUT_DIR, "opaque-blocks.json"));
+curl(OPAQUE_BLOCKS_URL, join(STAGE_DIR, "opaque-blocks.json"));
+
+// Every download succeeded; replace the bundle.
+mkdirSync(OUT_DIR, { recursive: true });
+for (const name of readdirSync(STAGE_DIR)) {
+  copyFileSync(join(STAGE_DIR, name), join(OUT_DIR, name));
+}
 
 console.log("Done. Outputs in", OUT_DIR);

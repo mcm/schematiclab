@@ -17,8 +17,10 @@ function entry(
   blockId: string,
   properties: Record<string, string> = {},
 ): ParsedSchematicPaletteEntry {
-  const props = Object.entries(properties)
-    .map(([k, v]) => `${k}=${v}`)
+  // Sorted, like `BlockState.toString()`.
+  const props = Object.keys(properties)
+    .sort()
+    .map((k) => `${k}=${properties[k]}`)
     .join(",");
   return {
     blockState: props === "" ? blockId : `${blockId}[${props}]`,

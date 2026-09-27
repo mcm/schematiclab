@@ -26,7 +26,7 @@ export interface TranslateOptions {
 // schema. A version therefore uses, in order:
 //   1. the newest anchor of its major.minor at or below it (1.20.4 → 1.20.3);
 //   2. its line's anchor, up to 1.20.1 (1.16.2 → 1.16.5, 1.20 → 1.20.1);
-//   3. the newest anchor below it (1.21.1 → 1.20.5, 26.4 → 26.3);
+//   3. the newest anchor below it (1.21.3 → 1.20.5, 26.4 → 26.3);
 //   4. the oldest anchor (anything < 1.12.2 we treat as 1.12.2-equivalent,
 //      but that's not really supported and likely to lose data).
 
