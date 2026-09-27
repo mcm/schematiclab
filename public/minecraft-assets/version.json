@@ -1,16 +1,16 @@
 {
-  "id": "26.2-snapshot-8",
-  "name": "26.2 Snapshot 8",
+  "id": "26.3",
+  "name": "26.3",
   "release_target": null,
-  "type": "snapshot",
-  "stable": false,
-  "data_version": 4893,
-  "protocol_version": 1073742138,
-  "data_pack_version": 106,
+  "type": "release",
+  "stable": true,
+  "data_version": 5023,
+  "protocol_version": 777,
+  "data_pack_version": 121,
   "data_pack_version_minor": 0,
-  "resource_pack_version": 87,
-  "resource_pack_version_minor": 0,
-  "build_time": "2026-05-19T15:17:12+00:00",
-  "release_time": "2026-05-19T15:19:20+00:00",
-  "sha1": "025fe805f5cd551ba502766eebe54025593196ba"
+  "resource_pack_version": 97,
+  "resource_pack_version_minor": 1,
+  "build_time": "2026-09-15T11:20:48+00:00",
+  "release_time": "2026-09-15T11:23:02+00:00",
+  "sha1": "96c00d95a31328714d3811cfade2804bb050e455"
 }
