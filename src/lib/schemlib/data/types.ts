@@ -18,9 +18,25 @@ export type AnchorVersion =
   | "1.18.2"
   | "1.19.4"
   | "1.20.1"
-  | "1.21.4";
+  | "1.20.2"
+  | "1.20.3"
+  | "1.20.5"
+  | "1.21.2"
+  | "1.21.4"
+  | "1.21.5"
+  | "1.21.6"
+  | "1.21.9"
+  | "26.1"
+  | "26.2"
+  | "26.3";
 
-/** Ordered list of anchors, oldest → newest. Translation walks this chain. */
+/**
+ * Ordered list of anchors, oldest → newest. Translation walks this chain.
+ * Up to 1.20 there is one anchor per major.minor. From 1.20 on Mojang changes
+ * blocks in patch releases ("drops"), so there is an anchor at every release
+ * whose block registry or properties changed; releases in between share the
+ * previous anchor's schema.
+ */
 export const ANCHOR_VERSIONS = [
   "1.12.2",
   "1.13.2",
@@ -31,7 +47,17 @@ export const ANCHOR_VERSIONS = [
   "1.18.2",
   "1.19.4",
   "1.20.1",
+  "1.20.2",
+  "1.20.3",
+  "1.20.5",
+  "1.21.2",
   "1.21.4",
+  "1.21.5",
+  "1.21.6",
+  "1.21.9",
+  "26.1",
+  "26.2",
+  "26.3",
 ] as const satisfies readonly AnchorVersion[];
 
 /**

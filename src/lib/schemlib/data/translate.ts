@@ -19,20 +19,27 @@ export interface TranslateOptions {
 
 // ── Version → anchor bucketing ─────────────────────────────────────────────
 //
-// Block schemas don't change within a single major.minor (1.16.0 has the same
-// blocks as 1.16.5), so we bucket each input version to the anchor sharing its
-// major.minor. Versions newer than the latest anchor fall back to it (e.g.
-// 1.21.9 → 1.21.4); versions older than the oldest anchor fall back to it
-// (anything < 1.12.2 we treat as 1.12.2-equivalent, but that's not really
-// supported and likely to lose data).
+// Anchors up to 1.20.1 each stand for their whole major.minor line: block
+// schemas don't change within one (1.16.0 has the same blocks as 1.16.5), and
+// the anchor is named after a late patch. From 1.20 on Mojang changes blocks
+// in patch releases, so later anchors mark the first release of each new
+// schema. A version therefore uses, in order:
+//   1. the newest anchor of its major.minor at or below it (1.20.4 → 1.20.3);
+//   2. its line's anchor, up to 1.20.1 (1.16.2 → 1.16.5, 1.20 → 1.20.1);
+//   3. the newest anchor below it (1.21.1 → 1.20.5, 26.4 → 26.3);
+//   4. the oldest anchor (anything < 1.12.2 we treat as 1.12.2-equivalent,
+//      but that's not really supported and likely to lose data).
 
 const ANCHOR_TUPLES: ReadonlyArray<{
   anchor: AnchorVersion;
   tuple: readonly [number, number, number];
 }> = ANCHOR_VERSIONS.map((anchor) => {
-  const [maj, min, patch] = anchor.split(".").map(Number);
+  const [maj, min, patch = 0] = anchor.split(".").map(Number);
   return { anchor, tuple: [maj, min, patch] as const };
 });
+
+/** Last anchor that stands for its whole major.minor line. */
+const LAST_LINE_ANCHOR = [1, 20, 1] as const;
 
 function compareTuples(
   a: readonly [number, number, number],
@@ -43,15 +50,21 @@ function compareTuples(
 
 export function anchorFor(version: MinecraftVersion): AnchorVersion {
   const [maj, min] = version.versionNumber;
-  // Exact major.minor match first.
-  for (const { anchor, tuple } of ANCHOR_TUPLES) {
-    if (tuple[0] === maj && tuple[1] === min) return anchor;
+  const sameMinor = ANCHOR_TUPLES.filter(
+    ({ tuple }) => tuple[0] === maj && tuple[1] === min,
+  );
+  const atOrBelow = sameMinor.filter(
+    ({ tuple }) => compareTuples(tuple, version.versionNumber) <= 0,
+  );
+  if (atOrBelow.length > 0) return atOrBelow[atOrBelow.length - 1].anchor;
+  const line = sameMinor[0];
+  if (line && compareTuples(line.tuple, LAST_LINE_ANCHOR) <= 0) {
+    return line.anchor;
   }
-  // Newer-than-latest: clamp to the latest anchor.
-  const last = ANCHOR_TUPLES[ANCHOR_TUPLES.length - 1];
-  if (compareTuples(version.versionNumber, last.tuple) > 0) return last.anchor;
-  // Older-than-oldest: clamp to the oldest anchor.
-  return ANCHOR_TUPLES[0].anchor;
+  const below = ANCHOR_TUPLES.filter(
+    ({ tuple }) => compareTuples(tuple, version.versionNumber) < 0,
+  );
+  return (below[below.length - 1] ?? ANCHOR_TUPLES[0]).anchor;
 }
 
 // ── Flatten table (1.12 ↔ 1.13) ────────────────────────────────────────────
