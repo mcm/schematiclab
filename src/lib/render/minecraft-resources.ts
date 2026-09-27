@@ -1,6 +1,7 @@
 // Runtime loader for the 3D preview's deepslate `Resources`: the static
 // vanilla asset bundle in `public/minecraft-assets/` plus every loaded mod's
-// blockstates, models and textures.
+// blockstates, models and textures. Vanilla block-entity textures (chests,
+// heads, ...) are packed into the atlas the same way as mod textures.
 //
 // The vanilla bundle is produced by `scripts/build-minecraft-assets.mts`. To
 // refresh for a newer Minecraft version, run `pnpm gen:mc-assets`.
@@ -12,6 +13,7 @@
 // pure (`atlas-layout.ts`, `block-resources.ts`); only pixel drawing lives here.
 
 import type { Resources } from "deepslate";
+import { unzipSync } from "fflate";
 
 import * as modRegistry from "../mods/registry";
 import type { LoadedModsSnapshot } from "../mods/registry";
@@ -49,6 +51,8 @@ interface VanillaBundle {
   blocks: VanillaBlockData;
   atlasRects: McmetaAtlasUVs;
   atlasImage: ImageBitmap;
+  /** Block-entity textures keyed `minecraft:entity/...`. */
+  entityTextures: Record<string, Blob>;
 }
 
 // Module-level cache. `cachedResources` flips to non-null once the first
@@ -124,14 +128,21 @@ export function getMinecraftResourcesError(): Error | null {
 function loadVanilla(): Promise<VanillaBundle> {
   if (vanillaPromise === null) {
     vanillaPromise = (async () => {
-      const [blockstates, models, atlasRects, opaqueBlocks, atlasImage] =
-        await Promise.all([
-          fetchJson<Record<string, unknown>>(`${ASSETS_BASE}/blockstates.json`),
-          fetchJson<Record<string, unknown>>(`${ASSETS_BASE}/models.json`),
-          fetchJson<McmetaAtlasUVs>(`${ASSETS_BASE}/atlas-uvs.json`),
-          fetchJson<OpaqueBlocksFile>(`${ASSETS_BASE}/opaque-blocks.json`),
-          fetchBitmap(`${ASSETS_BASE}/atlas.png`),
-        ]);
+      const [
+        blockstates,
+        models,
+        atlasRects,
+        opaqueBlocks,
+        atlasImage,
+        entityZip,
+      ] = await Promise.all([
+        fetchJson<Record<string, unknown>>(`${ASSETS_BASE}/blockstates.json`),
+        fetchJson<Record<string, unknown>>(`${ASSETS_BASE}/models.json`),
+        fetchJson<McmetaAtlasUVs>(`${ASSETS_BASE}/atlas-uvs.json`),
+        fetchJson<OpaqueBlocksFile>(`${ASSETS_BASE}/opaque-blocks.json`),
+        fetchBitmap(`${ASSETS_BASE}/atlas.png`),
+        fetchBytes(`${ASSETS_BASE}/entity-textures.zip`),
+      ]);
       return {
         blocks: createVanillaBlockData(
           blockstates,
@@ -140,6 +151,7 @@ function loadVanilla(): Promise<VanillaBundle> {
         ),
         atlasRects,
         atlasImage,
+        entityTextures: entityTexturesFromZip(entityZip),
       };
     })();
     // Allow a retry on the next build if the network hiccuped.
@@ -159,7 +171,12 @@ async function buildResources(
   ]);
   const mods = modAssets.filter((a): a is LoadedModAssets => a !== null);
 
-  const bitmaps = await decodeModTextures(mods);
+  // Entity textures go first so a mod shipping the same id overrides them,
+  // as mod textures already do for vanilla block textures.
+  const bitmaps = await decodeModTextures([
+    { textures: vanilla.entityTextures },
+    ...mods,
+  ]);
   const plan = planAtlas({
     baseWidth: vanilla.atlasImage.width,
     baseHeight: vanilla.atlasImage.height,
@@ -182,11 +199,27 @@ async function buildResources(
   }).resources;
 }
 
+/**
+ * Unpack `entity-textures.zip` (PNGs under `entity/`, built by
+ * `scripts/build-minecraft-assets.mts`) into blobs keyed by texture id.
+ */
+export function entityTexturesFromZip(zip: Uint8Array): Record<string, Blob> {
+  const textures: Record<string, Blob> = {};
+  for (const [name, bytes] of Object.entries(unzipSync(zip))) {
+    if (!name.endsWith(".png")) continue;
+    textures[`minecraft:${name.slice(0, -".png".length)}`] = new Blob(
+      [bytes as Uint8Array<ArrayBuffer>],
+      { type: "image/png" },
+    );
+  }
+  return textures;
+}
+
 // Decode every mod texture. Later mods win on id collisions, falling back to
 // an earlier mod's copy if theirs won't decode; ids with no decodable copy are
 // skipped (blocks using them fall back to the placeholder cube).
 export async function decodeModTextures(
-  mods: readonly LoadedModAssets[],
+  mods: readonly Pick<LoadedModAssets, "textures">[],
 ): Promise<Map<string, ImageBitmap>> {
   // Candidates per id, highest priority (latest mod) first.
   const entries = new Map<string, Blob[]>();
@@ -224,6 +257,10 @@ function drawAtlas(
   if (!ctx) throw new Error("2D canvas context unavailable for atlas build");
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(vanillaAtlas, 0, 0);
+
+  // Clear the transparent cell before drawing the missing one: when the atlas
+  // is full they share a cell, and the missing texture should win.
+  ctx.clearRect(...plan.transparent);
 
   const [mx, my, mw, mh] = plan.missing;
   const halfW = mw / 2;
@@ -265,6 +302,14 @@ async function fetchJson<T>(url: string): Promise<T> {
     throw new Error(`Failed to load ${url}: ${res.status} ${res.statusText}`);
   }
   return (await res.json()) as T;
+}
+
+async function fetchBytes(url: string): Promise<Uint8Array> {
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`Failed to load ${url}: ${res.status} ${res.statusText}`);
+  }
+  return new Uint8Array(await res.arrayBuffer());
 }
 
 async function fetchBitmap(url: string): Promise<ImageBitmap> {

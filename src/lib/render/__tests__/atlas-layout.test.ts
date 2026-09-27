@@ -4,7 +4,8 @@ import vanillaRects from "../../../../public/minecraft-assets/atlas-uvs.json";
 import {
   CELL_SIZE,
   MISSING_TEXTURE_ID,
-  findFreeCell,
+  TRANSPARENT_TEXTURE_ID,
+  findFreeCells,
   planAtlas,
   qualifyId,
   vanillaUvMap,
@@ -71,22 +72,30 @@ describe("vanillaUvMap", () => {
   });
 });
 
-describe("findFreeCell", () => {
-  it("returns the last unoccupied cell", () => {
+describe("findFreeCells", () => {
+  it("returns unoccupied cells from the bottom-right", () => {
+    expect(findFreeCells([[0, 0, 16, 16]], 32, 32, 2)).toEqual([
+      [16, 16, 16, 16],
+      [0, 16, 16, 16],
+    ]);
+  });
+
+  it("returns fewer cells when the atlas runs out", () => {
     expect(
-      findFreeCell(
+      findFreeCells(
         [
           [0, 0, 32, 16],
           [16, 16, 16, 16],
         ],
         32,
         32,
+        2,
       ),
-    ).toEqual([0, 16, 16, 16]);
+    ).toEqual([[0, 16, 16, 16]]);
   });
 
   it("treats partially covered cells as occupied", () => {
-    expect(findFreeCell([[0, 0, 17, 17]], 32, 32)).toBeNull();
+    expect(findFreeCells([[0, 0, 17, 17]], 32, 32, 1)).toEqual([]);
   });
 });
 
@@ -101,17 +110,20 @@ describe("planAtlas", () => {
     expect(plan.width).toBe(1024);
     expect(plan.height).toBe(1024);
     expect(plan.placements).toEqual([]);
-    const { [MISSING_TEXTURE_ID]: missingUv, ...rest } = plan.uvMap;
+    const {
+      [MISSING_TEXTURE_ID]: missingUv,
+      [TRANSPARENT_TEXTURE_ID]: transparentUv,
+      ...rest
+    } = plan.uvMap;
     expect(rest).toEqual(legacyUvMap(VANILLA, 1024, 1024));
-    // The missing texture reuses free space inside the vanilla atlas.
+    // The reserved cells reuse free space inside the vanilla atlas.
     expect(missingUv).toBeDefined();
-    const [mx, my] = plan.missing;
-    expect(findFreeCell(Object.values(VANILLA), 1024, 1024)).toEqual([
-      mx,
-      my,
-      CELL_SIZE,
-      CELL_SIZE,
+    expect(transparentUv).toBeDefined();
+    expect(findFreeCells(Object.values(VANILLA), 1024, 1024, 2)).toEqual([
+      plan.missing,
+      plan.transparent,
     ]);
+    expect(plan.missing[2]).toBe(CELL_SIZE);
   });
 
   it("shelf-packs mod textures below the vanilla atlas", () => {
@@ -162,7 +174,7 @@ describe("planAtlas", () => {
     ]);
   });
 
-  it("packs the missing texture when the vanilla atlas is full", () => {
+  it("packs the reserved cells when the vanilla atlas is full", () => {
     const plan = planAtlas({
       baseWidth: 16,
       baseHeight: 16,
@@ -170,8 +182,22 @@ describe("planAtlas", () => {
       modTextures: [],
     });
     expect(plan.missing).toEqual([0, 16, 16, 16]);
-    expect(plan.height).toBe(32);
-    expect(plan.uvMap[MISSING_TEXTURE_ID]).toEqual([0, 0.5, 1, 1]);
+    expect(plan.transparent).toEqual([0, 32, 16, 16]);
+    expect(plan.height).toBe(64);
+    expect(plan.uvMap[MISSING_TEXTURE_ID]).toEqual([0, 0.25, 1, 0.5]);
+    expect(plan.uvMap[TRANSPARENT_TEXTURE_ID]).toEqual([0, 0.5, 1, 0.75]);
+    expect(plan.placements).toEqual([]);
+  });
+
+  it("reuses the one free vanilla cell for missing and packs transparent", () => {
+    const plan = planAtlas({
+      baseWidth: 32,
+      baseHeight: 16,
+      vanillaRects: { "block/stone": [0, 0, 16, 16] },
+      modTextures: [],
+    });
+    expect(plan.missing).toEqual([16, 0, 16, 16]);
+    expect(plan.transparent).toEqual([0, 16, 16, 16]);
   });
 
   it("downscales large mod textures to 16×16 on overflow with one warning", () => {

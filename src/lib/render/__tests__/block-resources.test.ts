@@ -1,9 +1,15 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { Identifier, type Resources, type UV } from "deepslate";
+import {
+  BlockState,
+  Identifier,
+  SpecialRenderers,
+  type Resources,
+  type UV,
+} from "deepslate";
 
 import vanillaBlockstates from "../../../../public/minecraft-assets/blockstates.json";
 import vanillaModels from "../../../../public/minecraft-assets/models.json";
-import { MISSING_TEXTURE_ID } from "../atlas-layout";
+import { MISSING_TEXTURE_ID, TRANSPARENT_TEXTURE_ID } from "../atlas-layout";
 import {
   assembleResources,
   blockstateModelRefs,
@@ -13,12 +19,14 @@ import {
 } from "../block-resources";
 
 const MISSING_UV: UV = [0.5, 0.5, 0.75, 0.75];
+const TRANSPARENT_UV: UV = [0.75, 0.75, 1, 1];
 const CASING_UV: UV = [0, 0.5, 0.25, 0.75];
 const STONE_UV: UV = [0.25, 0, 0.5, 0.25];
 const GLASS_UV: UV = [0.75, 0, 1, 0.25];
 
 const UV_MAP: Record<string, UV> = {
   [MISSING_TEXTURE_ID]: MISSING_UV,
+  [TRANSPARENT_TEXTURE_ID]: TRANSPARENT_UV,
   "create:block/casing": CASING_UV,
   "minecraft:block/stone": STONE_UV,
   "minecraft:block/black_stained_glass": GLASS_UV,
@@ -160,9 +168,19 @@ describe("assembleResources", () => {
     expect(
       resources.getBlockFlags(Identifier.parse("minecraft:glass")),
     ).toEqual({ opaque: false });
-    expect(
-      resources.getBlockDefinition(Identifier.parse("minecraft:not_a_block")),
-    ).toBeNull();
+  });
+
+  it("renders unknown vanilla ids as the opaque placeholder cube", () => {
+    const { resources } = assemble([]);
+    // Renamed to `short_grass` in 1.20.3, so absent from the bundle.
+    const grass = Identifier.parse("minecraft:grass");
+    expect(resources.getBlockDefinition(grass)).toBe(
+      resources.getBlockDefinition(Identifier.parse("create:unknown")),
+    );
+    expect(meshTextureRects(resources, "minecraft:grass")).toEqual([
+      JSON.stringify(MISSING_UV),
+    ]);
+    expect(resources.getBlockFlags(grass)).toEqual({ opaque: true });
   });
 
   it("meshes vanilla models that use sprite-object textures", () => {
@@ -203,6 +221,99 @@ describe("assembleResources", () => {
     expect(
       resources.getTextureUV(Identifier.parse("create:block/nope")),
     ).toEqual(MISSING_UV);
+  });
+
+  describe("superseded entity textures", () => {
+    const CELLS: Record<string, UV> = {
+      transparent: TRANSPARENT_UV,
+      missing: MISSING_UV,
+    };
+
+    /**
+     * Which atlas cells deepslate's block-entity mesh samples. Each face's
+     * `textureLimit` is a sub-rect of the cell its texture maps to.
+     */
+    function specialMeshCells(
+      resources: Resources,
+      id: string,
+      properties: Record<string, string>,
+    ): string[] {
+      const mesh = SpecialRenderers.getBlockMesh(
+        new BlockState(Identifier.parse(id), properties),
+        undefined,
+        resources,
+        NO_CULL,
+      );
+      expect(mesh.quads.length).toBeGreaterThan(0);
+      const cells = new Set<string>();
+      for (const quad of mesh.quads) {
+        const limit = quad.v1.textureLimit;
+        if (limit === undefined) {
+          cells.add("untextured");
+          continue;
+        }
+        const [u0, v0, u1, v1] = limit;
+        const cell = Object.entries(CELLS).find(
+          ([, [x0, y0, x1, y1]]) =>
+            u0 >= x0 && v0 >= y0 && u1 <= x1 && v1 <= y1,
+        );
+        cells.add(cell?.[0] ?? "other");
+      }
+      return [...cells];
+    }
+
+    it("hides deepslate's bed and sign entity meshes", () => {
+      const { resources } = assemble([]);
+      expect(
+        specialMeshCells(resources, "minecraft:red_bed", {
+          facing: "south",
+          occupied: "false",
+          part: "foot",
+        }),
+      ).toEqual(["transparent"]);
+      expect(
+        specialMeshCells(resources, "minecraft:oak_hanging_sign", {
+          attached: "false",
+          rotation: "0",
+        }),
+      ).toEqual(["transparent"]);
+    });
+
+    it("keeps other missing entity textures visible", () => {
+      const { resources } = assemble([]);
+      expect(
+        specialMeshCells(resources, "minecraft:chest", {
+          facing: "north",
+          type: "single",
+        }),
+      ).toEqual(["missing"]);
+    });
+
+    it("uses the texture when the atlas has it", () => {
+      const bedUv: UV = [0, 0, 0.25, 0.25];
+      const { resources } = assembleResources({
+        vanilla,
+        mods: [],
+        uvMap: { ...UV_MAP, "minecraft:entity/bed/red": bedUv },
+        atlasImage: ATLAS,
+      });
+      expect(
+        resources.getTextureUV(Identifier.parse("minecraft:entity/bed/red")),
+      ).toEqual(bedUv);
+    });
+
+    it("falls back to the missing texture without a transparent cell", () => {
+      const { [TRANSPARENT_TEXTURE_ID]: _transparent, ...uvMap } = UV_MAP;
+      const { resources } = assembleResources({
+        vanilla,
+        mods: [],
+        uvMap,
+        atlasImage: ATLAS,
+      });
+      expect(
+        resources.getTextureUV(Identifier.parse("minecraft:entity/signs/oak")),
+      ).toEqual(MISSING_UV);
+    });
   });
 
   const placeholderCases: Array<[string, ModBlockAssets]> = [

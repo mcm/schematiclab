@@ -12,6 +12,11 @@ export type PixelRect = readonly [number, number, number, number];
 
 /** Texture id used for the magenta/black "missing" checker. */
 export const MISSING_TEXTURE_ID = "schematiclab:block/missing";
+/**
+ * Texture id of a fully transparent cell. deepslate's shader discards
+ * fully transparent fragments, so faces mapped here draw nothing.
+ */
+export const TRANSPARENT_TEXTURE_ID = "schematiclab:block/transparent";
 /** Pixel size of one texture cell (and of the missing texture). */
 export const CELL_SIZE = 16;
 /** Assumed `MAX_TEXTURE_SIZE` when the real value can't be queried. */
@@ -37,6 +42,8 @@ export interface AtlasPlan {
   height: number;
   /** Where to draw the missing texture (16×16). */
   missing: PixelRect;
+  /** Cell to clear for the transparent texture (16×16). */
+  transparent: PixelRect;
   placements: AtlasPlacement[];
   /** Texture id (`<ns>:<path>`) → normalized UV, for vanilla, mod and missing. */
   uvMap: Record<string, UV>;
@@ -102,17 +109,18 @@ function rectToUv([x, y, w, h]: PixelRect, width: number, height: number): UV {
 }
 
 /**
- * Find a free `CELL_SIZE` cell inside the vanilla atlas (scanning from the
- * bottom-right, where the packer leaves slack), or null if it is full.
+ * Find up to `count` free `CELL_SIZE` cells inside the vanilla atlas
+ * (scanning from the bottom-right, where the packer leaves slack).
  */
-export function findFreeCell(
+export function findFreeCells(
   rects: Iterable<PixelRect>,
   width: number,
   height: number,
-): PixelRect | null {
+  count: number,
+): PixelRect[] {
   const cols = Math.floor(width / CELL_SIZE);
   const rows = Math.floor(height / CELL_SIZE);
-  if (cols === 0 || rows === 0) return null;
+  if (cols === 0 || rows === 0) return [];
   const used = new Uint8Array(cols * rows);
   for (const [x, y, w, h] of rects) {
     const c0 = Math.max(0, Math.floor(x / CELL_SIZE));
@@ -123,17 +131,31 @@ export function findFreeCell(
       for (let c = c0; c < c1; c += 1) used[r * cols + c] = 1;
     }
   }
-  for (let i = used.length - 1; i >= 0; i -= 1) {
+  const cells: PixelRect[] = [];
+  for (let i = used.length - 1; i >= 0 && cells.length < count; i -= 1) {
     if (used[i] === 0) {
-      return [
+      cells.push([
         (i % cols) * CELL_SIZE,
         Math.floor(i / cols) * CELL_SIZE,
         CELL_SIZE,
         CELL_SIZE,
-      ];
+      ]);
     }
   }
-  return null;
+  return cells;
+}
+
+function isReservedId(id: string): boolean {
+  return id === MISSING_TEXTURE_ID || id === TRANSPARENT_TEXTURE_ID;
+}
+
+function reservedItem(id: string): PackItem {
+  return {
+    id,
+    source: [0, 0, CELL_SIZE, CELL_SIZE],
+    w: CELL_SIZE,
+    h: CELL_SIZE,
+  };
 }
 
 interface PackItem {
@@ -222,26 +244,24 @@ export function planAtlas(input: AtlasPlanInput): AtlasPlan {
   // of two within the limit; otherwise rounding could overshoot it.
   const maxSize = prevPowerOfTwo(input.maxSize ?? DEFAULT_MAX_TEXTURE_SIZE);
   const textures = input.modTextures.filter(
-    (t) => t.width > 0 && t.height > 0 && t.id !== MISSING_TEXTURE_ID,
+    (t) => t.width > 0 && t.height > 0 && !isReservedId(t.id),
   );
 
-  const freeCell = findFreeCell(
+  // The missing and transparent cells reuse free space inside the vanilla
+  // atlas; whichever doesn't fit there is packed with the mod textures.
+  const [freeMissing = null, freeTransparent = null] = findFreeCells(
     Object.values(vanillaRects),
     baseWidth,
     baseHeight,
+    2,
   );
-  const missingItem: PackItem = {
-    id: MISSING_TEXTURE_ID,
-    source: [0, 0, CELL_SIZE, CELL_SIZE],
-    w: CELL_SIZE,
-    h: CELL_SIZE,
-  };
+  const reservedItems: PackItem[] = [
+    ...(freeMissing === null ? [reservedItem(MISSING_TEXTURE_ID)] : []),
+    ...(freeTransparent === null ? [reservedItem(TRANSPARENT_TEXTURE_ID)] : []),
+  ];
   const pack = (downscale: boolean, minWidth?: number): PackResult =>
     shelfPack(
-      [
-        ...(freeCell === null ? [missingItem] : []),
-        ...textures.map((t) => toPackItem(t, downscale)),
-      ],
+      [...reservedItems, ...textures.map((t) => toPackItem(t, downscale))],
       baseWidth,
       baseHeight,
       maxSize,
@@ -282,32 +302,39 @@ export function planAtlas(input: AtlasPlanInput): AtlasPlan {
   }
 
   const { width, height } = result;
-  let missing = freeCell;
+  let missing = freeMissing;
+  let transparent = freeTransparent;
   const placements: AtlasPlacement[] = [];
   for (const { item, x, y } of result.placed) {
     const dest: PixelRect = [x, y, item.w, item.h];
     if (item.id === MISSING_TEXTURE_ID) missing = dest;
+    else if (item.id === TRANSPARENT_TEXTURE_ID) transparent = dest;
     else placements.push({ id: item.id, source: item.source, dest });
   }
-  // Only reachable if even the 16×16 missing cell overflowed, i.e. the base
-  // atlas already fills `maxSize`; reuse the top-left cell rather than crash.
+  // Only reachable if a 16×16 reserved cell overflowed, i.e. the base atlas
+  // already fills `maxSize`; reuse the top-left cell rather than crash. A
+  // transparent cell that didn't fit shares the missing cell, which is drawn
+  // after it's cleared, so those faces render as missing instead.
   missing ??= [0, 0, CELL_SIZE, CELL_SIZE];
+  transparent ??= missing;
 
   const uvMap = vanillaUvMap(vanillaRects, width, height);
   for (const { id, dest } of placements) {
     uvMap[id] = rectToUv(dest, width, height);
   }
   uvMap[MISSING_TEXTURE_ID] = rectToUv(missing, width, height);
+  uvMap[TRANSPARENT_TEXTURE_ID] = rectToUv(transparent, width, height);
 
   return {
     width,
     height,
     missing,
+    transparent,
     placements,
     uvMap,
     downscaled,
     dropped: result.overflow
       .map((item) => item.id)
-      .filter((id) => id !== MISSING_TEXTURE_ID),
+      .filter((id) => !isReservedId(id)),
   };
 }
