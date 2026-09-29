@@ -141,12 +141,9 @@ export class LitematicRegion extends AbstractRegion {
   }
 
   getBlockMatrix(): Map<string, Block> {
-    const width = this.size.x;
-    const height = this.size.y;
-    const length = this.size.z;
-    const absWidth = Math.abs(width);
-    const absHeight = Math.abs(height);
-    const absLength = Math.abs(length);
+    const absWidth = Math.abs(this.size.x);
+    const absHeight = Math.abs(this.size.y);
+    const absLength = Math.abs(this.size.z);
 
     const palette = this.blockStatePalette;
     const bits = paletteBitWidth(palette.length);
@@ -156,7 +153,10 @@ export class LitematicRegion extends AbstractRegion {
     for (let x = 0; x < absWidth; x++) {
       for (let y = 0; y < absHeight; y++) {
         for (let z = 0; z < absLength; z++) {
-          const i = x + z * width + y * length * width;
+          // Litematica stores negative sizes when the selection's second
+          // corner is on the negative side of the first, but the packed
+          // storage is always laid out by absolute dimensions.
+          const i = x + z * absWidth + y * absLength * absWidth;
           const stateIdx = Number(this.blockStates.readPackedUint(i, bits));
           if (stateIdx < 0 || stateIdx >= palette.length) {
             throw new Error(
