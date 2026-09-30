@@ -20,7 +20,11 @@ import {
   useEditorState,
   type ParseStatus,
 } from "@/lib/editor-state";
-import { applyBlockSwap, undoLastSwap } from "@/lib/editor-state-edits";
+import {
+  applyBlockSwap,
+  applyCamoSwap,
+  undoLastSwap,
+} from "@/lib/editor-state-edits";
 import type { ParsedSchematicPaletteEntry } from "@/lib/convert";
 import { knownVersionIdFor } from "@/lib/advanced/effective-mod-version";
 import {
@@ -29,7 +33,7 @@ import {
   type BlockStatePickerSource,
 } from "@/components/block-state-picker";
 import { ExportPanel } from "@/components/export-panel";
-import { MaterialList } from "@/components/material-list";
+import { MaterialList, type CamoSwapRequest } from "@/components/material-list";
 import {
   ModProjectPicker,
   type ModProjectPickerRequest,
@@ -176,6 +180,7 @@ function previewBody(parseStatus: ParseStatus): React.ReactNode {
 function materialListBody(
   parseStatus: ParseStatus,
   onRequestSwap: (entry: ParsedSchematicPaletteEntry) => void,
+  onRequestCamoSwap: (request: CamoSwapRequest) => void,
   onMapNamespace: (namespace: string) => void,
 ): React.ReactNode {
   if (parseStatus.status === "ready") {
@@ -183,6 +188,7 @@ function materialListBody(
       <MaterialList
         palette={parseStatus.schematic.palette}
         onRequestSwap={onRequestSwap}
+        onRequestCamoSwap={onRequestCamoSwap}
         onSearchMod={onMapNamespace}
       />
     );
@@ -244,6 +250,7 @@ function exportBody(
 function EditorShell({
   parseStatus,
   onRequestSwap,
+  onRequestCamoSwap,
   canUndoSwap,
   onUndoSwap,
   inputFilename,
@@ -251,6 +258,7 @@ function EditorShell({
 }: {
   parseStatus: ParseStatus;
   onRequestSwap: (entry: ParsedSchematicPaletteEntry) => void;
+  onRequestCamoSwap: (request: CamoSwapRequest) => void;
   canUndoSwap: boolean;
   onUndoSwap: () => void;
   inputFilename: string | null;
@@ -308,6 +316,7 @@ function EditorShell({
       <RightTabs
         parseStatus={parseStatus}
         onRequestSwap={onRequestSwap}
+        onRequestCamoSwap={onRequestCamoSwap}
         canUndoSwap={canUndoSwap}
         onUndoSwap={onUndoSwap}
         inputFilename={inputFilename}
@@ -321,12 +330,14 @@ type RightTabId = "materials" | "version" | "mods" | "export";
 function RightTabs({
   parseStatus,
   onRequestSwap,
+  onRequestCamoSwap,
   canUndoSwap,
   onUndoSwap,
   inputFilename,
 }: {
   parseStatus: ParseStatus;
   onRequestSwap: (entry: ParsedSchematicPaletteEntry) => void;
+  onRequestCamoSwap: (request: CamoSwapRequest) => void;
   canUndoSwap: boolean;
   onUndoSwap: () => void;
   inputFilename: string | null;
@@ -442,7 +453,12 @@ function RightTabs({
                 </Button>
               </div>
             ) : null}
-            {materialListBody(parseStatus, onRequestSwap, handleMapNamespace)}
+            {materialListBody(
+              parseStatus,
+              onRequestSwap,
+              onRequestCamoSwap,
+              handleMapNamespace,
+            )}
           </TabsContent>
           <TabsContent
             value="version"
@@ -616,38 +632,77 @@ function EmptyState() {
   );
 }
 
+// Picker copy for a camo swap, naming its scope.
+function camoPickerCopy({ parent, material, scope }: CamoSwapRequest) {
+  return scope === "all"
+    ? {
+        title: "Replace camo everywhere",
+        description: `Replace ${material.blockState} in every camo slot of the schematic, under any block. Type the block identifier to use instead.`,
+        confirmLabel: "Replace all",
+      }
+    : {
+        title: "Swap camo",
+        description: `Replace ${material.blockState} in the camo slots of ${parent.blockState} only. Type the block identifier to use instead.`,
+        confirmLabel: "Confirm swap",
+      };
+}
+
 export default function AdvancedPage() {
   const { stagedFile, parseStatus, lastSwapSnapshot } = useEditorState();
   const stagedFilename = stagedFile?.filename ?? null;
   const hasStagedFile = stagedFile !== null;
   const isNarrow = useIsNarrowViewport();
 
-  const [pickerSource, setPickerSource] =
-    React.useState<BlockStatePickerSource | null>(null);
+  // What the open picker swaps: a palette entry, or a camo material under
+  // one parent ("Swap…") or everywhere ("Replace all").
+  const [picker, setPicker] = React.useState<
+    | { kind: "block"; source: BlockStatePickerSource }
+    | { kind: "camo"; request: CamoSwapRequest }
+    | null
+  >(null);
 
   const handleRequestSwap = React.useCallback(
     (entry: ParsedSchematicPaletteEntry) => {
-      setPickerSource({
-        blockState: entry.blockState,
-        blockId: entry.blockId,
-        properties: entry.properties,
+      setPicker({
+        kind: "block",
+        source: {
+          blockState: entry.blockState,
+          blockId: entry.blockId,
+          properties: entry.properties,
+        },
       });
+    },
+    [],
+  );
+
+  const handleRequestCamoSwap = React.useCallback(
+    (request: CamoSwapRequest) => {
+      setPicker({ kind: "camo", request });
     },
     [],
   );
 
   const handleConfirmSwap = React.useCallback(
     (target: BlockStatePickerResult) => {
-      if (pickerSource) {
-        applyBlockSwap(pickerSource.blockState, target);
+      if (picker?.kind === "block") {
+        applyBlockSwap(picker.source.blockState, target);
+      } else if (picker?.kind === "camo") {
+        const { parent, material, scope } = picker.request;
+        applyCamoSwap(
+          material,
+          target,
+          scope === "all"
+            ? { kind: "all" }
+            : { kind: "parent", parentBlockState: parent.blockState },
+        );
       }
-      setPickerSource(null);
+      setPicker(null);
     },
-    [pickerSource],
+    [picker],
   );
 
   const handleCancelSwap = React.useCallback(() => {
-    setPickerSource(null);
+    setPicker(null);
   }, []);
 
   const handleUndoSwap = React.useCallback(() => {
@@ -758,6 +813,7 @@ export default function AdvancedPage() {
         <EditorShell
           parseStatus={parseStatus}
           onRequestSwap={handleRequestSwap}
+          onRequestCamoSwap={handleRequestCamoSwap}
           canUndoSwap={lastSwapSnapshot !== null}
           onUndoSwap={handleUndoSwap}
           inputFilename={stagedFilename}
@@ -767,12 +823,21 @@ export default function AdvancedPage() {
         <EmptyState />
       )}
 
-      {pickerSource !== null ? (
+      {picker?.kind === "block" ? (
         <BlockStatePicker
           open
-          source={pickerSource}
+          source={picker.source}
           onCancel={handleCancelSwap}
           onConfirm={handleConfirmSwap}
+        />
+      ) : null}
+      {picker?.kind === "camo" ? (
+        <BlockStatePicker
+          open
+          source={picker.request.material}
+          onCancel={handleCancelSwap}
+          onConfirm={handleConfirmSwap}
+          {...camoPickerCopy(picker.request)}
         />
       ) : null}
     </main>

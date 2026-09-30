@@ -16,6 +16,7 @@ import { BlockState } from "../schemlib/blocks";
 import { translateBlockState } from "../schemlib/data/translate";
 import type { MinecraftVersion } from "../schemlib/schematic-formats/version-mapping";
 import { isInvisibleBlockId } from "../invisible-blocks";
+import { keepsBlockEntity } from "../camo/block-entity-type";
 import { resolveModdedState, type ModMappingContext } from "./mod-mapping";
 import { withCamoMaterials } from "../camo/materials";
 
@@ -40,15 +41,16 @@ export type VersionMappingOverrides = Record<string, BlockStateTarget>;
 //
 // A tile entity is preserved across a state change iff the new block id (same
 // thing as `BlockState.Name`, e.g. `minecraft:chest`) is identical to the old
-// block id. Property-only changes (rotate a chest, open a door) keep the tile
-// entity intact; a swap to a different block id (chest → stone) drops it
-// because the inventory / sign text / etc. no longer makes sense on the new
-// block.
+// block id, or both are camo blocks with the same block-entity type (framed
+// panel → framed slab keeps its camo). Property-only changes (rotate a chest,
+// open a door) keep the tile entity intact; a swap to a different block id
+// (chest → stone) drops it because the inventory / sign text / etc. no longer
+// makes sense on the new block.
 function isTileEntityCompatible(
   oldBlockId: string,
   newBlockId: string,
 ): boolean {
-  return oldBlockId === newBlockId;
+  return keepsBlockEntity(oldBlockId, newBlockId);
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────
@@ -88,7 +90,7 @@ function propsRecordFromBlockState(state: BlockState): Record<string, string> {
  *   region rather than reappearing as visible air blocks.
  * - Tile entities at positions whose state actually changed are kept iff
  *   `isTileEntityCompatible(old.blockId, new.blockId)` returns true (same
- *   block id). Otherwise they're dropped from the result.
+ *   block id, or camo blocks sharing a block-entity type). Otherwise they're dropped from the result.
  */
 export function applyBlockSwap(
   schematic: Schematic,

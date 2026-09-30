@@ -9,6 +9,11 @@
 import { _emitEditorState, getEditorState } from "./editor-state";
 import { swapBlockState, type SwapTarget } from "./swap-projection";
 import {
+  swapCamoMaterial,
+  type CamoSwapScope,
+  type CamoSwapSource,
+} from "./camo/swap";
+import {
   applyVersionMapping as applyVersionMappingTransform,
   type VersionMappingOverrides,
 } from "./advanced/edit";
@@ -30,6 +35,30 @@ export function applyBlockSwap(
   if (state.parseStatus.status !== "ready") return false;
   const prior = state.parseStatus.schematic;
   const next = swapBlockState(prior, sourceBlockState, target);
+  if (next === prior) return false;
+  _emitEditorState({
+    ...state,
+    parseStatus: { status: "ready", schematic: next },
+    lastSwapSnapshot: prior,
+  });
+  return true;
+}
+
+// Replace a camo material: every camo slot in `scope` (one parent palette
+// entry, or the whole schematic) holding `source` gets `target`. Shares the
+// block swap's single-step undo (`lastSwapSnapshot`), so "Undo last swap"
+// reverts whichever swap came last, and a translation clears it the same way.
+//
+// Returns true if any camo slot changed.
+export function applyCamoSwap(
+  source: CamoSwapSource,
+  target: SwapTarget,
+  scope: CamoSwapScope,
+): boolean {
+  const state = getEditorState();
+  if (state.parseStatus.status !== "ready") return false;
+  const prior = state.parseStatus.schematic;
+  const next = swapCamoMaterial(prior, source, target, scope);
   if (next === prior) return false;
   _emitEditorState({
     ...state,
