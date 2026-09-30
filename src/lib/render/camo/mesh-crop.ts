@@ -391,7 +391,7 @@ export function cropPiece(source: Mesh, piece: ShapePiece, cull: Cull): Quad[] {
  * the full-cube mesh for a piece's camo slot (the camo block, or the
  * empty-frame look), and is asked once per slot, or once more for pieces
  * that `copyProperties`. Pieces whose slot has no mesh are skipped, and so
- * are `model` pieces, which don't cut the camo.
+ * are `model` and `block` pieces, which don't cut the camo.
  */
 export function buildCamoMesh(
   pieces: readonly ShapePiece[],
@@ -401,7 +401,7 @@ export function buildCamoMesh(
   const meshes = new Map<string, Mesh | null>();
   const quads: Quad[] = [];
   for (const piece of pieces) {
-    if (piece.model !== undefined) continue;
+    if (piece.model !== undefined || piece.block !== undefined) continue;
     const key = `${piece.copyProperties === true}|${piece.slot}`;
     let source = meshes.get(key);
     if (source === undefined) {

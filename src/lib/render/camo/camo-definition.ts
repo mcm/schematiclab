@@ -15,7 +15,8 @@
 // Rules may also test the camo (`material`, e.g. Create's panel with an iron
 // bars or trapdoor material), copy the camo's whole mesh (`whole`), mesh the
 // camo with the block's own property values (`copyProperties`) or render a
-// block model retextured with the camo (`model`, Create's copycat bars).
+// block model retextured with the camo (`model`, Create's copycat bars), or
+// render a block state as is (`block`, the rail on FramedBlocks' rail slopes).
 //
 // Uses only deepslate's public API; deepslate itself is unchanged.
 
@@ -109,7 +110,7 @@ function pieceBox(piece: ShapePiece): Box {
 /**
  * Whether the rule's pieces fill the whole block: the union of its
  * axis-aligned pieces (no quad ops, every face kept) covers 0..16 on all
- * axes. Sloped, `whole` and `model` pieces never count.
+ * axes. Sloped, `whole`, `model` and `block` pieces never count.
  */
 export function coversFullCube(rule: ShapeRule): boolean {
   const cached = ruleCoversCube.get(rule);
@@ -120,7 +121,8 @@ export function coversFullCube(rule: ShapeRule): boolean {
         p.ops.length === 0 &&
         p.faces.length === DIRECTIONS.length &&
         !p.whole &&
-        p.model === undefined,
+        p.model === undefined &&
+        p.block === undefined,
     )
     .map(pieceBox);
   // Check the centre of every cell of the grid the box edges make.
@@ -193,6 +195,9 @@ export class CamoBlockDefinition extends BlockDefinition {
       );
     const mesh = buildCamoMesh(rule.pieces, slotMesh, cull);
     for (const piece of rule.pieces) {
+      if (piece.block !== undefined) {
+        mesh.merge(this.blockPieceMesh(piece, atlas, blockModelProvider, cull));
+      }
       if (piece.model === undefined) continue;
       mesh.merge(
         this.modelPieceMesh(
@@ -218,6 +223,7 @@ export class CamoBlockDefinition extends BlockDefinition {
     const rule = this.rules && matchShapeRule(this.rules, properties, slots);
     if (rule === null || !coversFullCube(rule)) return false;
     return rule.pieces.every((piece) => {
+      if (piece.block !== undefined) return true;
       const slot = slots.find((s) => s.slot === piece.slot);
       return (
         slot?.kind === "block" &&
@@ -268,6 +274,29 @@ export class CamoBlockDefinition extends BlockDefinition {
     }
     this.sourceMeshes.set(key, mesh);
     return mesh;
+  }
+
+  /** A `block` piece: the block state's own mesh, unchanged. */
+  private blockPieceMesh(
+    piece: ShapePiece,
+    atlas: TextureAtlasProvider,
+    blockModelProvider: BlockModelProvider,
+    cull: Cull,
+  ): Mesh {
+    const { name, properties } = piece.block!;
+    try {
+      return this.context
+        .getBlockDefinition(name)
+        .getMesh(
+          Identifier.parse(name),
+          { ...properties },
+          atlas,
+          blockModelProvider,
+          cull,
+        );
+    } catch {
+      return new Mesh();
+    }
   }
 
   /**

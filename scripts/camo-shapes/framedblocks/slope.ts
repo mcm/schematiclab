@@ -6,8 +6,8 @@
 //
 // Ported from XFactHD/FramedBlocks at commit
 // 8267f80b6893dabb7f6cef469182a0b969de465e (11.4.0). Each spec names its
-// Java class. The pyramid geometries in the same package are not ported
-// yet.
+// Java class. The pyramid geometries in the same package are in
+// `pyramid.ts`.
 
 import type { Direction } from "../../../src/lib/render/camo/shape-pack";
 import {

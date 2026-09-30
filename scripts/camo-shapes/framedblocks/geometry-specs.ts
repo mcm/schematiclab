@@ -68,8 +68,14 @@ import {
   type TransformQuad,
 } from "./geometry-api.ts";
 import { PRISM_GEOMETRY_SPECS } from "./prism.ts";
+import { PYRAMID_GEOMETRY_SPECS } from "./pyramid.ts";
+import { RAIL_SLOPE_GEOMETRY_SPECS } from "./rail-slope.ts";
 import { SLOPE_EDGE_GEOMETRY_SPECS } from "./slope-edge.ts";
+import { SLOPE_PANEL_CORNER_GEOMETRY_SPECS } from "./slope-panel-corner.ts";
+import { SLOPE_PANEL_GEOMETRY_SPECS } from "./slope-panel.ts";
+import { SLOPE_SLAB_GEOMETRY_SPECS } from "./slope-slab.ts";
 import { SLOPE_GEOMETRY_SPECS } from "./slope.ts";
+import { SLOPED_STAIRS_GEOMETRY_SPECS } from "./stairs.ts";
 
 export type { BlockState, GeometrySpec, QuadPiece, TransformQuad };
 
@@ -1709,4 +1715,10 @@ export const GEOMETRY_SPECS: Readonly<Record<string, GeometrySpec>> = {
   ...SLOPE_GEOMETRY_SPECS,
   ...SLOPE_EDGE_GEOMETRY_SPECS,
   ...PRISM_GEOMETRY_SPECS,
+  ...PYRAMID_GEOMETRY_SPECS,
+  ...SLOPE_SLAB_GEOMETRY_SPECS,
+  ...SLOPE_PANEL_GEOMETRY_SPECS,
+  ...SLOPE_PANEL_CORNER_GEOMETRY_SPECS,
+  ...SLOPED_STAIRS_GEOMETRY_SPECS,
+  ...RAIL_SLOPE_GEOMETRY_SPECS,
 };

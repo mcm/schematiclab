@@ -193,6 +193,18 @@ export interface ShapePiece {
    * `CopycatBarsModel`). `select` and the other geometry fields don't apply.
    */
   model?: PieceModel;
+  /**
+   * Instead of cutting the camo, render this block state through its own
+   * blockstate and models, unchanged (the vanilla rail on FramedBlocks'
+   * rail slopes). `slot` and the geometry fields don't apply.
+   */
+  block?: PieceBlock;
+}
+
+export interface PieceBlock {
+  /** Block id, e.g. `minecraft:rail`. */
+  name: string;
+  properties: Readonly<Record<string, string>>;
 }
 
 export interface PieceModel {
@@ -555,6 +567,23 @@ function validatePiece(value: unknown, path: string): ShapePiece {
     ...(piece.model === undefined
       ? {}
       : { model: validatePieceModel(piece.model, `${path}.model`) }),
+    ...(piece.block === undefined
+      ? {}
+      : { block: validatePieceBlock(piece.block, `${path}.block`) }),
+  };
+}
+
+function validatePieceBlock(value: unknown, path: string): PieceBlock {
+  const block = expectRecord(value, path);
+  const properties = expectRecord(block.properties ?? {}, `${path}.properties`);
+  return {
+    name: expectString(block.name, `${path}.name`),
+    properties: Object.fromEntries(
+      Object.entries(properties).map(([key, v]) => [
+        key,
+        expectString(v, `${path}.properties.${key}`),
+      ]),
+    ),
   };
 }
 
