@@ -17,7 +17,11 @@ import {
   IconChevronDown,
   IconSearch,
 } from "@tabler/icons-react";
-import type { ParsedSchematicPaletteEntry } from "@/lib/convert";
+import { materialTotals } from "@/lib/camo/materials";
+import type {
+  ParsedCamoMaterial,
+  ParsedSchematicPaletteEntry,
+} from "@/lib/convert";
 import { knownVersionIdFor } from "@/lib/advanced/effective-mod-version";
 import { useEditorState } from "@/lib/editor-state";
 import { isInvisibleBlockId } from "@/lib/invisible-blocks";
@@ -74,6 +78,19 @@ function modInfoFor(blockId: string, versionId: string | null): RowModInfo {
     return null;
   }
   return { kind: "not-loaded", namespace };
+}
+
+// A block's display name: the loaded mod's name for it, else one made from
+// the id's path (`minecraft:mangrove_planks` → "Mangrove Planks").
+function displayNameFor(blockId: string): string {
+  const modded = getLoadedModBlock(blockId)?.displayName;
+  if (modded) return modded;
+  const path = blockId.slice(blockId.indexOf(":") + 1);
+  return path
+    .split("_")
+    .filter(Boolean)
+    .map((word) => word[0].toUpperCase() + word.slice(1))
+    .join(" ");
 }
 
 const SEARCH_INPUT_ID = "material-list-search";
@@ -140,6 +157,13 @@ export function MaterialList({
         if (!needle || entry.blockId.toLowerCase().includes(needle)) {
           return true;
         }
+        if (
+          entry.camoMaterials?.some((material) =>
+            material.blockId.toLowerCase().includes(needle),
+          )
+        ) {
+          return true;
+        }
         const info = modInfoByBlockId.get(entry.blockId);
         return (
           info?.kind === "loaded" &&
@@ -157,8 +181,27 @@ export function MaterialList({
     );
   }, [visiblePalette, prunedNamespaces, modInfoByBlockId, search, sort]);
 
+  // Placed blocks plus camo slots, per block state (see `materialTotals`).
+  const totals = React.useMemo(
+    () => materialTotals(visiblePalette),
+    [visiblePalette],
+  );
+  // The footer counts only the rows the filters leave, camo slots included.
   const totalCount = React.useMemo(
-    () => filtered.reduce((sum, entry) => sum + entry.count, 0),
+    () =>
+      [...materialTotals(filtered).values()].reduce(
+        (sum, count) => sum + count,
+        0,
+      ),
+    [filtered],
+  );
+  const camoCount = React.useMemo(
+    () =>
+      filtered.reduce(
+        (sum, entry) =>
+          sum + (entry.camoMaterials ?? []).reduce((n, m) => n + m.count, 0),
+        0,
+      ),
     [filtered],
   );
 
@@ -265,6 +308,7 @@ export function MaterialList({
               key={entry.blockState}
               entry={entry}
               modInfo={modInfoByBlockId.get(entry.blockId) ?? null}
+              total={totals.get(entry.blockState) ?? entry.count}
               onRequestSwap={onRequestSwap}
               onSearchMod={onSearchMod}
             />
@@ -292,6 +336,7 @@ export function MaterialList({
         <span>
           Total: <strong>{totalCount.toLocaleString()}</strong> block
           {totalCount === 1 ? "" : "s"}
+          {camoCount > 0 ? ` (${camoCount.toLocaleString()} in camo)` : ""}
         </span>
       </div>
     </div>
@@ -477,42 +522,237 @@ function NamespaceFilter({
 function PaletteRow({
   entry,
   modInfo,
+  total,
   onRequestSwap,
   onSearchMod,
 }: {
   entry: ParsedSchematicPaletteEntry;
   modInfo: RowModInfo;
+  // `entry.count` plus the camo slots holding this block state elsewhere.
+  total: number;
   onRequestSwap?: (entry: ParsedSchematicPaletteEntry) => void;
   onSearchMod?: (namespace: string) => void;
 }) {
   const propertyKeys = Object.keys(entry.properties);
   const propertiesLabel = formatProperties(entry.properties, propertyKeys);
   const swatch = swatchColorFor(entry.blockState);
+  const camoMaterials = entry.camoMaterials ?? [];
+  const camoTotal = total - entry.count;
 
+  return (
+    <div role="listitem">
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "20px minmax(0, 1fr) auto auto",
+          alignItems: "center",
+          gap: "var(--space-3)",
+          padding: "var(--space-2) var(--space-3)",
+          borderBottom: "1px solid var(--border-subtle)",
+          fontSize: "var(--text-sm)",
+        }}
+      >
+        <div
+          aria-hidden
+          title={entry.blockId}
+          style={{
+            width: 20,
+            height: 20,
+            borderRadius: "var(--radius-sm)",
+            background: swatch,
+            border:
+              "1px solid color-mix(in srgb, var(--text-primary) 18%, transparent)",
+            flexShrink: 0,
+          }}
+        />
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            minWidth: 0,
+            gap: 2,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "var(--space-2)",
+              minWidth: 0,
+            }}
+          >
+            <span
+              style={{
+                color: "var(--text-primary)",
+                fontFamily: "var(--font-mono, ui-monospace, monospace)",
+                fontSize: "var(--text-xs)",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+              title={entry.blockId}
+            >
+              {entry.blockId}
+            </span>
+            {modInfo?.kind === "loaded" ? (
+              <Badge
+                variant="info"
+                size="sm"
+                title={`Provided by ${modInfo.modName}`}
+                style={{ flexShrink: 0 }}
+              >
+                {modInfo.modName}
+              </Badge>
+            ) : null}
+          </div>
+          {modInfo?.kind === "loaded" ? (
+            <span
+              style={{
+                color: "var(--text-secondary)",
+                fontSize: "var(--text-xs)",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+              title={modInfo.displayName}
+            >
+              {modInfo.displayName}
+            </span>
+          ) : null}
+          {modInfo?.kind === "not-loaded" ? (
+            <span
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "var(--space-2)",
+                color: "var(--text-tertiary)",
+                fontSize: "var(--text-xs)",
+              }}
+            >
+              Mod not loaded
+              {onSearchMod ? (
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  onClick={() => onSearchMod(modInfo.namespace)}
+                  aria-label={`Search CurseForge for ${modInfo.namespace}`}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "var(--space-1)",
+                    height: "auto",
+                    padding: 0,
+                    fontSize: "var(--text-xs)",
+                  }}
+                >
+                  <IconSearch size={12} aria-hidden="true" />
+                  Search CurseForge
+                </Button>
+              ) : null}
+            </span>
+          ) : null}
+          {propertiesLabel ? (
+            <span
+              style={{
+                color: "var(--text-tertiary)",
+                fontFamily: "var(--font-mono, ui-monospace, monospace)",
+                fontSize: "var(--text-xs)",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+              title={propertiesLabel}
+            >
+              {propertiesLabel}
+            </span>
+          ) : null}
+        </div>
+        <span
+          style={{
+            color: "var(--text-primary)",
+            fontVariantNumeric: "tabular-nums",
+            fontWeight: 500,
+          }}
+        >
+          {entry.count.toLocaleString()}
+          {camoTotal > 0 ? (
+            <span
+              title={`${camoTotal.toLocaleString()} more used as camo; ${total.toLocaleString()} in total`}
+              style={{
+                display: "block",
+                color: "var(--text-tertiary)",
+                fontSize: "var(--text-xs)",
+                fontWeight: 400,
+              }}
+            >
+              +{camoTotal.toLocaleString()} camo
+            </span>
+          ) : null}
+        </span>
+        {onRequestSwap ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => onRequestSwap(entry)}
+            aria-label={`Swap ${entry.blockState}`}
+            title="Swap this block state…"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "var(--space-1)",
+              fontSize: "var(--text-xs)",
+            }}
+          >
+            <IconArrowsExchange size={14} aria-hidden="true" />
+            Swap…
+          </Button>
+        ) : null}
+      </div>
+      {camoMaterials.length > 0 ? (
+        <div role="list" aria-label={`Camo materials in ${entry.blockState}`}>
+          {camoMaterials.map((material) => (
+            <CamoMaterialRow
+              key={`${material.kind}:${material.blockState}`}
+              material={material}
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function CamoMaterialRow({ material }: { material: ParsedCamoMaterial }) {
+  const displayName = displayNameFor(material.blockId);
+  const propertiesLabel = formatProperties(
+    material.properties,
+    Object.keys(material.properties),
+  );
   return (
     <div
       role="listitem"
       style={{
         display: "grid",
-        gridTemplateColumns: "20px minmax(0, 1fr) auto auto",
+        gridTemplateColumns: "14px minmax(0, 1fr) auto",
         alignItems: "center",
         gap: "var(--space-3)",
-        padding: "var(--space-2) var(--space-3)",
+        padding:
+          "var(--space-1) var(--space-3) var(--space-1) calc(var(--space-3) + 32px)",
         borderBottom: "1px solid var(--border-subtle)",
-        fontSize: "var(--text-sm)",
+        fontSize: "var(--text-xs)",
       }}
     >
       <div
         aria-hidden
-        title={entry.blockId}
         style={{
-          width: 20,
-          height: 20,
+          width: 14,
+          height: 14,
           borderRadius: "var(--radius-sm)",
-          background: swatch,
+          background: swatchColorFor(material.blockState),
           border:
             "1px solid color-mix(in srgb, var(--text-primary) 18%, transparent)",
-          flexShrink: 0,
         }}
       />
       <div
@@ -523,129 +763,53 @@ function PaletteRow({
           gap: 2,
         }}
       >
-        <div
+        <span
           style={{
             display: "flex",
             alignItems: "center",
             gap: "var(--space-2)",
+            color: "var(--text-primary)",
             minWidth: 0,
           }}
         >
           <span
             style={{
-              color: "var(--text-primary)",
-              fontFamily: "var(--font-mono, ui-monospace, monospace)",
-              fontSize: "var(--text-xs)",
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
             }}
-            title={entry.blockId}
+            title={displayName}
           >
-            {entry.blockId}
+            {displayName}
           </span>
-          {modInfo?.kind === "loaded" ? (
-            <Badge
-              variant="info"
-              size="sm"
-              title={`Provided by ${modInfo.modName}`}
-              style={{ flexShrink: 0 }}
-            >
-              {modInfo.modName}
+          {material.kind === "fluid" ? (
+            <Badge variant="info" size="sm" style={{ flexShrink: 0 }}>
+              Fluid
             </Badge>
           ) : null}
-        </div>
-        {modInfo?.kind === "loaded" ? (
-          <span
-            style={{
-              color: "var(--text-secondary)",
-              fontSize: "var(--text-xs)",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-            title={modInfo.displayName}
-          >
-            {modInfo.displayName}
-          </span>
-        ) : null}
-        {modInfo?.kind === "not-loaded" ? (
-          <span
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "var(--space-2)",
-              color: "var(--text-tertiary)",
-              fontSize: "var(--text-xs)",
-            }}
-          >
-            Mod not loaded
-            {onSearchMod ? (
-              <Button
-                type="button"
-                variant="link"
-                size="sm"
-                onClick={() => onSearchMod(modInfo.namespace)}
-                aria-label={`Search CurseForge for ${modInfo.namespace}`}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "var(--space-1)",
-                  height: "auto",
-                  padding: 0,
-                  fontSize: "var(--text-xs)",
-                }}
-              >
-                <IconSearch size={12} aria-hidden="true" />
-                Search CurseForge
-              </Button>
-            ) : null}
-          </span>
-        ) : null}
-        {propertiesLabel ? (
-          <span
-            style={{
-              color: "var(--text-tertiary)",
-              fontFamily: "var(--font-mono, ui-monospace, monospace)",
-              fontSize: "var(--text-xs)",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-            title={propertiesLabel}
-          >
-            {propertiesLabel}
-          </span>
-        ) : null}
+        </span>
+        <span
+          style={{
+            color: "var(--text-tertiary)",
+            fontFamily: "var(--font-mono, ui-monospace, monospace)",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+          title={material.blockState}
+        >
+          {material.blockId}
+          {propertiesLabel}
+        </span>
       </div>
       <span
         style={{
-          color: "var(--text-primary)",
+          color: "var(--text-secondary)",
           fontVariantNumeric: "tabular-nums",
-          fontWeight: 500,
         }}
       >
-        {entry.count.toLocaleString()}
+        {material.count.toLocaleString()}
       </span>
-      {onRequestSwap ? (
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => onRequestSwap(entry)}
-          aria-label={`Swap ${entry.blockState}`}
-          title="Swap this block state…"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "var(--space-1)",
-            fontSize: "var(--text-xs)",
-          }}
-        >
-          <IconArrowsExchange size={14} aria-hidden="true" />
-          Swap…
-        </Button>
-      ) : null}
     </div>
   );
 }
