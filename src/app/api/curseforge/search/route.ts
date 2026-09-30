@@ -1,6 +1,8 @@
 // Proxies CurseForge mod search so the API key stays server-side.
 //
 //   GET /api/curseforge/search?q=&gameVersion=&loader=&index=
+//
+// `gameVersion` is optional; without it results span every version.
 
 import type { NextResponse } from "next/server";
 import {
@@ -40,8 +42,13 @@ export async function GET(request: Request): Promise<NextResponse> {
     );
   }
 
-  const gameVersion = validateGameVersion(params.get("gameVersion"));
-  if (!gameVersion.ok) return jsonError(400, gameVersion.error);
+  const rawGameVersion = params.get("gameVersion");
+  let gameVersion: string | null = null;
+  if (rawGameVersion !== null && rawGameVersion !== "") {
+    const validated = validateGameVersion(rawGameVersion);
+    if (!validated.ok) return jsonError(400, validated.error);
+    gameVersion = validated.value;
+  }
 
   const loader = validateLoader(params.get("loader"));
   if (!loader.ok) return jsonError(400, loader.error);
@@ -59,12 +66,12 @@ export async function GET(request: Request): Promise<NextResponse> {
   const upstreamParams = new URLSearchParams({
     gameId: String(MINECRAFT_GAME_ID),
     classId: String(MODS_CLASS_ID),
-    gameVersion: gameVersion.value,
     pageSize: String(PAGE_SIZE),
     index: String(index),
     sortField: "2",
     sortOrder: "desc",
   });
+  if (gameVersion !== null) upstreamParams.set("gameVersion", gameVersion);
   if (q) upstreamParams.set("searchFilter", q);
   if (loader.value) {
     upstreamParams.set("modLoaderType", String(MOD_LOADER_TYPE[loader.value]));

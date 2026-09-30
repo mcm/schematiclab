@@ -22,6 +22,7 @@ import {
 } from "@/lib/editor-state";
 import { applyBlockSwap, undoLastSwap } from "@/lib/editor-state-edits";
 import type { ParsedSchematicPaletteEntry } from "@/lib/convert";
+import { knownVersionIdFor } from "@/lib/advanced/effective-mod-version";
 import {
   BlockStatePicker,
   type BlockStatePickerResult,
@@ -29,7 +30,11 @@ import {
 } from "@/components/block-state-picker";
 import { ExportPanel } from "@/components/export-panel";
 import { MaterialList } from "@/components/material-list";
-import { ModsPanel, type ModSearchRequest } from "@/components/mods-panel";
+import {
+  ModProjectPicker,
+  type ModProjectPickerRequest,
+} from "@/components/mod-project-picker";
+import { ModsPanel } from "@/components/mods-panel";
 import { ThreeDPreview } from "@/components/three-d-preview";
 import { VersionMappingPanel } from "@/components/version-mapping-panel";
 
@@ -171,14 +176,14 @@ function previewBody(parseStatus: ParseStatus): React.ReactNode {
 function materialListBody(
   parseStatus: ParseStatus,
   onRequestSwap: (entry: ParsedSchematicPaletteEntry) => void,
-  onSearchMod: (namespace: string) => void,
+  onMapNamespace: (namespace: string) => void,
 ): React.ReactNode {
   if (parseStatus.status === "ready") {
     return (
       <MaterialList
         palette={parseStatus.schematic.palette}
         onRequestSwap={onRequestSwap}
-        onSearchMod={onSearchMod}
+        onSearchMod={onMapNamespace}
       />
     );
   }
@@ -186,9 +191,17 @@ function materialListBody(
   return <PanelSkeleton />;
 }
 
-function versionMappingBody(parseStatus: ParseStatus): React.ReactNode {
+function versionMappingBody(
+  parseStatus: ParseStatus,
+  onRequestProjectPicker: (request: ModProjectPickerRequest) => void,
+): React.ReactNode {
   if (parseStatus.status === "ready") {
-    return <VersionMappingPanel schematic={parseStatus.schematic} />;
+    return (
+      <VersionMappingPanel
+        schematic={parseStatus.schematic}
+        onRequestProjectPicker={onRequestProjectPicker}
+      />
+    );
   }
   if (parseStatus.status === "error") return UNAVAILABLE_LABEL;
   return <PanelSkeleton />;
@@ -196,13 +209,13 @@ function versionMappingBody(parseStatus: ParseStatus): React.ReactNode {
 
 function modsBody(
   parseStatus: ParseStatus,
-  searchRequest: ModSearchRequest | null,
+  onMapNamespace: (namespace: string) => void,
 ): React.ReactNode {
   if (parseStatus.status === "ready") {
     return (
       <ModsPanel
         schematic={parseStatus.schematic}
-        searchRequest={searchRequest}
+        onMapNamespace={onMapNamespace}
       />
     );
   }
@@ -328,15 +341,31 @@ function RightTabs({
   // the tab is first opened; after that it stays mounted like the others.
   const [modsTabOpened, setModsTabOpened] = React.useState(false);
   if (activeTab === "mods" && !modsTabOpened) setModsTabOpened(true);
-  // "Search CurseForge" from a Material List row: jump to the Mods tab with
-  // the block's namespace as the search text. A fresh object per click so
-  // repeating the same namespace still re-applies it.
-  const [modSearchRequest, setModSearchRequest] =
-    React.useState<ModSearchRequest | null>(null);
-  const handleSearchMod = React.useCallback((namespace: string) => {
-    setModSearchRequest({ text: namespace });
-    setActiveTab("mods");
+  // "Search CurseForge" (Material List) and "Map…" (Mods tab) open the shared
+  // project picker for a namespace. Picking a project maps it and starts the
+  // load; we then show the Mods tab, where its progress appears. The Version
+  // Mapping tab opens the same picker (map or replace) and shows progress in
+  // its own Mods section, so its requests don't switch tabs.
+  const [pickerRequest, setPickerRequest] = React.useState<{
+    request: ModProjectPickerRequest;
+    showModsTab: boolean;
+  } | null>(null);
+  const handleMapNamespace = React.useCallback((namespace: string) => {
+    setPickerRequest({
+      request: { mode: "map", namespace },
+      showModsTab: true,
+    });
   }, []);
+  const handleRequestProjectPicker = React.useCallback(
+    (request: ModProjectPickerRequest) => {
+      setPickerRequest({ request, showModsTab: false });
+    },
+    [],
+  );
+  const sourceVersionId =
+    parseStatus.status === "ready"
+      ? knownVersionIdFor(parseStatus.schematic.minecraftVersion)
+      : null;
   const handleGoToVersionMapping = React.useCallback(() => {
     setActiveTab("version");
   }, []);
@@ -413,7 +442,7 @@ function RightTabs({
                 </Button>
               </div>
             ) : null}
-            {materialListBody(parseStatus, onRequestSwap, handleSearchMod)}
+            {materialListBody(parseStatus, onRequestSwap, handleMapNamespace)}
           </TabsContent>
           <TabsContent
             value="version"
@@ -428,7 +457,7 @@ function RightTabs({
               fontSize: "var(--text-sm)",
             }}
           >
-            {versionMappingBody(parseStatus)}
+            {versionMappingBody(parseStatus, handleRequestProjectPicker)}
           </TabsContent>
           <TabsContent
             value="mods"
@@ -443,7 +472,7 @@ function RightTabs({
               fontSize: "var(--text-sm)",
             }}
           >
-            {modsTabOpened ? modsBody(parseStatus, modSearchRequest) : null}
+            {modsTabOpened ? modsBody(parseStatus, handleMapNamespace) : null}
           </TabsContent>
           <TabsContent
             value="export"
@@ -462,6 +491,38 @@ function RightTabs({
           </TabsContent>
         </TabsLine>
       </CardContent>
+      {pickerRequest !== null && sourceVersionId !== null ? (
+        pickerRequest.request.mode === "map" ? (
+          <ModProjectPicker
+            key={`map:${pickerRequest.request.namespace}`}
+            open
+            mode="map"
+            namespace={pickerRequest.request.namespace}
+            sourceVersion={sourceVersionId}
+            gameVersion={sourceVersionId}
+            onSelect={() => {
+              if (pickerRequest.showModsTab) setActiveTab("mods");
+              setPickerRequest(null);
+            }}
+            onCancel={() => setPickerRequest(null)}
+          />
+        ) : (
+          <ModProjectPicker
+            key={`replace:${pickerRequest.request.namespace}`}
+            open
+            mode="replace"
+            namespace={pickerRequest.request.namespace}
+            gameVersion={pickerRequest.request.gameVersion}
+            onSelect={(mod) => {
+              if (pickerRequest.request.mode === "replace") {
+                pickerRequest.request.onSelect(mod);
+              }
+              setPickerRequest(null);
+            }}
+            onCancel={() => setPickerRequest(null)}
+          />
+        )
+      ) : null}
     </Card>
   );
 }

@@ -1,12 +1,15 @@
 // Adds a CurseForge mod: pick a file, download the jar, parse it in the
 // worker, then register + persist it. In-flight and failed loads live in a
-// small module-level store (keyed by CurseForge mod id) subscribed via
-// `useSyncExternalStore`, so progress survives tab switches and a second Add
-// for the same mod is ignored while one is running.
+// small module-level store (keyed by `modLoadKey(modId, gameVersion)`)
+// subscribed via `useSyncExternalStore`, so progress survives tab switches, a
+// second Add for the same mod and version is ignored while one is running,
+// and a mod's source-version and target-version files load concurrently.
 //
 // Nothing is persisted until parsing succeeds with at least one block.
 // `registerModJar` (parse + register) is shared with modpack loads
-// (`load-modpack.ts`).
+// (`load-modpack.ts`). Once a file is registered, its namespaces that have no
+// project mapping yet are mapped to its mod (existing mappings are never
+// overwritten).
 
 import * as React from "react";
 
@@ -16,6 +19,7 @@ import {
   pickDownloadableFile,
 } from "../curseforge/client";
 import type { ModLoader } from "../curseforge/types";
+import { autoMapNamespaces } from "./mappings";
 import { parseModJarInWorker } from "./mod-jar-client";
 import { addLoadedMod } from "./registry";
 import { loadedModKey, toLoadedModAssets, type LoadedModMeta } from "./types";
@@ -44,13 +48,18 @@ export interface ModLoadEntry {
   state: ModLoadState;
 }
 
-export type ModLoadsSnapshot = ReadonlyMap<number, ModLoadEntry>;
+/** Keyed by `modLoadKey(modId, gameVersion)`. */
+export type ModLoadsSnapshot = ReadonlyMap<string, ModLoadEntry>;
+
+/** Load key for a (mod, game version); equals the loaded file's key. */
+export const modLoadKey = loadedModKey;
 
 export interface ModLoadDeps {
   fetchFiles: typeof fetchCurseForgeModFiles;
   download: typeof downloadModJar;
   parse: typeof parseModJarInWorker;
   add: typeof addLoadedMod;
+  mapNamespaces: typeof autoMapNamespaces;
   now: () => number;
 }
 
@@ -59,6 +68,7 @@ const DEFAULT_DEPS: ModLoadDeps = {
   download: downloadModJar,
   parse: parseModJarInWorker,
   add: addLoadedMod,
+  mapNamespaces: autoMapNamespaces,
   now: Date.now,
 };
 
@@ -67,12 +77,12 @@ const EMPTY: ModLoadsSnapshot = new Map();
 let loads: ModLoadsSnapshot = EMPTY;
 const listeners = new Set<() => void>();
 
-function setEntry(modId: number, entry: ModLoadEntry | null): void {
+function setEntry(key: string, entry: ModLoadEntry | null): void {
   const next = new Map(loads);
   if (entry === null) {
-    if (!next.delete(modId)) return;
+    if (!next.delete(key)) return;
   } else {
-    next.set(modId, entry);
+    next.set(key, entry);
   }
   loads = next;
   listeners.forEach((listener) => {
@@ -100,8 +110,9 @@ export function useModLoads(): ModLoadsSnapshot {
 }
 
 /** Forget a failed load (e.g. the user dismissed its error). */
-export function dismissModLoad(modId: number): void {
-  if (loads.get(modId)?.state.phase === "error") setEntry(modId, null);
+export function dismissModLoad(modId: number, gameVersion: string): void {
+  const key = modLoadKey(modId, gameVersion);
+  if (loads.get(key)?.state.phase === "error") setEntry(key, null);
 }
 
 function errorMessage(err: unknown, fallback: string): string {
@@ -109,18 +120,20 @@ function errorMessage(err: unknown, fallback: string): string {
 }
 
 /**
- * Load a mod. No-op if a load for the same mod is already running; retries a
- * failed one. Never rejects — failures land in the entry's `error` state.
+ * Load a mod's file for `request.gameVersion`. No-op if a load for the same
+ * mod and version is already running; retries a failed one. Never rejects —
+ * failures land in the entry's `error` state.
  */
 export async function startModLoad(
   request: ModLoadRequest,
   deps: ModLoadDeps = DEFAULT_DEPS,
 ): Promise<void> {
   const modId = request.mod.id;
-  const existing = loads.get(modId);
+  const key = modLoadKey(modId, request.gameVersion);
+  const existing = loads.get(key);
   if (existing !== undefined && existing.state.phase !== "error") return;
 
-  const update = (state: ModLoadState) => setEntry(modId, { request, state });
+  const update = (state: ModLoadState) => setEntry(key, { request, state });
   const fail = (message: string) => update({ phase: "error", message });
 
   update({ phase: "resolving" });
@@ -159,8 +172,9 @@ export async function startModLoad(
   }
 
   update({ phase: "extracting" });
+  let meta: LoadedModMeta;
   try {
-    await registerModJar(
+    meta = await registerModJar(
       bytes,
       {
         modId,
@@ -169,6 +183,7 @@ export async function startModLoad(
         logoUrl: request.mod.logoThumbnailUrl,
         fileId: file.id,
         fileDisplayName: file.displayName || file.fileName,
+        gameVersion: request.gameVersion,
         gameVersions: file.gameVersions,
         loader:
           request.loader ??
@@ -181,13 +196,37 @@ export async function startModLoad(
     fail(errorMessage(err, "Could not save the mod."));
     return;
   }
-  setEntry(modId, null);
+  await mapModNamespaces([meta], deps);
+  setEntry(key, null);
+}
+
+/**
+ * Map each registered file's namespaces that have no project mapping yet to
+ * its mod. The files are loaded either way; a mapping failure only costs a
+ * manual map.
+ */
+export async function mapModNamespaces(
+  files: readonly LoadedModMeta[],
+  deps: Pick<ModLoadDeps, "mapNamespaces">,
+): Promise<void> {
+  for (const meta of files) {
+    try {
+      await deps.mapNamespaces(meta.namespaces, meta, meta.loadedAt);
+    } catch (err) {
+      console.warn("Could not map mod namespaces.", err);
+    }
+  }
 }
 
 /** A mod file's CurseForge metadata; the rest of `LoadedModMeta` comes from the jar. */
 export type ModFileInfo = Omit<
   LoadedModMeta,
-  "key" | "namespaces" | "blocks" | "warnings" | "loadedAt"
+  | "key"
+  | "namespaces"
+  | "blocks"
+  | "warnings"
+  | "appearancesComputed"
+  | "loadedAt"
 >;
 
 /** A `registerModJar` failure; `message` is user-facing. */
@@ -204,15 +243,15 @@ export class ModJarError extends Error {
 /**
  * Parse a mod jar in the worker, then register + persist it. Shared by
  * CurseForge adds and modpack loads. Rejects with `ModJarError`; nothing is
- * registered unless the jar has at least one block. `bytes` may be detached
- * (transferred to the worker).
+ * registered unless the jar has at least one block. Resolves to the registered
+ * file's metadata. `bytes` may be detached (transferred to the worker).
  */
 export async function registerModJar(
   bytes: Uint8Array,
   info: ModFileInfo,
   deps: Pick<ModLoadDeps, "parse" | "add" | "now">,
   onSaving?: () => void,
-): Promise<void> {
+): Promise<LoadedModMeta> {
   let parsed;
   try {
     parsed = await deps.parse(bytes);
@@ -232,10 +271,11 @@ export async function registerModJar(
   onSaving?.();
   const meta: LoadedModMeta = {
     ...info,
-    key: loadedModKey(info.modId, info.fileId),
+    key: loadedModKey(info.modId, info.gameVersion),
     namespaces: parsed.namespaces,
     blocks: parsed.blocks,
     warnings: parsed.warnings,
+    appearancesComputed: parsed.appearancesComputed === true,
     loadedAt: deps.now(),
   };
   try {
@@ -243,6 +283,7 @@ export async function registerModJar(
   } catch (err) {
     throw new ModJarError(errorMessage(err, "Could not save the mod."), "save");
   }
+  return meta;
 }
 
 /** "Downloading 42%", "Extracting", … for an in-flight load. */

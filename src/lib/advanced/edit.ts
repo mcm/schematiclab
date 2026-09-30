@@ -16,7 +16,7 @@ import { BlockState } from "../schemlib/blocks";
 import { translateBlockState } from "../schemlib/data/translate";
 import type { MinecraftVersion } from "../schemlib/schematic-formats/version-mapping";
 import { isInvisibleBlockId } from "../invisible-blocks";
-import { toIdSet } from "./version-mapping-preview";
+import { resolveModdedState, type ModMappingContext } from "./mod-mapping";
 
 // ── Public types ──────────────────────────────────────────────────────────
 
@@ -262,10 +262,13 @@ export function applyBlockSwap(
  * For each palette entry:
  *  - If `overrides[entry.blockState]` is present, the user's chosen target is
  *    used (and the natural mapper is bypassed for that source state).
- *  - Otherwise, if the block id is in `loadedModBlockIds`, the entry passes
- *    through unchanged (modded ids aren't translated between versions).
+ *  - Otherwise, if its namespace is described by `mods`, `resolveModdedState`
+ *    decides: replacement mods rewrite the namespace, states are fitted to
+ *    the target block's properties, and anything unresolved (missing block,
+ *    unmapped / unavailable / pending mod) passes through unchanged.
  *  - Otherwise, the natural per-version diff walker (`translateBlockState`)
- *    computes the target state.
+ *    computes the target state. With a null `targetVersion` vanilla entries
+ *    are left untouched.
  *
  * The whole palette is rewritten in a single pass — chains like
  * `foo(source) → bar(natural) → baz(natural)` don't apply, because each source
@@ -279,45 +282,47 @@ export function applyBlockSwap(
  * preserved when the post-mapping block id equals the pre-mapping block id,
  * dropped otherwise.
  *
- * `schematic.minecraftVersion` is updated to `targetVersion` on the result.
+ * `schematic.minecraftVersion` is updated to `targetVersion` on the result,
+ * or kept when `targetVersion` is null.
  */
 export function applyVersionMapping(
   schematic: Schematic,
-  targetVersion: MinecraftVersion,
+  targetVersion: MinecraftVersion | null,
   overrides: VersionMappingOverrides = {},
-  loadedModBlockIds: ReadonlySet<string> | readonly string[] = [],
+  mods: ModMappingContext = {},
 ): Schematic {
   const sourceVersion = schematic.minecraftVersion;
   const sourceCount = schematic.palette.length;
-  const modBlockIds = toIdSet(loadedModBlockIds);
 
   // Step 1: compute the post-mapping state for every source palette entry.
-  // Overrides win, then loaded-mod passthrough, then the natural mapper.
+  // Overrides win, then modded resolution, then the natural mapper.
   interface ResolvedTarget {
     key: string;
     blockId: string;
     properties: Record<string, string>;
   }
+  const resolved = (
+    blockId: string,
+    properties: Record<string, string>,
+  ): ResolvedTarget => {
+    const props = { ...properties };
+    return { key: blockStateKey(blockId, props), blockId, properties: props };
+  };
   const targetByIndex: ResolvedTarget[] = new Array(sourceCount);
   for (let i = 0; i < sourceCount; i += 1) {
     const entry = schematic.palette[i];
     const override = overrides[entry.blockState];
     if (override !== undefined) {
-      const props = { ...override.properties };
-      targetByIndex[i] = {
-        key: blockStateKey(override.blockId, props),
-        blockId: override.blockId,
-        properties: props,
-      };
+      targetByIndex[i] = resolved(override.blockId, override.properties);
       continue;
     }
-    if (modBlockIds.has(entry.blockId)) {
-      const props = { ...entry.properties };
-      targetByIndex[i] = {
-        key: blockStateKey(entry.blockId, props),
-        blockId: entry.blockId,
-        properties: props,
-      };
+    const modded = resolveModdedState(entry.blockId, entry.properties, mods);
+    if (modded.status === "resolved") {
+      targetByIndex[i] = resolved(modded.blockId, modded.properties);
+      continue;
+    }
+    if (modded.status === "pending" || targetVersion === null) {
+      targetByIndex[i] = resolved(entry.blockId, entry.properties);
       continue;
     }
     const source = new BlockState({
@@ -467,7 +472,7 @@ export function applyVersionMapping(
   return {
     name: schematic.name,
     inputFormat: schematic.inputFormat,
-    minecraftVersion: targetVersion,
+    minecraftVersion: targetVersion ?? schematic.minecraftVersion,
     totalBlocks,
     palette: finalPalette,
     regions: finalRegions,

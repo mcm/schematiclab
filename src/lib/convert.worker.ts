@@ -15,6 +15,7 @@ import {
   type ParseResult,
   type SchematicFormatId,
 } from "./convert";
+import type { ModMappingContext } from "./advanced/mod-mapping";
 import {
   previewVersionMapping,
   type VersionMappingPreview,
@@ -39,9 +40,10 @@ export interface ParsePayload {
 
 export interface TranslatePreviewPayload {
   schematic: ParsedSchematicProjection;
-  targetVersion: MinecraftVersion;
-  // Block ids provided by loaded mods; counted clean and left untranslated.
-  loadedModBlockIds: string[];
+  // Null runs only the mod mapping (vanilla entries untouched).
+  targetVersion: MinecraftVersion | null;
+  // Per-namespace modded validation / rewrite input.
+  mods: ModMappingContext;
 }
 
 export interface ExportPayload {
@@ -130,12 +132,8 @@ ctx.addEventListener("message", (event) => {
     }
 
     if (type === "translatePreview") {
-      const { schematic, targetVersion, loadedModBlockIds } = request.payload;
-      const result = previewVersionMapping(
-        schematic,
-        targetVersion,
-        loadedModBlockIds,
-      );
+      const { schematic, targetVersion, mods } = request.payload;
+      const result = previewVersionMapping(schematic, targetVersion, mods);
       ctx.postMessage({ id, ok: true, type: "translatePreview", result });
       return;
     }

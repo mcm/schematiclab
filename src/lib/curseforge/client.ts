@@ -8,7 +8,8 @@ import type {
 
 export interface CurseForgeSearchParams {
   q: string;
-  gameVersion: string;
+  /** Minecraft version to filter by; null searches every version. */
+  gameVersion: string | null;
   loader: ModLoader | null;
   index: number;
 }
@@ -19,11 +20,9 @@ export type CurseForgeSearchResult =
   | { status: "error"; message: string };
 
 export function buildSearchUrl(params: CurseForgeSearchParams): string {
-  const query = new URLSearchParams({
-    q: params.q.trim(),
-    gameVersion: params.gameVersion,
-    index: String(params.index),
-  });
+  const query = new URLSearchParams({ q: params.q.trim() });
+  if (params.gameVersion !== null) query.set("gameVersion", params.gameVersion);
+  query.set("index", String(params.index));
   if (params.loader) query.set("loader", params.loader);
   return `/api/curseforge/search?${query.toString()}`;
 }

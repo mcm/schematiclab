@@ -2,10 +2,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { strToU8, zipSync } from "fflate";
 
-import type { LoadedModAssets } from "../../mods/types";
+import type { LoadedModAssets, LoadedModMeta } from "../../mods/types";
 import {
   decodeModTextures,
   entityTexturesFromZip,
+  previewFilesChanged,
 } from "../minecraft-resources";
 
 function mod(textures: Record<string, Blob>): LoadedModAssets {
@@ -50,5 +51,19 @@ describe("entityTexturesFromZip", () => {
     const blob = textures["minecraft:entity/chest/normal"];
     expect(blob?.type).toBe("image/png");
     expect(await blob?.text()).toBe("chest");
+  });
+});
+
+describe("previewFilesChanged", () => {
+  const file = (key: string) => ({ key }) as LoadedModMeta;
+
+  it("compares preview file selections by record identity", () => {
+    const a = file("1:1.20.1");
+    const b = file("2:1.20.1");
+    expect(previewFilesChanged([a, b], [a, b])).toBe(false);
+    expect(previewFilesChanged([a, b], [a])).toBe(true);
+    expect(previewFilesChanged([a, b], [b, a])).toBe(true);
+    // A replaced file in the same (mod, version) slot keeps its key.
+    expect(previewFilesChanged([a], [file("1:1.20.1")])).toBe(true);
   });
 });

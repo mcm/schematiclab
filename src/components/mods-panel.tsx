@@ -8,6 +8,7 @@ import {
   IconDownload,
   IconExternalLink,
   IconFolderOpen,
+  IconLink,
   IconLoader2,
   IconPackage,
   IconPlus,
@@ -18,19 +19,21 @@ import {
 import type { ParsedSchematicProjection } from "@/lib/convert";
 import { getEffectiveModVersion } from "@/lib/advanced/effective-mod-version";
 import { useAdvancedTargetVersion } from "@/lib/advanced/target-version-state";
-import {
-  formatDownloadCount,
-  hasMoreResults,
-  searchCurseForgeMods,
-} from "@/lib/curseforge/client";
+import { formatDownloadCount, hasMoreResults } from "@/lib/curseforge/client";
 import {
   isModLoader,
   type CurseForgeModSummary,
   type ModLoader,
 } from "@/lib/curseforge/types";
 import {
+  SEARCH_DEBOUNCE_MS,
+  useDebouncedValue,
+  useModSearch,
+} from "@/lib/curseforge/use-mod-search";
+import {
   describeModLoadState,
   dismissModLoad,
+  modLoadKey,
   startModLoad,
   useModLoads,
   type ModLoadEntry,
@@ -43,12 +46,18 @@ import {
   useModpackLoad,
   type ModpackLoadState,
 } from "@/lib/mods/load-modpack";
+import { useNamespaceMappings } from "@/lib/mods/mappings";
+import {
+  detectSchematicNamespaces,
+  unmappedNamespaces,
+  type SchematicNamespace,
+} from "@/lib/mods/namespaces";
+import { isRestrictedProject } from "@/lib/mods/project-picker";
 import { removeLoadedMod, useLoadedMods } from "@/lib/mods/registry";
 import type { LoadedModMeta } from "@/lib/mods/types";
 
 const SEARCH_INPUT_ID = "mods-panel-search";
 const LOADER_SELECT_ID = "mods-panel-loader";
-const SEARCH_DEBOUNCE_MS = 300;
 
 const LOADER_OPTIONS: readonly { value: ModLoader | ""; label: string }[] = [
   { value: "", label: "Any" },
@@ -58,162 +67,36 @@ const LOADER_OPTIONS: readonly { value: ModLoader | ""; label: string }[] = [
   { value: "quilt", label: "Quilt" },
 ];
 
-// A request from elsewhere in the editor to search for a mod. Each new object
-// replaces the search text, even if `text` repeats.
-export interface ModSearchRequest {
-  text: string;
-}
-
 interface ModsPanelProps {
   schematic: ParsedSchematicProjection;
-  searchRequest?: ModSearchRequest | null;
+  // Opens the shared project picker (map mode) for a namespace.
+  onMapNamespace?: (namespace: string) => void;
 }
 
-// Results for one (version, loader, query) combination. Changing any of the
-// three produces a new `key`, which discards accumulated pages.
-type SearchState =
-  | { status: "loading"; key: string }
-  | {
-      status: "ready";
-      key: string;
-      mods: CurseForgeModSummary[];
-      // CurseForge offset for the next page. Tracked separately from
-      // `mods.length` because duplicate ids across pages are dropped.
-      nextIndex: number;
-      totalCount: number;
-      loadingMore: boolean;
-      loadMoreError: string | null;
-    }
-  | { status: "error"; key: string; message: string }
-  | { status: "not_configured"; key: string };
-
-function useDebouncedValue<T>(value: T, delayMs: number): T {
-  const [debounced, setDebounced] = React.useState(value);
-  React.useEffect(() => {
-    const timer = setTimeout(() => setDebounced(value), delayMs);
-    return () => clearTimeout(timer);
-  }, [value, delayMs]);
-  return debounced;
-}
-
-export function ModsPanel({ schematic, searchRequest = null }: ModsPanelProps) {
+export function ModsPanel({ schematic, onMapNamespace }: ModsPanelProps) {
   const [targetVersionId] = useAdvancedTargetVersion();
   const { versionId, isFallback } = getEffectiveModVersion(
     targetVersionId,
     schematic,
   );
 
-  const [query, setQuery] = React.useState(searchRequest?.text ?? "");
-  // Apply a new external search request by adjusting state during render.
-  const [appliedRequest, setAppliedRequest] = React.useState(searchRequest);
-  if (searchRequest !== appliedRequest) {
-    setAppliedRequest(searchRequest);
-    if (searchRequest !== null) setQuery(searchRequest.text);
-  }
+  const [query, setQuery] = React.useState("");
   const [loader, setLoader] = React.useState<ModLoader | null>(null);
   const debouncedQuery = useDebouncedValue(query.trim(), SEARCH_DEBOUNCE_MS);
 
   const loadedMods = useLoadedMods();
+  // Mods with a file loaded for the version being searched.
   const loadedModIds = React.useMemo(
-    () => new Set(loadedMods.map((mod) => mod.modId)),
-    [loadedMods],
+    () =>
+      new Set(
+        loadedMods
+          .filter((mod) => mod.gameVersion === versionId)
+          .map((mod) => mod.modId),
+      ),
+    [loadedMods, versionId],
   );
 
-  const searchKey = JSON.stringify([versionId, loader, debouncedQuery]);
-  const [state, setState] = React.useState<SearchState>({
-    status: "loading",
-    key: searchKey,
-  });
-  const loadMoreAbortRef = React.useRef<AbortController | null>(null);
-
-  // First page for the current key. setState lives behind an `await` to keep
-  // the no-sync-setState-in-effect lint rule happy.
-  React.useEffect(() => {
-    const controller = new AbortController();
-    loadMoreAbortRef.current?.abort();
-    void (async () => {
-      await Promise.resolve();
-      if (controller.signal.aborted) return;
-      setState({ status: "loading", key: searchKey });
-      let result;
-      try {
-        result = await searchCurseForgeMods(
-          { q: debouncedQuery, gameVersion: versionId, loader, index: 0 },
-          controller.signal,
-        );
-      } catch {
-        return; // aborted
-      }
-      if (controller.signal.aborted) return;
-      if (result.status === "ok") {
-        setState({
-          status: "ready",
-          key: searchKey,
-          mods: result.data.mods,
-          nextIndex: result.data.mods.length,
-          totalCount: result.data.pagination.totalCount,
-          loadingMore: false,
-          loadMoreError: null,
-        });
-      } else if (result.status === "not_configured") {
-        setState({ status: "not_configured", key: searchKey });
-      } else {
-        setState({ status: "error", key: searchKey, message: result.message });
-      }
-    })();
-    return () => controller.abort();
-  }, [searchKey, debouncedQuery, versionId, loader]);
-
-  const loadMore = React.useCallback(() => {
-    if (state.status !== "ready" || state.loadingMore) return;
-    const { key, nextIndex } = state;
-    const controller = new AbortController();
-    loadMoreAbortRef.current = controller;
-    setState({ ...state, loadingMore: true, loadMoreError: null });
-    void (async () => {
-      let result;
-      try {
-        result = await searchCurseForgeMods(
-          {
-            q: debouncedQuery,
-            gameVersion: versionId,
-            loader,
-            index: nextIndex,
-          },
-          controller.signal,
-        );
-      } catch {
-        return; // aborted
-      }
-      setState((prev) => {
-        if (prev.status !== "ready" || prev.key !== key) return prev;
-        if (result.status !== "ok") {
-          return {
-            ...prev,
-            loadingMore: false,
-            loadMoreError:
-              result.status === "error"
-                ? result.message
-                : "CurseForge integration is not configured on this server.",
-          };
-        }
-        // Rankings can shift between pages; skip duplicates.
-        const seen = new Set(prev.mods.map((mod) => mod.id));
-        const appended = result.data.mods.filter((mod) => !seen.has(mod.id));
-        return {
-          ...prev,
-          mods: [...prev.mods, ...appended],
-          nextIndex: prev.nextIndex + result.data.mods.length,
-          // An empty page means we've run out regardless of the reported total.
-          totalCount:
-            result.data.mods.length === 0
-              ? prev.nextIndex
-              : result.data.pagination.totalCount,
-          loadingMore: false,
-        };
-      });
-    })();
-  }, [state, debouncedQuery, versionId, loader]);
+  const { view, loadMore } = useModSearch(debouncedQuery, versionId, loader);
 
   const modLoads = useModLoads();
   const handleAdd = React.useCallback(
@@ -223,10 +106,15 @@ export function ModsPanel({ schematic, searchRequest = null }: ModsPanelProps) {
     [versionId, loader],
   );
 
-  // Show the loading state immediately when inputs change, before the effect
-  // for the new key has run.
-  const view: SearchState =
-    state.key === searchKey ? state : { status: "loading", key: searchKey };
+  const mappings = useNamespaceMappings();
+  const unmapped = React.useMemo(
+    () =>
+      unmappedNamespaces(
+        detectSchematicNamespaces(schematic.palette),
+        mappings,
+      ),
+    [schematic.palette, mappings],
+  );
 
   return (
     <div
@@ -238,6 +126,13 @@ export function ModsPanel({ schematic, searchRequest = null }: ModsPanelProps) {
         minHeight: 0,
       }}
     >
+      {unmapped.length > 0 ? (
+        <UnmappedModsSection
+          namespaces={unmapped}
+          onMapNamespace={onMapNamespace}
+        />
+      ) : null}
+
       <LoadedModsSection
         loadedMods={loadedMods}
         modLoads={modLoads}
@@ -350,7 +245,7 @@ export function ModsPanel({ schematic, searchRequest = null }: ModsPanelProps) {
                 key={mod.id}
                 mod={mod}
                 loaded={loadedModIds.has(mod.id)}
-                load={modLoads.get(mod.id) ?? null}
+                load={modLoads.get(modLoadKey(mod.id, versionId)) ?? null}
                 onAdd={handleAdd}
               />
             ))}
@@ -417,7 +312,7 @@ function ModRow({
   onAdd: (mod: CurseForgeModSummary) => void;
 }) {
   const author = mod.authors[0] ?? null;
-  const restricted = !mod.allowModDistribution;
+  const restricted = isRestrictedProject(mod);
 
   return (
     <div
@@ -650,18 +545,107 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
   );
 }
 
+function UnmappedModsSection({
+  namespaces,
+  onMapNamespace,
+}: {
+  namespaces: readonly SchematicNamespace[];
+  onMapNamespace?: (namespace: string) => void;
+}) {
+  return (
+    <section
+      aria-label="Unmapped mods in this schematic"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--space-1)",
+        flexShrink: 0,
+      }}
+    >
+      <SectionHeading>Unmapped mods in this schematic</SectionHeading>
+      <div
+        role="list"
+        aria-label="Unmapped mods in this schematic"
+        style={{
+          maxHeight: "30vh",
+          overflowY: "auto",
+          border: "1px solid var(--border-subtle)",
+          borderRadius: "var(--radius-md)",
+          background: "var(--bg-page)",
+        }}
+      >
+        {namespaces.map((entry) => (
+          <div
+            key={entry.namespace}
+            role="listitem"
+            style={{ ...ROW_STYLE, alignItems: "center" }}
+          >
+            <div
+              style={{ display: "flex", flexDirection: "column", minWidth: 0 }}
+            >
+              <span
+                style={{
+                  ...NAME_STYLE,
+                  fontFamily: "var(--font-mono, ui-monospace, monospace)",
+                }}
+                title={entry.namespace}
+              >
+                {entry.namespace}
+              </span>
+              <span style={META_STYLE}>
+                {`${entry.blockStateCount.toLocaleString()} ${
+                  entry.blockStateCount === 1 ? "block state" : "block states"
+                } · ${entry.blockCount.toLocaleString()} ${
+                  entry.blockCount === 1 ? "block" : "blocks"
+                }`}
+              </span>
+            </div>
+            {onMapNamespace ? (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => onMapNamespace(entry.namespace)}
+                aria-label={`Map ${entry.namespace} to a CurseForge project`}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "var(--space-1)",
+                }}
+              >
+                <IconLink size={14} aria-hidden="true" />
+                Map…
+              </Button>
+            ) : null}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function LoadedModsSection({
   loadedMods,
   modLoads,
   versionId,
 }: {
   loadedMods: readonly LoadedModMeta[];
-  modLoads: ReadonlyMap<number, ModLoadEntry>;
+  modLoads: ReadonlyMap<string, ModLoadEntry>;
   versionId: string;
 }) {
+  // One group per mod, in first-loaded order, each listing its files.
+  const groups = React.useMemo(() => {
+    const byMod = new Map<number, LoadedModMeta[]>();
+    for (const mod of loadedMods) {
+      const files = byMod.get(mod.modId);
+      if (files === undefined) byMod.set(mod.modId, [mod]);
+      else files.push(mod);
+    }
+    return [...byMod.values()];
+  }, [loadedMods]);
   // A load stays pending until persisted, but the registry lists it sooner.
-  const pending = [...modLoads.values()].filter(
-    (entry) => !loadedMods.some((mod) => mod.modId === entry.request.mod.id),
+  const pending = [...modLoads].filter(
+    ([key]) => !loadedMods.some((mod) => mod.key === key),
   );
   const empty = loadedMods.length === 0 && pending.length === 0;
 
@@ -710,11 +694,15 @@ function LoadedModsSection({
             background: "var(--bg-page)",
           }}
         >
-          {loadedMods.map((mod) => (
-            <LoadedModRow key={mod.key} mod={mod} versionId={versionId} />
+          {groups.map((files) => (
+            <LoadedModGroup
+              key={files[0].modId}
+              files={files}
+              versionId={versionId}
+            />
           ))}
-          {pending.map((entry) => (
-            <PendingModRow key={entry.request.mod.id} entry={entry} />
+          {pending.map(([key, entry]) => (
+            <PendingModRow key={key} entry={entry} />
           ))}
         </div>
       )}
@@ -989,57 +977,85 @@ const META_STYLE: React.CSSProperties = {
   whiteSpace: "nowrap",
 };
 
-function LoadedModRow({
-  mod,
+function LoadedModGroup({
+  files,
   versionId,
 }: {
-  mod: LoadedModMeta;
+  files: readonly LoadedModMeta[];
   versionId: string;
 }) {
-  const [removing, setRemoving] = React.useState(false);
-  const warnings = mod.warnings ?? [];
-  const versionMismatch =
-    mod.gameVersions.length > 0 && !mod.gameVersions.includes(versionId);
-  const blockCount = mod.blocks.length;
+  const { modName } = files[0];
+  const hasVersionFile = files.some((file) => file.gameVersion === versionId);
 
   return (
-    <div role="listitem" style={ROW_STYLE}>
+    <div
+      role="listitem"
+      aria-label={modName}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        borderBottom: "1px solid var(--border-subtle)",
+        fontSize: "var(--text-sm)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "var(--space-2)",
+          minWidth: 0,
+          padding: "var(--space-2) var(--space-3) 0",
+        }}
+      >
+        <span style={NAME_STYLE} title={modName}>
+          {modName}
+        </span>
+        {hasVersionFile ? null : (
+          <Badge
+            variant="warning"
+            size="sm"
+            title={`No file of this mod is loaded for Minecraft ${versionId}`}
+            style={{
+              flexShrink: 0,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 2,
+            }}
+          >
+            <IconAlertTriangle size={12} aria-hidden="true" />
+            No {versionId} file
+          </Badge>
+        )}
+      </div>
+      <div role="list" aria-label={`${modName} files`}>
+        {files.map((file) => (
+          <LoadedFileRow key={file.key} file={file} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function LoadedFileRow({ file }: { file: LoadedModMeta }) {
+  const [removing, setRemoving] = React.useState(false);
+  const warnings = file.warnings ?? [];
+  const blockCount = file.blocks.length;
+
+  return (
+    <div role="listitem" style={{ ...ROW_STYLE, borderBottom: "none" }}>
       <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "var(--space-2)",
-            minWidth: 0,
-          }}
+        <span
+          style={{ ...META_STYLE, color: "var(--text-secondary)" }}
+          title={`Built for ${file.gameVersions.join(", ") || "an unknown version"}`}
         >
-          <span style={NAME_STYLE} title={mod.modName}>
-            {mod.modName}
-          </span>
-          {versionMismatch ? (
-            <Badge
-              variant="warning"
-              size="sm"
-              title={`This file was built for Minecraft ${mod.gameVersions.join(", ")}, not ${versionId}`}
-              style={{
-                flexShrink: 0,
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 2,
-              }}
-            >
-              <IconAlertTriangle size={12} aria-hidden="true" />
-              Built for {mod.gameVersions.join(", ")}
-            </Badge>
-          ) : null}
-        </div>
-        <span style={META_STYLE} title={mod.fileDisplayName}>
-          {mod.fileDisplayName}
+          Minecraft {file.gameVersion}
+        </span>
+        <span style={META_STYLE} title={file.fileDisplayName}>
+          {file.fileDisplayName}
         </span>
         <span style={META_STYLE}>
           {[
-            mod.gameVersions.join(", ") || "Unknown version",
-            mod.loader ? LOADER_LABELS[mod.loader] : null,
+            file.loader ? LOADER_LABELS[file.loader] : null,
             `${blockCount.toLocaleString()} ${blockCount === 1 ? "block" : "blocks"}`,
           ]
             .filter(Boolean)
@@ -1076,9 +1092,9 @@ function LoadedModRow({
         disabled={removing}
         onClick={() => {
           setRemoving(true);
-          void removeLoadedMod(mod.key);
+          void removeLoadedMod(file.key);
         }}
-        aria-label={`Remove ${mod.modName}`}
+        aria-label={`Remove ${file.modName} for Minecraft ${file.gameVersion}`}
         style={{
           display: "inline-flex",
           alignItems: "center",
@@ -1101,6 +1117,7 @@ function PendingModRow({ entry }: { entry: ModLoadEntry }) {
         <span style={NAME_STYLE} title={request.mod.name}>
           {request.mod.name}
         </span>
+        <span style={META_STYLE}>Minecraft {request.gameVersion}</span>
         {failed ? (
           <span
             role="alert"
@@ -1133,7 +1150,7 @@ function PendingModRow({ entry }: { entry: ModLoadEntry }) {
             type="button"
             variant="ghost"
             size="sm"
-            onClick={() => dismissModLoad(request.mod.id)}
+            onClick={() => dismissModLoad(request.mod.id, request.gameVersion)}
             aria-label={`Dismiss error for ${request.mod.name}`}
           >
             <IconX size={14} aria-hidden="true" />

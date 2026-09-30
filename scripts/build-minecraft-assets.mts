@@ -6,13 +6,19 @@
 //   - blockstates.json   — { <block_path>: <blockstate JSON> } (mcmeta)
 //   - models.json        — { <model_path>: <block model JSON> } (mcmeta)
 //   - opaque-blocks.json — { "opaque": ["minecraft:stone", ...] } (deepslate demo)
+//   - block-colors.json  — { "minecraft:stone": { oklab: [L, a, b], fullCube } }
+//                          for block substitution suggestions, computed from
+//                          the atlas and models above, using each block's
+//                          default state from mcmeta's block summary
+//                          (`src/lib/render/block-appearance.ts`)
 //   - entity-textures.zip — `entity/**/*.png` requested by deepslate's
 //                           block-entity renderers (chests, heads, ...) that
 //                           the block atlas lacks (mcmeta `assets` branch)
 //   - version.json       — mcmeta's record of the Minecraft version above
 //
 // Every mcmeta download is pinned to one Minecraft version via mcmeta's
-// per-version tags (`<id>-assets-json`, `<id>-atlas`, `<id>-assets`), so the
+// per-version tags (`<id>-assets-json`, `<id>-atlas`, `<id>-assets`,
+// `<id>-summary`), so the
 // files always agree. The runtime loader
 // (`src/lib/render/minecraft-resources.ts`) fetches the bundle and constructs
 // a deepslate `Resources` implementation.
@@ -38,6 +44,11 @@ import { fileURLToPath } from "node:url";
 
 import { zipSync } from "fflate";
 
+import {
+  decodePng,
+  vanillaBlockColors,
+  type BlockStateProperties,
+} from "../src/lib/render/block-appearance.ts";
 import {
   isSupersededEntityTexture,
   specialRendererTextures,
@@ -71,6 +82,24 @@ function readJsonDir(dir: string): Record<string, unknown> {
       const id = entry.name.replace(/\.json$/, "");
       out[id] = JSON.parse(readFileSync(join(dir, entry.name), "utf8"));
     }
+  }
+  return out;
+}
+
+/** mcmeta summary `{ <block>: [properties, defaults] }` → block → defaults. */
+function blockDefaultProperties(
+  summary: unknown,
+): Record<string, BlockStateProperties> {
+  if (typeof summary !== "object" || summary === null) {
+    throw new Error("Unexpected mcmeta blocks summary");
+  }
+  const out: Record<string, BlockStateProperties> = {};
+  for (const [block, entry] of Object.entries(summary)) {
+    const defaults: unknown = Array.isArray(entry) ? entry[1] : undefined;
+    if (typeof defaults !== "object" || defaults === null) continue;
+    out[block] = Object.fromEntries(
+      Object.entries(defaults).map(([name, value]) => [name, String(value)]),
+    );
   }
   return out;
 }
@@ -128,6 +157,38 @@ console.log("Downloading texture atlas + UVs...");
 const atlasBase = `${MCMETA_RAW_BASE}/${versionId}-atlas/blocks`;
 curl(`${atlasBase}/atlas.png`, join(STAGE_DIR, "atlas.png"));
 curl(`${atlasBase}/data.min.json`, join(STAGE_DIR, "atlas-uvs.json"));
+
+console.log("Downloading block default states...");
+// `blocks/data.min.json` maps a block path to `[properties, defaults]`; it is
+// only used here, so it lives outside the staged bundle.
+const blockSummaryFile = join(tmpRoot, "blocks-summary.json");
+curl(
+  `${MCMETA_RAW_BASE}/${versionId}-summary/blocks/data.min.json`,
+  blockSummaryFile,
+);
+const defaultProperties = blockDefaultProperties(
+  JSON.parse(readFileSync(blockSummaryFile, "utf8")),
+);
+console.log(`  ${Object.keys(defaultProperties).length} blocks`);
+
+console.log("Computing block colours...");
+const atlasImage = decodePng(readFileSync(join(STAGE_DIR, "atlas.png")));
+if (atlasImage === null) throw new Error("Could not decode atlas.png");
+const blockColors = vanillaBlockColors(
+  blockstates,
+  blockModels,
+  atlasImage,
+  JSON.parse(readFileSync(join(STAGE_DIR, "atlas-uvs.json"), "utf8")) as Record<
+    string,
+    unknown
+  >,
+  defaultProperties,
+);
+writeFileSync(
+  join(STAGE_DIR, "block-colors.json"),
+  JSON.stringify(blockColors),
+);
+console.log(`  ${Object.keys(blockColors).length} blocks`);
 
 console.log("Downloading block-entity textures...");
 const blockAtlas = JSON.parse(

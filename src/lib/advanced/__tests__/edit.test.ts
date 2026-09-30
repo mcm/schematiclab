@@ -261,9 +261,17 @@ describe("applyVersionMapping", () => {
       V_1_16_5,
     );
 
-    const after = applyVersionMapping(before, V_1_17_1, {}, [
-      "create:andesite_casing",
-    ]);
+    const after = applyVersionMapping(
+      before,
+      V_1_17_1,
+      {},
+      {
+        create: {
+          kind: "target",
+          blocks: { "create:andesite_casing": { axis: ["x", "y", "z"] } },
+        },
+      },
+    );
 
     const modded = after.palette.find(
       (e) => e.blockId === "create:andesite_casing",
@@ -298,9 +306,17 @@ describe("applyVersionMapping", () => {
       dataVersion: 1343,
     };
 
-    const withIds = applyVersionMapping(before, V_1_12_2, {}, [
-      "create:andesite_casing",
-    ]);
+    const withIds = applyVersionMapping(
+      before,
+      V_1_12_2,
+      {},
+      {
+        create: {
+          kind: "target",
+          blocks: { "create:andesite_casing": { axis: ["x", "y", "z"] } },
+        },
+      },
+    );
     expect(withIds.palette.map((e) => e.blockState)).toEqual([
       "create:andesite_casing[axis=y]",
     ]);
@@ -420,5 +436,156 @@ describe("applyVersionMapping", () => {
     expect(after).not.toBe(before);
     expect(before.minecraftVersion).toEqual(V_1_16_5);
     expect(before.palette[0].blockId).toBe("minecraft:grass_path");
+  });
+});
+
+describe("applyVersionMapping with a ModMappingContext", () => {
+  const V_1_12_2: MinecraftVersion = {
+    platform: "java",
+    versionNumber: [1, 12, 2],
+    dataVersion: 1343,
+  };
+
+  function moddedSchematic(version: MinecraftVersion = V_1_16_5): Schematic {
+    return schematic(
+      [
+        {
+          blockState: "create:andesite_casing[axis=y]",
+          blockId: "create:andesite_casing",
+          properties: { axis: "y" },
+          count: 1,
+        },
+        {
+          blockState: "create:belt[facing=up,part=middle]",
+          blockId: "create:belt",
+          properties: { facing: "up", part: "middle" },
+          count: 1,
+        },
+        {
+          blockState: "create:gone_block",
+          blockId: "create:gone_block",
+          count: 1,
+        },
+        {
+          blockState: "minecraft:grass_path",
+          blockId: "minecraft:grass_path",
+          count: 1,
+        },
+      ],
+      [
+        {
+          blocks: [
+            { pos: [0, 0, 0], paletteIndex: 0 },
+            { pos: [1, 0, 0], paletteIndex: 1 },
+            { pos: [2, 0, 0], paletteIndex: 2 },
+            { pos: [3, 0, 0], paletteIndex: 3 },
+          ],
+        },
+      ],
+      version,
+    );
+  }
+
+  const replaceContext = {
+    create: {
+      kind: "replace" as const,
+      newNamespace: "createplus",
+      blocks: {
+        "createplus:andesite_casing": { axis: ["x", "y", "z"] },
+        "createplus:belt": { facing: ["east", "north"] },
+      },
+    },
+  };
+
+  function states(s: Schematic): string[] {
+    return s.palette.map((e) => e.blockState).sort();
+  }
+
+  it("applies replacement rewrites and best-effort states", () => {
+    const after = applyVersionMapping(
+      moddedSchematic(),
+      V_1_17_1,
+      {},
+      replaceContext,
+    );
+    expect(states(after)).toEqual([
+      "create:gone_block",
+      "createplus:andesite_casing[axis=y]",
+      "createplus:belt[facing=east]",
+      "minecraft:dirt_path",
+    ]);
+    expect(after.minecraftVersion).toEqual(V_1_17_1);
+  });
+
+  it("with a null target leaves vanilla and minecraftVersion untouched", () => {
+    const before = moddedSchematic();
+    const after = applyVersionMapping(before, null, {}, replaceContext);
+    expect(states(after)).toEqual([
+      "create:gone_block",
+      "createplus:andesite_casing[axis=y]",
+      "createplus:belt[facing=east]",
+      "minecraft:grass_path",
+    ]);
+    expect(after.minecraftVersion).toBe(before.minecraftVersion);
+  });
+
+  it("user overrides win over modded resolution", () => {
+    const after = applyVersionMapping(
+      moddedSchematic(),
+      null,
+      {
+        "create:gone_block": { blockId: "minecraft:stone", properties: {} },
+        "create:belt[facing=up,part=middle]": {
+          blockId: "createplus:belt",
+          properties: { facing: "north" },
+        },
+      },
+      replaceContext,
+    );
+    expect(states(after)).toEqual([
+      "createplus:andesite_casing[axis=y]",
+      "createplus:belt[facing=north]",
+      "minecraft:grass_path",
+      "minecraft:stone",
+    ]);
+  });
+
+  it("target validates in place; keep, unmapped and pending pass through", () => {
+    for (const mapping of [
+      { kind: "keep" as const },
+      { kind: "unmapped" as const },
+      { kind: "pending" as const },
+    ]) {
+      // Across the flattening an untranslated modded id would become air.
+      const after = applyVersionMapping(
+        moddedSchematic(),
+        V_1_12_2,
+        {},
+        {
+          create: mapping,
+        },
+      );
+      expect(
+        after.palette.filter((e) => e.blockId.startsWith("create:")),
+      ).toHaveLength(3);
+    }
+
+    const after = applyVersionMapping(
+      moddedSchematic(),
+      null,
+      {},
+      {
+        create: {
+          kind: "target",
+          blocks: { "create:belt": { facing: ["east"], part: ["middle"] } },
+        },
+      },
+    );
+    expect(states(after)).toEqual([
+      "create:andesite_casing[axis=y]",
+      "create:belt[facing=east,part=middle]",
+      "create:gone_block",
+      "minecraft:grass_path",
+    ]);
   });
 });

@@ -109,7 +109,6 @@ describe("curseforge proxy routes", () => {
 
   describe("invalid params → 400", () => {
     it.each([
-      ["missing gameVersion", ""],
       ["unknown gameVersion", "gameVersion=9.9.9"],
       ["bad loader", "gameVersion=1.20.1&loader=rift"],
       ["negative index", "gameVersion=1.20.1&index=-1"],
@@ -168,6 +167,15 @@ describe("curseforge proxy routes", () => {
 
       const init = fetchMock.mock.calls[0][1] as RequestInit;
       expect((init.headers as Record<string, string>)["x-api-key"]).toBe(KEY);
+    });
+
+    it("searches every version when gameVersion is omitted", async () => {
+      fetchMock.mockResolvedValue(jsonResponse({ data: [], pagination: {} }));
+      const res = await search("q=create");
+      expect(res.status).toBe(200);
+      const p = upstreamUrl(fetchMock).searchParams;
+      expect(p.has("gameVersion")).toBe(false);
+      expect(p.get("searchFilter")).toBe("create");
     });
 
     it.each(Object.entries(MOD_LOADER_TYPE))(

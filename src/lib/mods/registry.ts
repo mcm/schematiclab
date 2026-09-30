@@ -5,9 +5,11 @@
 // unavailable (private mode, blocked storage) the registry keeps working
 // in-memory only for the session and logs a single `console.warn`.
 //
-// The snapshot is an immutable array whose identity changes only when the set
-// of loaded mods changes. Derived lookups (block ids, namespaces) are cached
-// per snapshot.
+// The registry holds at most one file per (CurseForge mod, Minecraft version),
+// so a mod's source-version and target-version files can be loaded side by
+// side. The snapshot is an immutable array whose identity changes only when
+// the set of loaded files changes. Derived lookups (block ids, namespaces,
+// per-version blocks, preview files) are cached per snapshot.
 
 import * as React from "react";
 
@@ -21,10 +23,15 @@ export interface ModForBlock {
   modName: string;
 }
 
-interface Derived {
-  blockIds: ReadonlySet<string>;
+interface BlockLookup {
   blockToMod: ReadonlyMap<string, ModForBlock>;
   blocks: ReadonlyMap<string, ModBlock>;
+}
+
+interface Derived extends BlockLookup {
+  blockIds: ReadonlySet<string>;
+  // Some mod has files for more than one game version loaded.
+  multiVersionMods: boolean;
   namespaces: ReadonlySet<string>;
 }
 
@@ -32,6 +39,19 @@ const EMPTY: LoadedModsSnapshot = Object.freeze([]);
 
 let mods: LoadedModsSnapshot = EMPTY;
 let derived: { for: LoadedModsSnapshot; value: Derived } | null = null;
+// Per-snapshot caches keyed by version id (and namespace for blocks).
+let previewFiles: {
+  for: LoadedModsSnapshot;
+  value: Map<string | null, LoadedModsSnapshot>;
+} | null = null;
+let versionBlocks: {
+  for: LoadedModsSnapshot;
+  value: Map<string, ReadonlyMap<string, ModBlock>>;
+} | null = null;
+let versionBlockLookups: {
+  for: LoadedModsSnapshot;
+  value: Map<string, BlockLookup>;
+} | null = null;
 const listeners = new Set<() => void>();
 // Assets for mods added this session. Serves reads while persistence is
 // unavailable (and saves an IndexedDB round-trip otherwise).
@@ -59,12 +79,16 @@ function disablePersistence(error: unknown): void {
   );
 }
 
-/** Merge `incoming` into `base`, keeping one file per CurseForge mod. */
+function sameFileSlot(a: LoadedModMeta, b: LoadedModMeta): boolean {
+  return a.modId === b.modId && a.gameVersion === b.gameVersion;
+}
+
+/** Merge `incoming` into `base`, keeping one file per (mod, game version). */
 function withMod(
   base: LoadedModsSnapshot,
   incoming: LoadedModMeta,
 ): LoadedModMeta[] {
-  return [...base.filter((mod) => mod.modId !== incoming.modId), incoming];
+  return [...base.filter((mod) => !sameFileSlot(mod, incoming)), incoming];
 }
 
 function autoHydrate(): void {
@@ -87,10 +111,11 @@ export function hydrateLoadedMods(): Promise<void> {
         disablePersistence(error);
         return;
       }
-      // Mods added during hydration win over stored files of the same mod.
-      const sessionModIds = new Set(mods.map((mod) => mod.modId));
+      // Files added during hydration win over stored files in the same slot.
       const restored = stored.filter(
-        (mod) => !removedKeys.has(mod.key) && !sessionModIds.has(mod.modId),
+        (file) =>
+          !removedKeys.has(file.key) &&
+          !mods.some((mod) => sameFileSlot(mod, file)),
       );
       if (restored.length > 0) emit(Object.freeze([...restored, ...mods]));
     })();
@@ -120,9 +145,9 @@ export function useLoadedMods(): LoadedModsSnapshot {
 }
 
 /**
- * Register a loaded mod file and persist it. Replaces any loaded file of the
- * same CurseForge mod. Resolves once persisted (or immediately when running
- * in-memory only); persistence failures fall back to in-memory with a warning.
+ * Register a loaded mod file and persist it. Replaces only a loaded file of
+ * the same CurseForge mod for the same game version. Resolves once persisted
+ * (or immediately when running in-memory only); persistence failures fall back to in-memory with a warning.
  */
 export function addLoadedMod(
   meta: LoadedModMeta,
@@ -134,7 +159,8 @@ export function addLoadedMod(
 /**
  * `addLoadedMod` for many files at once: the registry changes (and
  * subscribers, like the 3D preview's atlas rebuild, run) once for the whole
- * batch. Later entries win over earlier ones for the same CurseForge mod.
+ * batch. Later entries win over earlier ones for the same
+ * (CurseForge mod, game version) slot.
  */
 export async function addLoadedMods(
   entries: readonly { meta: LoadedModMeta; assets: LoadedModAssets }[],
@@ -143,7 +169,7 @@ export async function addLoadedMods(
   let next: LoadedModMeta[] = [...mods];
   for (const { meta, assets } of entries) {
     for (const mod of next) {
-      if (mod.modId === meta.modId && mod.key !== meta.key) {
+      if (sameFileSlot(mod, meta) && mod.key !== meta.key) {
         assetCache.delete(mod.key);
         removedKeys.add(mod.key);
       }
@@ -166,7 +192,10 @@ export async function addLoadedMods(
   }
 }
 
-/** Unload a mod file and delete it from persistent storage. */
+/**
+ * Unload one mod file (other versions of the same mod stay loaded) and delete
+ * it from persistent storage.
+ */
 export async function removeLoadedMod(key: string): Promise<void> {
   assetCache.delete(key);
   removedKeys.add(key);
@@ -177,6 +206,23 @@ export async function removeLoadedMod(key: string): Promise<void> {
   if (persistenceDisabled) return;
   try {
     await store.removeLoadedMod(key);
+  } catch (error) {
+    disablePersistence(error);
+  }
+}
+
+/**
+ * Replace a loaded file's metadata in place (same key, same position) and
+ * persist it. No-op when that file is no longer loaded.
+ */
+export async function updateLoadedModMeta(meta: LoadedModMeta): Promise<void> {
+  const index = mods.findIndex((mod) => mod.key === meta.key);
+  if (index < 0) return;
+  emit(Object.freeze(mods.map((mod, i) => (i === index ? meta : mod))));
+
+  if (persistenceDisabled) return;
+  try {
+    await store.updateLoadedModMeta(meta);
   } catch (error) {
     disablePersistence(error);
   }
@@ -200,6 +246,18 @@ export async function getLoadedModAssets(
   }
 }
 
+function indexBlocks(
+  mod: LoadedModMeta,
+  blockToMod: Map<string, ModForBlock>,
+  blocks: Map<string, ModBlock>,
+): void {
+  const owner: ModForBlock = { key: mod.key, modName: mod.modName };
+  for (const block of mod.blocks) {
+    blockToMod.set(block.id, owner);
+    blocks.set(block.id, block);
+  }
+}
+
 function getDerived(): Derived {
   const snapshot = getSnapshot();
   if (derived?.for === snapshot) return derived.value;
@@ -208,14 +266,12 @@ function getDerived(): Derived {
   const namespaces = new Set<string>();
   for (const mod of snapshot) {
     for (const ns of mod.namespaces) namespaces.add(ns);
-    const owner: ModForBlock = { key: mod.key, modName: mod.modName };
-    for (const block of mod.blocks) {
-      blockToMod.set(block.id, owner);
-      blocks.set(block.id, block);
-    }
+    indexBlocks(mod, blockToMod, blocks);
   }
   const value: Derived = {
     blockIds: new Set(blockToMod.keys()),
+    multiVersionMods:
+      new Set(snapshot.map((mod) => mod.modId)).size !== snapshot.length,
     blockToMod,
     blocks,
     namespaces,
@@ -224,19 +280,130 @@ function getDerived(): Derived {
   return value;
 }
 
+/** The loaded file of `modId` for `gameVersion`, or null. */
+export function getLoadedModFile(
+  modId: number,
+  gameVersion: string,
+): LoadedModMeta | null {
+  return (
+    getSnapshot().find(
+      (mod) => mod.modId === modId && mod.gameVersion === gameVersion,
+    ) ?? null
+  );
+}
+
+/**
+ * Blocks in `namespace` from files loaded for `gameVersion`, keyed by block
+ * id. Stable identity per snapshot.
+ */
+export function getModBlocksForVersion(
+  namespace: string,
+  gameVersion: string,
+): ReadonlyMap<string, ModBlock> {
+  const snapshot = getSnapshot();
+  if (versionBlocks?.for !== snapshot) {
+    versionBlocks = { for: snapshot, value: new Map() };
+  }
+  const cacheKey = `${gameVersion}\u0000${namespace}`;
+  const cached = versionBlocks.value.get(cacheKey);
+  if (cached !== undefined) return cached;
+  const prefix = `${namespace}:`;
+  const blocks = new Map<string, ModBlock>();
+  for (const mod of snapshot) {
+    if (mod.gameVersion !== gameVersion) continue;
+    for (const block of mod.blocks) {
+      if (block.id.startsWith(prefix)) blocks.set(block.id, block);
+    }
+  }
+  versionBlocks.value.set(cacheKey, blocks);
+  return blocks;
+}
+
+/**
+ * The files the 3D preview renders: exactly one per mod, the one loaded for
+ * `sourceVersionId` if any, else the most recently loaded. Ordered like the
+ * snapshot (oldest first). Stable identity per snapshot and version.
+ */
+export function getPreviewModFiles(
+  sourceVersionId: string | null,
+): LoadedModsSnapshot {
+  const snapshot = getSnapshot();
+  if (previewFiles?.for !== snapshot) {
+    previewFiles = { for: snapshot, value: new Map() };
+  }
+  const cached = previewFiles.value.get(sourceVersionId);
+  if (cached !== undefined) return cached;
+  const chosen = new Map<number, LoadedModMeta>();
+  for (const mod of snapshot) {
+    const current = chosen.get(mod.modId);
+    if (
+      current === undefined ||
+      (current.gameVersion !== sourceVersionId &&
+        (mod.gameVersion === sourceVersionId ||
+          mod.loadedAt >= current.loadedAt))
+    ) {
+      chosen.set(mod.modId, mod);
+    }
+  }
+  const picked = new Set(chosen.values());
+  const value = Object.freeze(snapshot.filter((mod) => picked.has(mod)));
+  previewFiles.value.set(sourceVersionId, value);
+  return value;
+}
+
 /** Block ids provided by loaded mods. Stable identity per snapshot. */
 export function getLoadedModBlockIds(): ReadonlySet<string> {
   return getDerived().blockIds;
 }
 
-/** The loaded mod providing `id`, or null for vanilla/unknown blocks. */
-export function getModForBlockId(id: string): ModForBlock | null {
-  return getDerived().blockToMod.get(id) ?? null;
+/**
+ * Block lookups that prefer, per mod, the file `getPreviewModFiles` picks for
+ * `gameVersion` (the file loaded for that version, else the most recently
+ * loaded). Blocks only other files of the mod provide still resolve, as in the
+ * version-agnostic lookup. Cached per snapshot and version.
+ */
+function getBlockLookup(gameVersion: string | null | undefined): BlockLookup {
+  const base = getDerived();
+  if (gameVersion == null) return base;
+  // One file per mod: nothing to disambiguate.
+  if (!base.multiVersionMods) return base;
+  const snapshot = getSnapshot();
+  if (versionBlockLookups?.for !== snapshot) {
+    versionBlockLookups = { for: snapshot, value: new Map() };
+  }
+  const cached = versionBlockLookups.value.get(gameVersion);
+  if (cached !== undefined) return cached;
+  const blockToMod = new Map(base.blockToMod);
+  const blocks = new Map(base.blocks);
+  for (const mod of getPreviewModFiles(gameVersion)) {
+    indexBlocks(mod, blockToMod, blocks);
+  }
+  const value: BlockLookup = { blockToMod, blocks };
+  versionBlockLookups.value.set(gameVersion, value);
+  return value;
 }
 
-/** The loaded mod block definition for `id`, or null for vanilla/unknown. */
-export function getLoadedModBlock(id: string): ModBlock | null {
-  return getDerived().blocks.get(id) ?? null;
+/**
+ * The loaded mod file providing `id`, or null for vanilla/unknown blocks.
+ * With `gameVersion`, prefers that version's file of the owning mod (falling
+ * back like `getPreviewModFiles`); without it, the last file in the snapshot.
+ */
+export function getModForBlockId(
+  id: string,
+  gameVersion?: string | null,
+): ModForBlock | null {
+  return getBlockLookup(gameVersion).blockToMod.get(id) ?? null;
+}
+
+/**
+ * The loaded mod block definition for `id`, or null for vanilla/unknown.
+ * `gameVersion` picks the file as in `getModForBlockId`.
+ */
+export function getLoadedModBlock(
+  id: string,
+  gameVersion?: string | null,
+): ModBlock | null {
+  return getBlockLookup(gameVersion).blocks.get(id) ?? null;
 }
 
 /** Asset namespaces provided by loaded mods. Stable identity per snapshot. */
@@ -248,6 +415,9 @@ export function getLoadedNamespaces(): ReadonlySet<string> {
 export function __resetLoadedModsForTests(): void {
   mods = EMPTY;
   derived = null;
+  previewFiles = null;
+  versionBlocks = null;
+  versionBlockLookups = null;
   listeners.clear();
   assetCache.clear();
   removedKeys.clear();

@@ -1,20 +1,34 @@
 // Main-thread client for the mod-jar worker.
 //
 // Lazy-owns at most one `Worker`; pairs requests to responses by id; exposes
-// `parseModJarInWorker` as a Promise-returning wrapper. `cancel()` tears down
+// `parseModJarInWorker` and `computeModAppearancesInWorker` as
+// Promise-returning wrappers. `cancel()` tears down
 // the active worker and rejects every in-flight request — the next call lazily
 // creates a fresh worker.
 
+import type { ModAppearanceInput } from "./mod-appearance";
 import type {
+  ComputeAppearancesResult,
   ModJarWorkerRequest,
   ModJarWorkerResponse,
 } from "./mod-jar.worker";
 import type { ParsedModAssets } from "./types";
 
+type RequestType = ModJarWorkerRequest["type"];
+type ResultOf<K extends RequestType> = Extract<
+  ModJarWorkerResponse,
+  { ok: true; type: K }
+>["result"];
+
+// One member per request type, so the response is narrowed by `type` before
+// it resolves the caller's promise.
 type Pending = {
-  resolve: (value: ParsedModAssets) => void;
-  reject: (reason: unknown) => void;
-};
+  [K in RequestType]: {
+    type: K;
+    resolve: (value: ResultOf<K>) => void;
+    reject: (reason: unknown) => void;
+  };
+}[RequestType];
 
 let worker: Worker | null = null;
 let nextId = 1;
@@ -30,10 +44,19 @@ function createWorker(): Worker {
     const entry = pending.get(data.id);
     if (entry === undefined) return;
     pending.delete(data.id);
-    if (data.ok) {
+    if (!data.ok) {
+      entry.reject(new Error(data.error));
+    } else if (data.type === "parseJar" && entry.type === "parseJar") {
+      entry.resolve(data.result);
+    } else if (
+      data.type === "computeAppearances" &&
+      entry.type === "computeAppearances"
+    ) {
       entry.resolve(data.result);
     } else {
-      entry.reject(new Error(data.error));
+      entry.reject(
+        new Error(`Expected a ${entry.type} response, got ${data.type}`),
+      );
     }
   });
 
@@ -82,9 +105,6 @@ function discardWorker(): void {
 export function parseModJarInWorker(
   bytes: Uint8Array,
 ): Promise<ParsedModAssets> {
-  if (worker === null) worker = createWorker();
-  const w = worker;
-  const id = nextId++;
   let transfer: Transferable[] = [];
   if (bytes.buffer instanceof ArrayBuffer) {
     if (
@@ -95,13 +115,42 @@ export function parseModJarInWorker(
     }
     transfer = [bytes.buffer];
   }
-  const message: ModJarWorkerRequest = {
-    id,
-    type: "parseJar",
-    payload: { bytes },
-  };
-  return new Promise<ParsedModAssets>((resolve, reject) => {
-    pending.set(id, { resolve, reject });
+  return request<ParsedModAssets>(
+    (id) => ({ id, type: "parseJar", payload: { bytes } }),
+    (resolve, reject) => ({ type: "parseJar", resolve, reject }),
+    transfer,
+  );
+}
+
+/**
+ * Compute block appearances for a stored mod file in the worker. Texture
+ * bytes are copied, never transferred.
+ */
+export function computeModAppearancesInWorker(
+  input: ModAppearanceInput,
+): Promise<ComputeAppearancesResult> {
+  return request<ComputeAppearancesResult>(
+    (id) => ({ id, type: "computeAppearances", payload: input }),
+    (resolve, reject) => ({ type: "computeAppearances", resolve, reject }),
+  );
+}
+
+// `track` builds the pending entry for the request's type; typing it per
+// request type keeps the resolved value matched to the response.
+function request<T>(
+  build: (id: number) => ModJarWorkerRequest,
+  track: (
+    resolve: (value: T) => void,
+    reject: (reason: unknown) => void,
+  ) => Pending,
+  transfer: Transferable[] = [],
+): Promise<T> {
+  if (worker === null) worker = createWorker();
+  const w = worker;
+  const id = nextId++;
+  const message = build(id);
+  return new Promise<T>((resolve, reject) => {
+    pending.set(id, track(resolve, reject));
     try {
       w.postMessage(message, transfer);
     } catch (err) {
