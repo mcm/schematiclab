@@ -433,4 +433,26 @@ describe("matchShapeRule groups and material conditions", () => {
       validateShapePack(model({ id: "create:block/bars", x: 45 })),
     ).toThrow("model.x");
   });
+
+  it("validates keepInside on whole pieces", () => {
+    const keep = (value: unknown) =>
+      pack({
+        "copycats:copycat_cogwheel": [
+          {
+            pieces: [{ ...piece("cogwheel"), whole: true, keepInside: value }],
+          },
+        ],
+      });
+    const keepInside = { axis: "z", min: 0.16, max: 15.84 };
+    expect(
+      validateShapePack(keep(keepInside)).blocks["copycats:copycat_cogwheel"][0]
+        .pieces[0].keepInside,
+    ).toEqual(keepInside);
+    expect(() =>
+      validateShapePack(keep({ axis: "z", min: 8, max: 8 })),
+    ).toThrow("keepInside");
+    expect(() =>
+      validateShapePack(keep({ axis: "w", min: 0, max: 8 })),
+    ).toThrow("keepInside.axis");
+  });
 });

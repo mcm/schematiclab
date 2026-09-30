@@ -142,7 +142,9 @@ export abstract class AbstractRegion {
       const block = blocks.get(k);
       out.set(
         k,
-        block === undefined ? e : mapper.mapBlockEntity(block, e, targetVersion),
+        block === undefined
+          ? e
+          : mapper.mapBlockEntity(block, e, targetVersion),
       );
     }
     return out;

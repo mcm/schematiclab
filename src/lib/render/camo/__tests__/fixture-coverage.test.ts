@@ -11,8 +11,8 @@ import {
   type ShapeRule,
 } from "../shape-pack";
 
-// Camo fixtures (CAMO_FIXTURES.md) whose every camo-capable placement must
-// have shape data. Later stories add the rest as their shapes land.
+// Camo fixtures (CAMO_FIXTURES.md): every camo-capable placement must have
+// shape data.
 const FIXTURES = [
   "framed_blocks_minimal_nbt.nbt",
   "framed_covered_1.nbt",
@@ -25,18 +25,8 @@ const FIXTURES = [
   "framed_slope_slabs_panels_2.nbt",
   "copycats_nbt.nbt",
   "copycats_shapes.nbt",
+  "copycats_slopes.nbt",
 ];
-
-// Types with no shapes yet (Copycats+ slopes and kinetic blocks: US-016,
-// which must empty this list). Placements of these are skipped.
-const PENDING = new Set([
-  "copycats:copycat_slope",
-  "copycats:copycat_vertical_slope",
-  "copycats:copycat_slope_layer",
-  "copycats:copycat_shaft",
-  "copycats:copycat_cogwheel",
-  "copycats:copycat_large_cogwheel",
-]);
 
 // States whose static model is empty because a block-entity renderer draws
 // the block in-game: an open sliding or folding door (`visible=false`).
@@ -90,7 +80,7 @@ describe.each(FIXTURES)("shape coverage of %s", (filename) => {
       for (const placement of region.blocks) {
         const { blockId, blockState, properties } =
           palette[placement.paletteIndex];
-        if (!isCamoCapableBlockId(blockId) || PENDING.has(blockId)) continue;
+        if (!isCamoCapableBlockId(blockId)) continue;
         checked++;
         const slots = extractCamoSlots(
           blockId,

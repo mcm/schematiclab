@@ -59,14 +59,20 @@ import {
   SHAPE_PACK_FORMAT_VERSION,
   parseFramedTemplate,
   validateShapePack,
+  type Axis,
   type Box,
   type Direction,
+  type QuadOp,
   type ShapePack,
   type ShapePiece,
   type ShapeRule,
   type TemplateCube,
   type TransformOp,
 } from "../src/lib/render/camo/shape-pack.ts";
+import {
+  applyQuadOps,
+  toVanillaOrder,
+} from "../src/lib/render/camo/quad-ops.ts";
 import {
   DOUBLE_BLOCK_SPECS,
   TEMPLATE_SPECS,
@@ -88,6 +94,7 @@ import {
   type MaterialClass,
   type MutableAABB,
   type Transformable,
+  quadOpOf,
 } from "./camo-shapes/copycats/assembly.ts";
 import { BLOCKS as CREATE_BLOCKS } from "./camo-shapes/create/copycat-models.ts";
 
@@ -607,6 +614,9 @@ function compactPack(pack: ShapePack): unknown {
             if (piece.template !== undefined) out.template = piece.template;
             if (piece.whole) out.whole = true;
             if (piece.copyProperties) out.copyProperties = true;
+            if (piece.keepInside !== undefined) {
+              out.keepInside = piece.keepInside;
+            }
             if (piece.model !== undefined) out.model = piece.model;
             if (piece.block !== undefined) out.block = piece.block;
             return out;
@@ -637,6 +647,8 @@ const MATERIAL_CLASSES: Readonly<
   LadderBlock: { suffixes: ["ladder"] },
   TrapDoorBlock: { suffixes: ["trapdoor"] },
   WallBlock: { suffixes: ["_wall"] },
+  CogWheelBlock: { suffixes: ["cogwheel"] },
+  ShaftBlock: { suffixes: ["shaft"] },
   "CopycatSpecialCases.isBarsMaterial": { suffixes: ["_bars", "iron_bars"] },
   "CopycatSpecialCases.isTrapdoorMaterial": {
     suffixes: ["trapdoor"],
@@ -672,6 +684,21 @@ function tidy(n: number): number {
   return Math.round(n * 1e6) / 1e6 + 0;
 }
 
+/** `op` with every number tidied. */
+function tidyOp(op: QuadOp): QuadOp {
+  const tidyValue = (value: unknown): unknown =>
+    typeof value === "number"
+      ? tidy(value)
+      : Array.isArray(value)
+        ? value.map(tidyValue)
+        : typeof value === "object" && value !== null
+          ? Object.fromEntries(
+              Object.entries(value).map(([k, v]) => [k, tidyValue(v)]),
+            )
+          : value;
+  return tidyValue(op) as QuadOp;
+}
+
 function boxOf(select: MutableAABB): Box {
   return {
     from: [tidy(select.minX), tidy(select.minY), tidy(select.minZ)],
@@ -695,6 +722,77 @@ function boundaryFaces(from: Vec3, to: Vec3, faces: Direction[]): Direction[] {
   return faces.filter((dir) => onBoundary[dir]);
 }
 
+/** Unsigned axis of `axis` after the transform `ops`. */
+function transformAxis(axis: Axis, ops: readonly TransformOp[]): Axis {
+  const swaps: Record<string, [Axis, Axis]> = {
+    X: ["y", "z"],
+    Y: ["x", "z"],
+    Z: ["x", "y"],
+  };
+  let result = axis;
+  for (const op of ops) {
+    const match = /^rotate([XYZ])(90|270)$/.exec(op);
+    if (match === null) continue;
+    const [a, b] = swaps[match[1]];
+    if (result === a) result = b;
+    else if (result === b) result = a;
+  }
+  return result;
+}
+
+/** Corners (block units) of face `dir` of the box `from..to` (pixels). */
+function faceCorners(from: Vec3, to: Vec3, dir: Direction): Vec3[] {
+  const axis = { x: 0, y: 1, z: 2 }[DIRECTION_AXES[dir]];
+  const [u, v] = [0, 1, 2].filter((i) => i !== axis);
+  const at = dir === "up" || dir === "south" || dir === "east" ? to : from;
+  return [
+    [from[u], from[v]],
+    [from[u], to[v]],
+    [to[u], to[v]],
+    [to[u], from[v]],
+  ].map(([a, b]) => {
+    const corner: Vec3 = [0, 0, 0];
+    corner[axis] = at[axis] / 16;
+    corner[u] = a / 16;
+    corner[v] = b / 16;
+    return corner;
+  });
+}
+
+const DIRECTION_AXES: Record<Direction, Axis> = {
+  down: "y",
+  up: "y",
+  north: "z",
+  south: "z",
+  west: "x",
+  east: "x",
+};
+
+/**
+ * Faces of the canonical box `from..to` that still lie flat on the block
+ * boundary after the quad `ops`: Copycats+ gives only those a cull face
+ * (its final `QuadAutoCull.BLOCK` runs after the quad transforms).
+ */
+function boundaryFacesAfterOps(
+  from: Vec3,
+  to: Vec3,
+  faces: Direction[],
+  ops: QuadOp[],
+): Direction[] {
+  return boundaryFaces(from, to, faces).filter((dir) => {
+    const quad = toVanillaOrder(
+      dir,
+      faceCorners(from, to, dir).map((pos) => ({ pos, uv: [0, 0] })),
+    );
+    if (!applyQuadOps(quad, ops)) return false;
+    const axis = { x: 0, y: 1, z: 2 }[DIRECTION_AXES[dir]];
+    const target = dir === "up" || dir === "south" || dir === "east" ? 1 : 0;
+    return quad.vertices.every(
+      (v) => Math.abs(v.pos[axis] - target) <= 0.02 / 16,
+    );
+  });
+}
+
 /**
  * A render context recording each call as a shape piece in camo slot
  * `slot` (see `scripts/camo-shapes/copycats/assembly.ts`). `sameKind` is
@@ -707,7 +805,44 @@ function recordingContext(
   sameKind: { copyProperties: boolean } | null,
 ): CopycatRenderContext {
   return {
-    assemblePiece(transform, offset, select, cullMask) {
+    assemblePiece(transform, offset, select, cullMask, ...quadTransforms) {
+      const transforms = quadTransforms.flat();
+      const noCull = transforms.some((t) => t.kind === "noCull");
+      const keep = transforms.find((t) => t.kind === "keepBetween");
+      const ops = transforms.filter((t) => t.kind === "op").map(quadOpOf);
+      const transformOps = recordTransform(transform);
+
+      if (keep !== undefined) {
+        // The cogwheel cores' material case: the whole camo (select covers
+        // the block and more, unmoved), minus the quads the lambda drops.
+        const whole =
+          [select.minX, select.minY, select.minZ].every((n) => n <= 0) &&
+          [select.maxX, select.maxY, select.maxZ].every((n) => n >= 16) &&
+          offset.x === select.minX &&
+          offset.y === select.minY &&
+          offset.z === select.minZ;
+        if (!whole || sameKind === null || ops.length > 0 || cullMask !== 0) {
+          throw new Error("keepBetween only works on a whole same-kind camo");
+        }
+        pieces.push({
+          slot,
+          select: FULL_CUBE,
+          offset: [0, 0, 0],
+          transform: [],
+          cull: noCull ? [] : [...DIRECTIONS],
+          faces: [...DIRECTIONS],
+          ops: [],
+          whole: true,
+          ...(sameKind.copyProperties ? { copyProperties: true } : {}),
+          keepInside: {
+            axis: transformAxis(keep.axis, transformOps),
+            min: keep.min,
+            max: keep.max,
+          },
+        });
+        return;
+      }
+
       const box = boxOf(select);
       const move: Vec3 = [
         tidy(offset.x - select.minX),
@@ -723,10 +858,14 @@ function recordingContext(
         slot,
         select: box,
         offset: move,
-        transform: recordTransform(transform),
-        cull: boundaryFaces(destFrom, destTo, faces),
+        transform: transformOps,
+        cull: noCull
+          ? []
+          : ops.length > 0
+            ? boundaryFacesAfterOps(destFrom, destTo, faces, ops)
+            : boundaryFaces(destFrom, destTo, faces),
         faces,
-        ops: [],
+        ops: ops.map(tidyOp),
       });
     },
     assembleAll() {
@@ -765,25 +904,22 @@ function recordingContext(
 /**
  * Rules for one copycat block: first one rule set per material class the
  * core tests (`material.is(...)`), each with a `material` condition, then
- * the rules for any other material.
+ * the rules for any other material. Multi-state blocks get these per part,
+ * in one rule group per part.
  */
 function copycatRules(id: string, spec: CopycatBlockSpec): ShapeRule[] {
-  const tested = new Set<MaterialClass>();
-  const piecesFor = (
-    state: BlockState,
-    keys: readonly string[],
-    kind: MaterialClass | null,
-  ) => {
-    const pieces: ShapePiece[] = [];
-    const fullState = { ...defaultState(spec), ...state };
-    for (const key of keys) {
+  const keyRules = (key: string): ShapeRule[] => {
+    const core = spec.partCores?.[key] ?? spec.core;
+    const tested = new Set<MaterialClass>();
+    const piecesFor = (state: BlockState, kind: MaterialClass | null) => {
+      const pieces: ShapePiece[] = [];
       const sameKind =
         kind === null
           ? null
-          : { copyProperties: spec.core.copyPropertiesIf === kind };
-      spec.core.emitCopycatQuads(
+          : { copyProperties: core.copyPropertiesIf === kind };
+      core.emitCopycatQuads(
         key,
-        fullState,
+        { ...defaultState(spec), ...state },
         recordingContext(key, pieces, sameKind),
         {
           is: (materialClass) => {
@@ -792,38 +928,33 @@ function copycatRules(id: string, spec: CopycatBlockSpec): ShapeRule[] {
           },
         },
       );
-    }
-    return pieces;
+      return pieces;
+    };
+    const rules = blockRules(spec.properties, (state) =>
+      piecesFor(state, null),
+    );
+    const materialRules = [...tested].flatMap((kind) =>
+      blockRules(spec.properties, (state) => piecesFor(state, kind)).map(
+        (rule): ShapeRule => ({
+          ...(rule.when === undefined ? {} : { when: rule.when }),
+          material: { slot: key, ...MATERIAL_CLASSES[kind] },
+          pieces: rule.pieces,
+        }),
+      ),
+    );
+    return [...materialRules, ...rules];
   };
 
   if (spec.parts !== undefined) {
     // One rule group per part: its rules only keep the properties it reads.
-    const rules = spec.parts.flatMap((part) =>
-      blockRules(spec.properties, (state) =>
-        piecesFor(state, [part], null),
-      ).map((rule): ShapeRule => ({ ...rule, group: part })),
+    return spec.parts.flatMap((part) =>
+      keyRules(part).map((rule): ShapeRule => ({ ...rule, group: part })),
     );
-    if (tested.size > 0) {
-      throw new Error(`${id}: multi-state cores can't test the material`);
-    }
-    return rules;
   }
-
-  const rules = blockRules(spec.properties, (state) =>
-    piecesFor(state, [MATERIAL_KEY], null),
-  );
-  const materialRules = [...tested].flatMap((kind) =>
-    blockRules(spec.properties, (state) =>
-      piecesFor(state, [MATERIAL_KEY], kind),
-    ).map(
-      (rule): ShapeRule => ({
-        ...(rule.when === undefined ? {} : { when: rule.when }),
-        material: { slot: MATERIAL_KEY, ...MATERIAL_CLASSES[kind] },
-        pieces: rule.pieces,
-      }),
-    ),
-  );
-  return [...materialRules, ...rules];
+  if (spec.partCores !== undefined) {
+    throw new Error(`${id}: partCores needs parts`);
+  }
+  return keyRules(MATERIAL_KEY);
 }
 
 /** Block ids `REGISTRATE.block("<name>", ...)` registers in `file`. */
