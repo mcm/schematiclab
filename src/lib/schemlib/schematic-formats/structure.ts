@@ -84,6 +84,21 @@ function withoutChunkPos(tileEntity: Entity): Entity {
   return new Entity(out);
 }
 
+/**
+ * The inverse of `withoutChunkPos`: the chunk shape (`x`/`y`/`z` from the
+ * block's `pos`) other formats expect when they export our tile entities.
+ */
+function withChunkPos(tileEntity: Entity, pos: BlockPos): Entity {
+  const out = new nbt.Compound();
+  for (const [k, v] of tileEntity.toCompound().entries) {
+    if (k !== "x" && k !== "y" && k !== "z") out.set(k, v);
+  }
+  out.set("x", new nbt.Int(pos.x));
+  out.set("y", new nbt.Int(pos.y));
+  out.set("z", new nbt.Int(pos.z));
+  return new Entity(out);
+}
+
 function blockStateFromCompound(c: nbt.Compound): BlockState {
   const name = readString(c.get("Name"));
   const propsTag = c.get("Properties");
@@ -371,7 +386,9 @@ export class StructureSchematic extends AbstractRegion {
   getTileEntityMatrix(): Map<string, Entity> {
     const matrix = new Map<string, Entity>();
     for (const block of this.blockRecords) {
-      if (block.nbt) matrix.set(posKey(block.pos), block.nbt);
+      if (block.nbt) {
+        matrix.set(posKey(block.pos), withChunkPos(block.nbt, block.pos));
+      }
     }
     return matrix;
   }
