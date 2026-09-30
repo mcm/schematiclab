@@ -17,6 +17,7 @@ import { translateBlockState } from "../schemlib/data/translate";
 import type { MinecraftVersion } from "../schemlib/schematic-formats/version-mapping";
 import { isInvisibleBlockId } from "../invisible-blocks";
 import { resolveModdedState, type ModMappingContext } from "./mod-mapping";
+import { withCamoMaterials } from "../camo/materials";
 
 // ── Public types ──────────────────────────────────────────────────────────
 
@@ -228,7 +229,7 @@ export function applyBlockSwap(
     inputFormat: schematic.inputFormat,
     minecraftVersion: schematic.minecraftVersion,
     totalBlocks,
-    palette: finalPalette,
+    palette: withCamoMaterials(finalPalette, finalRegions),
     regions: finalRegions,
   };
 }
@@ -446,7 +447,7 @@ export function applyVersionMapping(
     inputFormat: schematic.inputFormat,
     minecraftVersion: targetVersion ?? schematic.minecraftVersion,
     totalBlocks,
-    palette: finalPalette,
+    palette: withCamoMaterials(finalPalette, finalRegions),
     regions: finalRegions,
   };
 }

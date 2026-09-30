@@ -29,6 +29,7 @@ import {
   IntermediateSchematic,
 } from "./schemlib/schematic-formats/intermediate";
 import { Entity } from "./schemlib/entities";
+import { withCamoMaterials } from "./camo/materials";
 import * as nbt from "./schemlib/nbt";
 import { posKey } from "./schemlib/schematic-formats/version-mapping";
 import {
@@ -81,6 +82,21 @@ export interface SerializeSchematicOptions {
 // plain-object shape. Future stories (3D preview, transforms) extend it.
 
 export interface ParsedSchematicPaletteEntry {
+  blockState: string;
+  blockId: string;
+  properties: Record<string, string>;
+  count: number;
+  // Camo-capable entries only: the distinct camo states in their placements'
+  // non-empty slots (see `src/lib/camo/materials.ts`). Rebuild it with
+  // `withCamoMaterials` whenever the palette or block entities change.
+  camoMaterials?: ParsedCamoMaterial[];
+}
+
+// One camo state inside a camo-capable palette entry's placements. `count` is
+// the number of slots holding it. For a fluid camo, `blockId` and
+// `blockState` are the fluid id.
+export interface ParsedCamoMaterial {
+  kind: "block" | "fluid";
   blockState: string;
   blockId: string;
   properties: Record<string, string>;
@@ -591,12 +607,16 @@ function projectSchematic(
     }
   }
 
-  const palette: ParsedSchematicPaletteEntry[] = sortedEntries.map((e) => ({
-    blockState: e.blockState,
-    blockId: e.blockId,
-    properties: e.properties,
-    count: e.count,
-  }));
+  const regions = regionAccumulators.map((r) => r.region);
+  const palette = withCamoMaterials(
+    sortedEntries.map((e) => ({
+      blockState: e.blockState,
+      blockId: e.blockId,
+      properties: e.properties,
+      count: e.count,
+    })),
+    regions,
+  );
 
   return {
     name: schematic.getName(),
@@ -604,6 +624,6 @@ function projectSchematic(
     minecraftVersion: schematic.getMinecraftVersion(),
     totalBlocks,
     palette,
-    regions: regionAccumulators.map((r) => r.region),
+    regions,
   };
 }

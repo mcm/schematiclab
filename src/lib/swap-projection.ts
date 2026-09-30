@@ -17,6 +17,7 @@ import type {
   ParsedSchematicRegion,
 } from "./convert";
 import { isInvisibleBlockId } from "./invisible-blocks";
+import { withCamoMaterials } from "./camo/materials";
 
 export interface SwapTarget {
   blockId: string;
@@ -168,7 +169,7 @@ export function swapBlockState(
     inputFormat: projection.inputFormat,
     minecraftVersion: projection.minecraftVersion,
     totalBlocks,
-    palette: finalPalette,
+    palette: withCamoMaterials(finalPalette, finalRegions),
     regions: finalRegions,
   };
 }
