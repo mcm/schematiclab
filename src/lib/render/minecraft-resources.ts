@@ -8,8 +8,8 @@
 //
 // Vanilla data is fetched and flattened once. Whenever the loaded-mods
 // registry snapshot changes, resources are rebuilt (new combined atlas, new
-// model set) and subscribers are notified so `ThreeDPreview` re-meshes. A
-// build superseded by a newer snapshot is discarded. Layout and assembly are
+// model set) and subscribers are notified so `ThreeDPreview` re-meshes.
+// Builds are serialized; changes during a build coalesce into one follow-up. Layout and assembly are
 // pure (`atlas-layout.ts`, `block-resources.ts`); only pixel drawing lives here.
 
 import type { Resources } from "deepslate";
@@ -62,7 +62,6 @@ let vanillaPromise: Promise<VanillaBundle> | null = null;
 let started = false;
 let cachedResources: Resources | null = null;
 let loadError: Error | null = null;
-let buildGeneration = 0;
 const listeners = new Set<() => void>();
 
 function notifyListeners() {
@@ -89,17 +88,34 @@ export function ensureMinecraftResourcesLoading(): void {
   })();
 }
 
-async function rebuild(): Promise<void> {
-  buildGeneration += 1;
-  const generation = buildGeneration;
+// Builds run one at a time. A change during a build queues one follow-up
+// build of the latest snapshot, so a burst of changes (a modpack load adds
+// hundreds of mods) can't pile up concurrent full atlas builds.
+let building: Promise<void> | null = null;
+let rebuildQueued = false;
+
+function rebuild(): Promise<void> {
+  if (building !== null) {
+    rebuildQueued = true;
+    return building;
+  }
+  building = (async () => {
+    do {
+      rebuildQueued = false;
+      await buildOnce();
+    } while (rebuildQueued);
+    building = null;
+  })();
+  return building;
+}
+
+async function buildOnce(): Promise<void> {
   const snapshot = modRegistry.getSnapshot();
   try {
     const resources = await buildResources(snapshot);
-    if (generation !== buildGeneration) return;
     cachedResources = resources;
     loadError = null;
   } catch (err: unknown) {
-    if (generation !== buildGeneration) return;
     console.error("Failed to build Minecraft resources", err);
     // Keep showing the last good resources; only surface a hard error when
     // there's nothing to show.
