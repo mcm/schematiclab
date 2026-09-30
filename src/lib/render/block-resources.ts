@@ -8,6 +8,10 @@
 // silently disappear from the preview. So do `minecraft:` ids the vanilla
 // bundle doesn't know (blocks renamed or removed since the schematic's
 // version, typos in a swap target).
+//
+// Camo-capable blocks (FramedBlocks, copycats) whose mod is loaded get a
+// `CamoBlockDefinition` that renders their shape with their camo textures;
+// without the mod they're the missing cube too.
 
 import {
   BlockDefinition,
@@ -23,6 +27,14 @@ import {
   TRANSPARENT_TEXTURE_ID,
   qualifyId,
 } from "./atlas-layout";
+import { isCamoCapableBlockId } from "../camo/extract";
+import {
+  CamoBlockDefinition,
+  camoBlockFlags,
+  type CamoRenderContext,
+} from "./camo/camo-definition";
+import { getActiveCamoTable, type CamoTable } from "./camo/camo-table";
+import type { ShapePack, ShapeRule } from "./camo/shape-pack";
 import { isSupersededEntityTexture } from "./special-textures";
 
 /** Model id of the placeholder cube. */
@@ -79,6 +91,20 @@ export interface AssembleResourcesInput {
    */
   uvMap: Readonly<Record<string, UV>>;
   atlasImage: ImageData;
+  camo?: CamoResourcesInput;
+}
+
+export interface CamoResourcesInput {
+  /**
+   * Asset namespaces of loaded mods. Camo-capable blocks outside these
+   * render as the missing cube. Defaults to the namespaces of `mods`'
+   * blockstates.
+   */
+  loadedNamespaces?: ReadonlySet<string>;
+  /** Loaded shape packs (`camo/pack-loader.ts`). */
+  packs?: readonly ShapePack[];
+  /** Table the structure's `__camo` values index; defaults to the active one. */
+  getTable?: () => CamoTable | null;
 }
 
 export interface AssembledResources {
@@ -261,7 +287,7 @@ function isRenderableBlockstate(
 export function assembleResources(
   input: AssembleResourcesInput,
 ): AssembledResources {
-  const { vanilla, mods, uvMap, atlasImage } = input;
+  const { vanilla, mods, uvMap, atlasImage, camo = {} } = input;
 
   const modModels = new Map<string, BlockModel>();
   for (const [id, json] of resolvableModModels(mods, vanilla.blockModels)) {
@@ -296,6 +322,7 @@ export function assembleResources(
     for (const [id, blockstate] of Object.entries(mod.blockstates)) {
       const qualified = qualifyId(id);
       if (qualified.startsWith("minecraft:")) continue;
+      if (isCamoCapableBlockId(qualified)) continue;
       if (isRenderableBlockstate(blockstate, getModel, uvMap)) {
         modDefinitions.set(qualified, BlockDefinition.fromJson(blockstate));
       } else {
@@ -312,12 +339,51 @@ export function assembleResources(
   const pixelSize = 1 / Math.min(atlasImage.width, atlasImage.height);
   const placeholderFlags: BlockFlags = { opaque: true };
 
+  const loadedNamespaces =
+    camo.loadedNamespaces ??
+    new Set(
+      mods.flatMap((mod) =>
+        Object.keys(mod.blockstates).map((id) => qualifyId(id).split(":")[0]),
+      ),
+    );
+  const shapeRules = new Map<string, ShapeRule[]>();
+  for (const pack of camo.packs ?? []) {
+    for (const [id, rules] of Object.entries(pack.blocks)) {
+      shapeRules.set(id, rules);
+    }
+  }
+  const getTable = camo.getTable ?? getActiveCamoTable;
+  const getDefinition = (key: string): BlockDefinition =>
+    vanilla.blockDefinitions.get(key) ??
+    modDefinitions.get(key) ??
+    camoDefinition(key) ??
+    placeholder;
+  const camoContext: CamoRenderContext = {
+    getBlockDefinition: getDefinition,
+    isOpaqueBlock: (id) => vanilla.opaque.has(id),
+    getTable,
+  };
+  const camoDefinitions = new Map<string, CamoBlockDefinition | null>();
+  // The camo definition of a camo-capable id whose mod is loaded, else null.
+  function camoDefinition(key: string): CamoBlockDefinition | null {
+    let definition = camoDefinitions.get(key);
+    if (definition === undefined) {
+      definition =
+        isCamoCapableBlockId(key) && loadedNamespaces.has(key.split(":")[0])
+          ? new CamoBlockDefinition(
+              key,
+              shapeRules.get(key) ?? null,
+              camoContext,
+            )
+          : null;
+      camoDefinitions.set(key, definition);
+    }
+    return definition;
+  }
+
   const resources: Resources = {
     getBlockDefinition(id: Identifier) {
-      const key = id.toString();
-      const definition =
-        vanilla.blockDefinitions.get(key) ?? modDefinitions.get(key);
-      return definition ?? placeholder;
+      return getDefinition(id.toString());
     },
     getBlockModel(id: Identifier) {
       return getModel(id.toString());
@@ -339,6 +405,8 @@ export function assembleResources(
       if (vanilla.blockDefinitions.has(key)) {
         return { opaque: vanilla.opaque.has(key) };
       }
+      const camoDef = camoDefinition(key);
+      if (camoDef !== null) return camoBlockFlags(camoDef, getTable());
       const definition = modDefinitions.get(key);
       return definition === undefined || definition === placeholder
         ? placeholderFlags

@@ -11,8 +11,9 @@
 // Vanilla data is fetched and flattened once. Whenever the selected preview
 // files change (registry change or a new schematic version), resources are
 // rebuilt (new combined atlas, new model set) and subscribers are notified so
-// `ThreeDPreview` re-meshes. Builds are serialized; changes during a build
-// coalesce into one follow-up. Layout and assembly are
+// `ThreeDPreview` re-meshes. Camo shape packs are fetched only for loaded mod
+// namespaces. Builds are serialized; changes during a build coalesce into one
+// follow-up. Layout and assembly are
 // pure (`atlas-layout.ts`, `block-resources.ts`); only pixel drawing lives here.
 
 import type { Resources } from "deepslate";
@@ -32,6 +33,7 @@ import {
   createVanillaBlockData,
   type VanillaBlockData,
 } from "./block-resources";
+import { loadShapePacks } from "./camo/pack-loader";
 
 // Re-export so existing render-path callers keep their import site. The
 // canonical home is now `@/lib/invisible-blocks` — modules that DON'T need
@@ -248,9 +250,11 @@ function loadVanilla(): Promise<VanillaBundle> {
 }
 
 async function buildResources(files: LoadedModsSnapshot): Promise<Resources> {
-  const [vanilla, modAssets] = await Promise.all([
+  const loadedNamespaces = modRegistry.getLoadedNamespaces();
+  const [vanilla, modAssets, shapePacks] = await Promise.all([
     loadVanilla(),
     Promise.all(files.map((mod) => modRegistry.getLoadedModAssets(mod.key))),
+    loadShapePacks(loadedNamespaces),
   ]);
   const mods = modAssets.filter((a): a is LoadedModAssets => a !== null);
 
@@ -279,6 +283,7 @@ async function buildResources(files: LoadedModsSnapshot): Promise<Resources> {
     mods,
     uvMap: plan.uvMap,
     atlasImage,
+    camo: { loadedNamespaces, packs: shapePacks },
   }).resources;
 }
 

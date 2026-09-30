@@ -327,6 +327,7 @@ describe("editor-state store", () => {
             { pos: [1, 0, 0], paletteIndex: 1 },
             { pos: [2, 0, 0], paletteIndex: 2 },
           ],
+          blockEntities: [],
         },
       ],
     };
@@ -382,6 +383,7 @@ describe("editor-state store", () => {
           origin: [0, 0, 0],
           size: [1, 1, 1],
           blocks: [{ pos: [0, 0, 0], paletteIndex: 0 }],
+          blockEntities: [],
         },
       ],
     };
