@@ -10,14 +10,22 @@
 // textures stay world-aligned (a log camo's rings stay on its top face), as
 // in both mods.
 //
+// Pieces with `ops` (slopes, prisms and other non-axis-aligned shapes) take
+// each cropped quad back into the piece's canonical frame, run the ops
+// there (`quad-ops.ts`) and transform the result forward again, the way
+// Copycats+ applies quad transforms under its assembly transform. Triangles
+// come out as degenerate quads with v3 == v4.
+//
 // Meshes are in block units (0..1), as returned by deepslate's
 // `BlockDefinition.getMesh`; shape packs are in model pixels (0..16).
 
 import { Mesh, Quad, Vector, Vertex, type Cull } from "deepslate";
 
+import { applyQuadOps, toVanillaOrder, type OpVertex } from "./quad-ops";
 import type {
   Box,
   Direction,
+  QuadOp,
   ShapePiece,
   TransformOp,
   Vec3,
@@ -63,6 +71,31 @@ function applyOp(op: TransformOp, [x, y, z]: Vec3): Vec3 {
     case "flipZ":
       return [x, y, -z];
   }
+}
+
+const INVERSE_OP: Record<TransformOp, TransformOp> = {
+  rotateX90: "rotateX270",
+  rotateX180: "rotateX180",
+  rotateX270: "rotateX90",
+  rotateY90: "rotateY270",
+  rotateY180: "rotateY180",
+  rotateY270: "rotateY90",
+  rotateZ90: "rotateZ270",
+  rotateZ180: "rotateZ180",
+  rotateZ270: "rotateZ90",
+  flipX: "flipX",
+  flipY: "flipY",
+  flipZ: "flipZ",
+};
+
+/** The ops undoing `ops`. */
+export function invertTransform(ops: readonly TransformOp[]): TransformOp[] {
+  return [...ops].reverse().map((op) => INVERSE_OP[op]);
+}
+
+/** Whether `ops` mirror (an odd number of flips), reversing quad winding. */
+function isMirror(ops: readonly TransformOp[]): boolean {
+  return ops.filter((op) => op.startsWith("flip")).length % 2 === 1;
 }
 
 /** Applies `ops` in order to a direction-like vector (no centre). */
@@ -167,6 +200,13 @@ function clamp(n: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, n));
 }
 
+function quadArea([p1, p2, p3, p4]: Vector[]): number {
+  return (
+    p2.sub(p1).cross(p3.sub(p1)).length() +
+    p3.sub(p1).cross(p4.sub(p1)).length()
+  );
+}
+
 /**
  * Crops one quad to `box` (block units) and moves it by `offset`, or
  * returns `null` if nothing of it is left.
@@ -198,16 +238,79 @@ function cropQuad(quad: Quad, box: Box, offset: Vector): Quad | null {
     );
   });
   const cropped = new Quad(vertices[0], vertices[1], vertices[2], vertices[3]);
-  const [p1, p2, p3, p4] = vertices.map((v) => v.pos);
-  const area =
-    p2.sub(p1).cross(p3.sub(p1)).length() +
-    p3.sub(p1).cross(p4.sub(p1)).length();
+  const area = quadArea(vertices.map((v) => v.pos));
   return area < EPSILON * EPSILON ? null : cropped;
+}
+
+/** Block units to model pixels about the centre, through `ops`, and back. */
+function transformBlockPoint(
+  [x, y, z]: Vec3,
+  ops: readonly TransformOp[],
+): Vec3 {
+  const [px, py, pz] = transformPoint([x * 16, y * 16, z * 16], ops);
+  return [px * PIXEL, py * PIXEL, pz * PIXEL];
+}
+
+/**
+ * Runs `ops` on a cropped block-frame quad: into the canonical frame
+ * (`inverse`, where it faces `canonicalDir`), ops, then forward through
+ * `transform`. Returns `null`
+ * if an op drops the quad or it collapses. Triangles come out with v3 == v4.
+ */
+function applyPieceOps(
+  quad: Quad,
+  canonicalDir: Direction,
+  ops: readonly QuadOp[],
+  transform: readonly TransformOp[],
+  inverse: readonly TransformOp[],
+): Quad | null {
+  const source = quad.vertices();
+  if (source.some((v) => v.texture === undefined)) return null;
+  const opQuad = toVanillaOrder(
+    canonicalDir,
+    source.map(
+      (v): OpVertex => ({
+        pos: transformBlockPoint([v.pos.x, v.pos.y, v.pos.z], inverse),
+        uv: [v.texture![0], v.texture![1]],
+      }),
+    ),
+  );
+  if (!applyQuadOps(opQuad, ops)) return null;
+
+  // Tint, texture limit and block position are per quad in deepslate.
+  const from = source[0];
+  let vertices = opQuad.vertices.map((v) => {
+    const [x, y, z] = transformBlockPoint(v.pos, transform);
+    return new Vertex(
+      new Vector(x, y, z),
+      from.color,
+      v.uv,
+      from.textureLimit,
+      undefined,
+      from.blockPos,
+    );
+  });
+  if (isMirror(transform)) vertices.reverse();
+  if (quadArea(vertices.map((v) => v.pos)) < EPSILON * EPSILON) return null;
+
+  // Rotate a coincident pair to v3/v4 so deepslate's v1-v2-v3 normal works.
+  const same = (a: Vertex, b: Vertex) =>
+    a.pos.distanceSquared(b.pos) < EPSILON * EPSILON;
+  const pair = vertices.findIndex((v, i) => same(v, vertices[(i + 1) % 4]));
+  if (pair !== -1) {
+    const shift = (pair + 2) % 4;
+    vertices = vertices.map((_, i) => vertices[(i + shift) % 4]);
+  }
+  const result = new Quad(vertices[0], vertices[1], vertices[2], vertices[3]);
+  const normal = result.normal();
+  result.forEach((v) => (v.normal = normal));
+  return result;
 }
 
 /**
  * The quads of `piece` cut from `source` (a camo's full-cube mesh, block
- * units). Faces listed in `piece.cull` are dropped when `cull` (deepslate's
+ * units). Only faces listed in `piece.faces` (canonical frame) are used.
+ * Faces listed in `piece.cull` are dropped when `cull` (deepslate's
  * neighbour culling, block frame) is set for their transformed direction.
  * `source` is not modified.
  */
@@ -229,12 +332,26 @@ export function cropPiece(source: Mesh, piece: ShapePiece, cull: Cull): Quad[] {
       .filter((dir) => cull[dir as keyof Cull] === true),
   );
 
+  const inverse = invertTransform(piece.transform);
+  const faces = new Set(piece.faces);
+
   const quads: Quad[] = [];
   for (const quad of source.quads) {
     const dir = boundaryFaceDirection(quad);
     if (dir === null || culled.has(dir)) continue;
-    const cropped = cropQuad(quad, box, offset);
-    if (cropped !== null) quads.push(cropped);
+    const canonicalDir = transformDirection(dir, inverse);
+    if (!faces.has(canonicalDir)) continue;
+    let result = cropQuad(quad, box, offset);
+    if (result !== null && piece.ops.length > 0) {
+      result = applyPieceOps(
+        result,
+        canonicalDir,
+        piece.ops,
+        piece.transform,
+        inverse,
+      );
+    }
+    if (result !== null) quads.push(result);
   }
   return quads;
 }

@@ -7,16 +7,24 @@ import {
   type Quad,
   type TextureAtlasProvider,
   type UV,
+  type Vertex,
 } from "deepslate";
 
 import {
   boundaryFaceDirection,
   buildCamoMesh,
   cropPiece,
+  invertTransform,
   transformBox,
   transformDirection,
+  transformPoint,
 } from "../mesh-crop";
-import type { Direction, ShapePiece, Vec3 } from "../shape-pack";
+import {
+  DIRECTIONS,
+  type Direction,
+  type ShapePiece,
+  type Vec3,
+} from "../shape-pack";
 
 const SIDE_UV: UV = [0.25, 0.5, 0.5, 0.75];
 const TOP_UV: UV = [0, 0, 0.25, 0.25];
@@ -71,6 +79,8 @@ function piece(overrides: Partial<ShapePiece> = {}): ShapePiece {
     offset: [0, 0, 0],
     transform: [],
     cull: [],
+    faces: [...DIRECTIONS],
+    ops: [],
     ...overrides,
   };
 }
@@ -297,7 +307,193 @@ describe("cropPiece", () => {
   });
 });
 
+describe("cropPiece with quad ops", () => {
+  // FramedSlopeGeometry, bottom slope facing south: the north face tilts
+  // into the slope and the side faces are cut to triangles.
+  const SLOPE_FACE = piece({
+    faces: ["north"],
+    ops: [{ op: "makeVerticalSlope", topEdge: true, angle: 45 }],
+  });
+  const SLOPE_SIDES = piece({
+    faces: ["east", "west"],
+    cull: ["east", "west"],
+    ops: [{ op: "cut", edge: "north", lengths: [0, 16] }],
+  });
+
+  function positions(quad: Quad): Vec3[] {
+    return quad
+      .vertices()
+      .map((v) => [v.pos.x, v.pos.y, v.pos.z].map((n) => +n.toFixed(6) + 0))
+      .sort((p, q) => p[0] - q[0] || p[1] - q[1] || p[2] - q[2]) as Vec3[];
+  }
+
+  function normal(quad: Quad): Vec3 {
+    const n = quad.normal();
+    return [n.x, n.y, n.z];
+  }
+
+  it("builds a 45° slope face with the expected vertices and normal", () => {
+    const quads = cropPiece(cubeMesh(), SLOPE_FACE, {});
+    expect(quads).toHaveLength(1);
+    const [slope] = quads;
+    expect(positions(slope)).toEqual([
+      [0, 0, 0],
+      [0, 1, 1],
+      [1, 0, 0],
+      [1, 1, 1],
+    ]);
+    expectVec(normal(slope), [0, Math.SQRT1_2, -Math.SQRT1_2]);
+    slope
+      .vertices()
+      .forEach((v) =>
+        expectVec([v.normal!.x, v.normal!.y, v.normal!.z], normal(slope)),
+      );
+    // FramedBlocks keeps the face's UVs: the whole texture covers the slope.
+    const source = byDirection(cubeMesh().quads).get("north")!;
+    expect(uvRange(slope)).toEqual(uvRange(source));
+  });
+
+  it("emits side triangles as degenerate quads with UVs inside the sprite", () => {
+    const quads = cropPiece(cubeMesh(), SLOPE_SIDES, {});
+    expect(quads.map(facing).sort()).toEqual(["east", "west"]);
+    for (const quad of quads) {
+      const same = (a: Vertex, b: Vertex) =>
+        a.pos.distanceSquared(b.pos) < 1e-12;
+      expect(same(quad.v3, quad.v4)).toBe(true);
+      expect(
+        same(quad.v1, quad.v2) ||
+          same(quad.v2, quad.v3) ||
+          same(quad.v1, quad.v3),
+      ).toBe(false);
+      for (const v of quad.vertices()) {
+        expect(v.texture![0]).toBeGreaterThanOrEqual(SIDE_UV[0] - 1e-9);
+        expect(v.texture![0]).toBeLessThanOrEqual(SIDE_UV[2] + 1e-9);
+        expect(v.texture![1]).toBeGreaterThanOrEqual(SIDE_UV[1] - 1e-9);
+        expect(v.texture![1]).toBeLessThanOrEqual(SIDE_UV[3] + 1e-9);
+      }
+    }
+    const east = quads.find((q) => facing(q) === "east")!;
+    expect(new Set(positions(east).map((p) => p.join(",")))).toEqual(
+      new Set(["1,0,0", "1,0,1", "1,1,1"]),
+    );
+    // Block-space UVs: the top-south corner keeps the sprite's top-left
+    // corner (east faces run u from south to north).
+    const top = east.vertices().find((v) => v.pos.y > 0.5)!;
+    expectVec([...top.texture!, 0] as Vec3, [SIDE_UV[0], SIDE_UV[1], 0]);
+  });
+
+  it("drops faces not listed in faces", () => {
+    const quads = cropPiece(cubeMesh(), piece({ faces: ["up", "down"] }), {});
+    expect(quads.map(facing).sort()).toEqual(["down", "up"]);
+  });
+
+  it("runs ops in the canonical frame and transforms the result", () => {
+    const [slope] = cropPiece(
+      cubeMesh(),
+      { ...SLOPE_FACE, transform: ["rotateY90"] },
+      {},
+    );
+    // The south-facing slope turned to face west rises towards the west.
+    expectVec(normal(slope), [Math.SQRT1_2, Math.SQRT1_2, 0]);
+    expect(positions(slope)).toEqual([
+      [0, 1, 0],
+      [0, 1, 1],
+      [1, 0, 0],
+      [1, 0, 1],
+    ]);
+
+    const sides = cropPiece(
+      cubeMesh(),
+      { ...SLOPE_SIDES, transform: ["rotateY90"] },
+      {},
+    );
+    expect(sides.map(facing).sort()).toEqual(["north", "south"]);
+  });
+
+  it("keeps faces outward when the transform mirrors", () => {
+    const [slope] = cropPiece(
+      cubeMesh(),
+      { ...SLOPE_FACE, transform: ["flipY"] },
+      {},
+    );
+    expectVec(normal(slope), [0, -Math.SQRT1_2, -Math.SQRT1_2]);
+    for (const quad of cropPiece(
+      cubeMesh(),
+      { ...SLOPE_SIDES, transform: ["flipY"] },
+      {},
+    )) {
+      const n = normal(quad);
+      expect(Math.abs(n[0])).toBeCloseTo(1);
+      // Outward: east faces point +x, west faces -x.
+      expect(Math.sign(n[0])).toBe(quad.v1.pos.x > 0.5 ? 1 : -1);
+    }
+  });
+
+  it("drops quads that a cut removes entirely", () => {
+    const quads = cropPiece(
+      cubeMesh(),
+      piece({
+        faces: ["up"],
+        ops: [
+          { op: "cut", edge: "north", lengths: [4, 4] },
+          { op: "cut", edge: "south", lengths: [4, 4] },
+        ],
+      }),
+      {},
+    );
+    expect(quads).toHaveLength(0);
+  });
+
+  it("slopes a Copycats+ piece and keeps side textures in place with updateUV", () => {
+    // CopycatSlopeModelCore.assembleTriangularSlope (not enhanced), facing
+    // north: skip the north face, map the height linearly along z.
+    const quads = cropPiece(
+      cubeMesh(),
+      piece({
+        faces: ["down", "up", "south", "west", "east"],
+        ops: [
+          {
+            op: "updateUV",
+            ops: [
+              {
+                op: "slope",
+                face: "up",
+                input: "b",
+                from: [0, 16],
+                to: [0, 16],
+              },
+            ],
+          },
+        ],
+      }),
+      {},
+    );
+    expect(quads).toHaveLength(5);
+    // QuadSlope keeps a 0.02px minimum height, so the slope is nearly 45°.
+    const up = quads.find((q) => q.normal().y > 0.1)!;
+    normal(up).forEach((n, i) =>
+      expect(n).toBeCloseTo([0, Math.SQRT1_2, -Math.SQRT1_2][i], 3),
+    );
+
+    const east = quads.find((q) => q.normal().x > 0.9)!;
+    const sprite = uvRange(byDirection(cubeMesh().quads).get("east")!);
+    for (const v of east.vertices()) {
+      // v runs top to bottom over the sprite: it follows the vertex height.
+      const expectedV = sprite.v[1] - v.pos.y * (sprite.v[1] - sprite.v[0]);
+      expect(v.texture![1]).toBeCloseTo(expectedV, 6);
+    }
+  });
+});
+
 describe("transform helpers", () => {
+  it("inverts transforms", () => {
+    const ops = ["rotateY90", "flipX", "rotateZ270"] as const;
+    const point: Vec3 = [1, 2, 3];
+    expect(
+      transformPoint(transformPoint(point, ops), invertTransform(ops)),
+    ).toEqual(point);
+  });
+
   it("rotates like blockstate variants", () => {
     expect(transformDirection("north", ["rotateY90"])).toBe("east");
     expect(transformDirection("up", ["rotateX90"])).toBe("north");
