@@ -8,10 +8,15 @@ import {
   type Resources,
 } from "deepslate";
 import { mat4 } from "gl-matrix";
-import { Button } from "@iamthemcmaster/ui";
+import { Button, Label, Switch } from "@iamthemcmaster/ui";
 import { IconRefresh } from "@tabler/icons-react";
 import { knownVersionIdFor } from "@/lib/advanced/effective-mod-version";
 import type { ParsedSchematicProjection } from "@/lib/convert";
+import { isCamoCapableBlockId } from "@/lib/camo/extract";
+import {
+  getLoadedNamespaces,
+  subscribe as subscribeLoadedMods,
+} from "@/lib/mods/registry";
 import {
   ensureMinecraftResourcesLoading,
   setMinecraftResourcesVersion,
@@ -28,6 +33,11 @@ import {
   setActiveCamoTable,
   withCamoProperty,
 } from "@/lib/render/camo/camo-table";
+import {
+  getShowCamo,
+  isCamoToggleVisible,
+  useShowCamo,
+} from "@/lib/render/camo/show-camo-state";
 
 interface ThreeDPreviewProps {
   projection: ParsedSchematicProjection;
@@ -45,6 +55,8 @@ const PITCH_LIMIT = (Math.PI / 2) * 0.99; // ~89° — avoid pole flip
 const MIN_DISTANCE_FACTOR = 0.05; // relative to fitDistance
 const MAX_DISTANCE_FACTOR = 10;
 const FIT_DISTANCE_MARGIN = 1.25;
+
+const NO_NAMESPACES: ReadonlySet<string> = new Set();
 
 // Chunk size matches the deepslate default we pass to StructureRenderer. Keep
 // these in lock-step.
@@ -130,11 +142,13 @@ function computeProjectionStats(
 // Build a deepslate `Structure` from our projection. Block positions are
 // translated by `-bounds.min` so the structure sits at the origin.
 // Camo-capable blocks get a synthetic `__camo` property indexing `camoTable`,
-// since deepslate never hands block entities to block definitions.
+// since deepslate never hands block entities to block definitions; their
+// (translated) positions are added to `camoPositions`.
 function buildStructure(
   projection: ParsedSchematicProjection,
   bounds: Bounds,
   camoTable: CamoTable,
+  camoPositions: Array<[number, number, number]>,
 ): Structure {
   const structure = new Structure(
     BlockPos.create(bounds.size[0], bounds.size[1], bounds.size[2]),
@@ -147,12 +161,14 @@ function buildStructure(
       const entry = projection.palette[placement.paletteIndex];
       if (entry === undefined || isInvisibleBlockId(entry.blockId)) continue;
       const [x, y, z] = placement.pos;
+      const pos: [number, number, number] = [
+        x - bounds.min[0],
+        y - bounds.min[1],
+        z - bounds.min[2],
+      ];
+      if (isCamoCapableBlockId(entry.blockId)) camoPositions.push(pos);
       structure.addBlock(
-        BlockPos.create(
-          x - bounds.min[0],
-          y - bounds.min[1],
-          z - bounds.min[2],
-        ),
+        BlockPos.create(pos[0], pos[1], pos[2]),
         entry.blockId,
         withCamoProperty(
           camoTable,
@@ -181,6 +197,41 @@ function listChunkPositions(
       for (let z = 0; z < cz; z += 1) {
         out.push([x, y, z]);
       }
+    }
+  }
+  return out;
+}
+
+// Chunks to rebuild when camo blocks at `positions` change how they render:
+// their own chunks, plus neighbouring chunks when a block sits on a chunk
+// edge, since a camo block's opacity decides whether its neighbours' faces
+// are culled.
+function listCamoChunkPositions(
+  positions: ReadonlyArray<[number, number, number]>,
+  size: [number, number, number],
+): Array<[number, number, number]> {
+  const chunkCounts = size.map((n) => Math.max(1, Math.ceil(n / CHUNK_SIZE)));
+  const seen = new Set<string>();
+  const out: Array<[number, number, number]> = [];
+  const offsets: Array<[number, number, number]> = [
+    [0, 0, 0],
+    [-1, 0, 0],
+    [1, 0, 0],
+    [0, -1, 0],
+    [0, 1, 0],
+    [0, 0, -1],
+    [0, 0, 1],
+  ];
+  for (const pos of positions) {
+    for (const offset of offsets) {
+      const chunk = pos.map((v, axis) =>
+        Math.floor((v + offset[axis]) / CHUNK_SIZE),
+      ) as [number, number, number];
+      if (chunk.some((c, axis) => c < 0 || c >= chunkCounts[axis])) continue;
+      const key = chunk.join(",");
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(chunk);
     }
   }
   return out;
@@ -337,6 +388,8 @@ export function ThreeDPreview({
   );
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
   const apiRef = React.useRef<CameraApi | null>(null);
+  // Re-meshes the camo blocks of the current build for a "Show camo" value.
+  const applyShowCamoRef = React.useRef<((show: boolean) => void) | null>(null);
   // Camera of the last mesh build. Reused when only the resources change
   // (e.g. a mod was loaded or removed) so re-meshing doesn't reset the view.
   const cameraMemoRef = React.useRef<{
@@ -380,6 +433,17 @@ export function ThreeDPreview({
     stats: meshStats,
     resources: meshResources,
   } = meshInput;
+  const loadedNamespaces = React.useSyncExternalStore(
+    subscribeLoadedMods,
+    getLoadedNamespaces,
+    () => NO_NAMESPACES,
+  );
+  const camoToggleVisible = React.useMemo(
+    () => isCamoToggleVisible(projection.palette, loadedNamespaces),
+    [projection, loadedNamespaces],
+  );
+  const [showCamo, setShowCamo] = useShowCamo();
+  const camoSwitchId = React.useId();
 
   // Cleared back to false once the chunked builder finishes (or aborts via
   // cleanup). Drives the "Building preview…" overlay.
@@ -617,9 +681,35 @@ export function ThreeDPreview({
     // body — so the lint rule against synchronous setState-in-effect stays
     // happy. The very first `setIsBuilding(true)` is itself behind an `await`.
     const camoTable = new CamoTable();
-    const realStructure = buildStructure(meshProjection, bounds, camoTable);
-    setActiveCamoTable(camoTable);
+    const camoPositions: Array<[number, number, number]> = [];
+    const realStructure = buildStructure(
+      meshProjection,
+      bounds,
+      camoTable,
+      camoPositions,
+    );
+    // "Show camo" off renders the same `__camo` indices from a table whose
+    // slots are all empty, so toggling needs no new structure.
+    let appliedShowCamo = getShowCamo();
+    setActiveCamoTable(appliedShowCamo ? camoTable : camoTable.framesOnly());
     const chunkPositions = listChunkPositions(bounds.size);
+    let builder: PrivateChunkBuilder | null = null;
+
+    applyShowCamoRef.current = (show) => {
+      if (show === appliedShowCamo) return;
+      appliedShowCamo = show;
+      setActiveCamoTable(show ? camoTable : camoTable.framesOnly());
+      // Before the swap no chunk is built yet; the build uses the new table.
+      if (builder === null || camoPositions.length === 0) return;
+      try {
+        builder.updateStructureBuffers(
+          listCamoChunkPositions(camoPositions, bounds.size),
+        );
+      } catch (err) {
+        console.error("ThreeDPreview camo rebuild failed", err);
+      }
+      requestRender();
+    };
 
     void (async () => {
       try {
@@ -627,7 +717,7 @@ export function ThreeDPreview({
         if (cancelled || !renderer) return;
         setIsBuilding(true);
         swapStructureWithoutFullRebuild(renderer, realStructure);
-        const builder = (renderer as unknown as PrivateStructureRenderer)
+        builder = (renderer as unknown as PrivateStructureRenderer)
           .chunkBuilder;
 
         for (let i = 0; i < chunkPositions.length; i += CHUNK_BUILD_BATCH) {
@@ -657,6 +747,7 @@ export function ThreeDPreview({
       resizeObserver?.disconnect();
       if (scheduledFrame) cancelAnimationFrame(scheduledFrame);
       apiRef.current = null;
+      applyShowCamoRef.current = null;
       // Drop the renderer reference; the canvas and its WebGL context will
       // be GC'd when this component unmounts. Don't call
       // `WEBGL_lose_context.loseContext()` here — under React strict mode
@@ -666,6 +757,10 @@ export function ThreeDPreview({
       renderer = null;
     };
   }, [meshProjection, meshStats, meshResources, webGLOk]);
+
+  React.useEffect(() => {
+    applyShowCamoRef.current?.(showCamo);
+  }, [showCamo]);
 
   if (!webGLOk) {
     return (
@@ -766,11 +861,9 @@ export function ThreeDPreview({
           Building preview…
         </div>
       ) : null}
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        onClick={() => apiRef.current?.reset()}
+      <div
+        role="toolbar"
+        aria-label="3D preview controls"
         style={{
           position: "absolute",
           top: "var(--space-2)",
@@ -780,9 +873,40 @@ export function ThreeDPreview({
           gap: "var(--space-2)",
         }}
       >
-        <IconRefresh size={14} aria-hidden="true" />
-        Reset view
-      </Button>
+        {camoToggleVisible ? (
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "var(--space-2)",
+              padding: "var(--space-1) var(--space-2)",
+              borderRadius: "var(--radius-md)",
+              background: "color-mix(in srgb, var(--bg-page) 75%, transparent)",
+            }}
+          >
+            <Switch
+              id={camoSwitchId}
+              checked={showCamo}
+              onCheckedChange={setShowCamo}
+            />
+            <Label htmlFor={camoSwitchId}>Show camo</Label>
+          </div>
+        ) : null}
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={() => apiRef.current?.reset()}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "var(--space-2)",
+          }}
+        >
+          <IconRefresh size={14} aria-hidden="true" />
+          Reset view
+        </Button>
+      </div>
     </div>
   );
 }

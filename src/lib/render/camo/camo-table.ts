@@ -25,6 +25,7 @@ export interface CamoTableEntry {
 export class CamoTable {
   readonly entries: CamoTableEntry[] = [];
   private readonly byKey = new Map<string, number>();
+  private framesView: { size: number; table: CamoTable } | null = null;
 
   /** Index (as a property value) of this combination, added if new. */
   add(
@@ -49,6 +50,29 @@ export class CamoTable {
   get(value: string | undefined): CamoTableEntry | null {
     if (value === undefined || !/^\d+$/.test(value)) return null;
     return this.entries[Number(value)] ?? null;
+  }
+
+  /**
+   * The same entries at the same indices with every slot emptied, so the
+   * blocks render in shape with their frame textures ("Show camo" off).
+   * Cached until an entry is added.
+   */
+  framesOnly(): CamoTable {
+    if (this.framesView?.size !== this.entries.length) {
+      const table = new CamoTable();
+      for (const entry of this.entries) {
+        table.entries.push({
+          ...entry,
+          slots: entry.slots.map((s) => ({
+            slot: s.slot,
+            state: null,
+            kind: "empty",
+          })),
+        });
+      }
+      this.framesView = { size: this.entries.length, table };
+    }
+    return this.framesView.table;
   }
 }
 
