@@ -129,7 +129,7 @@ async function backfill(
     await updateLoadedModMeta(next);
     return next;
   } catch (err) {
-    console.warn(`Could not compute block colours for ${meta.modName}.`, err);
+    console.warn("Could not compute block colours for %s.", meta.modName, err);
     return meta;
   }
 }

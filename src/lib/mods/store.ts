@@ -164,7 +164,7 @@ async function convertLegacyAssets(db: IDBPDatabase<ModsDB>): Promise<void> {
       await writeAssets(tx, key, hashed);
       await tx.done;
     } catch (error) {
-      console.warn(`Could not convert stored assets for mod ${key}.`, error);
+      console.warn("Could not convert stored assets for mod %s.", key, error);
     }
   }
 }
