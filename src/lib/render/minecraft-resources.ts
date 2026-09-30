@@ -34,6 +34,10 @@ import {
   type VanillaBlockData,
 } from "./block-resources";
 import { loadShapePacks } from "./camo/pack-loader";
+import {
+  applyTemplateOverrides,
+  mergeTemplates,
+} from "./camo/template-overrides";
 
 // Re-export so existing render-path callers keep their import site. The
 // canonical home is now `@/lib/invisible-blocks` — modules that DON'T need
@@ -257,6 +261,8 @@ async function buildResources(files: LoadedModsSnapshot): Promise<Resources> {
     loadShapePacks(loadedNamespaces),
   ]);
   const mods = modAssets.filter((a): a is LoadedModAssets => a !== null);
+  // A loaded FramedBlocks jar's own templates win over the pack's.
+  const templates = mergeTemplates(mods);
 
   // Entity textures go first so a mod shipping the same id overrides them,
   // as mod textures already do for vanilla block textures.
@@ -283,7 +289,10 @@ async function buildResources(files: LoadedModsSnapshot): Promise<Resources> {
     mods,
     uvMap: plan.uvMap,
     atlasImage,
-    camo: { loadedNamespaces, packs: shapePacks },
+    camo: {
+      loadedNamespaces,
+      packs: shapePacks.map((pack) => applyTemplateOverrides(pack, templates)),
+    },
   }).resources;
 }
 

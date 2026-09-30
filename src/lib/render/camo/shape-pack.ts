@@ -168,6 +168,25 @@ export interface ShapePiece {
   cull: Direction[];
   faces: Direction[];
   ops: QuadOp[];
+  /**
+   * Set on pieces generated from a FramedBlocks `framed_templates/*.json`
+   * cube: the template id and the cube's index in its `elements`. A loaded
+   * jar's copy of the template replaces these pieces (`template-overrides.ts`).
+   */
+  template?: PieceTemplate;
+}
+
+export interface PieceTemplate {
+  /** `framedblocks:<name>` for `framed_templates/<name>.json`. */
+  id: string;
+  element: number;
+}
+
+/** One cube of a FramedBlocks geometry template. */
+export interface TemplateCube {
+  box: Box;
+  /** Face → cullable. Faces not listed aren't part of the cube. */
+  faces: Partial<Record<Direction, boolean>>;
 }
 
 /**
@@ -456,7 +475,25 @@ function validatePiece(value: unknown, path: string): ShapePiece {
         ? [...DIRECTIONS]
         : validateEnumList(piece.faces, DIRECTIONS, `${path}.faces`),
     ops: validateOps(piece.ops, `${path}.ops`),
+    ...(piece.template === undefined
+      ? {}
+      : {
+          template: validatePieceTemplate(piece.template, `${path}.template`),
+        }),
   };
+}
+
+function validatePieceTemplate(value: unknown, path: string): PieceTemplate {
+  const template = expectRecord(value, path);
+  const element = template.element;
+  if (
+    typeof element !== "number" ||
+    !Number.isInteger(element) ||
+    element < 0
+  ) {
+    throw new ShapePackError(`${path}.element`, "expected an index");
+  }
+  return { id: expectString(template.id, `${path}.id`), element };
 }
 
 function validateRule(value: unknown, path: string): ShapeRule {
@@ -530,4 +567,38 @@ export function matchShapeRule(
     if (matches) return rule;
   }
   return null;
+}
+
+/**
+ * Parses a FramedBlocks `framed_templates/*.json` file (`GeometryTemplate.CODEC`):
+ * `elements` of `from`/`to` boxes whose `faces` map each face to a cullable
+ * flag, or, like a block model, to an object that is cullable when it has a
+ * `cullface`. Box corners may come in either order. Throws `ShapePackError`
+ * naming the first invalid path.
+ */
+export function parseFramedTemplate(json: unknown, path = "$"): TemplateCube[] {
+  const template = expectRecord(json, path);
+  return expectArray(template.elements, `${path}.elements`).map((value, i) => {
+    const where = `${path}.elements[${i}]`;
+    const element = expectRecord(value, where);
+    const a = expectVec3(element.from, `${where}.from`);
+    const b = expectVec3(element.to, `${where}.to`);
+    const box = validateBox(
+      {
+        from: [0, 1, 2].map((axis) => Math.min(a[axis], b[axis])),
+        to: [0, 1, 2].map((axis) => Math.max(a[axis], b[axis])),
+      },
+      where,
+    );
+    const faces: Partial<Record<Direction, boolean>> = {};
+    for (const [face, spec] of Object.entries(
+      expectRecord(element.faces, `${where}.faces`),
+    )) {
+      const dir = expectEnum(face, DIRECTIONS, `${where}.faces`);
+      faces[dir] = isRecord(spec)
+        ? spec.cullface !== undefined
+        : expectBoolean(spec, `${where}.faces.${face}`);
+    }
+    return { box, faces };
+  });
 }

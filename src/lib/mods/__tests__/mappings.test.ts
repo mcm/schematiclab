@@ -234,6 +234,7 @@ describe("auto-mapping on mod load", () => {
         models: {},
         textures: {},
         textureMeta: {},
+        templates: {},
         warnings: [],
       })),
       add: vi.fn(async () => {}),
