@@ -30,6 +30,7 @@ These scripts use `node --experimental-strip-types` and expect sibling checkouts
 - `pnpm gen:translations` regenerates `src/lib/schemlib/data/block-translations.generated.ts` and `forge-1.12-flatten.generated.ts`. Don't hand-edit `*.generated.ts`. Change `manual-overrides.ts` or `forge-1.12-specs.ts` and regenerate.
 - `pnpm gen:mc-assets` rebuilds the vanilla 3D-preview bundle in `public/minecraft-assets/` (texture atlas, UVs, blockstates, models, opaque-block list).
 - `scripts/regenerate-known-versions.mts` regenerates `schematic-formats/known-versions.ts`.
+- `pnpm gen:camo-shapes` regenerates the camo shape packs in `public/camo-shapes/` (schema: `src/lib/render/camo/shape-pack.ts`). It needs a FramedBlocks checkout (`~/projects/FramedBlocks` or `../FramedBlocks`, override with `FRAMEDBLOCKS_PATH`). It reads the checkout's `framed_templates/*.json` and `BlockType.java`, plus the hand port of `TemplateSpecs.java` and the double blocks' `calculateParts()` in `scripts/camo-shapes/framedblocks/template-specs.ts`. It also uses vanilla models from `public/minecraft-assets/models.json`. The pack records the FramedBlocks commit and `mod_version`. The script prints every `BlockType` id that has no shape entry. Re-run it for each FramedBlocks release. When a release changes `TemplateSpecs` or a `calculateParts()`, update the port first.
 
 ### Environment
 
