@@ -16,15 +16,17 @@ import {
   IconArrowsExchange,
   IconBulb,
   IconCheck,
+  IconChecks,
   IconX,
 } from "@tabler/icons-react";
 import type { ParsedSchematicProjection } from "@/lib/convert";
 import { translatePreviewInWorker } from "@/lib/convert-client";
 import { KNOWN_VERSIONS } from "@/lib/schemlib/schematic-formats/version-mapping";
-import type {
-  ProblematicEntry,
-  ProblematicReason,
-  VersionMappingPreview,
+import {
+  groupProblematicEntries,
+  type ProblematicGroup,
+  type ProblematicReason,
+  type VersionMappingPreview,
 } from "@/lib/advanced/version-mapping-preview";
 import type { VersionMappingOverrides } from "@/lib/advanced/edit";
 import type { ModMappingContext } from "@/lib/advanced/mod-mapping";
@@ -107,6 +109,13 @@ type PreviewState =
 type Decision =
   | { kind: "accepted" }
   | { kind: "override"; target: BlockStatePickerResult };
+
+// The replacement picker's open state: the group's first state is shown as
+// the source, and the choice lands on every state in the group.
+interface PickerRequest {
+  source: BlockStatePickerSource;
+  stateKeys: string[];
+}
 
 const EMPTY_CHOICES: Readonly<Record<string, ModChoice>> = {};
 
@@ -454,8 +463,8 @@ export function VersionMappingPanel({
   const [decisionsByVersion, setDecisionsByVersion] = React.useState<
     Record<string, Record<string, Decision>>
   >({});
-  const [pickerSource, setPickerSource] =
-    React.useState<BlockStatePickerSource | null>(null);
+  const [pickerRequest, setPickerRequest] =
+    React.useState<PickerRequest | null>(null);
 
   // A monotonically increasing request key — we only commit a preview result
   // when the request that produced it is still the latest one. Handles the
@@ -529,75 +538,74 @@ export function VersionMappingPanel({
     })();
   }, [schematic, targetVersionId, modContext, previewWanted]);
 
-  const setDecisionForCurrentVersion = React.useCallback(
-    (key: string, decision: Decision | null) => {
+  // Sets (or, with null, clears) the decision for several source states at
+  // once: a block group, or every undecided row for "Accept all".
+  const setDecisionsForCurrentVersion = React.useCallback(
+    (keys: readonly string[], decision: Decision | null) => {
       setDecisionsByVersion((prev) => {
-        const current = prev[versionKey] ?? {};
-        if (decision === null) {
-          if (!(key in current)) return prev;
-          const next = { ...current };
-          delete next[key];
-          return { ...prev, [versionKey]: next };
+        const next = { ...(prev[versionKey] ?? {}) };
+        for (const key of keys) {
+          if (decision === null) delete next[key];
+          else next[key] = decision;
         }
-        return {
-          ...prev,
-          [versionKey]: { ...current, [key]: decision },
-        };
+        return { ...prev, [versionKey]: next };
       });
     },
     [versionKey],
   );
 
   const handleAccept = React.useCallback(
-    (entry: ProblematicEntry) => {
-      setDecisionForCurrentVersion(entry.sourceBlockState, {
-        kind: "accepted",
-      });
+    (group: ProblematicGroup) => {
+      setDecisionsForCurrentVersion(stateKeysOf(group), { kind: "accepted" });
     },
-    [setDecisionForCurrentVersion],
+    [setDecisionsForCurrentVersion],
   );
 
-  const handlePickReplacement = React.useCallback((entry: ProblematicEntry) => {
-    setPickerSource({
-      blockState: entry.sourceBlockState,
-      blockId: entry.sourceBlockId,
-      properties: entry.sourceProperties,
+  const handlePickReplacement = React.useCallback((group: ProblematicGroup) => {
+    const first = group.entries[0];
+    setPickerRequest({
+      source: {
+        blockState: first.sourceBlockState,
+        blockId: first.sourceBlockId,
+        properties: first.sourceProperties,
+      },
+      stateKeys: stateKeysOf(group),
     });
   }, []);
 
   const handleConfirmReplacement = React.useCallback(
     (target: BlockStatePickerResult) => {
-      if (pickerSource) {
-        setDecisionForCurrentVersion(pickerSource.blockState, {
+      if (pickerRequest) {
+        setDecisionsForCurrentVersion(pickerRequest.stateKeys, {
           kind: "override",
           target,
         });
       }
-      setPickerSource(null);
+      setPickerRequest(null);
     },
-    [pickerSource, setDecisionForCurrentVersion],
+    [pickerRequest, setDecisionsForCurrentVersion],
   );
 
   const handleChooseSuggestion = React.useCallback(
-    (entry: ProblematicEntry, candidate: SuggestionCandidate) => {
+    (group: ProblematicGroup, candidate: SuggestionCandidate) => {
       // The candidate's default state: no explicit properties.
-      setDecisionForCurrentVersion(entry.sourceBlockState, {
+      setDecisionsForCurrentVersion(stateKeysOf(group), {
         kind: "override",
         target: { blockId: candidate.id, properties: {} },
       });
     },
-    [setDecisionForCurrentVersion],
+    [setDecisionsForCurrentVersion],
   );
 
   const handleCancelPicker = React.useCallback(() => {
-    setPickerSource(null);
+    setPickerRequest(null);
   }, []);
 
   const handleClearDecision = React.useCallback(
-    (entry: ProblematicEntry) => {
-      setDecisionForCurrentVersion(entry.sourceBlockState, null);
+    (group: ProblematicGroup) => {
+      setDecisionsForCurrentVersion(stateKeysOf(group), null);
     },
-    [setDecisionForCurrentVersion],
+    [setDecisionsForCurrentVersion],
   );
 
   const handleApplyTranslation = React.useCallback(() => {
@@ -642,12 +650,16 @@ export function VersionMappingPanel({
   const isModOnly = targetVersionId === null;
   const pendingCount =
     previewState.status === "ready" ? previewState.preview.pendingCount : 0;
-  const undecidedCount =
+  const undecidedKeys =
     previewState.status === "ready"
-      ? previewState.preview.problematic.filter(
-          (entry) => !(entry.sourceBlockState in decisions),
-        ).length
-      : 0;
+      ? previewState.preview.problematic
+          .map((entry) => entry.sourceBlockState)
+          .filter((key) => !(key in decisions))
+      : [];
+  const undecidedCount = undecidedKeys.length;
+  const handleAcceptAll = () => {
+    setDecisionsForCurrentVersion(undecidedKeys, { kind: "accepted" });
+  };
   const { canApply, title: applyTitle } = applyReadiness({
     previewStatus: previewState.status,
     pendingCount,
@@ -725,6 +737,8 @@ export function VersionMappingPanel({
         <ProblematicList
           preview={previewState.preview}
           decisions={decisions}
+          undecidedCount={undecidedCount}
+          onAcceptAll={handleAcceptAll}
           onAccept={handleAccept}
           onPickReplacement={handlePickReplacement}
           onChooseSuggestion={handleChooseSuggestion}
@@ -772,14 +786,18 @@ export function VersionMappingPanel({
         </Button>
       </div>
 
-      {pickerSource !== null ? (
+      {pickerRequest !== null ? (
         <BlockStatePicker
           open
-          source={pickerSource}
+          source={pickerRequest.source}
           onCancel={handleCancelPicker}
           onConfirm={handleConfirmReplacement}
           title="Pick replacement block"
-          description="Choose the block to substitute for this source state in the translated schematic. The choice overrides the mapper's proposal for this row only. Free-text input is accepted for identifiers outside the catalog."
+          description={
+            pickerRequest.stateKeys.length > 1
+              ? `Choose the block to substitute for all ${pickerRequest.stateKeys.length} states of this block in the translated schematic. The choice overrides the mapper's proposal for this row only. Free-text input is accepted for identifiers outside the catalog.`
+              : "Choose the block to substitute for this source state in the translated schematic. The choice overrides the mapper's proposal for this row only. Free-text input is accepted for identifiers outside the catalog."
+          }
           confirmLabel="Set replacement"
           suggestionContext={suggestionContext}
         />
@@ -788,9 +806,45 @@ export function VersionMappingPanel({
   );
 }
 
+function stateKeysOf(group: ProblematicGroup): string[] {
+  return group.entries.map((entry) => entry.sourceBlockState);
+}
+
+// A group's shared decision, or undefined while its states are undecided or
+// decided differently (the group's actions then overwrite them all).
+function groupDecision(
+  group: ProblematicGroup,
+  decisions: Record<string, Decision>,
+): Decision | undefined {
+  const first = decisions[group.entries[0].sourceBlockState];
+  if (first === undefined) return undefined;
+  const firstTarget =
+    first.kind === "override"
+      ? formatStateDisplay(first.target.blockId, first.target.properties)
+      : null;
+  for (const entry of group.entries) {
+    const decision = decisions[entry.sourceBlockState];
+    if (decision === undefined || decision.kind !== first.kind) {
+      return undefined;
+    }
+    if (
+      decision.kind === "override" &&
+      formatStateDisplay(
+        decision.target.blockId,
+        decision.target.properties,
+      ) !== firstTarget
+    ) {
+      return undefined;
+    }
+  }
+  return first;
+}
+
 function ProblematicList({
   preview,
   decisions,
+  undecidedCount,
+  onAcceptAll,
   onAccept,
   onPickReplacement,
   onChooseSuggestion,
@@ -799,16 +853,23 @@ function ProblematicList({
 }: {
   preview: VersionMappingPreview;
   decisions: Record<string, Decision>;
-  onAccept: (entry: ProblematicEntry) => void;
-  onPickReplacement: (entry: ProblematicEntry) => void;
+  undecidedCount: number;
+  onAcceptAll: () => void;
+  onAccept: (group: ProblematicGroup) => void;
+  onPickReplacement: (group: ProblematicGroup) => void;
   onChooseSuggestion: (
-    entry: ProblematicEntry,
+    group: ProblematicGroup,
     candidate: SuggestionCandidate,
   ) => void;
-  onClearDecision: (entry: ProblematicEntry) => void;
+  onClearDecision: (group: ProblematicGroup) => void;
   suggestionContext: BlockSuggestionContext;
 }) {
-  if (preview.problematic.length === 0) {
+  const groups = React.useMemo(
+    () => groupProblematicEntries(preview.problematic),
+    [preview],
+  );
+
+  if (groups.length === 0) {
     return (
       <div
         style={{
@@ -832,31 +893,77 @@ function ProblematicList({
 
   return (
     <div
-      role="list"
-      aria-label="Problematic blocks"
       style={{
         flex: 1,
         minHeight: 0,
-        overflowY: "auto",
-        border: "1px solid var(--border-subtle)",
-        borderRadius: "var(--radius-md)",
-        background: "var(--bg-page)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--space-2)",
       }}
     >
-      {preview.problematic.map((entry) => (
-        <ProblematicRow
-          key={entry.sourceBlockState}
-          entry={entry}
-          decision={decisions[entry.sourceBlockState]}
-          onAccept={() => onAccept(entry)}
-          onPickReplacement={() => onPickReplacement(entry)}
-          onChooseSuggestion={(candidate) =>
-            onChooseSuggestion(entry, candidate)
-          }
-          onClearDecision={() => onClearDecision(entry)}
-          suggestionContext={suggestionContext}
-        />
-      ))}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "var(--space-2)",
+          color: "var(--text-tertiary)",
+          fontSize: "var(--text-xs)",
+        }}
+      >
+        <span>
+          {groups.length.toLocaleString()} block
+          {groups.length === 1 ? "" : "s"} to review
+          {undecidedCount > 0
+            ? `, ${undecidedCount.toLocaleString()} state${undecidedCount === 1 ? "" : "s"} undecided`
+            : ""}
+        </span>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={onAcceptAll}
+          disabled={undecidedCount === 0}
+          title="Accept the proposed mapping for every row that has no decision yet. Rows with a replacement keep it."
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "var(--space-1)",
+            fontSize: "var(--text-xs)",
+            flexShrink: 0,
+          }}
+        >
+          <IconChecks size={14} aria-hidden="true" />
+          Accept all
+        </Button>
+      </div>
+      <div
+        role="list"
+        aria-label="Problematic blocks"
+        style={{
+          flex: 1,
+          minHeight: 0,
+          overflowY: "auto",
+          border: "1px solid var(--border-subtle)",
+          borderRadius: "var(--radius-md)",
+          background: "var(--bg-page)",
+        }}
+      >
+        {groups.map((group) => (
+          <ProblematicRow
+            key={group.key}
+            group={group}
+            decision={groupDecision(group, decisions)}
+            onAccept={() => onAccept(group)}
+            onPickReplacement={() => onPickReplacement(group)}
+            onChooseSuggestion={(candidate) =>
+              onChooseSuggestion(group, candidate)
+            }
+            onClearDecision={() => onClearDecision(group)}
+            suggestionContext={suggestionContext}
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -872,7 +979,7 @@ const REASON_LABELS: Record<
 };
 
 function ProblematicRow({
-  entry,
+  group,
   decision,
   onAccept,
   onPickReplacement,
@@ -880,7 +987,7 @@ function ProblematicRow({
   onClearDecision,
   suggestionContext,
 }: {
-  entry: ProblematicEntry;
+  group: ProblematicGroup;
   decision: Decision | undefined;
   onAccept: () => void;
   onPickReplacement: () => void;
@@ -889,8 +996,12 @@ function ProblematicRow({
   suggestionContext: BlockSuggestionContext;
 }) {
   const [suggesting, setSuggesting] = React.useState(false);
-  const sourceProps = formatProperties(entry.sourceProperties);
-  const targetProps = formatProperties(entry.proposedTargetProperties);
+  // A single state shows its properties inline; several are listed below.
+  const single = group.entries.length === 1 ? group.entries[0] : null;
+  const sourceProps = single ? formatProperties(single.sourceProperties) : "";
+  const targetProps = single
+    ? formatProperties(single.proposedTargetProperties)
+    : "";
 
   return (
     <div
@@ -922,20 +1033,31 @@ function ProblematicRow({
             whiteSpace: "nowrap",
             minWidth: 0,
           }}
-          title={entry.sourceBlockId + sourceProps}
+          title={group.sourceBlockId + sourceProps}
         >
-          {entry.sourceBlockId}
+          {group.sourceBlockId}
           {sourceProps ? (
             <span style={{ color: "var(--text-tertiary)" }}>{sourceProps}</span>
           ) : null}
+          {single === null ? (
+            <span
+              style={{
+                color: "var(--text-tertiary)",
+                fontFamily: "var(--font-sans, inherit)",
+              }}
+            >
+              {" "}
+              · {group.entries.length.toLocaleString()} states
+            </span>
+          ) : null}
         </span>
-        {entry.reason !== "vanilla" ? (
+        {group.reason !== "vanilla" ? (
           <Badge
-            variant={REASON_LABELS[entry.reason].variant}
+            variant={REASON_LABELS[group.reason].variant}
             size="sm"
             style={{ flexShrink: 0, marginLeft: "auto" }}
           >
-            {REASON_LABELS[entry.reason].label}
+            {REASON_LABELS[group.reason].label}
           </Badge>
         ) : null}
         <span
@@ -946,7 +1068,7 @@ function ProblematicRow({
             flexShrink: 0,
           }}
         >
-          {entry.sourceCount.toLocaleString()}
+          {group.totalCount.toLocaleString()}
         </span>
       </div>
       <div
@@ -961,10 +1083,10 @@ function ProblematicRow({
             decision?.kind === "override" ? "line-through" : "none",
           opacity: decision?.kind === "override" ? 0.55 : 1,
         }}
-        title={entry.proposedTargetBlockId + targetProps}
+        title={group.proposedTargetBlockId + targetProps}
       >
         <span style={{ color: "var(--text-tertiary)" }}>→ </span>
-        {entry.proposedTargetBlockId}
+        {group.proposedTargetBlockId}
         {targetProps ? (
           <span style={{ color: "var(--text-tertiary)" }}>{targetProps}</span>
         ) : null}
@@ -978,10 +1100,11 @@ function ProblematicRow({
           lineHeight: 1.4,
         }}
       >
-        {entry.warnings.map((warning, idx) => (
+        {group.warnings.map((warning, idx) => (
           <li key={idx}>{warning}</li>
         ))}
       </ul>
+      {single === null ? <GroupStates group={group} /> : null}
 
       <DecisionFooter
         decision={decision}
@@ -993,7 +1116,7 @@ function ProblematicRow({
       />
       {suggesting ? (
         <BlockSuggestions
-          sourceBlockId={entry.sourceBlockId}
+          sourceBlockId={group.sourceBlockId}
           context={suggestionContext}
           onChoose={(candidate) => {
             onChooseSuggestion(candidate);
@@ -1002,6 +1125,65 @@ function ProblematicRow({
         />
       ) : null}
     </div>
+  );
+}
+
+// The individual states behind a grouped row, collapsed by default.
+function GroupStates({ group }: { group: ProblematicGroup }) {
+  return (
+    <details
+      style={{
+        color: "var(--text-secondary)",
+        fontSize: "var(--text-xs)",
+      }}
+    >
+      <summary style={{ cursor: "pointer", color: "var(--text-tertiary)" }}>
+        Show {group.entries.length.toLocaleString()} states
+      </summary>
+      <ul
+        style={{
+          margin: 0,
+          padding: "var(--space-1) 0 0 var(--space-4)",
+          fontFamily: "var(--font-mono, ui-monospace, monospace)",
+          lineHeight: 1.5,
+        }}
+      >
+        {group.entries.map((entry) => {
+          const source = formatProperties(entry.sourceProperties) || "[]";
+          const target =
+            formatProperties(entry.proposedTargetProperties) || "[]";
+          return (
+            <li
+              key={entry.sourceBlockState}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: "var(--space-2)",
+              }}
+            >
+              <span
+                style={{
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  minWidth: 0,
+                }}
+                title={`${source} → ${target}`}
+              >
+                {source}
+                <span style={{ color: "var(--text-tertiary)" }}> → </span>
+                {target}
+              </span>
+              <span
+                style={{ fontVariantNumeric: "tabular-nums", flexShrink: 0 }}
+              >
+                {entry.sourceCount.toLocaleString()}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </details>
   );
 }
 

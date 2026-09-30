@@ -155,3 +155,54 @@ export function previewVersionMapping(
     pendingCount,
   };
 }
+
+// Problematic rows for one block: every source state of `sourceBlockId` that
+// maps to `proposedTargetBlockId` for the same reason. The panel decides a
+// group as a whole, so e.g. a property dropped from every state of a block
+// needs one decision rather than one per state.
+export interface ProblematicGroup {
+  // Stable within a preview: source id, target id and reason.
+  key: string;
+  sourceBlockId: string;
+  proposedTargetBlockId: string;
+  reason: ProblematicReason;
+  // Sum of `sourceCount` over `entries`.
+  totalCount: number;
+  // Every entry's warnings, deduplicated, in first-seen order.
+  warnings: string[];
+  // In source palette order.
+  entries: ProblematicEntry[];
+}
+
+/** Group problematic rows by block, keeping first-seen (palette) order. */
+export function groupProblematicEntries(
+  entries: readonly ProblematicEntry[],
+): ProblematicGroup[] {
+  const groups = new Map<string, ProblematicGroup>();
+  for (const entry of entries) {
+    const key = [
+      entry.sourceBlockId,
+      entry.proposedTargetBlockId,
+      entry.reason,
+    ].join("\u0000");
+    let group = groups.get(key);
+    if (group === undefined) {
+      group = {
+        key,
+        sourceBlockId: entry.sourceBlockId,
+        proposedTargetBlockId: entry.proposedTargetBlockId,
+        reason: entry.reason,
+        totalCount: 0,
+        warnings: [],
+        entries: [],
+      };
+      groups.set(key, group);
+    }
+    group.totalCount += entry.sourceCount;
+    for (const warning of entry.warnings) {
+      if (!group.warnings.includes(warning)) group.warnings.push(warning);
+    }
+    group.entries.push(entry);
+  }
+  return [...groups.values()];
+}
