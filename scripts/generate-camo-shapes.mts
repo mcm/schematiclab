@@ -13,15 +13,30 @@
 //   - public/minecraft-assets/models.json
 //       vanilla models FramedBlocks uses as templates (slab, trapdoor, …)
 //
+//   - copycats-plus/copycats checkout
+//       common/.../CCBlocks.java             → every block id
+//       gradle.properties (mod_version), git HEAD (commit)
+//   - scripts/camo-shapes/copycats/*.ts
+//       hand ports of the content/copycat/*/*ModelCore.java classes, on a
+//       port of their assembly API (assembly.ts)
+//   - Creators-of-Create/Create checkout
+//       src/main/java/.../AllBlocks.java     → the copycat block ids
+//       gradle.properties (mod_version), git HEAD (commit)
+//   - scripts/camo-shapes/create/copycat-models.ts
+//       hand port of CopycatPanelModel, CopycatStepModel, CopycatBarsModel
+//
 // Output:
 //   - public/camo-shapes/framedblocks.json
+//   - public/camo-shapes/copycats.json
+//   - public/camo-shapes/create.json
 //
 // Usage:
 //   node --experimental-strip-types scripts/generate-camo-shapes.mts
 //   (also wired up as `pnpm gen:camo-shapes`)
 //
-// Override the checkout location with FRAMEDBLOCKS_PATH (default
-// ~/projects/FramedBlocks, then ../FramedBlocks next to this repo).
+// Override the checkout locations with FRAMEDBLOCKS_PATH, COPYCATS_PATH and
+// CREATE_PATH (default ~/projects/<Name>, then ../<Name> next to this repo,
+// with the names FramedBlocks, copycats and Create).
 
 import {
   existsSync,
@@ -60,6 +75,17 @@ import {
   GEOMETRY_SPECS,
   type QuadPiece,
 } from "./camo-shapes/framedblocks/geometry-specs.ts";
+import {
+  MASK_DIRECTIONS,
+  MATERIAL_KEY,
+  type AssemblyTransform,
+  type CopycatBlockSpec,
+  type CopycatRenderContext,
+  type MaterialClass,
+  type MutableAABB,
+  type Transformable,
+} from "./camo-shapes/copycats/assembly.ts";
+import { BLOCKS as CREATE_BLOCKS } from "./camo-shapes/create/copycat-models.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, "..");
@@ -485,21 +511,8 @@ async function generateFramedBlocks(): Promise<void> {
       Object.entries(blocks).sort(([a], [b]) => a.localeCompare(b)),
     ),
   };
-  validateShapePack(pack);
+  await writePack("framedblocks", pack);
 
-  mkdirSync(OUT_DIR, { recursive: true });
-  const outPath = join(OUT_DIR, "framedblocks.json");
-  // Prettier-formatted so `prettier --check` passes on the committed pack.
-  const json = await format(JSON.stringify(compactPack(pack)), {
-    parser: "json",
-  });
-  writeFileSync(outPath, json);
-
-  const rules = Object.values(blocks).reduce((n, r) => n + r.length, 0);
-  process.stderr.write(
-    `Wrote ${outPath}: ${Object.keys(blocks).length} blocks, ${rules} rules ` +
-      `(FramedBlocks ${pack.source.modVersion} @ ${pack.source.commit.slice(0, 10)})\n`,
-  );
   const uncovered = blockTypes.filter(
     (id) => blocks[`framedblocks:${id}`] === undefined,
   );
@@ -507,6 +520,25 @@ async function generateFramedBlocks(): Promise<void> {
     `${uncovered.length} BlockType ids without a shape entry:\n`,
   );
   for (const id of uncovered) process.stdout.write(`framedblocks:${id}\n`);
+}
+
+/** Validates `pack` and writes it to `public/camo-shapes/<name>.json`. */
+async function writePack(name: string, pack: ShapePack): Promise<void> {
+  validateShapePack(pack);
+  mkdirSync(OUT_DIR, { recursive: true });
+  const outPath = join(OUT_DIR, `${name}.json`);
+  // Prettier-formatted so `prettier --check` passes on the committed pack.
+  const json = await format(JSON.stringify(compactPack(pack)), {
+    parser: "json",
+  });
+  writeFileSync(outPath, json);
+
+  const blockCount = Object.keys(pack.blocks).length;
+  const rules = Object.values(pack.blocks).reduce((n, r) => n + r.length, 0);
+  process.stderr.write(
+    `Wrote ${outPath}: ${blockCount} blocks, ${rules} rules ` +
+      `(${pack.source.mod} ${pack.source.modVersion} @ ${pack.source.commit.slice(0, 10)})\n`,
+  );
 }
 
 /** Drops fields that `validateShapePack` defaults, to keep the pack small. */
@@ -530,6 +562,9 @@ function compactPack(pack: ShapePack): unknown {
             if (piece.faces.join(",") !== all) out.faces = piece.faces;
             if (piece.ops.length > 0) out.ops = piece.ops;
             if (piece.template !== undefined) out.template = piece.template;
+            if (piece.whole) out.whole = true;
+            if (piece.copyProperties) out.copyProperties = true;
+            if (piece.model !== undefined) out.model = piece.model;
             return out;
           }),
         })),
@@ -538,4 +573,334 @@ function compactPack(pack: ShapePack): unknown {
   };
 }
 
+// ── Copycats+ and Create ───────────────────────────────────────────────────
+
+/**
+ * Shape-pack stand-ins for the block classes the cores test the material
+ * against (`MaterialCondition`: id suffixes, as vanilla names blocks by
+ * kind). `IronBarsBlock` covers glass panes too; Create's bars special case
+ * excludes them, as `CopycatSpecialCases.isBarsMaterial` does.
+ */
+const MATERIAL_CLASSES: Readonly<
+  Record<MaterialClass, { suffixes: string[]; properties?: string[] }>
+> = {
+  BasePressurePlateBlock: { suffixes: ["_pressure_plate"] },
+  ButtonBlock: { suffixes: ["_button"] },
+  DoorBlock: { suffixes: ["_door"] },
+  FenceBlock: { suffixes: ["_fence"] },
+  FenceGateBlock: { suffixes: ["_fence_gate"] },
+  IronBarsBlock: { suffixes: ["_bars", "iron_bars", "_pane", "glass_pane"] },
+  LadderBlock: { suffixes: ["ladder"] },
+  TrapDoorBlock: { suffixes: ["trapdoor"] },
+  WallBlock: { suffixes: ["_wall"] },
+  "CopycatSpecialCases.isBarsMaterial": { suffixes: ["_bars", "iron_bars"] },
+  "CopycatSpecialCases.isTrapdoorMaterial": {
+    suffixes: ["trapdoor"],
+    properties: ["half", "open", "facing"],
+  },
+};
+
+const ROTATIONS = new Set([90, 180, 270]);
+
+/** The ops an `AssemblyTransform` applies, in call order. */
+function recordTransform(transform: AssemblyTransform): TransformOp[] {
+  const ops: TransformOp[] = [];
+  const rotate = (axis: "X" | "Y" | "Z", angle: number) => {
+    const quarter = ((angle % 360) + 360) % 360;
+    if (quarter === 0) return;
+    if (!ROTATIONS.has(quarter)) throw new Error(`Bad rotation ${angle}`);
+    ops.push(`rotate${axis}${quarter}` as TransformOp);
+  };
+  const recorder: Transformable = {
+    rotateX: (angle) => (rotate("X", angle), recorder),
+    rotateY: (angle) => (rotate("Y", angle), recorder),
+    rotateZ: (angle) => (rotate("Z", angle), recorder),
+    flipX: (flip) => (flip && ops.push("flipX"), recorder),
+    flipY: (flip) => (flip && ops.push("flipY"), recorder),
+    flipZ: (flip) => (flip && ops.push("flipZ"), recorder),
+  };
+  transform(recorder);
+  return ops;
+}
+
+/** Rounds away float noise (the cores use values like 0.02 and 0.1). */
+function tidy(n: number): number {
+  return Math.round(n * 1e6) / 1e6 + 0;
+}
+
+function boxOf(select: MutableAABB): Box {
+  return {
+    from: [tidy(select.minX), tidy(select.minY), tidy(select.minZ)],
+    to: [tidy(select.maxX), tidy(select.maxY), tidy(select.maxZ)],
+  };
+}
+
+/**
+ * Faces of the canonical box `from..to` that lie on the block boundary:
+ * Copycats+ gives exactly those quads a cull face (`QuadAutoCull.BLOCK`).
+ */
+function boundaryFaces(from: Vec3, to: Vec3, faces: Direction[]): Direction[] {
+  const onBoundary: Record<Direction, boolean> = {
+    down: from[1] === 0,
+    up: to[1] === 16,
+    north: from[2] === 0,
+    south: to[2] === 16,
+    west: from[0] === 0,
+    east: to[0] === 16,
+  };
+  return faces.filter((dir) => onBoundary[dir]);
+}
+
+/**
+ * A render context recording each call as a shape piece in camo slot
+ * `slot` (see `scripts/camo-shapes/copycats/assembly.ts`). `sameKind` is
+ * set while the core runs for a material of its own kind, where
+ * `assembleAll()` copies the camo's whole mesh.
+ */
+function recordingContext(
+  slot: string,
+  pieces: ShapePiece[],
+  sameKind: { copyProperties: boolean } | null,
+): CopycatRenderContext {
+  return {
+    assemblePiece(transform, offset, select, cullMask) {
+      const box = boxOf(select);
+      const move: Vec3 = [
+        tidy(offset.x - select.minX),
+        tidy(offset.y - select.minY),
+        tidy(offset.z - select.minZ),
+      ];
+      const faces = MASK_DIRECTIONS.filter(
+        ([bit]) => (cullMask & bit) === 0,
+      ).map(([, dir]) => dir);
+      const destFrom = box.from.map((n, i) => tidy(n + move[i])) as Vec3;
+      const destTo = box.to.map((n, i) => tidy(n + move[i])) as Vec3;
+      pieces.push({
+        slot,
+        select: box,
+        offset: move,
+        transform: recordTransform(transform),
+        cull: boundaryFaces(destFrom, destTo, faces),
+        faces,
+        ops: [],
+      });
+    },
+    assembleAll() {
+      pieces.push({
+        slot,
+        select: FULL_CUBE,
+        offset: [0, 0, 0],
+        transform: [],
+        cull: [...DIRECTIONS],
+        faces: [...DIRECTIONS],
+        ops: [],
+        ...(sameKind === null
+          ? {}
+          : {
+              whole: true,
+              ...(sameKind.copyProperties ? { copyProperties: true } : {}),
+            }),
+      });
+    },
+    assembleModel(id, x, y, face) {
+      if (!isDirection(face)) throw new Error(`Bad face ${face}`);
+      pieces.push({
+        slot,
+        select: FULL_CUBE,
+        offset: [0, 0, 0],
+        transform: [],
+        cull: [],
+        faces: [...DIRECTIONS],
+        ops: [],
+        model: { id, x, y, face },
+      });
+    },
+  };
+}
+
+/**
+ * Rules for one copycat block: first one rule set per material class the
+ * core tests (`material.is(...)`), each with a `material` condition, then
+ * the rules for any other material.
+ */
+function copycatRules(id: string, spec: CopycatBlockSpec): ShapeRule[] {
+  const tested = new Set<MaterialClass>();
+  const piecesFor = (
+    state: BlockState,
+    keys: readonly string[],
+    kind: MaterialClass | null,
+  ) => {
+    const pieces: ShapePiece[] = [];
+    const fullState = { ...defaultState(spec), ...state };
+    for (const key of keys) {
+      const sameKind =
+        kind === null
+          ? null
+          : { copyProperties: spec.core.copyPropertiesIf === kind };
+      spec.core.emitCopycatQuads(
+        key,
+        fullState,
+        recordingContext(key, pieces, sameKind),
+        {
+          is: (materialClass) => {
+            tested.add(materialClass);
+            return materialClass === kind;
+          },
+        },
+      );
+    }
+    return pieces;
+  };
+
+  if (spec.parts !== undefined) {
+    // One rule group per part: its rules only keep the properties it reads.
+    const rules = spec.parts.flatMap((part) =>
+      blockRules(spec.properties, (state) =>
+        piecesFor(state, [part], null),
+      ).map((rule): ShapeRule => ({ ...rule, group: part })),
+    );
+    if (tested.size > 0) {
+      throw new Error(`${id}: multi-state cores can't test the material`);
+    }
+    return rules;
+  }
+
+  const rules = blockRules(spec.properties, (state) =>
+    piecesFor(state, [MATERIAL_KEY], null),
+  );
+  const materialRules = [...tested].flatMap((kind) =>
+    blockRules(spec.properties, (state) =>
+      piecesFor(state, [MATERIAL_KEY], kind),
+    ).map(
+      (rule): ShapeRule => ({
+        ...(rule.when === undefined ? {} : { when: rule.when }),
+        material: { slot: MATERIAL_KEY, ...MATERIAL_CLASSES[kind] },
+        pieces: rule.pieces,
+      }),
+    ),
+  );
+  return [...materialRules, ...rules];
+}
+
+/** Block ids `REGISTRATE.block("<name>", ...)` registers in `file`. */
+function registratedIds(file: string, namespace: string): string[] {
+  const source = readFileSync(file, "utf-8");
+  return [...source.matchAll(/REGISTRATE\.block\("([a-z0-9_]+)"/g)].map(
+    (m) => `${namespace}:${m[1]}`,
+  );
+}
+
+/** `BLOCKS` of every core port in `scripts/camo-shapes/copycats/`. */
+async function copycatSpecs(): Promise<Record<string, CopycatBlockSpec>> {
+  const dir = join(HERE, "camo-shapes/copycats");
+  const specs: Record<string, CopycatBlockSpec> = {};
+  for (const file of readdirSync(dir).sort()) {
+    if (!file.endsWith(".ts") || file === "assembly.ts") continue;
+    const port = (await import(join(dir, file))) as {
+      BLOCKS?: Record<string, CopycatBlockSpec>;
+    };
+    for (const [id, spec] of Object.entries(port.BLOCKS ?? {})) {
+      if (specs[id] !== undefined) throw new Error(`${id} is in two ports`);
+      specs[id] = spec;
+    }
+  }
+  return specs;
+}
+
+function readGradleVersion(checkout: string): string {
+  const props = readFileSync(join(checkout, "gradle.properties"), "utf-8");
+  const match = /^mod_version\s*=\s*(\S+)/m.exec(props);
+  if (match !== null) return match[1];
+  // Copycats+ keeps its version in the git tags (`v<version>...`).
+  return execSync(`git -C "${checkout}" describe --tags --always`, {
+    encoding: "utf-8",
+  })
+    .trim()
+    .replace(/^v/, "");
+}
+
+/**
+ * Writes the pack for `mod` from `specs` and prints the ids in `allIds`
+ * that have no entry.
+ */
+async function generateCopycatPack(options: {
+  mod: string;
+  checkout: string;
+  repository: string;
+  license: string;
+  specs: Readonly<Record<string, CopycatBlockSpec>>;
+  allIds: string[];
+  /** Registered blocks that aren't copycats (no block entity). */
+  notCopycats: string[];
+}): Promise<void> {
+  const { mod, checkout, specs, allIds } = options;
+  const known = new Set(allIds);
+  const blocks: Record<string, ShapeRule[]> = {};
+  for (const [id, spec] of Object.entries(specs)) {
+    if (!known.has(id)) throw new Error(`${id} is not a registered block`);
+    blocks[id] = copycatRules(id, spec);
+  }
+  await writePack(mod, {
+    formatVersion: SHAPE_PACK_FORMAT_VERSION,
+    source: {
+      mod,
+      repository: options.repository,
+      commit: gitCommit(checkout),
+      modVersion: readGradleVersion(checkout),
+      license: options.license,
+    },
+    blocks: Object.fromEntries(
+      Object.entries(blocks).sort(([a], [b]) => a.localeCompare(b)),
+    ),
+  });
+  const uncovered = allIds.filter(
+    (id) => blocks[id] === undefined && !options.notCopycats.includes(id),
+  );
+  process.stderr.write(
+    `${uncovered.length} ${mod} ids without a shape entry:\n`,
+  );
+  for (const id of uncovered) process.stdout.write(`${id}\n`);
+}
+
+async function generateCopycats(): Promise<void> {
+  const checkout = findCheckout("COPYCATS_PATH", "copycats");
+  process.stderr.write(`Copycats+: ${checkout}\n`);
+  await generateCopycatPack({
+    mod: "copycats",
+    checkout,
+    repository: "https://github.com/copycats-plus/copycats",
+    // All rights reserved; the pack ships with the authors' permission.
+    license: "LicenseRef-All-Rights-Reserved",
+    specs: await copycatSpecs(),
+    allIds: registratedIds(
+      join(
+        checkout,
+        "common/src/main/java/com/copycatsplus/copycats/CCBlocks.java",
+      ),
+      "copycats",
+    ),
+    notCopycats: ["copycats:copycat_base"],
+  });
+}
+
+async function generateCreate(): Promise<void> {
+  const checkout = findCheckout("CREATE_PATH", "Create");
+  process.stderr.write(`Create: ${checkout}\n`);
+  await generateCopycatPack({
+    mod: "create",
+    checkout,
+    repository: "https://github.com/Creators-of-Create/Create",
+    // The code license; the pack is derived from Create's Java, not assets.
+    license: "MIT",
+    specs: CREATE_BLOCKS,
+    allIds: registratedIds(
+      join(checkout, "src/main/java/com/simibubi/create/AllBlocks.java"),
+      "create",
+    ).filter((id) => id.startsWith("create:copycat_")),
+    notCopycats: ["create:copycat_base"],
+  });
+}
+
 await generateFramedBlocks();
+await generateCopycats();
+await generateCreate();

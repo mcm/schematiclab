@@ -25,9 +25,6 @@
 // data rather than the block state use their default data: collapsible
 // blocks render uncollapsed (no vertex offsets) and chests render without
 // the animated lid of their opening/closing states.
-//
-// Keep this module free of runtime imports: node's type stripping needs
-// `.ts` import extensions, which `tsc` rejects.
 
 import type {
   Axis,

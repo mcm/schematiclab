@@ -19,15 +19,37 @@ const FIXTURES = [
   "framed_covered_2.nbt",
   "framed_covered_3.nbt",
   "framed_covered_4.nbt",
+  "copycats_nbt.nbt",
+  "copycats_shapes.nbt",
 ];
 
-// Slope-family types with no shapes yet (US-014/US-015 add them and must
-// empty this list). Placements of these are skipped.
-const PENDING = new Set(["framedblocks:framed_slope"]);
+// Types with no shapes yet (FramedBlocks slopes: US-014/US-015; Copycats+
+// slopes and kinetic blocks: US-016, which must empty this list).
+// Placements of these are skipped.
+const PENDING = new Set([
+  "framedblocks:framed_slope",
+  "copycats:copycat_slope",
+  "copycats:copycat_vertical_slope",
+  "copycats:copycat_slope_layer",
+  "copycats:copycat_shaft",
+  "copycats:copycat_cogwheel",
+  "copycats:copycat_large_cogwheel",
+]);
+
+// States whose static model is empty because a block-entity renderer draws
+// the block in-game: an open sliding or folding door (`visible=false`).
+// Their rule must match and have no pieces.
+const RENDERED_BY_BLOCK_ENTITY = (
+  blockId: string,
+  properties: Readonly<Record<string, string>>,
+) =>
+  (blockId === "copycats:copycat_sliding_door" ||
+    blockId === "copycats:copycat_folding_door") &&
+  properties.visible === "false";
 
 // The committed packs, merged by block id. Shapes are looked up by block id
 // and state only, never by the fixture's DataVersion.
-const PACKS = ["framedblocks.json"];
+const PACKS = ["framedblocks.json", "copycats.json", "create.json"];
 
 const rules = new Map<string, ShapeRule[]>();
 for (const file of PACKS) {
@@ -68,17 +90,24 @@ describe.each(FIXTURES)("shape coverage of %s", (filename) => {
           palette[placement.paletteIndex];
         if (!isCamoCapableBlockId(blockId) || PENDING.has(blockId)) continue;
         checked++;
-        const blockRules = rules.get(blockId);
-        const rule = blockRules && matchShapeRule(blockRules, properties);
-        if (!rule) {
-          problems.add(`${blockState}: no shape`);
-          continue;
-        }
         const slots = extractCamoSlots(
           blockId,
           properties,
           entities.get(placement.pos.join(",")),
         );
+        const blockRules = rules.get(blockId);
+        const rule =
+          blockRules && matchShapeRule(blockRules, properties, slots);
+        if (!rule) {
+          problems.add(`${blockState}: no shape`);
+          continue;
+        }
+        if (RENDERED_BY_BLOCK_ENTITY(blockId, properties)) {
+          if (rule.pieces.length > 0) {
+            problems.add(`${blockState}: expected an empty static model`);
+          }
+          continue;
+        }
         for (const slot of slots) {
           if (slot.kind === "empty") continue;
           if (!rule.pieces.some((piece) => piece.slot === slot.slot)) {

@@ -307,14 +307,44 @@ function applyPieceOps(
   return result;
 }
 
+/** A copy of `quad` that transforming won't write back to the original. */
+function cloneQuad(quad: Quad): Quad {
+  const [a, b, c, d] = quad
+    .vertices()
+    .map(
+      (v) =>
+        new Vertex(
+          v.pos,
+          v.color,
+          v.texture,
+          v.textureLimit,
+          v.normal,
+          v.blockPos,
+        ),
+    );
+  return new Quad(a, b, c, d);
+}
+
 /**
  * The quads of `piece` cut from `source` (a camo's full-cube mesh, block
  * units). Only faces listed in `piece.faces` (canonical frame) are used.
  * Faces listed in `piece.cull` are dropped when `cull` (deepslate's
  * neighbour culling, block frame) is set for their transformed direction.
- * `source` is not modified.
+ * A `whole` piece copies every quad of `source`, culling only boundary
+ * quads on its `cull` faces. `source` is not modified.
  */
 export function cropPiece(source: Mesh, piece: ShapePiece, cull: Cull): Quad[] {
+  if (piece.whole) {
+    const culled = new Set(
+      piece.cull.filter((dir) => cull[dir as keyof Cull] === true),
+    );
+    return source.quads
+      .filter((quad) => {
+        const dir = boundaryFaceDirection(quad);
+        return dir === null || !culled.has(dir);
+      })
+      .map(cloneQuad);
+  }
   const pixels = transformBox(piece.select, piece.transform);
   const box: Box = {
     from: [
@@ -358,21 +388,25 @@ export function cropPiece(source: Mesh, piece: ShapePiece, cull: Cull): Quad[] {
 
 /**
  * Builds a camo block's mesh from its matched pieces. `slotMesh` returns
- * the full-cube mesh for a camo slot (the camo block, or the empty-frame
- * look); pieces whose slot has no mesh are skipped.
+ * the full-cube mesh for a piece's camo slot (the camo block, or the
+ * empty-frame look), and is asked once per slot, or once more for pieces
+ * that `copyProperties`. Pieces whose slot has no mesh are skipped, and so
+ * are `model` pieces, which don't cut the camo.
  */
 export function buildCamoMesh(
   pieces: readonly ShapePiece[],
-  slotMesh: (slot: string) => Mesh | null,
+  slotMesh: (slot: string, piece: ShapePiece) => Mesh | null,
   cull: Cull,
 ): Mesh {
   const meshes = new Map<string, Mesh | null>();
   const quads: Quad[] = [];
   for (const piece of pieces) {
-    let source = meshes.get(piece.slot);
+    if (piece.model !== undefined) continue;
+    const key = `${piece.copyProperties === true}|${piece.slot}`;
+    let source = meshes.get(key);
     if (source === undefined) {
-      source = slotMesh(piece.slot);
-      meshes.set(piece.slot, source);
+      source = slotMesh(piece.slot, piece);
+      meshes.set(key, source);
     }
     if (source !== null) quads.push(...cropPiece(source, piece, cull));
   }

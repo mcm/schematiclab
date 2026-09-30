@@ -16,9 +16,6 @@
 // bookshelf's books) and connected textures. State mergers are ported only
 // where they change geometry (doors); the others only fold visually
 // identical states together.
-//
-// Keep this module free of runtime imports: node's type stripping needs
-// `.ts` import extensions, which `tsc` rejects.
 
 import type { Vec3 } from "../../../src/lib/render/camo/shape-pack";
 

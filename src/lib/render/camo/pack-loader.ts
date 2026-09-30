@@ -9,7 +9,11 @@ import { validateShapePack, type ShapePack } from "./shape-pack";
 const SHAPE_PACK_BASE = "/camo-shapes";
 
 /** Namespaces with a pack in `public/camo-shapes/<namespace>.json`. */
-export const SHAPE_PACK_NAMESPACES: readonly string[] = ["framedblocks"];
+export const SHAPE_PACK_NAMESPACES: readonly string[] = [
+  "framedblocks",
+  "copycats",
+  "create",
+];
 
 const packs = new Map<string, Promise<ShapePack | null>>();
 

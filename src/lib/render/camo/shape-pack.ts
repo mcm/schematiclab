@@ -174,6 +174,35 @@ export interface ShapePiece {
    * jar's copy of the template replaces these pieces (`template-overrides.ts`).
    */
   template?: PieceTemplate;
+  /**
+   * Copycats' `assembleAll()` for a same-kind material (a fence camo on a
+   * copycat fence) and Create's trapdoor-material panel: the slot's whole
+   * camo mesh, unchanged (`select`, `offset`, `transform`, `faces` and
+   * `ops` don't apply). Faces in `cull` on the block boundary still cull.
+   */
+  whole?: boolean;
+  /**
+   * The camo is meshed with the block's own values for the properties both
+   * share (Copycats+ `updatePropertiesIfMatch`), e.g. a fence camo takes
+   * the copycat fence's connections.
+   */
+  copyProperties?: boolean;
+  /**
+   * Instead of cutting the camo, render this block model (rotated like a
+   * blockstate variant) with its textures swapped for the camo's (Create
+   * `CopycatBarsModel`). `select` and the other geometry fields don't apply.
+   */
+  model?: PieceModel;
+}
+
+export interface PieceModel {
+  /** Model id, e.g. `create:block/copycat_panel/bars`. */
+  id: string;
+  /** Blockstate-style rotations in degrees (multiples of 90). */
+  x: number;
+  y: number;
+  /** Camo face (block frame) whose texture replaces the model's textures. */
+  face: Direction;
 }
 
 export interface PieceTemplate {
@@ -193,10 +222,37 @@ export interface TemplateCube {
  * Pieces for the block states matching `when`: every listed property must
  * equal the given value or one of its `|`-separated alternatives. A rule
  * without `when` matches every state.
+ *
+ * Rules with the same `group` (or none) are alternatives, first match wins;
+ * each group is matched on its own and the matches' pieces add up. Copycats+
+ * multi-state blocks put each part in its own group, so a part's rules only
+ * depend on the properties that part reads.
  */
 export interface ShapeRule {
   when?: Record<string, string>;
+  /** Also requires the camo in a slot to be of a kind of block. */
+  material?: MaterialCondition;
+  group?: string;
   pieces: ShapePiece[];
+}
+
+/**
+ * A camo test standing in for the mods' `instanceof` checks on the
+ * material's block class, which block ids can't answer: the camo in `slot`
+ * is a block whose id path ends with one of `suffixes` (vanilla naming, e.g.
+ * `_fence` for `FenceBlock`) and whose state has every one of `properties`.
+ */
+export interface MaterialCondition {
+  slot: string;
+  suffixes: string[];
+  properties?: string[];
+}
+
+/** The part of a camo slot (`src/lib/camo/extract.ts`) rules look at. */
+export interface RuleSlot {
+  slot: string;
+  kind: string;
+  state: { name: string; properties: Record<string, string> } | null;
 }
 
 export interface ShapePackSource {
@@ -480,6 +536,64 @@ function validatePiece(value: unknown, path: string): ShapePiece {
       : {
           template: validatePieceTemplate(piece.template, `${path}.template`),
         }),
+    ...(piece.whole === undefined
+      ? {}
+      : { whole: expectBoolean(piece.whole, `${path}.whole`) }),
+    ...(piece.copyProperties === undefined
+      ? {}
+      : {
+          copyProperties: expectBoolean(
+            piece.copyProperties,
+            `${path}.copyProperties`,
+          ),
+        }),
+    ...(piece.model === undefined
+      ? {}
+      : { model: validatePieceModel(piece.model, `${path}.model`) }),
+  };
+}
+
+function expectQuarterTurn(value: unknown, path: string): number {
+  if (value === undefined) return 0;
+  const angle = expectNumber(value, path);
+  if (![0, 90, 180, 270].includes(angle)) {
+    throw new ShapePackError(path, "expected 0, 90, 180 or 270");
+  }
+  return angle;
+}
+
+function validatePieceModel(value: unknown, path: string): PieceModel {
+  const model = expectRecord(value, path);
+  return {
+    id: expectString(model.id, `${path}.id`),
+    x: expectQuarterTurn(model.x, `${path}.x`),
+    y: expectQuarterTurn(model.y, `${path}.y`),
+    face:
+      model.face === undefined
+        ? "north"
+        : expectEnum(model.face, DIRECTIONS, `${path}.face`),
+  };
+}
+
+function validateMaterialCondition(
+  value: unknown,
+  path: string,
+): MaterialCondition {
+  const condition = expectRecord(value, path);
+  const strings = (key: string) =>
+    expectArray(condition[key], `${path}.${key}`).map((item, i) =>
+      expectString(item, `${path}.${key}[${i}]`),
+    );
+  const suffixes = strings("suffixes");
+  if (suffixes.length === 0) {
+    throw new ShapePackError(`${path}.suffixes`, "expected a suffix");
+  }
+  return {
+    slot: expectString(condition.slot, `${path}.slot`),
+    suffixes,
+    ...(condition.properties === undefined
+      ? {}
+      : { properties: strings("properties") }),
   };
 }
 
@@ -501,13 +615,28 @@ function validateRule(value: unknown, path: string): ShapeRule {
   const pieces = expectArray(rule.pieces, `${path}.pieces`).map((piece, i) =>
     validatePiece(piece, `${path}.pieces[${i}]`),
   );
-  if (rule.when === undefined) return { pieces };
+  const material =
+    rule.material === undefined
+      ? {}
+      : {
+          material: validateMaterialCondition(
+            rule.material,
+            `${path}.material`,
+          ),
+        };
+  const extra = {
+    ...material,
+    ...(rule.group === undefined
+      ? {}
+      : { group: expectString(rule.group, `${path}.group`) }),
+  };
+  if (rule.when === undefined) return { ...extra, pieces };
   const when = Object.fromEntries(
     Object.entries(expectRecord(rule.when, `${path}.when`)).map(
       ([key, expected]) => [key, expectString(expected, `${path}.when.${key}`)],
     ),
   );
-  return { when, pieces };
+  return { when, ...extra, pieces };
 }
 
 /**
@@ -553,20 +682,74 @@ export function validateShapePack(json: unknown): ShapePack {
   };
 }
 
-/** First rule of `rules` whose `when` matches `props`, or `null`. */
+/** Whether the camo in `condition.slot` of `slots` meets `condition`. */
+export function matchesMaterial(
+  condition: MaterialCondition,
+  slots: readonly RuleSlot[],
+): boolean {
+  const slot = slots.find((s) => s.slot === condition.slot);
+  if (slot === undefined || slot.kind !== "block" || slot.state === null) {
+    return false;
+  }
+  const { name, properties } = slot.state;
+  const path = name.slice(name.indexOf(":") + 1);
+  return (
+    condition.suffixes.some((suffix) => path.endsWith(suffix)) &&
+    (condition.properties ?? []).every((key) => Object.hasOwn(properties, key))
+  );
+}
+
+function ruleMatches(
+  rule: ShapeRule,
+  props: Readonly<Record<string, string>>,
+  slots: readonly RuleSlot[],
+): boolean {
+  if (rule.material !== undefined && !matchesMaterial(rule.material, slots)) {
+    return false;
+  }
+  if (rule.when === undefined) return true;
+  return Object.entries(rule.when).every(([key, expected]) => {
+    const actual = Object.hasOwn(props, key) ? props[key] : undefined;
+    return actual !== undefined && expected.split("|").includes(actual);
+  });
+}
+
+// Merged rules of grouped packs, per rule list and matched rule indices, so
+// a state always gets the same rule object (callers cache by rule).
+const mergedRules = new WeakMap<readonly ShapeRule[], Map<string, ShapeRule>>();
+
+/**
+ * The rule for a block state: the first rule of each `group` whose `when`
+ * matches `props` and whose `material` condition (if any) matches `slots`.
+ * With one matching group that rule itself, with several a rule holding all
+ * their pieces, and `null` when nothing matches.
+ */
 export function matchShapeRule(
   rules: readonly ShapeRule[],
   props: Readonly<Record<string, string>>,
+  slots: readonly RuleSlot[] = [],
 ): ShapeRule | null {
-  for (const rule of rules) {
-    if (rule.when === undefined) return rule;
-    const matches = Object.entries(rule.when).every(([key, expected]) => {
-      const actual = Object.hasOwn(props, key) ? props[key] : undefined;
-      return actual !== undefined && expected.split("|").includes(actual);
-    });
-    if (matches) return rule;
+  const matched: number[] = [];
+  const done = new Set<string | undefined>();
+  for (const [index, rule] of rules.entries()) {
+    if (done.has(rule.group) || !ruleMatches(rule, props, slots)) continue;
+    done.add(rule.group);
+    matched.push(index);
   }
-  return null;
+  if (matched.length === 0) return null;
+  if (matched.length === 1) return rules[matched[0]];
+  let cache = mergedRules.get(rules);
+  if (cache === undefined) {
+    cache = new Map();
+    mergedRules.set(rules, cache);
+  }
+  const key = matched.join(",");
+  let merged = cache.get(key);
+  if (merged === undefined) {
+    merged = { pieces: matched.flatMap((index) => rules[index].pieces) };
+    cache.set(key, merged);
+  }
+  return merged;
 }
 
 /**

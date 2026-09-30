@@ -304,3 +304,109 @@ describe("matchShapeRule", () => {
     ).toBeNull();
   });
 });
+
+describe("matchShapeRule groups and material conditions", () => {
+  const piece = (slot: string) => ({
+    slot,
+    select: { from: [0, 0, 0], to: [16, 8, 16] },
+  });
+
+  it("matches each group on its own and adds up their pieces", () => {
+    const { blocks } = validateShapePack(
+      pack({
+        "copycats:copycat_slab": [
+          {
+            when: { type: "bottom|double" },
+            group: "bottom",
+            pieces: [piece("bottom")],
+          },
+          { group: "bottom", pieces: [] },
+          {
+            when: { type: "top|double" },
+            group: "top",
+            pieces: [piece("top")],
+          },
+          { group: "top", pieces: [] },
+        ],
+      }),
+    );
+    const rules = blocks["copycats:copycat_slab"];
+    const double = matchShapeRule(rules, { type: "double" });
+    expect(double?.pieces.map((p) => p.slot)).toEqual(["bottom", "top"]);
+    // The same merged rule every time, so callers can cache by rule.
+    expect(matchShapeRule(rules, { type: "double" })).toBe(double);
+    expect(
+      matchShapeRule(rules, { type: "top" })?.pieces.map((p) => p.slot),
+    ).toEqual(["top"]);
+  });
+
+  it("only uses a material rule when the slot's camo meets its condition", () => {
+    const { blocks } = validateShapePack(
+      pack({
+        "create:copycat_panel": [
+          {
+            material: {
+              slot: "material",
+              suffixes: ["trapdoor"],
+              properties: ["half", "open", "facing"],
+            },
+            pieces: [{ ...piece("material"), whole: true }],
+          },
+          { pieces: [piece("material")] },
+        ],
+      }),
+    );
+    const rules = blocks["create:copycat_panel"];
+    const slot = (name: string, properties: Record<string, string>) => [
+      { slot: "material", kind: "block", state: { name, properties } },
+    ];
+    const trapdoor = { half: "bottom", open: "false", facing: "north" };
+    expect(
+      matchShapeRule(rules, {}, slot("minecraft:oak_trapdoor", trapdoor)),
+    ).toBe(rules[0]);
+    expect(rules[0].pieces[0].whole).toBe(true);
+    // Missing a required property, another block, or no slots at all.
+    expect(
+      matchShapeRule(
+        rules,
+        {},
+        slot("minecraft:oak_trapdoor", { half: "top" }),
+      ),
+    ).toBe(rules[1]);
+    expect(matchShapeRule(rules, {}, slot("minecraft:stone", {}))).toBe(
+      rules[1],
+    );
+    expect(matchShapeRule(rules, {})).toBe(rules[1]);
+  });
+
+  it.each([
+    ["an empty suffix list", { slot: "material", suffixes: [] }, "suffixes"],
+    ["a condition without a slot", { suffixes: ["_fence"] }, "slot"],
+  ])("rejects %s", (_name, material, path) => {
+    const json = pack({
+      "copycats:copycat_fence": [{ material, pieces: [] }],
+    });
+    expect(() => validateShapePack(json)).toThrow(path);
+  });
+
+  it("validates model pieces", () => {
+    const model = (value: unknown) =>
+      pack({
+        "create:copycat_bars": [
+          { pieces: [{ ...piece("material"), model: value }] },
+        ],
+      });
+    expect(
+      validateShapePack(model({ id: "create:block/copycat_panel/bars", y: 90 }))
+        .blocks["create:copycat_bars"][0].pieces[0].model,
+    ).toEqual({
+      id: "create:block/copycat_panel/bars",
+      x: 0,
+      y: 90,
+      face: "north",
+    });
+    expect(() =>
+      validateShapePack(model({ id: "create:block/bars", x: 45 })),
+    ).toThrow("model.x");
+  });
+});

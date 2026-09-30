@@ -12,6 +12,11 @@
 //   - unknown camo block: the shape in the missing texture, since unknown
 //     ids resolve to the placeholder cube
 //
+// Rules may also test the camo (`material`, e.g. Create's panel with an iron
+// bars or trapdoor material), copy the camo's whole mesh (`whole`), mesh the
+// camo with the block's own property values (`copyProperties`) or render a
+// block model retextured with the camo (`model`, Create's copycat bars).
+//
 // Uses only deepslate's public API; deepslate itself is unchanged.
 
 import {
@@ -26,14 +31,20 @@ import {
 } from "deepslate";
 import { mat4 } from "gl-matrix";
 
-import type { CamoSlot } from "../../camo/extract";
+import type { CamoSlot, CamoState } from "../../camo/extract";
 import { MISSING_TEXTURE_ID } from "../atlas-layout";
-import { buildCamoMesh, transformBox, transformVector } from "./mesh-crop";
+import {
+  boundaryFaceDirection,
+  buildCamoMesh,
+  transformBox,
+  transformVector,
+} from "./mesh-crop";
 import { CAMO_PROPERTY, type CamoTable } from "./camo-table";
 import {
   DIRECTIONS,
   matchShapeRule,
   type Box,
+  type Direction,
   type ShapePiece,
   type ShapeRule,
 } from "./shape-pack";
@@ -98,13 +109,19 @@ function pieceBox(piece: ShapePiece): Box {
 /**
  * Whether the rule's pieces fill the whole block: the union of its
  * axis-aligned pieces (no quad ops, every face kept) covers 0..16 on all
- * axes. Sloped pieces never count.
+ * axes. Sloped, `whole` and `model` pieces never count.
  */
 export function coversFullCube(rule: ShapeRule): boolean {
   const cached = ruleCoversCube.get(rule);
   if (cached !== undefined) return cached;
   const boxes = rule.pieces
-    .filter((p) => p.ops.length === 0 && p.faces.length === DIRECTIONS.length)
+    .filter(
+      (p) =>
+        p.ops.length === 0 &&
+        p.faces.length === DIRECTIONS.length &&
+        !p.whole &&
+        p.model === undefined,
+    )
     .map(pieceBox);
   // Check the centre of every cell of the grid the box edges make.
   const cuts = [0, 1, 2].map((axis) =>
@@ -140,6 +157,7 @@ export class CamoBlockDefinition extends BlockDefinition {
   // Full-cube source meshes per slot content. The engine never modifies
   // them, so they're shared between blocks.
   private readonly sourceMeshes = new Map<string, Mesh>();
+  private readonly camoTextures = new Map<string, string | null>();
 
   constructor(
     readonly blockId: string,
@@ -161,21 +179,32 @@ export class CamoBlockDefinition extends BlockDefinition {
     blockModelProvider: BlockModelProvider,
     cull: Cull,
   ): Mesh {
-    const rule = this.rules && matchShapeRule(this.rules, props);
-    if (rule === null) return modelMesh(this.frameCube, atlas, cull);
     const entry = this.context.getTable()?.get(props[CAMO_PROPERTY]);
     const slots = entry?.slots ?? [];
-    return buildCamoMesh(
-      rule.pieces,
-      (slot) =>
-        this.slotMesh(
-          slots.find((s) => s.slot === slot),
-          slot,
+    const rule = this.rules && matchShapeRule(this.rules, props, slots);
+    if (rule === null) return modelMesh(this.frameCube, atlas, cull);
+    const slotMesh = (slotName: string, piece: ShapePiece) =>
+      this.slotMesh(
+        slots.find((s) => s.slot === slotName),
+        slotName,
+        piece.copyProperties ? props : null,
+        atlas,
+        blockModelProvider,
+      );
+    const mesh = buildCamoMesh(rule.pieces, slotMesh, cull);
+    for (const piece of rule.pieces) {
+      if (piece.model === undefined) continue;
+      mesh.merge(
+        this.modelPieceMesh(
+          piece,
+          slots.find((s) => s.slot === piece.slot),
           atlas,
           blockModelProvider,
+          cull,
         ),
-      cull,
-    );
+      );
+    }
+    return mesh;
   }
 
   /**
@@ -186,7 +215,7 @@ export class CamoBlockDefinition extends BlockDefinition {
     properties: Readonly<Record<string, string>>,
     slots: readonly CamoSlot[],
   ): boolean {
-    const rule = this.rules && matchShapeRule(this.rules, properties);
+    const rule = this.rules && matchShapeRule(this.rules, properties, slots);
     if (rule === null || !coversFullCube(rule)) return false;
     return rule.pieces.every((piece) => {
       const slot = slots.find((s) => s.slot === piece.slot);
@@ -201,10 +230,14 @@ export class CamoBlockDefinition extends BlockDefinition {
   private slotMesh(
     slot: CamoSlot | undefined,
     slotName: string,
+    blockProps: Readonly<Record<string, string>> | null,
     atlas: TextureAtlasProvider,
     blockModelProvider: BlockModelProvider,
   ): Mesh {
-    const state = slot?.kind === "empty" ? null : (slot?.state ?? null);
+    let state = slot?.kind === "empty" ? null : (slot?.state ?? null);
+    if (state !== null && blockProps !== null && slot?.kind === "block") {
+      state = copyProperties(state, blockProps);
+    }
     const key =
       state === null
         ? `frame|${frameTexture(this.blockId, slotName)}`
@@ -218,9 +251,7 @@ export class CamoBlockDefinition extends BlockDefinition {
       mesh = modelMesh(cubeModel(texture), atlas, {});
     } else if (slot?.kind === "fluid") {
       // Only the still texture: fluid rendering is out of scope.
-      const fluid = Identifier.parse(state.name);
-      const texture = `${fluid.namespace}:block/${fluid.path}_still`;
-      mesh = modelMesh(cubeModel(texture), atlas, {});
+      mesh = modelMesh(cubeModel(fluidTexture(state.name)), atlas, {});
     } else {
       const definition = this.context.getBlockDefinition(state.name);
       try {
@@ -238,6 +269,111 @@ export class CamoBlockDefinition extends BlockDefinition {
     this.sourceMeshes.set(key, mesh);
     return mesh;
   }
+
+  /**
+   * A `model` piece: the model, rotated like a blockstate variant, with
+   * every texture swapped for the camo's texture on `piece.model.face`
+   * (Create's `CopycatBarsModel`). An empty slot keeps the model's own
+   * textures, as Create renders the original model without a material.
+   */
+  private modelPieceMesh(
+    piece: ShapePiece,
+    slot: CamoSlot | undefined,
+    atlas: TextureAtlasProvider,
+    blockModelProvider: BlockModelProvider,
+    cull: Cull,
+  ): Mesh {
+    const { id, x, y, face } = piece.model!;
+    const texture =
+      slot === undefined || slot.state === null || slot.kind === "empty"
+        ? null
+        : slot.kind === "fluid"
+          ? fluidTexture(slot.state.name)
+          : this.camoTexture(slot.state, face, atlas, blockModelProvider);
+    const retextured: TextureAtlasProvider =
+      texture === null
+        ? atlas
+        : {
+            getTextureAtlas: () => atlas.getTextureAtlas(),
+            getTextureUV: () => atlas.getTextureUV(Identifier.parse(texture)),
+          };
+    try {
+      return BlockDefinition.fromJson({
+        variants: { "": { model: id, x, y } },
+      }).getMesh(undefined, {}, retextured, blockModelProvider, cull);
+    } catch {
+      return new Mesh();
+    }
+  }
+
+  /**
+   * The texture id on the `face` side of the camo's model (the first face
+   * quad pointing that way, else the first quad), or null if it has none.
+   * Found by meshing the camo with an atlas that gives each texture its own
+   * UV cell, then reading the cell back from the quad.
+   */
+  private camoTexture(
+    state: CamoState,
+    face: Direction,
+    atlas: TextureAtlasProvider,
+    blockModelProvider: BlockModelProvider,
+  ): string | null {
+    const key = `${face}|${JSON.stringify(state)}`;
+    const cached = this.camoTextures.get(key);
+    if (cached !== undefined) return cached;
+    const ids: string[] = [];
+    const recorder: TextureAtlasProvider = {
+      getTextureAtlas: () => atlas.getTextureAtlas(),
+      getTextureUV: (texture) => {
+        let index = ids.indexOf(texture.toString());
+        if (index === -1) index = ids.push(texture.toString()) - 1;
+        return [index, 0, index + 1, 1];
+      },
+    };
+    let texture: string | null = null;
+    try {
+      const quads = this.context
+        .getBlockDefinition(state.name)
+        .getMesh(
+          Identifier.parse(state.name),
+          state.properties,
+          recorder,
+          blockModelProvider,
+          {},
+        ).quads;
+      const quad =
+        quads.find((q) => boundaryFaceDirection(q) === face) ?? quads[0];
+      const u = quad?.vertices().map((v) => v.texture?.[0] ?? 0);
+      if (u !== undefined) {
+        const cell = Math.floor((Math.min(...u) + Math.max(...u)) / 2);
+        texture = ids[cell] ?? null;
+      }
+    } catch {
+      texture = null;
+    }
+    this.camoTextures.set(key, texture);
+    return texture;
+  }
+}
+
+function fluidTexture(fluid: string): string {
+  const id = Identifier.parse(fluid);
+  return `${id.namespace}:block/${id.path}_still`;
+}
+
+/**
+ * Copycats+ `BlockUtils.tryCopyProperties`: the camo with the block's value
+ * for every property they share. The camo's own property list may be
+ * incomplete (it's whatever the save holds), so every block property is
+ * copied; blockstates ignore the ones the camo doesn't have.
+ */
+function copyProperties(
+  state: CamoState,
+  blockProps: Readonly<Record<string, string>>,
+): CamoState {
+  const properties = { ...state.properties, ...blockProps };
+  delete properties[CAMO_PROPERTY];
+  return { name: state.name, properties };
 }
 
 const flagsByTable = new WeakMap<
