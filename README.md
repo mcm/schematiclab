@@ -11,6 +11,26 @@ Convert Minecraft schematics between formats and Minecraft versions in your brow
   - block swaps with undo
   - a preview of what version translation will change before you apply it
 - **Modded blocks:** search CurseForge and load a mod so its blocks render in the preview and appear in the block picker. Only the mod's client assets (blockstates, models, textures, names) are read, and no mod code is ever run. Loaded mods are cached in IndexedDB.
+- **Camo blocks:** FramedBlocks, Create and Copycats+ blocks render in their shape with their camo's textures, and their camo materials appear in the material list, where you can swap them. See [Camo blocks](#camo-blocks).
+
+## Camo blocks
+
+Camo blocks copy the look of another block (their "camo") that is stored in their block-entity data. Load the mod in the Mods tab and the preview renders each camo block in its real shape with its camo's textures. The "Show camo" toggle switches between camos and empty frames. Camo materials are listed under their block in the material list and can be swapped for one block or all of them, and version conversion translates the camo states too.
+
+| Mod          | Minecraft version | Shapes                                                                                |
+| ------------ | ----------------- | ------------------------------------------------------------------------------------- |
+| FramedBlocks | 26.1.2            | Every block type, including slopes, slope edges, prisms, slope slabs and slope panels |
+| Create       | 1.21.1            | Copycat step, panel and bars                                                          |
+| Copycats+    | 1.21.1            | Every copycat, including slopes, vertical slopes and other rotated shapes             |
+
+The shapes come from shape packs in `public/camo-shapes/` that are generated from each mod's source (see [NOTICE.md](public/camo-shapes/NOTICE.md) for credits and licenses). Schematics saved with other versions of these mods still render when their block states match, and blocks or states without shape data fall back to a full cube of the empty-frame texture.
+
+Known limits:
+
+- No connected textures: a camo with connected textures (Create's `EnableCT`, or a connected-textures mod) renders each block on its own.
+- No overlays: FramedBlocks overlays such as reinforcement, glowing or intangibility are not drawn.
+- No animation: animated camo textures (such as water, lava or magma) show their first frame.
+- FramedBlocks' fancy rail slopes render only their camo sleepers, not the rails, as on the flat fancy rails. The plain rail slopes render the vanilla rail on top.
 
 ## Supported formats
 
@@ -63,6 +83,7 @@ The generated data files are checked in, so these are only needed when updating 
 
 - Block translation data: [PrismarineJS/minecraft-data](https://github.com/PrismarineJS/minecraft-data) and [misode/mcmeta](https://github.com/misode/mcmeta).
 - 3D rendering: [deepslate](https://github.com/misode/deepslate).
+- Camo shapes: generated from [FramedBlocks](https://github.com/XFactHD/FramedBlocks) by XFactHD (LGPL-3.0), [Copycats+](https://github.com/copycats-plus/copycats) (all rights reserved, used with its author's permission) and [Create](https://github.com/Creators-of-Create/Create) (MIT). See [public/camo-shapes/NOTICE.md](public/camo-shapes/NOTICE.md).
 
 ## License
 
