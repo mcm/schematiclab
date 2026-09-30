@@ -144,14 +144,28 @@ describe("ensureModAppearances", () => {
   });
 
   it("retries later when the vanilla bundle was unavailable", async () => {
+    let now = 1000;
     const partial = computeWith(false);
-    const meta = await ensureModAppearances(KEY, { compute: partial });
+    const meta = await ensureModAppearances(KEY, {
+      compute: partial,
+      now: () => now,
+    });
     expect(meta!.appearancesComputed).toBe(false);
     expect(meta!.blocks[0].appearance).toBeDefined();
 
+    // The registry update re-triggers callers; they don't recompute at once.
     const full = computeWith(true);
+    now += 1000;
     expect(
-      (await ensureModAppearances(KEY, { compute: full }))!.appearancesComputed,
+      (await ensureModAppearances(KEY, { compute: full, now: () => now }))!
+        .appearancesComputed,
+    ).toBe(false);
+    expect(full).not.toHaveBeenCalled();
+
+    now += 60_000;
+    expect(
+      (await ensureModAppearances(KEY, { compute: full, now: () => now }))!
+        .appearancesComputed,
     ).toBe(true);
     expect(full).toHaveBeenCalledTimes(1);
   });

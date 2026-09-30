@@ -18,6 +18,7 @@ import {
   getCachedMinecraftResources,
   getMinecraftResourcesError,
   isMinecraftResourcesRebuildPending,
+  minecraftResourcesStaleFor,
   isInvisibleBlockId,
   subscribeMinecraftResources,
 } from "@/lib/render/minecraft-resources";
@@ -331,41 +332,61 @@ export function ThreeDPreview({
     [projection],
   );
   const webGLOk = React.useMemo(() => isWebGLAvailable(), []);
+  const versionId = knownVersionIdFor(editedProjection.minecraftVersion);
   const {
     resources,
     error: resourcesError,
     rebuildPending,
-  } = useMinecraftResources(
-    knownVersionIdFor(editedProjection.minecraftVersion),
-  );
+  } = useMinecraftResources(versionId);
+
+  // What the mesh is built from. While the resources are being replaced (new
+  // preview files, e.g. after a version change) the last input is kept, so
+  // the current mesh stays on screen and interactive instead of re-meshing
+  // with resources about to change (missing cubes) and again once they land.
+  // A rebuild that fails leaves the resources as they were, so nothing
+  // re-meshes. `minecraftResourcesStaleFor` also covers a version change
+  // whose rebuild hasn't been started yet (that happens in an effect).
+  const resourcesStale =
+    rebuildPending || minecraftResourcesStaleFor(versionId);
+  const [meshInput, setMeshInput] = React.useState(() => ({
+    projection,
+    stats,
+    resources: resourcesStale ? null : resources,
+  }));
+  if (
+    !resourcesStale &&
+    (meshInput.projection !== projection || meshInput.resources !== resources)
+  ) {
+    setMeshInput({ projection, stats, resources });
+  }
+  const {
+    projection: meshProjection,
+    stats: meshStats,
+    resources: meshResources,
+  } = meshInput;
 
   // Cleared back to false once the chunked builder finishes (or aborts via
   // cleanup). Drives the "Building preview…" overlay.
   const [isBuilding, setIsBuilding] = React.useState(false);
 
   React.useEffect(() => {
-    if (!webGLOk || stats.bounds === null || resources === null) {
+    if (!webGLOk || meshStats.bounds === null || meshResources === null) {
       return;
     }
-    // The resources are about to be replaced (new preview files); meshing
-    // with them now would flash missing cubes. Keep the last frame on screen
-    // and mesh once the rebuild lands. Read the store directly too: a version
-    // change marks the rebuild pending in an earlier effect of this commit.
-    if (rebuildPending || isMinecraftResourcesRebuildPending()) return;
     const canvasMaybe = canvasRef.current;
     if (!canvasMaybe) return;
     const canvas: HTMLCanvasElement = canvasMaybe;
     const gl = canvas.getContext("webgl");
     if (gl === null) return;
 
-    const bounds = stats.bounds;
+    const bounds = meshStats.bounds;
     let renderer: StructureRenderer | null = null;
     let scheduledFrame = 0;
     const initial = computeInitialCamera(bounds.size);
     const memo = cameraMemoRef.current;
     const camera: CameraState =
-      memo?.projection === projection ? memo.camera : { ...initial.camera };
-    cameraMemoRef.current = { projection, camera };
+      memo?.projection === meshProjection ? memo.camera : { ...initial.camera };
+    cameraMemoRef.current = { projection: meshProjection, camera };
     // Set to true by the cleanup function; the async build loop checks this
     // between batches and bails out so an unmount mid-build (or a new
     // projection arriving) doesn't leak work onto the next effect.
@@ -402,7 +423,7 @@ export function ThreeDPreview({
     // afterwards and built chunk-by-chunk below.
     try {
       const emptyStub = new Structure(BlockPos.ZERO);
-      renderer = new StructureRenderer(gl, emptyStub, resources, {
+      renderer = new StructureRenderer(gl, emptyStub, meshResources, {
         chunkSize: CHUNK_SIZE,
         useInvisibleBlockBuffer: false,
       });
@@ -579,7 +600,7 @@ export function ThreeDPreview({
     // `yieldToMainThread` / `await`) — never synchronously inside the effect
     // body — so the lint rule against synchronous setState-in-effect stays
     // happy. The very first `setIsBuilding(true)` is itself behind an `await`.
-    const realStructure = buildStructure(projection, bounds);
+    const realStructure = buildStructure(meshProjection, bounds);
     const chunkPositions = listChunkPositions(bounds.size);
 
     void (async () => {
@@ -626,7 +647,7 @@ export function ThreeDPreview({
       // second mount's StructureRenderer (shader compile returns no log).
       renderer = null;
     };
-  }, [projection, stats, webGLOk, resources, rebuildPending]);
+  }, [meshProjection, meshStats, meshResources, webGLOk]);
 
   if (!webGLOk) {
     return (

@@ -283,7 +283,7 @@ function ProjectOption({
       role="option"
       aria-selected={selected}
       aria-disabled={restricted || undefined}
-      tabIndex={0}
+      tabIndex={restricted ? -1 : 0}
       onClick={restricted ? undefined : onPick}
       onDoubleClick={restricted ? undefined : onConfirm}
       onKeyDown={(e) => {
