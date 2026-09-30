@@ -182,6 +182,12 @@ export interface ShapePiece {
    */
   whole?: boolean;
   /**
+   * On a `whole` piece: keep only the camo quads whose vertices all lie
+   * strictly between `min` and `max` (model pixels, block frame) on `axis`.
+   * The Copycats+ cogwheels drop a cogwheel material's shaft this way.
+   */
+  keepInside?: KeepInside;
+  /**
    * The camo is meshed with the block's own values for the properties both
    * share (Copycats+ `updatePropertiesIfMatch`), e.g. a fence camo takes
    * the copycat fence's connections.
@@ -199,6 +205,12 @@ export interface ShapePiece {
    * rail slopes). `slot` and the geometry fields don't apply.
    */
   block?: PieceBlock;
+}
+
+export interface KeepInside {
+  axis: Axis;
+  min: number;
+  max: number;
 }
 
 export interface PieceBlock {
@@ -556,6 +568,14 @@ function validatePiece(value: unknown, path: string): ShapePiece {
     ...(piece.whole === undefined
       ? {}
       : { whole: expectBoolean(piece.whole, `${path}.whole`) }),
+    ...(piece.keepInside === undefined
+      ? {}
+      : {
+          keepInside: validateKeepInside(
+            piece.keepInside,
+            `${path}.keepInside`,
+          ),
+        }),
     ...(piece.copyProperties === undefined
       ? {}
       : {
@@ -571,6 +591,14 @@ function validatePiece(value: unknown, path: string): ShapePiece {
       ? {}
       : { block: validatePieceBlock(piece.block, `${path}.block`) }),
   };
+}
+
+function validateKeepInside(value: unknown, path: string): KeepInside {
+  const keep = expectRecord(value, path);
+  const min = expectNumber(keep.min, `${path}.min`);
+  const max = expectNumber(keep.max, `${path}.max`);
+  if (min >= max) throw new ShapePackError(path, "expected min < max");
+  return { axis: expectEnum(keep.axis, AXES, `${path}.axis`), min, max };
 }
 
 function validatePieceBlock(value: unknown, path: string): PieceBlock {

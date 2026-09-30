@@ -25,9 +25,19 @@
 //     packs only cull against neighbours, so it's treated like the block box.
 //   - `assembleAll()` copies the camo model unchanged: a full-cube piece, or
 //     for a same-kind material (`material.is(...)`) the camo's whole mesh.
+//   - geometric quad transforms (`slope`, `rotate`, `scale`, `translate`,
+//     `updateUV`) become the piece's `ops`, and its `cull` keeps only the
+//     faces still flat on the block boundary after them. `noCull()` empties
+//     `cull`.
 //
 // The core ports import this module with its `.ts` extension, which node's
 // type stripping needs (tsconfig sets `allowImportingTsExtensions`).
+
+import type {
+  Direction,
+  QuadOp,
+  Vec3,
+} from "../../../src/lib/render/camo/shape-pack.ts";
 
 export type BlockState = Readonly<Record<string, string>>;
 
@@ -118,14 +128,133 @@ export function cull(mask: number): number {
 // ── Quad transforms ────────────────────────────────────────────────────────
 
 /**
- * The quad transforms axis-aligned cores use. Both only change culling:
- * `autoCull(box)` is treated as the block box (see the header), and none
- * of the axis-aligned cores use the others. US-016 adds the geometric ones.
+ * A `QuadTransform`. `autoCull(box)` and `noCull()` only change culling
+ * (`autoCull(box)` is treated as the block box, see the header); `op` is a
+ * geometric transform, recorded as a shape-pack quad op (pixels, like the
+ * rest of this port); `keepBetween` is the cogwheel cores' inline filter.
  */
-export type QuadTransform = { kind: "autoCull"; box: MutableAABB | null };
+export type QuadTransform =
+  | { kind: "autoCull"; box: MutableAABB | null }
+  | { kind: "noCull" }
+  | { kind: "op"; op: QuadOp }
+  | { kind: "keepBetween"; axis: "x" | "y" | "z"; min: number; max: number };
 
 export function autoCull(box?: MutableAABB): QuadTransform {
   return { kind: "autoCull", box: box ?? null };
+}
+
+/** `CopycatRenderContext.noCull()`: the piece's quads never cull. */
+export function noCull(): QuadTransform {
+  return { kind: "noCull" };
+}
+
+/** `CopycatRenderContext.pivot`: a position in voxels. */
+export function pivot(x: number, y: number, z: number): Vec3 {
+  return [x, y, z];
+}
+
+/** `CopycatRenderContext.angle`: degrees about X, then Y, then Z. */
+export function angle(x: number, y: number, z: number): Vec3 {
+  return [x, y, z];
+}
+
+/**
+ * `CopycatRenderContext.scale`: with three numbers, scale factors; with a
+ * pivot and factors, `QuadScale` about the pivot.
+ */
+export function scale(x: number, y: number, z: number): Vec3;
+export function scale(pivot: Vec3, factors: Vec3): QuadTransform;
+export function scale(
+  a: number | Vec3,
+  b: number | Vec3,
+  c?: number,
+): Vec3 | QuadTransform {
+  if (typeof a === "number") return [a, b as number, c as number];
+  return { kind: "op", op: { op: "scale", pivot: a, factors: b as Vec3 } };
+}
+
+/** `QuadRotate`: one right-handed rotation per non-zero axis, X, Y, Z. */
+export function rotate(origin: Vec3, rotation: Vec3): QuadTransform[] {
+  return (["x", "y", "z"] as const)
+    .map((axis, i) => ({ axis, angle: rotation[i] }))
+    .filter(({ angle }) => angle !== 0)
+    .map(({ axis, angle }) => ({
+      kind: "op",
+      op: {
+        op: "rotate",
+        axis,
+        origin,
+        angle,
+        rescale: false,
+        scaleMult: [1, 1, 1],
+      },
+    }));
+}
+
+/** `QuadTranslate`, in voxels. */
+export function translate(x: number, y: number, z: number): QuadTransform {
+  return { kind: "op", op: { op: "translate", by: [x, y, z] } };
+}
+
+/** An input of a `QuadSlope` function: the vertex's first or second coordinate. */
+export type SlopeInput = "a" | "b";
+
+/** A `QuadSlope.map(...)` call on one of the slope function's inputs. */
+export interface SlopeMap {
+  input: SlopeInput;
+  from: [number, number];
+  to: [number, number];
+}
+
+/** `QuadSlope.map`; the cores only ever map a slope function input. */
+export function map(
+  fromStart: number,
+  fromEnd: number,
+  toStart: number,
+  toEnd: number,
+  value: SlopeInput,
+): SlopeMap {
+  return { input: value, from: [fromStart, fromEnd], to: [toStart, toEnd] };
+}
+
+/** `CopycatRenderContext.slope`; `func` must return a `map(...)` of `a` or `b`. */
+export function slope(
+  face: Direction,
+  func: (a: SlopeInput, b: SlopeInput) => SlopeMap,
+): QuadTransform {
+  const { input, from, to } = func("a", "b");
+  return { kind: "op", op: { op: "slope", face, input, from, to } };
+}
+
+/** `QuadUVUpdate`: runs the geometric `transforms`, then moves UVs with the vertices. */
+export function updateUV(
+  ...transforms: (QuadTransform | QuadTransform[])[]
+): QuadTransform {
+  return {
+    kind: "op",
+    op: { op: "updateUV", ops: transforms.flat().map(quadOpOf) },
+  };
+}
+
+/** The shape-pack op of a geometric quad transform. */
+export function quadOpOf(transform: QuadTransform): QuadOp {
+  if (transform.kind !== "op") {
+    throw new Error(`${transform.kind} is not a geometric quad transform`);
+  }
+  return transform.op;
+}
+
+/**
+ * Not Copycats+ API: the cogwheel cores' inline `QuadTransform` lambda,
+ * which drops quads with a vertex at or beyond `min`/`max` (voxels) on
+ * `axis` of the core's canonical frame (the shaft of a cogwheel material).
+ */
+export function keepBetween(
+  axis: "x" | "y" | "z",
+  min: number,
+  max: number,
+): QuadTransform {
+  return { kind: "keepBetween", axis, min, max };
 }
 
 // ── Render context and cores ───────────────────────────────────────────────
@@ -136,7 +265,7 @@ export interface CopycatRenderContext {
     offset: MutableVec3,
     select: MutableAABB,
     cull: number,
-    ...transforms: QuadTransform[]
+    ...transforms: (QuadTransform | QuadTransform[])[]
   ): void;
   /** Copies every camo quad unchanged. */
   assembleAll(): void;
@@ -163,6 +292,9 @@ export type MaterialClass =
   | "LadderBlock"
   | "TrapDoorBlock"
   | "WallBlock"
+  // Create's kinetic blocks, used by the kinetic copycats.
+  | "CogWheelBlock"
+  | "ShaftBlock"
   // Create's CopycatSpecialCases, used by its panel.
   | "CopycatSpecialCases.isBarsMaterial"
   | "CopycatSpecialCases.isTrapdoorMaterial";
@@ -203,6 +335,12 @@ export interface CopycatBlockSpec {
    * blocks are called once with `MATERIAL_KEY`.
    */
   parts?: readonly string[];
+  /**
+   * Parts rendered by a core of their own instead of `core`: kinetic
+   * copycats render each part as a separate partial model
+   * (`CCCopycatPartialModels`), e.g. a cogwheel's shaft with the shaft core.
+   */
+  partCores?: Readonly<Record<string, ModelCore>>;
 }
 
 /** `CopycatModelCore.MATERIAL_KEY`, the slot of single-state copycats. */

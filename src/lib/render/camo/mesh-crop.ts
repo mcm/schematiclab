@@ -330,16 +330,25 @@ function cloneQuad(quad: Quad): Quad {
  * units). Only faces listed in `piece.faces` (canonical frame) are used.
  * Faces listed in `piece.cull` are dropped when `cull` (deepslate's
  * neighbour culling, block frame) is set for their transformed direction.
- * A `whole` piece copies every quad of `source`, culling only boundary
- * quads on its `cull` faces. `source` is not modified.
+ * A `whole` piece copies every quad of `source` (within `keepInside`, if
+ * set), culling only boundary quads on its `cull` faces. `source` is not
+ * modified.
  */
 export function cropPiece(source: Mesh, piece: ShapePiece, cull: Cull): Quad[] {
   if (piece.whole) {
     const culled = new Set(
       piece.cull.filter((dir) => cull[dir as keyof Cull] === true),
     );
+    const keep = piece.keepInside;
+    const inside = (quad: Quad) =>
+      keep === undefined ||
+      quad.vertices().every((v) => {
+        const c = v.pos[keep.axis] / PIXEL;
+        return c > keep.min && c < keep.max;
+      });
     return source.quads
       .filter((quad) => {
+        if (!inside(quad)) return false;
         const dir = boundaryFaceDirection(quad);
         return dir === null || !culled.has(dir);
       })
