@@ -36,3 +36,4 @@ next-env.d.ts
 .ralph-tui/
 .claude/settings.local.json
 coverage/
+references/**
