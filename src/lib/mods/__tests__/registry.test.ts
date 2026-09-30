@@ -135,6 +135,28 @@ describe("loaded-mods registry", () => {
     expect((await store.listLoadedMods()).map((m) => m.key)).toEqual(["1:11"]);
   });
 
+  it("adds a batch with one notification, later files winning", async () => {
+    await registry.hydrateLoadedMods();
+    await registry.addLoadedMod(makeMeta(1, 10), makeAssets("old"));
+    const listener = vi.fn();
+    const unsubscribe = registry.subscribe(listener);
+
+    await registry.addLoadedMods([
+      { meta: makeMeta(1, 11), assets: makeAssets("a") },
+      { meta: makeMeta(2, 20), assets: makeAssets("b") },
+      { meta: makeMeta(2, 21), assets: makeAssets("c") },
+    ]);
+    unsubscribe();
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(registry.getSnapshot().map((m) => m.key)).toEqual(["1:11", "2:21"]);
+    expect(await registry.getLoadedModAssets("2:20")).toBeNull();
+    expect((await store.listLoadedMods()).map((m) => m.key).sort()).toEqual([
+      "1:11",
+      "2:21",
+    ]);
+  });
+
   it("notifies subscribers and changes snapshot identity only on change", async () => {
     const listener = vi.fn();
     const unsubscribe = registry.subscribe(listener);

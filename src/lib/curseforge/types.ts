@@ -26,12 +26,10 @@ export function isModLoader(value: unknown): value is ModLoader {
   );
 }
 
-const LOADER_TAGS: Record<string, ModLoader> = {
-  forge: "forge",
-  neoforge: "neoforge",
-  fabric: "fabric",
-  quilt: "quilt",
-};
+// A Map, so tags like `constructor` can't hit Object.prototype.
+const LOADER_TAGS: ReadonlyMap<string, ModLoader> = new Map(
+  MOD_LOADERS.map((loader) => [loader, loader]),
+);
 
 /**
  * Split a CurseForge file's `gameVersions` tags into Minecraft versions and
@@ -45,7 +43,7 @@ export function splitGameVersionTags(tags: readonly unknown[]): {
   const gameVersions: string[] = [];
   for (const tag of tags) {
     if (typeof tag !== "string") continue;
-    const loader = LOADER_TAGS[tag.toLowerCase()];
+    const loader = LOADER_TAGS.get(tag.toLowerCase());
     if (loader) {
       if (!loaders.includes(loader)) loaders.push(loader);
     } else if (/^\d+\.\d+(\.\d+)?(-Snapshot)?$/i.test(tag)) {

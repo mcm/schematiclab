@@ -38,6 +38,7 @@ import {
 import {
   cancelModpackLoad,
   dismissModpackLoad,
+  isModpackLoadActive,
   startModpackLoad,
   useModpackLoad,
   type ModpackLoadState,
@@ -727,8 +728,7 @@ function LoadedModsSection({
 function ModpackFolderButton() {
   const modpackLoad = useModpackLoad();
   const inputRef = React.useRef<HTMLInputElement | null>(null);
-  const busy =
-    modpackLoad?.status === "reading" || modpackLoad?.status === "running";
+  const busy = isModpackLoadActive(modpackLoad);
 
   return (
     <>
@@ -812,6 +812,7 @@ function ModpackLoadStatus() {
   }
 
   const running = modpackLoad.status === "running";
+  const busy = running || modpackLoad.status === "saving";
   return (
     <div style={box}>
       <div
@@ -833,7 +834,7 @@ function ModpackLoadStatus() {
             color: "var(--text-secondary)",
           }}
         >
-          {running ? (
+          {busy ? (
             <IconLoader2
               size={14}
               aria-hidden="true"
@@ -863,7 +864,7 @@ function ModpackLoadStatus() {
           >
             Cancel
           </Button>
-        ) : (
+        ) : busy ? null : (
           <DismissModpackButton />
         )}
       </div>
@@ -922,15 +923,23 @@ function DismissModpackButton() {
 
 type ModpackProgressState = Extract<
   ModpackLoadState,
-  { status: "running" | "done" | "cancelled" }
+  { status: "running" | "saving" | "done" | "cancelled" }
 >;
 
 function describeModpackHeadline(load: ModpackProgressState): string {
   switch (load.status) {
     case "running":
-      return `${load.packName}: ${load.processed} / ${load.total}${
-        load.current ? ` · ${load.current}` : ""
-      }`;
+      return [
+        `${load.packName}: ${load.processed} / ${load.total}`,
+        load.current,
+        load.download
+          ? describeModLoadState({ phase: "downloading", ...load.download })
+          : null,
+      ]
+        .filter(Boolean)
+        .join(" · ");
+    case "saving":
+      return `Adding mods from ${load.packName}…`;
     case "done":
       return `Loaded ${load.packName}`;
     case "cancelled":
@@ -942,7 +951,9 @@ function describeModpackCounts(load: ModpackProgressState): string {
   const plural = (n: number, one: string, many: string) =>
     `${n.toLocaleString()} ${n === 1 ? one : many}`;
   return [
-    plural(load.loaded, "mod added", "mods added"),
+    load.status === "running"
+      ? `${load.loaded.toLocaleString()} with blocks`
+      : plural(load.loaded, "mod added", "mods added"),
     load.alreadyLoaded > 0 ? `${load.alreadyLoaded} already loaded` : null,
     load.noBlocks > 0
       ? `${load.noBlocks.toLocaleString()} without blocks`

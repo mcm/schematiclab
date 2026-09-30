@@ -124,25 +124,45 @@ export function useLoadedMods(): LoadedModsSnapshot {
  * same CurseForge mod. Resolves once persisted (or immediately when running
  * in-memory only); persistence failures fall back to in-memory with a warning.
  */
-export async function addLoadedMod(
+export function addLoadedMod(
   meta: LoadedModMeta,
   assets: LoadedModAssets,
 ): Promise<void> {
-  for (const mod of mods) {
-    if (mod.modId === meta.modId && mod.key !== meta.key) {
-      assetCache.delete(mod.key);
-      removedKeys.add(mod.key);
-    }
-  }
-  removedKeys.delete(meta.key);
-  assetCache.set(meta.key, assets);
-  emit(Object.freeze(withMod(mods, meta)));
+  return addLoadedMods([{ meta, assets }]);
+}
 
-  if (persistenceDisabled) return;
-  try {
-    await store.putLoadedMod(meta, assets);
-  } catch (error) {
-    disablePersistence(error);
+/**
+ * `addLoadedMod` for many files at once: the registry changes (and
+ * subscribers, like the 3D preview's atlas rebuild, run) once for the whole
+ * batch. Later entries win over earlier ones for the same CurseForge mod.
+ */
+export async function addLoadedMods(
+  entries: readonly { meta: LoadedModMeta; assets: LoadedModAssets }[],
+): Promise<void> {
+  if (entries.length === 0) return;
+  let next: LoadedModMeta[] = [...mods];
+  for (const { meta, assets } of entries) {
+    for (const mod of next) {
+      if (mod.modId === meta.modId && mod.key !== meta.key) {
+        assetCache.delete(mod.key);
+        removedKeys.add(mod.key);
+      }
+    }
+    removedKeys.delete(meta.key);
+    assetCache.set(meta.key, assets);
+    next = withMod(next, meta);
+  }
+  emit(Object.freeze(next));
+
+  for (const { meta, assets } of entries) {
+    if (persistenceDisabled) return;
+    // Skip files a later entry (or a removal since) replaced.
+    if (!mods.some((mod) => mod.key === meta.key)) continue;
+    try {
+      await store.putLoadedMod(meta, assets);
+    } catch (error) {
+      disablePersistence(error);
+    }
   }
 }
 
