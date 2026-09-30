@@ -22,6 +22,7 @@ const GLASS_UV: UV = [0.75, 0, 1, 0.25];
 const FRAME_UV: UV = [0, 0.25, 0.25, 0.5];
 const FRAME_ALT_UV: UV = [0.25, 0.25, 0.5, 0.5];
 const COPYCAT_UV: UV = [0.5, 0.25, 0.75, 0.5];
+const RAIL_UV: UV = [0, 0.5, 0.25, 0.75];
 
 const UV_MAP: Record<string, UV> = {
   [MISSING_TEXTURE_ID]: MISSING_UV,
@@ -30,6 +31,7 @@ const UV_MAP: Record<string, UV> = {
   "framedblocks:block/framed_block": FRAME_UV,
   "framedblocks:block/framed_block_alt": FRAME_ALT_UV,
   "create:block/copycat_base": COPYCAT_UV,
+  "minecraft:block/rail": RAIL_UV,
 };
 const ATLAS = { width: 4, height: 4 } as unknown as ImageData;
 
@@ -53,6 +55,21 @@ const PACK: ShapePack = validateShapePack({
       {
         when: { top: "false" },
         pieces: [{ slot: "camo", select: BOTTOM }],
+      },
+    ],
+    "framedblocks:framed_rail_slope": [
+      {
+        pieces: [
+          { slot: "camo", select: BOTTOM },
+          {
+            slot: "camo",
+            select: FULL,
+            block: {
+              name: "minecraft:rail",
+              properties: { shape: "ascending_east" },
+            },
+          },
+        ],
       },
     ],
     "framedblocks:framed_double_slab": [
@@ -186,6 +203,28 @@ describe("camo rendering", () => {
     const ranges = textureYRanges(resources, "framedblocks:framed_slab", props);
     expect([...ranges.keys()]).toEqual([rect(MISSING_UV)]);
     expect(ranges.get(rect(MISSING_UV))).toEqual([0, 1]);
+  });
+
+  it("renders a block piece's own model next to the camo shape", () => {
+    const { resources, table } = setup(["framedblocks"]);
+    const props = place(
+      table,
+      "framedblocks:framed_rail_slope",
+      { shape: "ascending_east" },
+      `{${camo(STONE)}}`,
+    );
+    const ranges = textureYRanges(
+      resources,
+      "framedblocks:framed_rail_slope",
+      props,
+    );
+    expect(ranges.get(rect(STONE_UV))).toEqual([0, 0.5]);
+    // The raised rail climbs from one edge of the block to the other.
+    const [low, high] = ranges.get(rect(RAIL_UV))!;
+    expect(high - low).toBeGreaterThan(0.9);
+    // It never counts towards opacity or the full-cube check.
+    const rules = PACK.blocks["framedblocks:framed_rail_slope"];
+    expect(coversFullCube(rules[0])).toBe(false);
   });
 
   it("renders a full frame cube with no pack entry", () => {

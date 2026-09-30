@@ -10,8 +10,9 @@
 //       hand port of TemplateSpecs.java and double-block calculateParts()
 //   - scripts/camo-shapes/framedblocks/geometry-specs.ts
 //       hand ports of the bespoke (non-templated) *Geometry.java classes,
-//       with the slope, slopeedge and prism packages in slope.ts,
-//       slope-edge.ts and prism.ts (shared API in geometry-api.ts)
+//       with the slope, slopeedge, prism, slopeslab, slopepanel,
+//       slopepanelcorner, stairs and rail-slope ports in one file per
+//       package next to it (shared API in geometry-api.ts)
 //   - public/minecraft-assets/models.json
 //       vanilla models FramedBlocks uses as templates (slab, trapdoor, …)
 //
@@ -314,15 +315,30 @@ function geometryPieces(
     entry.faces.add(quad.face);
     if (quad.cull) entry.cull.add(quad.face);
   }
-  return [...merged.values()].map(({ faces, cull, quad }) => ({
-    slot,
-    select: FULL_CUBE,
-    offset: [0, 0, 0],
-    transform: [],
-    cull: DIRECTIONS.filter((dir) => cull.has(dir)),
-    faces: DIRECTIONS.filter((dir) => faces.has(dir)),
-    ops: quad.ops,
-  }));
+  const pieces = [...merged.values()].map(
+    ({ faces, cull, quad }): ShapePiece => ({
+      slot,
+      select: FULL_CUBE,
+      offset: [0, 0, 0],
+      transform: [],
+      cull: DIRECTIONS.filter((dir) => cull.has(dir)),
+      faces: DIRECTIONS.filter((dir) => faces.has(dir)),
+      ops: quad.ops,
+    }),
+  );
+  if (spec.additionalBlock !== undefined) {
+    pieces.push({
+      slot,
+      select: FULL_CUBE,
+      offset: [0, 0, 0],
+      transform: [],
+      cull: [],
+      faces: [...DIRECTIONS],
+      ops: [],
+      block: spec.additionalBlock(fullState),
+    });
+  }
+  return pieces;
 }
 
 /** Pieces of a templated or bespoke-geometry block. */
@@ -592,6 +608,7 @@ function compactPack(pack: ShapePack): unknown {
             if (piece.whole) out.whole = true;
             if (piece.copyProperties) out.copyProperties = true;
             if (piece.model !== undefined) out.model = piece.model;
+            if (piece.block !== undefined) out.block = piece.block;
             return out;
           }),
         })),

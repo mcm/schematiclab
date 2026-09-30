@@ -27,6 +27,12 @@ import {
   DIRECTION_AXIS,
   SLOPE_TYPE,
 } from "./geometry-api.ts";
+import { PYRAMID_DOUBLE_BLOCK_SPECS } from "./pyramid.ts";
+import { RAIL_SLOPE_DOUBLE_BLOCK_SPECS } from "./rail-slope.ts";
+import { SLOPE_PANEL_CORNER_DOUBLE_BLOCK_SPECS } from "./slope-panel-corner.ts";
+import { SLOPE_PANEL_DOUBLE_BLOCK_SPECS } from "./slope-panel.ts";
+import { SLOPE_SLAB_DOUBLE_BLOCK_SPECS } from "./slope-slab.ts";
+import { SLOPED_STAIRS_DOUBLE_BLOCK_SPECS } from "./stairs.ts";
 
 export type Quadrant = 0 | 90 | 180 | 270;
 
@@ -1476,6 +1482,12 @@ export const DOUBLE_BLOCK_SPECS: Readonly<Record<string, DoubleBlockSpec>> = {
     },
   },
   ...SLOPE_DOUBLE_BLOCK_SPECS,
+  ...PYRAMID_DOUBLE_BLOCK_SPECS,
+  ...SLOPE_SLAB_DOUBLE_BLOCK_SPECS,
+  ...SLOPE_PANEL_DOUBLE_BLOCK_SPECS,
+  ...SLOPE_PANEL_CORNER_DOUBLE_BLOCK_SPECS,
+  ...SLOPED_STAIRS_DOUBLE_BLOCK_SPECS,
+  ...RAIL_SLOPE_DOUBLE_BLOCK_SPECS,
 };
 
 /** `CompoundDirection.of(dir.direction(), dir.orientation().getOpposite())`. */

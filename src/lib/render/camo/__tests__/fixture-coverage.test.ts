@@ -21,6 +21,8 @@ const FIXTURES = [
   "framed_covered_4.nbt",
   "framed_slopes_1.nbt",
   "framed_slopes_2.nbt",
+  "framed_slope_slabs_panels_1.nbt",
+  "framed_slope_slabs_panels_2.nbt",
   "copycats_nbt.nbt",
   "copycats_shapes.nbt",
 ];

@@ -39,6 +39,14 @@ export interface GeometrySpec {
   fullFaces?: (state: BlockState) => readonly Direction[];
   /** `Geometry.transformAllQuads()`: full faces also go through `transformQuad`. */
   transformAllQuads?: boolean | ((state: BlockState) => boolean);
+  /**
+   * `collectAdditionalParts*()` that add another block state's model
+   * unchanged (the vanilla rail on rail slopes), rendered as a `block` piece.
+   */
+  additionalBlock?: (state: BlockState) => {
+    name: string;
+    properties: BlockState;
+  };
 }
 
 // ── Minecraft `Direction` ──────────────────────────────────────────────────
@@ -158,14 +166,32 @@ export const Modifiers = {
       to: [px(maxX), px(maxZ)],
     },
   ],
+  /**
+   * `cutSide(minXZ, minY, maxXZ, maxY)` and
+   * `cutSide(cutDir, lengthCW, lengthCCW)`; horizontal quads only.
+   */
   cutSide: (
-    minXZ: number,
-    minY: number,
-    maxXZ: number,
-    maxY: number,
-  ): Modifier => [
-    { op: "cutSide", from: [px(minXZ), px(minY)], to: [px(maxXZ), px(maxY)] },
-  ],
+    minXZOrEdge: number | Direction,
+    a: number,
+    b: number,
+    maxY?: number,
+  ): Modifier =>
+    typeof minXZOrEdge === "number"
+      ? [
+          {
+            op: "cutSide",
+            from: [px(minXZOrEdge), px(a)],
+            to: [px(b), px(maxY!)],
+          },
+        ]
+      : [
+          {
+            op: "cutSide",
+            edge: minXZOrEdge,
+            lengthCW: px(a),
+            lengthCCW: px(b),
+          },
+        ],
   /**
    * `cutPrismTriangle(up, back)` for side quads and
    * `cutPrismTriangle(cutDir, back)` for up/down quads.
@@ -367,6 +393,29 @@ export const CornerType = {
     }
     return cycle[(index + (clockwise ? 1 : 3)) % 4];
   },
+};
+
+/** `HorizontalRotation`, in enum order. */
+export const HORIZONTAL_ROTATION = ["up", "down", "right", "left"] as const;
+
+/** `HorizontalRotation` methods, on the serialized value. */
+export const HorizontalRotation = {
+  withFacing: (rotation: string, dir: Direction): Direction =>
+    rotation === "up"
+      ? "up"
+      : rotation === "down"
+        ? "down"
+        : rotation === "right"
+          ? clockWise(dir)
+          : counterClockWise(dir),
+  getOpposite: (rotation: string): string =>
+    ({ up: "down", down: "up", right: "left", left: "right" })[rotation]!,
+  /** `rotate(Rotation.CLOCKWISE_90)` (`clockwise`) or `COUNTERCLOCKWISE_90`. */
+  rotate: (rotation: string, clockwise: boolean): string =>
+    clockwise
+      ? { up: "right", down: "left", right: "down", left: "up" }[rotation]!
+      : { up: "left", down: "right", right: "up", left: "down" }[rotation]!,
+  isVertical: (rotation: string) => rotation === "up" || rotation === "down",
 };
 
 /** `CompoundDirection`: `<direction>_<orientation>`. */

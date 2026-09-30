@@ -420,11 +420,13 @@ describe("framedblocks shape pack", () => {
     },
   );
 
-  // Slope, slope edge and prism blocks (`slope.ts`, `slope-edge.ts`,
-  // `prism.ts` and their double blocks) are closed solids: meshed from a
+  // Slope, slope edge, prism, sloped stairs and rail slope blocks (the
+  // per-package ports next to `geometry-specs.ts` and their double blocks)
+  // are closed solids: meshed from a
   // full-cube camo, each slot's volume (divergence theorem over the quads)
   // is the same from any origin and equals the shape's volume in blocks.
-  // Volumes keyed by `alt_type` differ between the two variants.
+  // Volumes keyed by `alt_type` differ between the two variants; pyramids'
+  // are keyed by `pillar` (`none`, `post` or `pillar`).
   const SLOPE_VOLUMES: Record<string, number | Record<string, number>> = {
     framed_slope: 1 / 2,
     framed_half_slope: 1 / 4,
@@ -449,25 +451,120 @@ describe("framedblocks shape pack", () => {
     framed_elevated_inner_prism: 3 / 4,
     framed_sloped_prism: 5 / 24,
     framed_elevated_inner_sloped_prism: 19 / 24,
+    framed_sloped_stairs: 3 / 4,
+    framed_vertical_sloped_stairs: 3 / 4,
+    // The rail is a `block` piece, which doesn't cut the camo.
+    framed_rail_slope: 1 / 2,
+    framed_powered_rail_slope: 1 / 2,
+    framed_detector_rail_slope: 1 / 2,
+    framed_activator_rail_slope: 1 / 2,
+    framed_slope_panel: 1 / 4,
+    framed_extended_slope_panel: 3 / 4,
+    framed_compound_slope_panel: 1 / 2,
+    framed_flat_slope_panel_corner: 1 / 6,
+    framed_flat_inner_slope_panel_corner: 1 / 3,
+    framed_flat_ext_slope_panel_corner: 2 / 3,
+    framed_flat_ext_inner_slope_panel_corner: 5 / 6,
+    framed_slope_slab: 1 / 4,
+    framed_elevated_slope_slab: 3 / 4,
+    framed_compound_slope_slab: 1 / 2,
+    framed_flat_slope_slab_corner: 1 / 6,
+    framed_flat_inner_slope_slab_corner: 1 / 3,
+    framed_flat_elev_slope_slab_corner: 2 / 3,
+    framed_flat_elev_inner_slope_slab_corner: 5 / 6,
+    framed_pyramid: { none: 1 / 3, post: 11 / 32, pillar: 5 / 12 },
+    framed_pyramid_slab: 1 / 6,
+    framed_elevated_pyramid_slab: {
+      none: 2 / 3,
+      post: 43 / 64,
+      pillar: 17 / 24,
+    },
+    framed_upper_pyramid_slab: { none: 1 / 6, post: 11 / 64, pillar: 5 / 24 },
+    framed_small_corner_slope_panel: 1 / 12,
+    framed_small_corner_slope_panel_w: 1 / 12,
+    framed_large_corner_slope_panel: 1 / 3,
+    framed_large_corner_slope_panel_w: 1 / 3,
+    framed_small_inner_corner_slope_panel: 1 / 6,
+    framed_small_inner_corner_slope_panel_w: 1 / 6,
+    framed_large_inner_corner_slope_panel: 5 / 12,
+    framed_large_inner_corner_slope_panel_w: 5 / 12,
+    framed_ext_corner_slope_panel: 7 / 12,
+    framed_ext_corner_slope_panel_w: 7 / 12,
+    framed_ext_inner_corner_slope_panel: 11 / 12,
+    framed_ext_inner_corner_slope_panel_w: 11 / 12,
+    framed_small_prism_corner_slope_panel: 1 / 24,
+    framed_small_prism_corner_slope_panel_w: 1 / 24,
+    framed_large_prism_corner_slope_panel: 7 / 24,
+    framed_large_prism_corner_slope_panel_w: 7 / 24,
+    framed_small_inner_prism_corner_slope_panel: 23 / 24,
+    framed_small_inner_prism_corner_slope_panel_w: 23 / 24,
+    framed_large_inner_prism_corner_slope_panel: 17 / 24,
+    framed_large_inner_prism_corner_slope_panel_w: 17 / 24,
   };
 
   // Double blocks: the total of both slots (each closed on its own).
-  const SLOPE_DOUBLE_VOLUMES: Record<string, number> = {
-    framed_double_slope: 1,
-    framed_divided_slope: 1 / 2,
-    framed_double_half_slope: 1 / 2,
-    framed_vertical_double_half_slope: 1 / 2,
-    framed_double_corner: 1,
-    framed_double_prism_corner: 1,
-    framed_double_threeway_corner: 1,
-    framed_elevated_double_slope_edge: 1,
-    framed_stacked_slope_edge: 7 / 8,
-    framed_elev_double_corner_slope_edge: 1,
-    framed_elev_double_inner_corner_slope_edge: 1,
-    framed_stacked_corner_slope_edge: 19 / 24,
-    framed_elevated_inner_double_prism: 1,
-    framed_elevated_inner_double_sloped_prism: 1,
-  };
+  const SLOPE_DOUBLE_VOLUMES: Record<string, number | Record<string, number>> =
+    {
+      framed_double_slope: 1,
+      framed_divided_slope: 1 / 2,
+      framed_double_half_slope: 1 / 2,
+      framed_vertical_double_half_slope: 1 / 2,
+      framed_double_corner: 1,
+      framed_double_prism_corner: 1,
+      framed_double_threeway_corner: 1,
+      framed_elevated_double_slope_edge: 1,
+      framed_stacked_slope_edge: 7 / 8,
+      framed_elev_double_corner_slope_edge: 1,
+      framed_elev_double_inner_corner_slope_edge: 1,
+      framed_stacked_corner_slope_edge: 19 / 24,
+      framed_elevated_inner_double_prism: 1,
+      framed_elevated_inner_double_sloped_prism: 1,
+      framed_sloped_double_stairs: 1,
+      framed_sliced_sloped_stairs_slab: 3 / 4,
+      framed_sliced_sloped_stairs_slope: 3 / 4,
+      framed_vertical_sloped_double_stairs: 1,
+      framed_vertical_sliced_sloped_stairs_panel: 3 / 4,
+      framed_vertical_sliced_sloped_stairs_slope: 3 / 4,
+      framed_double_slope_panel: 1 / 2,
+      framed_inv_double_slope_panel: 1 / 2,
+      framed_extended_double_slope_panel: 1,
+      framed_stacked_slope_panel: 3 / 4,
+      framed_flat_double_slope_panel_corner: 1 / 2,
+      framed_flat_inv_double_slope_panel_corner: 1 / 2,
+      framed_flat_ext_double_slope_panel_corner: 1,
+      framed_flat_ext_inner_double_slope_panel_corner: 1,
+      framed_flat_stacked_slope_panel_corner: 2 / 3,
+      framed_flat_stacked_inner_slope_panel_corner: 5 / 6,
+      framed_double_slope_slab: 1 / 2,
+      framed_inv_double_slope_slab: 1 / 2,
+      framed_elevated_double_slope_slab: 1,
+      framed_stacked_slope_slab: 3 / 4,
+      framed_flat_double_slope_slab_corner: 1 / 2,
+      framed_flat_inv_double_slope_slab_corner: 1 / 2,
+      framed_flat_elev_double_slope_slab_corner: 1,
+      framed_flat_elev_inner_double_slope_slab_corner: 1,
+      framed_flat_stacked_slope_slab_corner: 2 / 3,
+      framed_flat_stacked_inner_slope_slab_corner: 5 / 6,
+      framed_stacked_pyramid_slab: {
+        none: 2 / 3,
+        post: 43 / 64,
+        pillar: 17 / 24,
+      },
+      framed_small_double_corner_slope_panel: 1 / 4,
+      framed_small_double_corner_slope_panel_w: 1 / 4,
+      framed_large_double_corner_slope_panel: 3 / 4,
+      framed_large_double_corner_slope_panel_w: 3 / 4,
+      framed_inv_double_corner_slope_panel: 1 / 2,
+      framed_inv_double_corner_slope_panel_w: 1 / 2,
+      framed_ext_double_corner_slope_panel: 1,
+      framed_ext_double_corner_slope_panel_w: 1,
+      framed_ext_inner_double_corner_slope_panel: 1,
+      framed_ext_inner_double_corner_slope_panel_w: 1,
+      framed_stacked_corner_slope_panel: 7 / 12,
+      framed_stacked_corner_slope_panel_w: 7 / 12,
+      framed_stacked_inner_corner_slope_panel: 11 / 12,
+      framed_stacked_inner_corner_slope_panel_w: 11 / 12,
+    };
 
   // States FramedBlocks itself doesn't build as closed solids; the extra
   // quads are hidden in-game, and the port keeps them:
@@ -478,7 +575,23 @@ describe("framedblocks shape pack", () => {
   // `framed_stacked_inner_corner_slope_edge` is left out: its stairs part is
   // the templated inner stairs, whose overlapping boxes aren't a closed
   // surface either.
+  // - an upper pyramid slab with a horizontal facing and no `alt_slope`
+  //   has no full faces, so its back face also takes the slope branch and
+  //   builds a second half-pyramid in the back half. The block has no item:
+  //   it's only part two of the stacked pyramid slab, where that half sits
+  //   inside part one's panel.
+  // - a large prism corner slope panel wall with `alt_slope` takes its tilt
+  //   origin from the opposite facing (`getRotTiltOrigin(dir, rot,
+  //   altSlope)` flips `dir`), so its vertical slope quad is moved out of
+  //   the block. Still "closed" (a moved face keeps the sum), but not the
+  //   7/24 solid; to be checked in-game.
   const isFramedQuirk = (id: string, props: Record<string, string>) =>
+    (id === "framed_large_prism_corner_slope_panel_w" &&
+      props.alt_slope !== "false") ||
+    ((id === "framed_upper_pyramid_slab" ||
+      id === "framed_stacked_pyramid_slab") &&
+      /^(north|south|west|east)$/.test(props.facing ?? "") &&
+      props.alt_slope !== "true") ||
     (id.startsWith("framed_elevated_inner_") &&
       id.endsWith("_prism") &&
       /^(north|south|west|east)_y$/.test(props.facing_axis ?? "")) ||
@@ -488,6 +601,17 @@ describe("framedblocks shape pack", () => {
       /^(north|south|west|east)_(north|south|west|east)$/.test(
         props.facing_dir ?? "",
       ));
+
+  /** The expected volume of a rule, picking its `alt_type` or `pillar` variant. */
+  const volumeFor = (
+    expected: number | Record<string, number>,
+    props: Record<string, string>,
+  ): number =>
+    typeof expected === "number"
+      ? expected
+      : "none" in expected
+        ? expected[props.pillar ?? "none"]
+        : expected[props.alt_type ?? "false"];
 
   /** Signed volume enclosed by a slot's quads, seen from `origin` (blocks). */
   function enclosedVolume(
@@ -546,10 +670,7 @@ describe("framedblocks shape pack", () => {
         const props = ruleProps(rule);
         if (isFramedQuirk(id, props)) continue;
         const where = `${id} ${JSON.stringify(props)}`;
-        const volume =
-          typeof expected === "number"
-            ? expected
-            : expected[props.alt_type ?? "false"];
+        const volume = volumeFor(expected, props);
         expect(closedVolume(rule.pieces, where), where).toBeCloseTo(volume, 4);
       }
     },
@@ -564,10 +685,11 @@ describe("framedblocks shape pack", () => {
         const props = ruleProps(rule);
         if (isFramedQuirk(id, props)) continue;
         const where = `${id} ${JSON.stringify(props)}`;
+        const volume = volumeFor(expected, props);
         const total =
           closedVolume(slotPieces(rule, "camo"), `${where} camo`) +
           closedVolume(slotPieces(rule, "camo_two"), `${where} camo_two`);
-        expect(total, where).toBeCloseTo(expected, 4);
+        expect(total, where).toBeCloseTo(volume, 4);
       }
     },
   );
