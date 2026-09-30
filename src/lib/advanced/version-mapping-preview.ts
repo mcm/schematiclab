@@ -13,12 +13,22 @@
 // mods) against the target mod file instead of translated; see
 // `./mod-mapping`. With a null target version only that modded pass runs.
 //
+// Camo states (the materials inside FramedBlocks / copycat block entities)
+// are source states too. A camo state that's also a palette entry shares its
+// row, and its slots add to the row's count. Camo warnings name the parent
+// block state and the slot.
+//
 // Pure TS, no DOM, Worker-safe.
 
 import type { ParsedSchematicProjection } from "../convert";
 import { BlockState } from "../schemlib/blocks";
 import { translateBlockState } from "../schemlib/data/translate";
-import type { MinecraftVersion } from "../schemlib/schematic-formats/version-mapping";
+import {
+  camoWarning,
+  type MinecraftVersion,
+} from "../schemlib/schematic-formats/version-mapping";
+import { extractCamoSlots, isCamoCapableBlockId } from "../camo/extract";
+import { stateKey } from "../camo/write";
 import {
   resolveModdedState,
   type ModdedProblemReason,
@@ -77,74 +87,131 @@ export function previewVersionMapping(
 ): VersionMappingPreview {
   const sourceVersion = schematic.minecraftVersion;
 
-  let cleanCount = 0;
-  let pendingCount = 0;
-  const problematic: ProblematicEntry[] = [];
-
-  for (const entry of schematic.palette) {
-    const modded = resolveModdedState(entry.blockId, entry.properties, mods);
-    if (modded.status === "pending") {
-      pendingCount += 1;
-      continue;
-    }
+  // One row per distinct source state, palette entries first, in order.
+  // `warnings` holds the translator's raw messages, which a palette state
+  // reports as-is and a camo state reports per (parent state, slot).
+  interface Row {
+    entry: ProblematicEntry;
+    // The state's target mod file is still loading.
+    pending: boolean;
+    inPalette: boolean;
+    camoWarnings: Set<string>;
+  }
+  const rows = new Map<string, Row>();
+  const rowFor = (
+    blockState: string,
+    blockId: string,
+    properties: Record<string, string>,
+  ): Row => {
+    let row = rows.get(blockState);
+    if (row !== undefined) return row;
+    let target = { blockState, blockId, properties };
+    let warnings: string[] = [];
+    let reason: ProblematicReason = "vanilla";
+    const modded = resolveModdedState(blockId, properties, mods);
     if (modded.status === "resolved") {
-      if (modded.problem === undefined) {
-        cleanCount += 1;
-        continue;
-      }
-      problematic.push({
-        sourceBlockState: entry.blockState,
-        sourceBlockId: entry.blockId,
-        sourceProperties: entry.properties,
-        sourceCount: entry.count,
-        proposedTargetBlockState: new BlockState({
+      target = {
+        blockState: new BlockState({
           Name: modded.blockId,
           Properties: modded.properties,
         }).toString(),
-        proposedTargetBlockId: modded.blockId,
-        proposedTargetProperties: modded.properties,
-        warnings: modded.problem.warnings,
-        reason: modded.problem.reason,
-      });
-      continue;
+        blockId: modded.blockId,
+        properties: modded.properties,
+      };
+      if (modded.problem !== undefined) {
+        warnings = [...modded.problem.warnings];
+        reason = modded.problem.reason;
+      }
+    } else if (modded.status === "vanilla" && targetVersion !== null) {
+      const translated = translateBlockState(
+        new BlockState({ Name: blockId, Properties: properties }),
+        sourceVersion,
+        targetVersion,
+        { onWarning: (message) => warnings.push(message) },
+      );
+      target = {
+        blockState: translated.toString(),
+        blockId: translated.Name,
+        properties: propsRecordFromBlockState(translated),
+      };
     }
-    if (targetVersion === null) {
-      cleanCount += 1;
-      continue;
-    }
-
-    const warnings: string[] = [];
-    const source = new BlockState({
-      Name: entry.blockId,
-      Properties: entry.properties,
-    });
-    const translated = translateBlockState(
-      source,
-      sourceVersion,
-      targetVersion,
-      {
-        onWarning: (message) => {
-          warnings.push(message);
-        },
+    row = {
+      entry: {
+        sourceBlockState: blockState,
+        sourceBlockId: blockId,
+        sourceProperties: properties,
+        sourceCount: 0,
+        proposedTargetBlockState: target.blockState,
+        proposedTargetBlockId: target.blockId,
+        proposedTargetProperties: target.properties,
+        warnings,
+        reason,
       },
-    );
+      pending: modded.status === "pending",
+      inPalette: false,
+      camoWarnings: new Set(),
+    };
+    rows.set(blockState, row);
+    return row;
+  };
 
+  for (const paletteEntry of schematic.palette) {
+    const row = rowFor(
+      paletteEntry.blockState,
+      paletteEntry.blockId,
+      paletteEntry.properties,
+    );
+    row.entry.sourceCount += paletteEntry.count;
+    row.inPalette = true;
+  }
+
+  for (const region of schematic.regions) {
+    if (region.blockEntities.length === 0) continue;
+    const indexAt = new Map<string, number>();
+    for (const placement of region.blocks) {
+      const blockId = schematic.palette[placement.paletteIndex].blockId;
+      if (isCamoCapableBlockId(blockId)) {
+        indexAt.set(placement.pos.join(","), placement.paletteIndex);
+      }
+    }
+    for (const blockEntity of region.blockEntities) {
+      const index = indexAt.get(blockEntity.pos.join(","));
+      if (index === undefined) continue;
+      const parent = schematic.palette[index];
+      const slots = extractCamoSlots(
+        parent.blockId,
+        parent.properties,
+        blockEntity.nbt,
+      );
+      for (const { slot, state, kind } of slots) {
+        if (kind !== "block" || state === null) continue;
+        const row = rowFor(
+          stateKey(state.name, state.properties),
+          state.name,
+          state.properties,
+        );
+        row.entry.sourceCount += 1;
+        for (const message of row.entry.warnings) {
+          row.camoWarnings.add(camoWarning(parent.blockState, slot, message));
+        }
+      }
+    }
+  }
+
+  let cleanCount = 0;
+  let pendingCount = 0;
+  const problematic: ProblematicEntry[] = [];
+  for (const { entry, pending, inPalette, camoWarnings } of rows.values()) {
+    if (pending) {
+      pendingCount += 1;
+      continue;
+    }
+    const warnings = [...(inPalette ? entry.warnings : []), ...camoWarnings];
     if (warnings.length === 0) {
       cleanCount += 1;
       continue;
     }
-
-    problematic.push({
-      sourceBlockState: entry.blockState,
-      sourceBlockId: entry.blockId,
-      sourceProperties: entry.properties,
-      sourceCount: entry.count,
-      proposedTargetBlockState: translated.toString(),
-      proposedTargetBlockId: translated.Name,
-      proposedTargetProperties: propsRecordFromBlockState(translated),
-      warnings,
-      reason: "vanilla",
-    });
+    problematic.push({ ...entry, warnings });
   }
 
   return {

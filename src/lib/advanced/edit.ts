@@ -14,7 +14,10 @@ import type {
 } from "../convert";
 import { BlockState } from "../schemlib/blocks";
 import { translateBlockState } from "../schemlib/data/translate";
-import type { MinecraftVersion } from "../schemlib/schematic-formats/version-mapping";
+import {
+  translateCamoStates,
+  type MinecraftVersion,
+} from "../schemlib/schematic-formats/version-mapping";
 import { isInvisibleBlockId } from "../invisible-blocks";
 import { keepsBlockEntity } from "../camo/block-entity-type";
 import { resolveModdedState, type ModMappingContext } from "./mod-mapping";
@@ -262,7 +265,9 @@ export function applyBlockSwap(
  *
  * Tile entities follow the same compatibility rule as `applyBlockSwap`:
  * preserved when the post-mapping block id equals the pre-mapping block id,
- * dropped otherwise.
+ * dropped otherwise. Camo states in the kept block entities are translated
+ * by the same rules as palette entries (overrides, then modded resolution,
+ * then the natural mapper).
  *
  * `schematic.minecraftVersion` is updated to `targetVersion` on the result,
  * or kept when `targetVersion` is null.
@@ -379,6 +384,22 @@ export function applyVersionMapping(
     for (const i of airWorkingIndices) counts[i] = 0;
   }
 
+  // Camo states resolve like palette entries (Step 1); undefined leaves them
+  // to the natural mapper.
+  const resolveCamo = (
+    state: BlockStateTarget,
+    key: string,
+  ): BlockStateTarget | undefined => {
+    const override = overrides[key];
+    if (override !== undefined) return override;
+    const modded = resolveModdedState(state.blockId, state.properties, mods);
+    if (modded.status === "resolved") {
+      return { blockId: modded.blockId, properties: modded.properties };
+    }
+    if (modded.status === "pending" || targetVersion === null) return state;
+    return undefined;
+  };
+
   // Step 5: tile-entity compatibility. For each original tile entity, look at
   // the block at its position in the source projection, then compare its
   // pre-mapping block id with its post-mapping block id; drop if they differ
@@ -395,13 +416,23 @@ export function applyVersionMapping(
       posToOriginalIndex.set(posKey(placement.pos), placement.paletteIndex);
     }
 
-    const keptTEs = originalTEs.filter((te) => {
+    const keptTEs = originalTEs.flatMap((te) => {
       const origIdx = posToOriginalIndex.get(posKey(te.pos));
-      if (origIdx === undefined) return false; // tile entity with no block — drop.
-      const oldBlockId = schematic.palette[origIdx].blockId;
+      if (origIdx === undefined) return []; // tile entity with no block — drop.
+      const original = schematic.palette[origIdx];
       const newBlockId = working[indexRemap[origIdx]].blockId;
-      if (isInvisibleBlockId(newBlockId)) return false;
-      return isTileEntityCompatible(oldBlockId, newBlockId);
+      if (isInvisibleBlockId(newBlockId)) return [];
+      if (!isTileEntityCompatible(original.blockId, newBlockId)) return [];
+      const nbt = translateCamoStates(
+        original,
+        te.nbt,
+        sourceVersion,
+        // With no target version `resolveCamo` keeps every state, so the
+        // mapper never runs.
+        targetVersion ?? sourceVersion,
+        { resolve: resolveCamo },
+      );
+      return [nbt === te.nbt ? te : { pos: te.pos, nbt }];
     });
 
     return { ...region, blockEntities: keptTEs };

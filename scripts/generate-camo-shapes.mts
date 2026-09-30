@@ -9,7 +9,9 @@
 //   - scripts/camo-shapes/framedblocks/template-specs.ts
 //       hand port of TemplateSpecs.java and double-block calculateParts()
 //   - scripts/camo-shapes/framedblocks/geometry-specs.ts
-//       hand ports of the bespoke (non-templated) *Geometry.java classes
+//       hand ports of the bespoke (non-templated) *Geometry.java classes,
+//       with the slope, slopeedge and prism packages in slope.ts,
+//       slope-edge.ts and prism.ts (shared API in geometry-api.ts)
 //   - public/minecraft-assets/models.json
 //       vanilla models FramedBlocks uses as templates (slab, trapdoor, …)
 //
@@ -75,6 +77,7 @@ import {
   GEOMETRY_SPECS,
   type QuadPiece,
 } from "./camo-shapes/framedblocks/geometry-specs.ts";
+import { LEGACY_PROPERTY_NAMES } from "./camo-shapes/framedblocks/geometry-api.ts";
 import {
   MASK_DIRECTIONS,
   MATERIAL_KEY,
@@ -266,7 +269,8 @@ const FULL_CUBE: Box = { from: [0, 0, 0], to: [16, 16, 16] };
 /**
  * Pieces of a bespoke-geometry block in `state`, all in camo slot `slot`:
  * full faces pass the camo quad through, every other face goes through the
- * ported `transformQuad`. Quads sharing their ops merge into one piece.
+ * ported `transformQuad` (full faces too when the geometry transforms all
+ * quads). Quads sharing their ops merge into one piece.
  */
 function geometryPieces(
   block: string,
@@ -278,10 +282,20 @@ function geometryPieces(
   const fullState = { ...defaultState(spec), ...state };
   const fullFaces = new Set(spec.fullFaces?.(fullState) ?? []);
   const transformQuad = spec.geometry(fullState);
+  const transformAll =
+    typeof spec.transformAllQuads === "function"
+      ? spec.transformAllQuads(fullState)
+      : spec.transformAllQuads === true;
   const quads: QuadPiece[] = [];
   for (const dir of DIRECTIONS) {
     if (fullFaces.has(dir)) quads.push({ face: dir, ops: [], cull: true });
-    if (!fullFaces.has(dir) || spec.transformAllQuads) {
+    if (fullFaces.has(dir) && transformAll) {
+      // FramedBlocks hides transformed quads whose cull face is a full
+      // face (the camo quad is drawn as is there); the rest still render.
+      const transformed: QuadPiece[] = [];
+      transformQuad(dir, transformed);
+      quads.push(...transformed.filter((quad) => !quad.cull));
+    } else if (!fullFaces.has(dir)) {
       transformQuad(dir, quads);
     }
   }
@@ -496,6 +510,19 @@ async function generateFramedBlocks(): Promise<void> {
         ...partPieces(two.block, two.props, "camo_two", template),
       ];
     });
+  }
+
+  // Rule keys also list a renamed property's older names (`alt_slope|yslope`).
+  for (const rules of Object.values(blocks)) {
+    for (const rule of rules) {
+      if (rule.when === undefined) continue;
+      rule.when = Object.fromEntries(
+        Object.entries(rule.when).map(([key, value]) => [
+          [key, ...(LEGACY_PROPERTY_NAMES[key] ?? [])].join("|"),
+          value,
+        ]),
+      );
+    }
   }
 
   const pack: ShapePack = {

@@ -787,11 +787,12 @@ function framedFixtures(checkout: string): Fixture[] {
       const seen = new Set<string>();
       states = [];
       // A rule value can list alternatives (`latch=default|none`); each one
-      // is a separate block state.
+      // is a separate block state. A key lists the property's current name
+      // first, then its legacy names (`alt_slope|yslope`).
       const ruleStates = rules.flatMap((rule) =>
         cartesian(
-          Object.entries(rule.when ?? {}).map(([name, value]) => ({
-            name,
+          Object.entries(rule.when ?? {}).map(([key, value]) => ({
+            name: key.split("|")[0],
             values: value.split("|"),
           })),
         ),

@@ -19,15 +19,15 @@ const FIXTURES = [
   "framed_covered_2.nbt",
   "framed_covered_3.nbt",
   "framed_covered_4.nbt",
+  "framed_slopes_1.nbt",
+  "framed_slopes_2.nbt",
   "copycats_nbt.nbt",
   "copycats_shapes.nbt",
 ];
 
-// Types with no shapes yet (FramedBlocks slopes: US-014/US-015; Copycats+
-// slopes and kinetic blocks: US-016, which must empty this list).
-// Placements of these are skipped.
+// Types with no shapes yet (Copycats+ slopes and kinetic blocks: US-016,
+// which must empty this list). Placements of these are skipped.
 const PENDING = new Set([
-  "framedblocks:framed_slope",
   "copycats:copycat_slope",
   "copycats:copycat_vertical_slope",
   "copycats:copycat_slope_layer",

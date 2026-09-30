@@ -303,6 +303,30 @@ describe("matchShapeRule", () => {
       matchShapeRule([{ when: { constructor: "x" }, pieces: [] }], {}),
     ).toBeNull();
   });
+
+  it("matches a renamed property under its legacy names", () => {
+    const slopes: ShapeRule[] = [
+      { when: { facing: "north", "alt_slope|yslope": "false" }, pieces: [] },
+      { when: { facing: "north", "alt_slope|yslope": "true" }, pieces: [] },
+    ];
+    expect(matchShapeRule(slopes, { facing: "north", alt_slope: "true" })).toBe(
+      slopes[1],
+    );
+    expect(matchShapeRule(slopes, { facing: "north", yslope: "true" })).toBe(
+      slopes[1],
+    );
+    // The current name wins over a stale legacy one.
+    expect(
+      matchShapeRule(slopes, {
+        facing: "north",
+        alt_slope: "false",
+        yslope: "true",
+      }),
+    ).toBe(slopes[0]);
+    // States saved before the property existed take the first (default) rule.
+    expect(matchShapeRule(slopes, { facing: "north" })).toBe(slopes[0]);
+    expect(matchShapeRule(slopes, { facing: "south" })).toBeNull();
+  });
 });
 
 describe("matchShapeRule groups and material conditions", () => {

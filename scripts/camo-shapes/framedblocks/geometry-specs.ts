@@ -1,6 +1,9 @@
-// Hand ports of FramedBlocks' bespoke (non-templated, non-slope)
+// Hand ports of FramedBlocks' bespoke (non-templated)
 // `client/model/geometry/**/*Geometry.java` classes. Read by
-// `scripts/generate-camo-shapes.mts`.
+// `scripts/generate-camo-shapes.mts`. The `slope/`, `slopeedge/` and
+// `prism/` packages live in `slope.ts`, `slope-edge.ts` and `prism.ts` and
+// join `GEOMETRY_SPECS` below; `geometry-api.ts` has the shared
+// `Direction`, `Modifiers` and `QuadModifier` ports.
 //
 // Ported from XFactHD/FramedBlocks at commit
 // 8267f80b6893dabb7f6cef469182a0b969de465e (mod_version in
@@ -29,281 +32,46 @@
 import type {
   Axis,
   Direction,
-  QuadOp,
   Vec3,
 } from "../../../src/lib/render/camo/shape-pack";
+import {
+  BOOL,
+  DIRECTIONS,
+  FACING,
+  HORIZONTAL,
+  Modifiers,
+  MultiQuadModifier,
+  NULLABLE_FACE,
+  QuadModifier,
+  RAIL_SHAPE,
+  RAIL_SHAPE_STRAIGHT,
+  ROTATION_16,
+  WALL_SIDE,
+  axisOf,
+  clockWise,
+  counterClockWise,
+  dir,
+  from2DDataValue,
+  fromAxis,
+  isPositive,
+  isTrue,
+  isX,
+  isY,
+  isZ,
+  opposite,
+  perpendicularAxis,
+  toYRot,
+  type BlockState,
+  type GeometrySpec,
+  type Modifier,
+  type QuadPiece,
+  type TransformQuad,
+} from "./geometry-api.ts";
+import { PRISM_GEOMETRY_SPECS } from "./prism.ts";
+import { SLOPE_EDGE_GEOMETRY_SPECS } from "./slope-edge.ts";
+import { SLOPE_GEOMETRY_SPECS } from "./slope.ts";
 
-export type BlockState = Readonly<Record<string, string>>;
-
-/** One exported quad: the camo's `face` quad through `ops`. */
-export interface QuadPiece {
-  face: Direction;
-  ops: QuadOp[];
-  /** Exported with its own direction as cull face. */
-  cull: boolean;
-}
-
-/** `transformQuad` for one block state, called once per camo face. */
-export type TransformQuad = (quadDir: Direction, quadMap: QuadPiece[]) => void;
-
-export interface GeometrySpec {
-  /**
-   * Properties that affect the shape, with every value; the first value is
-   * the block's default. Other properties are ignored.
-   */
-  properties: Readonly<Record<string, readonly string[]>>;
-  /** The Java constructor: reads the state, returns `transformQuad`. */
-  geometry: (state: BlockState) => TransformQuad;
-  /** `FullFacePredicate`: faces that use the camo quad unmodified. */
-  fullFaces?: (state: BlockState) => readonly Direction[];
-  /** `Geometry.transformAllQuads()`: full faces also go through `transformQuad`. */
-  transformAllQuads?: boolean;
-}
-
-// ── Minecraft `Direction` ──────────────────────────────────────────────────
-
-/** `Direction.values()` order (ordinals). */
-const DIRECTIONS: readonly Direction[] = [
-  "down",
-  "up",
-  "north",
-  "south",
-  "west",
-  "east",
-];
-
-const AXIS_OF: Record<Direction, Axis> = {
-  down: "y",
-  up: "y",
-  north: "z",
-  south: "z",
-  west: "x",
-  east: "x",
-};
-
-const OPPOSITE: Record<Direction, Direction> = {
-  down: "up",
-  up: "down",
-  north: "south",
-  south: "north",
-  west: "east",
-  east: "west",
-};
-
-/** `Direction.getClockWise(Axis)`: clockwise looking from the positive end. */
-const CLOCKWISE: Record<Axis, Partial<Record<Direction, Direction>>> = {
-  x: { down: "south", south: "up", up: "north", north: "down" },
-  y: { north: "east", east: "south", south: "west", west: "north" },
-  z: { down: "west", west: "up", up: "east", east: "down" },
-};
-
-const axisOf = (dir: Direction): Axis => AXIS_OF[dir];
-const opposite = (dir: Direction): Direction => OPPOSITE[dir];
-const isY = (dir: Direction) => axisOf(dir) === "y";
-const isX = (dir: Direction) => axisOf(dir) === "x";
-const isZ = (dir: Direction) => axisOf(dir) === "z";
-const isPositive = (dir: Direction) =>
-  dir === "up" || dir === "south" || dir === "east";
-
-function clockWise(dir: Direction, axis: Axis = "y"): Direction {
-  const result = CLOCKWISE[axis][dir];
-  if (result === undefined) throw new Error(`${dir} is on the ${axis} axis`);
-  return result;
-}
-
-function counterClockWise(dir: Direction, axis: Axis = "y"): Direction {
-  return opposite(clockWise(dir, axis));
-}
-
-function fromAxis(axis: Axis, positive: boolean): Direction {
-  const dirs: Record<Axis, [Direction, Direction]> = {
-    x: ["west", "east"],
-    y: ["down", "up"],
-    z: ["north", "south"],
-  };
-  return dirs[axis][positive ? 1 : 0];
-}
-
-/** `DirUtils.getPerpendicularAxis(a, b)`: the third axis. */
-function perpendicularAxis(a: Axis, b: Axis): Axis {
-  return (["x", "y", "z"] as const).find((axis) => axis !== a && axis !== b)!;
-}
-
-/** `Direction.from2DDataValue`. */
-const from2DDataValue = (value: number): Direction =>
-  (["south", "west", "north", "east"] as const)[value & 3];
-
-/** `Direction.toYRot()`. */
-const Y_ROT: Partial<Record<Direction, number>> = {
-  south: 0,
-  west: 90,
-  north: 180,
-  east: 270,
-};
-const toYRot = (dir: Direction): number => Y_ROT[dir] ?? 0;
-
-// ── `Modifiers` (block fractions in, shape-pack pixels out) ───────────────
-
-type Modifier = QuadOp[];
-
-/** Block fraction to model pixels, rounding off float noise. */
-const px = (n: number) => Math.round(n * 16 * 1e6) / 1e6;
-const pxVec = ([x, y, z]: Vec3): Vec3 => [px(x), px(y), px(z)];
-
-const CENTER: Vec3 = [0.5, 0.5, 0.5];
-
-const Modifiers = {
-  noop: (): Modifier => [],
-  cut: (edge: Direction, length: number): Modifier => [
-    { op: "cut", edge, lengths: [px(length), px(length)] },
-  ],
-  /** `cut(Direction.Axis, length)`: both ends of the axis. */
-  cutAxis: (axis: Axis, length: number): Modifier => [
-    ...Modifiers.cut(fromAxis(axis, false), length),
-    ...Modifiers.cut(fromAxis(axis, true), length),
-  ],
-  cutTopBottom: (
-    minX: number,
-    minZ: number,
-    maxX: number,
-    maxZ: number,
-  ): Modifier => [
-    {
-      op: "cutTopBottom",
-      from: [px(minX), px(minZ)],
-      to: [px(maxX), px(maxZ)],
-    },
-  ],
-  cutSide: (
-    minXZ: number,
-    minY: number,
-    maxXZ: number,
-    maxY: number,
-  ): Modifier => [
-    { op: "cutSide", from: [px(minXZ), px(minY)], to: [px(maxXZ), px(maxY)] },
-  ],
-  setPosition: (position: number): Modifier => [
-    { op: "setPosition", position: px(position) },
-  ],
-  offset: (direction: Direction, amount: number): Modifier =>
-    amount === 0 ? [] : [{ op: "offset", direction, amount: px(amount) }],
-  rotate: (
-    axis: Axis,
-    origin: Vec3,
-    angle: number,
-    rescale = false,
-    scaleMult: Vec3 = [1, 1, 1],
-  ): Modifier => [
-    {
-      op: "rotate",
-      axis,
-      origin: pxVec(origin),
-      angle,
-      rescale,
-      scaleMult: scaleMult.map(Math.abs) as Vec3,
-    },
-  ],
-  rotateCentered: (axis: Axis, angle: number, rescale = false): Modifier =>
-    Modifiers.rotate(axis, CENTER, angle, rescale),
-  scaleFace: (factor: number, origin: Vec3): Modifier => [
-    { op: "scaleFace", factor, origin: pxVec(origin) },
-  ],
-  /** Copycats+-style translation, for block-entity-renderer transforms. */
-  translate: (by: Vec3): Modifier => [{ op: "translate", by: pxVec(by) }],
-  /** Copycats+-style scale about `pivot`, for block-entity-renderer transforms. */
-  scale: (pivot: Vec3, factor: number): Modifier => [
-    { op: "scale", pivot: pxVec(pivot), factors: [factor, factor, factor] },
-  ],
-};
-
-/** `QuadModifier`: collects modifiers for one camo face quad. */
-class QuadModifier {
-  private readonly face: Direction;
-  private readonly ops: QuadOp[];
-
-  private constructor(face: Direction, ops: QuadOp[]) {
-    this.face = face;
-    this.ops = ops;
-  }
-
-  static of(face: Direction): QuadModifier {
-    return new QuadModifier(face, []);
-  }
-
-  apply(modifier: Modifier): QuadModifier {
-    this.ops.push(...modifier);
-    return this;
-  }
-
-  applyIf(modifier: Modifier, apply: boolean): QuadModifier {
-    return apply ? this.apply(modifier) : this;
-  }
-
-  derive(): QuadModifier {
-    return new QuadModifier(this.face, [...this.ops]);
-  }
-
-  export(quadMap: QuadPiece[], cullFace: Direction | null): void {
-    quadMap.push({
-      face: this.face,
-      ops: [...this.ops],
-      cull: cullFace === this.face,
-    });
-  }
-}
-
-/** `MultiQuadModifier`: the same modifiers on several quads. */
-class MultiQuadModifier {
-  private readonly mods: QuadModifier[];
-
-  constructor(mods: QuadModifier[]) {
-    this.mods = mods;
-  }
-
-  static of(...mods: QuadModifier[]): MultiQuadModifier {
-    return new MultiQuadModifier(mods);
-  }
-
-  apply(modifier: Modifier): MultiQuadModifier {
-    for (const mod of this.mods) mod.apply(modifier);
-    return this;
-  }
-
-  derive(): MultiQuadModifier {
-    return new MultiQuadModifier(this.mods.map((mod) => mod.derive()));
-  }
-
-  export(quadMap: QuadPiece[], cullFace: Direction | null): void {
-    for (const mod of this.mods) mod.export(quadMap, cullFace);
-  }
-}
-
-// ── Property values ────────────────────────────────────────────────────────
-
-const BOOL = ["false", "true"] as const;
-const HORIZONTAL = ["north", "south", "west", "east"] as const;
-const FACING = ["north", "east", "south", "west", "up", "down"] as const;
-const WALL_SIDE = ["none", "low", "tall"] as const;
-const ROTATION_16 = Array.from({ length: 16 }, (_, i) => String(i));
-const NULLABLE_FACE = ["none", ...DIRECTIONS] as const;
-const RAIL_SHAPE_STRAIGHT = [
-  "north_south",
-  "east_west",
-  "ascending_east",
-  "ascending_west",
-  "ascending_north",
-  "ascending_south",
-] as const;
-const RAIL_SHAPE = [
-  ...RAIL_SHAPE_STRAIGHT,
-  "south_east",
-  "south_west",
-  "north_west",
-  "north_east",
-] as const;
-
-const isTrue = (value: string) => value === "true";
-const dir = (value: string) => value as Direction;
+export type { BlockState, GeometrySpec, QuadPiece, TransformQuad };
 
 // ── Cubes ──────────────────────────────────────────────────────────────────
 
@@ -1938,4 +1706,7 @@ export const GEOMETRY_SPECS: Readonly<Record<string, GeometrySpec>> = {
   framed_fancy_powered_rail: fancyRail(true),
   framed_fancy_detector_rail: fancyRail(true),
   framed_fancy_activator_rail: fancyRail(true),
+  ...SLOPE_GEOMETRY_SPECS,
+  ...SLOPE_EDGE_GEOMETRY_SPECS,
+  ...PRISM_GEOMETRY_SPECS,
 };

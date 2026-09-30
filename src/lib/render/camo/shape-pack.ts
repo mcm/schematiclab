@@ -223,6 +223,11 @@ export interface TemplateCube {
  * equal the given value or one of its `|`-separated alternatives. A rule
  * without `when` matches every state.
  *
+ * A key can also list `|`-separated names: a property's current name, then
+ * the names older mod versions saved it under (FramedBlocks' `yslope` became
+ * `alt_slope`). The first name the state has is compared, and a state with
+ * none of them matches, so such blocks list the default value's rule first.
+ *
  * Rules with the same `group` (or none) are alternatives, first match wins;
  * each group is matched on its own and the matches' pieces add up. Copycats+
  * multi-state blocks put each part in its own group, so a part's rules only
@@ -709,8 +714,11 @@ function ruleMatches(
   }
   if (rule.when === undefined) return true;
   return Object.entries(rule.when).every(([key, expected]) => {
-    const actual = Object.hasOwn(props, key) ? props[key] : undefined;
-    return actual !== undefined && expected.split("|").includes(actual);
+    const names = key.split("|");
+    const name = names.find((n) => Object.hasOwn(props, n));
+    // A legacy state without the property (or its old names) matches.
+    if (name === undefined) return names.length > 1;
+    return expected.split("|").includes(props[name]);
   });
 }
 

@@ -1,7 +1,8 @@
 // Hand port of FramedBlocks'
 // `client/model/geometry/templated/TemplateSpecs.java` (per-state template
-// transforms) and of the `calculateParts()` of every double block whose two
-// parts are templated blocks. Read by `scripts/generate-camo-shapes.mts`.
+// transforms) and of the `calculateParts()` of the double blocks. Their parts
+// are templated blocks or bespoke geometries (`geometry-specs.ts`). Read by
+// `scripts/generate-camo-shapes.mts`.
 //
 // A templated block's model is the union of its source files' cubes (from
 // `framed_templates/*.json`, or vanilla models for `minecraft:` ids), each
@@ -18,6 +19,14 @@
 // identical states together.
 
 import type { Vec3 } from "../../../src/lib/render/camo/shape-pack";
+
+import {
+  COMPOUND_DIRECTION,
+  CORNER_TYPE,
+  CornerType,
+  DIRECTION_AXIS,
+  SLOPE_TYPE,
+} from "./geometry-api.ts";
 
 export type Quadrant = 0 | 90 | 180 | 270;
 
@@ -102,33 +111,6 @@ const STAIRS_TYPE = [
   "bottom_fwd",
   "bottom_ccw",
   "bottom_both",
-] as const;
-/** `CompoundDirection`: `<direction>_<orientation>`. */
-const COMPOUND_DIRECTION = [
-  "down_north",
-  "down_south",
-  "down_west",
-  "down_east",
-  "up_north",
-  "up_south",
-  "up_west",
-  "up_east",
-  "north_down",
-  "north_up",
-  "north_west",
-  "north_east",
-  "south_down",
-  "south_up",
-  "south_west",
-  "south_east",
-  "west_down",
-  "west_up",
-  "west_north",
-  "west_south",
-  "east_down",
-  "east_up",
-  "east_north",
-  "east_south",
 ] as const;
 /** `CornerTubeOrientation`: `<primary>_<secondary>`. */
 const CORNER_TUBE_ORIENTATION = [
@@ -762,6 +744,321 @@ const VERTICAL_STAIRS_PROPERTIES = {
   type: STAIRS_TYPE,
 } as const;
 
+// ── Slope, slope edge and prism double blocks ──────────────────────────────
+// Ports of `calculateParts()` in `common/block/{slope,slopeedge,prism}/`;
+// the part geometries are in `slope.ts`, `slope-edge.ts` and `prism.ts`.
+
+/** `SlopeType.getOpposite()`, keeping `horizontal` as the callers do. */
+const oppositeSlopeType = (type: string) =>
+  type === "top" ? "bottom" : type === "bottom" ? "top" : type;
+
+/** `FramedElevatedDoubleCornerSlopeEdgeBlock` and its inner twin: the second part's `CornerType`. */
+function elevatedDoubleCornerTypeTwo(type: string): string {
+  if (!CornerType.isHorizontal(type)) return CornerType.verticalOpposite(type);
+  return CornerType.rotate(
+    type,
+    CornerType.isRight(type) === CornerType.isTop(type),
+  );
+}
+
+/** `StairsType.get(top, fwd, ccw)`. */
+function stairsType(top: boolean, fwd: boolean, ccw: boolean): string {
+  const half = top ? "top" : "bottom";
+  if (fwd && ccw) return `${half}_both`;
+  if (fwd) return `${half}_fwd`;
+  if (ccw) return `${half}_ccw`;
+  return "vertical";
+}
+
+const SLOPE_PROPERTIES = {
+  facing: HORIZONTAL,
+  type: SLOPE_TYPE,
+  alt_slope: BOOL,
+} as const;
+
+const CORNER_PROPERTIES = {
+  facing: HORIZONTAL,
+  type: CORNER_TYPE,
+  alt_slope: BOOL,
+} as const;
+
+const SLOPE_DOUBLE_BLOCK_SPECS: Readonly<Record<string, DoubleBlockSpec>> = {
+  // `FramedDoubleSlopeBlock`
+  framed_double_slope: {
+    properties: SLOPE_PROPERTIES,
+    parts: (s) => [
+      part("framed_slope", {
+        facing: s.facing,
+        type: s.type,
+        alt_slope: s.alt_slope,
+      }),
+      part("framed_slope", {
+        facing: opposite(s.facing),
+        type: oppositeSlopeType(s.type),
+        alt_slope: s.alt_slope,
+      }),
+    ],
+  },
+  // `FramedDividedSlopeBlock`
+  framed_divided_slope: {
+    properties: SLOPE_PROPERTIES,
+    parts: (s) => {
+      if (s.type === "horizontal") {
+        const half = (top: boolean) =>
+          part("framed_vertical_half_slope", {
+            facing: s.facing,
+            top: bool(top),
+            alt_slope: s.alt_slope,
+          });
+        return [half(false), half(true)];
+      }
+      const half = (right: boolean) =>
+        part("framed_half_slope", {
+          facing: s.facing,
+          top: bool(s.type === "top"),
+          right: bool(right),
+          alt_slope: s.alt_slope,
+        });
+      return [half(false), half(true)];
+    },
+  },
+  // `FramedDoubleHalfSlopeBlock`
+  framed_double_half_slope: {
+    properties: { facing: HORIZONTAL, right: BOOL, alt_slope: BOOL },
+    parts: (s) => [
+      part("framed_half_slope", {
+        facing: s.facing,
+        top: "false",
+        right: s.right,
+        alt_slope: s.alt_slope,
+      }),
+      part("framed_half_slope", {
+        facing: opposite(s.facing),
+        top: "true",
+        right: bool(!isTrue(s.right)),
+        alt_slope: s.alt_slope,
+      }),
+    ],
+  },
+  // `FramedVerticalDoubleHalfSlopeBlock`
+  framed_vertical_double_half_slope: {
+    properties: { facing: HORIZONTAL, top: BOOL, alt_slope: BOOL },
+    parts: (s) => [
+      part("framed_vertical_half_slope", {
+        facing: s.facing,
+        top: s.top,
+        alt_slope: s.alt_slope,
+      }),
+      part("framed_vertical_half_slope", {
+        facing: opposite(s.facing),
+        top: s.top,
+        alt_slope: s.alt_slope,
+      }),
+    ],
+  },
+  // `FramedDoubleCornerBlock`
+  framed_double_corner: {
+    properties: CORNER_PROPERTIES,
+    parts: (s) => [
+      part("framed_inner_corner_slope", {
+        facing: s.facing,
+        type: s.type,
+        alt_slope: s.alt_slope,
+      }),
+      part("framed_corner_slope", {
+        facing: opposite(s.facing),
+        type: CornerType.verticalOpposite(s.type),
+        alt_slope: s.alt_slope,
+      }),
+    ],
+  },
+  // `FramedDoublePrismCornerBlock`
+  framed_double_prism_corner: {
+    properties: {
+      facing: HORIZONTAL,
+      top: BOOL,
+      offset: BOOL,
+      alt_slope: BOOL,
+    },
+    parts: (s) => [
+      part("framed_inner_prism_corner", {
+        facing: s.facing,
+        top: s.top,
+        offset: s.offset,
+        alt_slope: s.alt_slope,
+      }),
+      part("framed_prism_corner", {
+        facing: opposite(s.facing),
+        top: bool(!isTrue(s.top)),
+        offset: bool(!isTrue(s.offset)),
+        alt_slope: s.alt_slope,
+      }),
+    ],
+  },
+  // `FramedDoubleThreewayCornerBlock`
+  framed_double_threeway_corner: {
+    properties: { facing: HORIZONTAL, top: BOOL, alt_slope: BOOL },
+    parts: (s) => [
+      part("framed_inner_threeway_corner", {
+        facing: s.facing,
+        top: s.top,
+        alt_slope: s.alt_slope,
+      }),
+      part("framed_threeway_corner", {
+        facing: opposite(s.facing),
+        top: bool(!isTrue(s.top)),
+        alt_slope: s.alt_slope,
+      }),
+    ],
+  },
+  // `FramedElevatedDoubleSlopeEdgeBlock`
+  framed_elevated_double_slope_edge: {
+    properties: SLOPE_PROPERTIES,
+    parts: (s) => [
+      part("framed_elevated_slope_edge", {
+        facing: s.facing,
+        type: s.type,
+        alt_slope: s.alt_slope,
+      }),
+      part("framed_slope_edge", {
+        facing: opposite(s.facing),
+        type: oppositeSlopeType(s.type),
+        alt_slope: s.alt_slope,
+      }),
+    ],
+  },
+  // `FramedStackedSlopeEdgeBlock`
+  framed_stacked_slope_edge: {
+    properties: SLOPE_PROPERTIES,
+    parts: (s) => [
+      s.type === "horizontal"
+        ? part("framed_vertical_stairs", { facing: s.facing })
+        : part("framed_stairs", {
+            facing: s.facing,
+            half: s.type === "top" ? "top" : "bottom",
+          }),
+      part("framed_slope_edge", {
+        facing: s.facing,
+        type: s.type,
+        alt_type: "true",
+        alt_slope: s.alt_slope,
+      }),
+    ],
+  },
+  // `FramedElevatedDoubleCornerSlopeEdgeBlock`
+  framed_elev_double_corner_slope_edge: {
+    properties: CORNER_PROPERTIES,
+    parts: (s) => [
+      part("framed_elevated_corner_slope_edge", {
+        facing: s.facing,
+        type: s.type,
+        alt_slope: s.alt_slope,
+      }),
+      part("framed_inner_corner_slope_edge", {
+        facing: opposite(s.facing),
+        type: elevatedDoubleCornerTypeTwo(s.type),
+        alt_slope: s.alt_slope,
+      }),
+    ],
+  },
+  // `FramedElevatedDoubleInnerCornerSlopeEdgeBlock`
+  framed_elev_double_inner_corner_slope_edge: {
+    properties: CORNER_PROPERTIES,
+    parts: (s) => [
+      part("framed_elevated_inner_corner_slope_edge", {
+        facing: s.facing,
+        type: s.type,
+        alt_slope: s.alt_slope,
+      }),
+      part("framed_corner_slope_edge", {
+        facing: opposite(s.facing),
+        type: elevatedDoubleCornerTypeTwo(s.type),
+        alt_slope: s.alt_slope,
+      }),
+    ],
+  },
+  // `FramedStackedCornerSlopeEdgeBlock`
+  framed_stacked_corner_slope_edge: {
+    properties: CORNER_PROPERTIES,
+    parts: (s) => {
+      let one: PartState;
+      if (CornerType.isHorizontal(s.type)) {
+        const right = CornerType.isRight(s.type);
+        one = part("framed_vertical_stairs", {
+          facing: right ? clockWise(s.facing) : s.facing,
+          type: stairsType(!CornerType.isTop(s.type), right, !right),
+        });
+      } else {
+        one = part("framed_stairs", {
+          facing: s.facing,
+          half: CornerType.isTop(s.type) ? "top" : "bottom",
+          shape: "outer_left",
+        });
+      }
+      return [
+        one,
+        part("framed_corner_slope_edge", {
+          facing: s.facing,
+          type: s.type,
+          alt_slope: s.alt_slope,
+          alt_type: "true",
+        }),
+      ];
+    },
+  },
+  // `FramedStackedInnerCornerSlopeEdgeBlock`
+  framed_stacked_inner_corner_slope_edge: {
+    properties: CORNER_PROPERTIES,
+    parts: (s) => [
+      part("framed_stairs", {
+        facing: s.facing,
+        half: CornerType.isTop(s.type) ? "top" : "bottom",
+        shape: CornerType.isRight(s.type) ? "inner_right" : "inner_left",
+      }),
+      part("framed_inner_corner_slope_edge", {
+        facing: s.facing,
+        type: s.type,
+        alt_slope: s.alt_slope,
+        alt_type: "true",
+      }),
+    ],
+  },
+  // `FramedElevatedDoublePrismBlock`
+  framed_elevated_inner_double_prism: {
+    properties: { facing_axis: DIRECTION_AXIS, alt_slope: BOOL },
+    parts: (s) => {
+      const [direction, axis] = s.facing_axis.split("_");
+      return [
+        part("framed_elevated_inner_prism", {
+          facing_axis: s.facing_axis,
+          alt_slope: s.alt_slope,
+        }),
+        part("framed_prism", {
+          facing_axis: `${opposite(direction)}_${axis}`,
+          alt_slope: s.alt_slope,
+        }),
+      ];
+    },
+  },
+  // `FramedElevatedDoubleSlopedPrismBlock`
+  framed_elevated_inner_double_sloped_prism: {
+    properties: { facing_dir: COMPOUND_DIRECTION, alt_slope: BOOL },
+    parts: (s) => {
+      const [direction, orientation] = s.facing_dir.split("_");
+      return [
+        part("framed_elevated_inner_sloped_prism", {
+          facing_dir: s.facing_dir,
+          alt_slope: s.alt_slope,
+        }),
+        part("framed_sloped_prism", {
+          facing_dir: `${opposite(direction)}_${orientation}`,
+          alt_slope: s.alt_slope,
+        }),
+      ];
+    },
+  },
+};
+
 export const DOUBLE_BLOCK_SPECS: Readonly<Record<string, DoubleBlockSpec>> = {
   framed_double_slab: {
     properties: {},
@@ -1178,6 +1475,7 @@ export const DOUBLE_BLOCK_SPECS: Readonly<Record<string, DoubleBlockSpec>> = {
       return parts[s.type];
     },
   },
+  ...SLOPE_DOUBLE_BLOCK_SPECS,
 };
 
 /** `CompoundDirection.of(dir.direction(), dir.orientation().getOpposite())`. */
