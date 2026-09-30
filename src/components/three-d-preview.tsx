@@ -23,6 +23,11 @@ import {
   subscribeMinecraftResources,
 } from "@/lib/render/minecraft-resources";
 import { toDisplayProjection } from "@/lib/render/display-translation";
+import {
+  CamoTable,
+  setActiveCamoTable,
+  withCamoProperty,
+} from "@/lib/render/camo/camo-table";
 
 interface ThreeDPreviewProps {
   projection: ParsedSchematicProjection;
@@ -124,14 +129,20 @@ function computeProjectionStats(
 
 // Build a deepslate `Structure` from our projection. Block positions are
 // translated by `-bounds.min` so the structure sits at the origin.
+// Camo-capable blocks get a synthetic `__camo` property indexing `camoTable`,
+// since deepslate never hands block entities to block definitions.
 function buildStructure(
   projection: ParsedSchematicProjection,
   bounds: Bounds,
+  camoTable: CamoTable,
 ): Structure {
   const structure = new Structure(
     BlockPos.create(bounds.size[0], bounds.size[1], bounds.size[2]),
   );
   for (const region of projection.regions) {
+    const blockEntities = new Map(
+      region.blockEntities.map((entity) => [entity.pos.join(","), entity.nbt]),
+    );
     for (const placement of region.blocks) {
       const entry = projection.palette[placement.paletteIndex];
       if (entry === undefined || isInvisibleBlockId(entry.blockId)) continue;
@@ -143,7 +154,12 @@ function buildStructure(
           z - bounds.min[2],
         ),
         entry.blockId,
-        entry.properties,
+        withCamoProperty(
+          camoTable,
+          entry.blockId,
+          entry.properties,
+          blockEntities.get(placement.pos.join(",")),
+        ),
       );
     }
   }
@@ -600,7 +616,9 @@ export function ThreeDPreview({
     // `yieldToMainThread` / `await`) — never synchronously inside the effect
     // body — so the lint rule against synchronous setState-in-effect stays
     // happy. The very first `setIsBuilding(true)` is itself behind an `await`.
-    const realStructure = buildStructure(meshProjection, bounds);
+    const camoTable = new CamoTable();
+    const realStructure = buildStructure(meshProjection, bounds, camoTable);
+    setActiveCamoTable(camoTable);
     const chunkPositions = listChunkPositions(bounds.size);
 
     void (async () => {
