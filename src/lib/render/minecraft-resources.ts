@@ -1,15 +1,18 @@
 // Runtime loader for the 3D preview's deepslate `Resources`: the static
-// vanilla asset bundle in `public/minecraft-assets/` plus every loaded mod's
-// blockstates, models and textures. Vanilla block-entity textures (chests,
+// vanilla asset bundle in `public/minecraft-assets/` plus loaded mods'
+// blockstates, models and textures. Exactly one file per mod is used
+// (`getPreviewModFiles` for the schematic's version, set through
+// `setMinecraftResourcesVersion`), so two versions of a mod never merge. Vanilla block-entity textures (chests,
 // heads, ...) are packed into the atlas the same way as mod textures.
 //
 // The vanilla bundle is produced by `scripts/build-minecraft-assets.mts`. To
 // refresh for a newer Minecraft version, run `pnpm gen:mc-assets`.
 //
-// Vanilla data is fetched and flattened once. Whenever the loaded-mods
-// registry snapshot changes, resources are rebuilt (new combined atlas, new
-// model set) and subscribers are notified so `ThreeDPreview` re-meshes.
-// Builds are serialized; changes during a build coalesce into one follow-up. Layout and assembly are
+// Vanilla data is fetched and flattened once. Whenever the selected preview
+// files change (registry change or a new schematic version), resources are
+// rebuilt (new combined atlas, new model set) and subscribers are notified so
+// `ThreeDPreview` re-meshes. Builds are serialized; changes during a build
+// coalesce into one follow-up. Layout and assembly are
 // pure (`atlas-layout.ts`, `block-resources.ts`); only pixel drawing lives here.
 
 import type { Resources } from "deepslate";
@@ -63,6 +66,14 @@ let started = false;
 let cachedResources: Resources | null = null;
 let loadError: Error | null = null;
 const listeners = new Set<() => void>();
+// The schematic's version (KNOWN_VERSIONS key); picks each mod's file.
+let previewVersionId: string | null = null;
+// Files of the last build; null until the registry has hydrated.
+let builtFiles: LoadedModsSnapshot | null = null;
+// True while a rebuild for a file set other than the cached resources' is in
+// flight (never during the initial build), so the preview can keep its last
+// mesh instead of re-meshing with resources about to be replaced.
+let rebuildPending = false;
 
 function notifyListeners() {
   for (const listener of listeners) listener();
@@ -75,22 +86,48 @@ export function ensureMinecraftResourcesLoading(): void {
     // Wait for persisted mods so the first build already includes them
     // instead of flashing placeholders. Never rejects.
     await modRegistry.hydrateLoadedMods();
-    // The registry keeps a stable snapshot identity until the set of loaded
-    // mods changes, so only real changes trigger a rebuild.
-    let lastSnapshot = modRegistry.getSnapshot();
-    modRegistry.subscribe(() => {
-      const snapshot = modRegistry.getSnapshot();
-      if (snapshot === lastSnapshot) return;
-      lastSnapshot = snapshot;
-      void rebuild();
-    });
+    modRegistry.subscribe(rebuildIfFilesChanged);
+    builtFiles = modRegistry.getPreviewModFiles(previewVersionId);
     await rebuild();
   })();
 }
 
+/**
+ * Set the schematic version whose mod files the preview renders. Rebuilds
+ * only if that changes which files are selected.
+ */
+export function setMinecraftResourcesVersion(versionId: string | null): void {
+  if (versionId === previewVersionId) return;
+  previewVersionId = versionId;
+  rebuildIfFilesChanged();
+}
+
+/** Whether two preview file selections differ (by file record identity). */
+export function previewFilesChanged(
+  previous: LoadedModsSnapshot,
+  next: LoadedModsSnapshot,
+): boolean {
+  return (
+    previous.length !== next.length ||
+    previous.some((file, i) => file !== next[i])
+  );
+}
+
+function rebuildIfFilesChanged(): void {
+  if (builtFiles === null) return;
+  const files = modRegistry.getPreviewModFiles(previewVersionId);
+  if (!previewFilesChanged(builtFiles, files)) return;
+  builtFiles = files;
+  if (!rebuildPending) {
+    rebuildPending = true;
+    notifyListeners();
+  }
+  void rebuild();
+}
+
 // Builds run one at a time. A change during a build queues one follow-up
-// build of the latest snapshot, so a burst of changes (a modpack load adds
-// hundreds of mods) can't pile up concurrent full atlas builds.
+// build of the latest file selection, so a burst of changes (a modpack load
+// adds hundreds of mods) can't pile up concurrent full atlas builds.
 let building: Promise<void> | null = null;
 let rebuildQueued = false;
 
@@ -113,16 +150,18 @@ function rebuild(): Promise<void> {
 }
 
 async function buildOnce(): Promise<void> {
-  const snapshot = modRegistry.getSnapshot();
+  const files = builtFiles ?? [];
   try {
-    const resources = await buildResources(snapshot);
+    const resources = await buildResources(files);
     // Superseded while building: keep what's shown until the queued build
     // finishes, unless there's nothing to show yet.
     if (rebuildQueued && cachedResources !== null) return;
+    rebuildPending = false;
     cachedResources = resources;
     loadError = null;
   } catch (err: unknown) {
     if (rebuildQueued) return;
+    rebuildPending = false;
     console.error("Failed to build Minecraft resources", err);
     // Keep showing the last good resources; only surface a hard error when
     // there's nothing to show.
@@ -142,6 +181,14 @@ export function subscribeMinecraftResources(callback: () => void): () => void {
 
 export function getCachedMinecraftResources(): Resources | null {
   return cachedResources;
+}
+
+/**
+ * True while resources are being rebuilt for a new set of preview files;
+ * `getCachedMinecraftResources` then still returns the previous bundle.
+ */
+export function isMinecraftResourcesRebuildPending(): boolean {
+  return rebuildPending;
 }
 
 export function getMinecraftResourcesError(): Error | null {
@@ -185,12 +232,10 @@ function loadVanilla(): Promise<VanillaBundle> {
   return vanillaPromise;
 }
 
-async function buildResources(
-  snapshot: LoadedModsSnapshot,
-): Promise<Resources> {
+async function buildResources(files: LoadedModsSnapshot): Promise<Resources> {
   const [vanilla, modAssets] = await Promise.all([
     loadVanilla(),
-    Promise.all(snapshot.map((mod) => modRegistry.getLoadedModAssets(mod.key))),
+    Promise.all(files.map((mod) => modRegistry.getLoadedModAssets(mod.key))),
   ]);
   const mods = modAssets.filter((a): a is LoadedModAssets => a !== null);
 

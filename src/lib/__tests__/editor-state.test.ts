@@ -279,6 +279,120 @@ describe("editor-state store", () => {
     ]);
   });
 
+  it("applyVersionMapping takes one undo snapshot for vanilla, mod rewrites and overrides", () => {
+    const sourceVersion: MinecraftVersion = {
+      platform: "java",
+      versionNumber: [1, 16, 5],
+      dataVersion: 2586,
+    };
+    const targetVersion: MinecraftVersion = {
+      platform: "java",
+      versionNumber: [1, 17, 1],
+      dataVersion: 2730,
+    };
+    const projection: ParsedSchematicProjection = {
+      name: "build",
+      inputFormat: "Litematic",
+      minecraftVersion: sourceVersion,
+      totalBlocks: 3,
+      palette: [
+        {
+          blockState: "minecraft:grass_path",
+          blockId: "minecraft:grass_path",
+          properties: {},
+          count: 1,
+        },
+        {
+          blockState: "oldmod:casing",
+          blockId: "oldmod:casing",
+          properties: {},
+          count: 1,
+        },
+        {
+          blockState: "oldmod:gone",
+          blockId: "oldmod:gone",
+          properties: {},
+          count: 1,
+        },
+      ],
+      regions: [
+        {
+          origin: [0, 0, 0],
+          size: [3, 1, 1],
+          blocks: [
+            { pos: [0, 0, 0], paletteIndex: 0 },
+            { pos: [1, 0, 0], paletteIndex: 1 },
+            { pos: [2, 0, 0], paletteIndex: 2 },
+          ],
+        },
+      ],
+    };
+    setParseStatus({ status: "ready", schematic: projection });
+    expect(
+      applyVersionMapping(
+        targetVersion,
+        { "oldmod:gone": { blockId: "minecraft:stone", properties: {} } },
+        {
+          oldmod: {
+            kind: "replace",
+            newNamespace: "newmod",
+            blocks: { "newmod:casing": {} },
+          },
+        },
+      ),
+    ).toBe(true);
+
+    const after = getEditorState();
+    expect(after.lastTranslationSnapshot).toBe(projection);
+    if (after.parseStatus.status !== "ready") throw new Error("expected ready");
+    expect(
+      after.parseStatus.schematic.palette.map((e) => e.blockId).sort(),
+    ).toEqual(["minecraft:dirt_path", "minecraft:stone", "newmod:casing"]);
+    expect(undoLastTranslation()).toBe(true);
+    const undone = getEditorState();
+    if (undone.parseStatus.status !== "ready")
+      throw new Error("expected ready");
+    expect(undone.parseStatus.schematic).toBe(projection);
+  });
+
+  it("applyVersionMapping with a null target keeps minecraftVersion", () => {
+    const sourceVersion: MinecraftVersion = {
+      platform: "java",
+      versionNumber: [1, 16, 5],
+      dataVersion: 2586,
+    };
+    const projection: ParsedSchematicProjection = {
+      name: "build",
+      inputFormat: "Litematic",
+      minecraftVersion: sourceVersion,
+      totalBlocks: 1,
+      palette: [
+        {
+          blockState: "minecraft:grass_path",
+          blockId: "minecraft:grass_path",
+          properties: {},
+          count: 1,
+        },
+      ],
+      regions: [
+        {
+          origin: [0, 0, 0],
+          size: [1, 1, 1],
+          blocks: [{ pos: [0, 0, 0], paletteIndex: 0 }],
+        },
+      ],
+    };
+    setParseStatus({ status: "ready", schematic: projection });
+    expect(applyVersionMapping(null)).toBe(true);
+    const after = getEditorState();
+    if (after.parseStatus.status !== "ready") throw new Error("expected ready");
+    expect(after.parseStatus.schematic.minecraftVersion).toBe(sourceVersion);
+    expect(after.parseStatus.schematic.palette[0].blockId).toBe(
+      "minecraft:grass_path",
+    );
+    expect(after.lastTranslationSnapshot).toBe(projection);
+  });
+
   it("undoLastTranslation restores the pre-translation projection and clears the snapshot", () => {
     const sourceVersion: MinecraftVersion = {
       platform: "java",

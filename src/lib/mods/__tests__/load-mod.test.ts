@@ -12,6 +12,8 @@ import {
 } from "../load-mod";
 import type { ParsedModAssets } from "../types";
 
+const KEY = "42:1.20.1";
+
 const REQUEST: ModLoadRequest = {
   mod: { id: 42, name: "Create", slug: "create", logoThumbnailUrl: null },
   gameVersion: "1.20.1",
@@ -42,6 +44,7 @@ function parsed(overrides: Partial<ParsedModAssets> = {}): ParsedModAssets {
     textures: { "create:block/casing": new Uint8Array([1]) },
     textureMeta: {},
     warnings: ["skipped bad.json"],
+    appearancesComputed: true,
     ...overrides,
   };
 }
@@ -60,6 +63,7 @@ function makeDeps(overrides: Partial<ModLoadDeps> = {}): ModLoadDeps {
     }),
     parse: vi.fn(async () => parsed()),
     add: vi.fn(async () => {}),
+    mapNamespaces: vi.fn(async () => []),
     now: () => 1234,
     ...overrides,
   };
@@ -67,6 +71,7 @@ function makeDeps(overrides: Partial<ModLoadDeps> = {}): ModLoadDeps {
 
 beforeEach(() => {
   __resetModLoadsForTests();
+  vi.restoreAllMocks();
 });
 
 describe("startModLoad", () => {
@@ -83,18 +88,33 @@ describe("startModLoad", () => {
     expect(deps.add).toHaveBeenCalledTimes(1);
     const [meta, assets] = vi.mocked(deps.add).mock.calls[0];
     expect(meta).toMatchObject({
-      key: "42:3",
+      key: KEY,
       modId: 42,
       modName: "Create",
       fileId: 3,
       fileDisplayName: "Create 0.5.1",
+      gameVersion: "1.20.1",
       gameVersions: ["1.20.1"],
       loader: "forge",
       namespaces: ["create"],
       warnings: ["skipped bad.json"],
+      appearancesComputed: true,
       loadedAt: 1234,
     });
     expect(assets.textures["create:block/casing"]).toBeInstanceOf(Blob);
+    expect(deps.mapNamespaces).toHaveBeenCalledWith(["create"], meta, 1234);
+    expect(getModLoads().size).toBe(0);
+  });
+
+  it("still finishes the load when namespace mapping fails", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const deps = makeDeps({
+      mapNamespaces: vi.fn(async () => {
+        throw new Error("nope");
+      }),
+    });
+    await startModLoad(REQUEST, deps);
+    expect(deps.add).toHaveBeenCalledTimes(1);
     expect(getModLoads().size).toBe(0);
   });
 
@@ -102,7 +122,7 @@ describe("startModLoad", () => {
     const phases: string[] = [];
     const deps = makeDeps();
     const record = () => {
-      const entry = getModLoads().get(42);
+      const entry = getModLoads().get(KEY);
       if (entry) phases.push(describeModLoadState(entry.state));
     };
     const wrap = <T extends (...args: never[]) => unknown>(fn: T) =>
@@ -137,7 +157,7 @@ describe("startModLoad", () => {
       fetchFiles: vi.fn(async () => [file({ downloadable: false })]),
     });
     await startModLoad(REQUEST, deps);
-    expect(getModLoads().get(42)?.state).toEqual({
+    expect(getModLoads().get(KEY)?.state).toEqual({
       phase: "error",
       message: "No downloadable file for 1.20.1",
     });
@@ -163,8 +183,9 @@ describe("startModLoad", () => {
   ])("fails on %s without persisting", async (_label, overrides, message) => {
     const deps = makeDeps(overrides as Partial<ModLoadDeps>);
     await startModLoad(REQUEST, deps);
-    expect(getModLoads().get(42)?.state).toEqual({ phase: "error", message });
+    expect(getModLoads().get(KEY)?.state).toEqual({ phase: "error", message });
     expect(deps.add).not.toHaveBeenCalled();
+    expect(deps.mapNamespaces).not.toHaveBeenCalled();
   });
 
   it("ignores a second add while one is running, but allows retry", async () => {
@@ -187,12 +208,24 @@ describe("startModLoad", () => {
     );
     expect(deps.fetchFiles).toHaveBeenCalledTimes(2);
 
+    // So can the same mod's file for another game version.
+    const otherVersion = startModLoad(
+      { ...REQUEST, gameVersion: "1.21" },
+      deps,
+    );
+    expect(deps.fetchFiles).toHaveBeenCalledTimes(3);
+    expect([...getModLoads().keys()].sort()).toEqual([
+      "42:1.20.1",
+      "42:1.21",
+      "7:1.20.1",
+    ]);
+
     release();
-    await Promise.all([first, other]);
-    expect(getModLoads().get(42)?.state.phase).toBe("error");
+    await Promise.all([first, other, otherVersion]);
+    expect(getModLoads().get(KEY)?.state.phase).toBe("error");
 
     await startModLoad(REQUEST, makeDeps());
-    expect(getModLoads().has(42)).toBe(false);
+    expect(getModLoads().has(KEY)).toBe(false);
   });
 
   it("dismisses failed loads only", async () => {
@@ -200,7 +233,7 @@ describe("startModLoad", () => {
       REQUEST,
       makeDeps({ fetchFiles: vi.fn(async () => []) }),
     );
-    dismissModLoad(42);
-    expect(getModLoads().has(42)).toBe(false);
+    dismissModLoad(42, "1.20.1");
+    expect(getModLoads().has(KEY)).toBe(false);
   });
 });

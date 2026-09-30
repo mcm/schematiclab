@@ -3,6 +3,8 @@
 // Plain data only — every type here must survive structured cloning so it can
 // cross the mod-jar worker boundary and be persisted to IndexedDB.
 
+import type { BlockAppearance } from "../render/block-appearance";
+
 /** A single block contributed by a mod (one per blockstates file). */
 export interface ModBlock {
   /** Namespaced block id, e.g. `create:andesite_casing`. */
@@ -11,6 +13,12 @@ export interface ModBlock {
   displayName: string;
   /** Property name → sorted list of known values. Empty for stateless blocks. */
   properties: Record<string, string[]>;
+  /**
+   * Average colour and full-cube flag of the default-state model. Absent when
+   * its textures can't be resolved, and on files loaded before appearances
+   * existed until `ensureModAppearances` backfills them.
+   */
+  appearance?: BlockAppearance;
 }
 
 /** Structured output of parsing a mod jar's client assets. */
@@ -29,6 +37,11 @@ export interface ParsedModAssets {
   textureMeta: Record<string, unknown>;
   /** Non-fatal problems encountered while parsing (malformed JSON, …). */
   warnings: string[];
+  /**
+   * True when block appearances were computed with the vanilla bundle
+   * available (so vanilla parents and textures resolved).
+   */
+  appearancesComputed?: boolean;
 }
 
 /** CurseForge mod loaders the Mods tab can filter by. */
@@ -36,7 +49,7 @@ export type ModLoader = "forge" | "neoforge" | "fabric" | "quilt";
 
 /** Metadata for one loaded CurseForge mod file (persisted in IndexedDB). */
 export interface LoadedModMeta {
-  /** `${modId}:${fileId}` — primary key in the store and registry. */
+  /** `${modId}:${gameVersion}` — primary key in the store and registry. */
   key: string;
   /** CurseForge mod id. */
   modId: number;
@@ -46,6 +59,11 @@ export interface LoadedModMeta {
   /** CurseForge file id. */
   fileId: number;
   fileDisplayName: string;
+  /**
+   * The Minecraft version (`KNOWN_VERSIONS` key) this file was loaded for.
+   * At most one file per (modId, gameVersion) is loaded at a time.
+   */
+  gameVersion: string;
   /** Minecraft versions the file declares, e.g. `["1.20.1"]`. */
   gameVersions: string[];
   loader: ModLoader | null;
@@ -54,6 +72,11 @@ export interface LoadedModMeta {
   blocks: ModBlock[];
   /** Non-fatal parse warnings (skipped files). Absent on older records. */
   warnings?: string[];
+  /**
+   * True once `blocks[].appearance` has been computed (with the vanilla
+   * bundle). Absent on files loaded before appearances existed.
+   */
+  appearancesComputed?: boolean;
   /** `Date.now()` when the mod was loaded. */
   loadedAt: number;
 }
@@ -70,8 +93,18 @@ export interface LoadedModAssets {
   textureMeta: Record<string, unknown>;
 }
 
-export function loadedModKey(modId: number, fileId: number): string {
-  return `${modId}:${fileId}`;
+/** A mod namespace mapped to the CurseForge project that provides it. */
+export interface NamespaceMapping {
+  namespace: string;
+  modId: number;
+  modName: string;
+  modSlug: string;
+  logoUrl: string | null;
+  mappedAt: number;
+}
+
+export function loadedModKey(modId: number, gameVersion: string): string {
+  return `${modId}:${gameVersion}`;
 }
 
 /** Convert worker parse output into the persisted asset shape. */

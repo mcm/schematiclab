@@ -12,6 +12,7 @@ import type {
   ParseResult,
   SchematicFormatId,
 } from "./convert";
+import type { ModMappingContext } from "./advanced/mod-mapping";
 import type { VersionMappingPreview } from "./advanced/version-mapping-preview";
 import type { WorkerRequest, WorkerResponse } from "./convert.worker";
 
@@ -152,8 +153,8 @@ export function parseInWorker(bytes: Uint8Array): Promise<ParseResult> {
  */
 export function translatePreviewInWorker(
   schematic: ParsedSchematicProjection,
-  targetVersion: MinecraftVersion,
-  loadedModBlockIds: ReadonlySet<string> | readonly string[] = [],
+  targetVersion: MinecraftVersion | null,
+  mods: ModMappingContext = {},
 ): Promise<VersionMappingPreview> {
   return send<VersionMappingPreview>(
     {
@@ -161,7 +162,7 @@ export function translatePreviewInWorker(
       payload: {
         schematic,
         targetVersion,
-        loadedModBlockIds: [...loadedModBlockIds],
+        mods,
       },
     },
     [],

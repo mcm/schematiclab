@@ -6,6 +6,8 @@
 
 import { strFromU8, unzipSync, type UnzipFileInfo } from "fflate";
 
+import type { AppearanceSources } from "../render/block-appearance";
+import { computeModAppearances } from "./mod-appearance";
 import type { ModBlock, ParsedModAssets } from "./types";
 
 const ASSET_PATH_RE =
@@ -34,10 +36,17 @@ export function isModAssetEntry(name: string): boolean {
 /**
  * Parse a mod jar's bytes into block definitions and render assets.
  *
+ * Block appearances resolve vanilla parent models and textures through
+ * `vanilla` (see `vanilla-appearance-sources.ts`); without it only what the jar
+ * itself defines is used.
+ *
  * Malformed JSON entries are skipped with a warning. Throws if the bytes are
  * not a readable zip archive or its assets exceed the size/entry budget.
  */
-export function parseModJar(bytes: Uint8Array): ParsedModAssets {
+export function parseModJar(
+  bytes: Uint8Array,
+  vanilla: AppearanceSources | null = null,
+): ParsedModAssets {
   let entryCount = 0;
   let totalBytes = 0;
   const entries = unzipSync(bytes, {
@@ -149,6 +158,22 @@ export function parseModJar(bytes: Uint8Array): ParsedModAssets {
     if (ref in allTextureMeta) textureMeta[ref] = allTextureMeta[ref];
   }
 
+  const appearances = computeModAppearances(
+    {
+      blockIds: blocks.map((block) => block.id),
+      blockstates,
+      models,
+      textures,
+      textureMeta,
+    },
+    vanilla,
+  );
+  for (const block of blocks) {
+    if (Object.hasOwn(appearances, block.id)) {
+      block.appearance = appearances[block.id];
+    }
+  }
+
   return {
     namespaces: [...namespaces].sort(),
     blocks,
@@ -157,6 +182,7 @@ export function parseModJar(bytes: Uint8Array): ParsedModAssets {
     textures,
     textureMeta,
     warnings,
+    appearancesComputed: vanilla !== null,
   };
 }
 

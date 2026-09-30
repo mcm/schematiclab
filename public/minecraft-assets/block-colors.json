@@ -1,0 +1,4446 @@
+{
+  "minecraft:acacia_button": {
+    "oklab": [0.557, 0.08, 0.084],
+    "fullCube": false
+  },
+  "minecraft:acacia_door": { "oklab": [0.56, 0.076, 0.076], "fullCube": false },
+  "minecraft:acacia_fence": {
+    "oklab": [0.557, 0.08, 0.084],
+    "fullCube": false
+  },
+  "minecraft:acacia_fence_gate": {
+    "oklab": [0.557, 0.08, 0.084],
+    "fullCube": false
+  },
+  "minecraft:acacia_hanging_sign": {
+    "oklab": [0.542, 0.081, 0.066],
+    "fullCube": false
+  },
+  "minecraft:acacia_leaves": {
+    "oklab": [0.462, -0.07, 0.084],
+    "fullCube": true
+  },
+  "minecraft:acacia_log": { "oklab": [0.512, 0.03, 0.035], "fullCube": true },
+  "minecraft:acacia_planks": {
+    "oklab": [0.557, 0.08, 0.084],
+    "fullCube": true
+  },
+  "minecraft:acacia_pressure_plate": {
+    "oklab": [0.557, 0.08, 0.084],
+    "fullCube": false
+  },
+  "minecraft:acacia_sapling": {
+    "oklab": [0.557, -0.04, 0.106],
+    "fullCube": false
+  },
+  "minecraft:acacia_shelf": {
+    "oklab": [0.532, 0.076, 0.073],
+    "fullCube": false
+  },
+  "minecraft:acacia_sign": {
+    "oklab": [0.544, 0.072, 0.074],
+    "fullCube": false
+  },
+  "minecraft:acacia_slab": { "oklab": [0.557, 0.08, 0.084], "fullCube": false },
+  "minecraft:acacia_stairs": {
+    "oklab": [0.557, 0.08, 0.084],
+    "fullCube": false
+  },
+  "minecraft:acacia_trapdoor": {
+    "oklab": [0.54, 0.073, 0.076],
+    "fullCube": false
+  },
+  "minecraft:acacia_wall_hanging_sign": {
+    "oklab": [0.542, 0.081, 0.066],
+    "fullCube": false
+  },
+  "minecraft:acacia_wall_sign": {
+    "oklab": [0.544, 0.072, 0.074],
+    "fullCube": false
+  },
+  "minecraft:acacia_wood": { "oklab": [0.499, 0.004, 0.017], "fullCube": true },
+  "minecraft:activator_rail": {
+    "oklab": [0.543, 0.012, 0.021],
+    "fullCube": false
+  },
+  "minecraft:allium": { "oklab": [0.698, 0.053, -0.078], "fullCube": false },
+  "minecraft:amethyst_block": {
+    "oklab": [0.592, 0.071, -0.119],
+    "fullCube": true
+  },
+  "minecraft:amethyst_cluster": {
+    "oklab": [0.692, 0.067, -0.09],
+    "fullCube": false
+  },
+  "minecraft:ancient_debris": {
+    "oklab": [0.435, 0.031, 0.022],
+    "fullCube": true
+  },
+  "minecraft:andesite": { "oklab": [0.632, 0, -0.001], "fullCube": true },
+  "minecraft:andesite_slab": { "oklab": [0.632, 0, -0.001], "fullCube": false },
+  "minecraft:andesite_stairs": {
+    "oklab": [0.632, 0, -0.001],
+    "fullCube": false
+  },
+  "minecraft:andesite_wall": { "oklab": [0.632, 0, -0.001], "fullCube": false },
+  "minecraft:anvil": { "oklab": [0.392, 0, 0], "fullCube": false },
+  "minecraft:attached_melon_stem": {
+    "oklab": [0.573, -0.02, 0.114],
+    "fullCube": false
+  },
+  "minecraft:attached_pumpkin_stem": {
+    "oklab": [0.57, -0.02, 0.113],
+    "fullCube": false
+  },
+  "minecraft:azalea": { "oklab": [0.536, -0.059, 0.086], "fullCube": false },
+  "minecraft:azalea_leaves": {
+    "oklab": [0.53, -0.061, 0.085],
+    "fullCube": true
+  },
+  "minecraft:azure_bluet": {
+    "oklab": [0.836, -0.038, 0.053],
+    "fullCube": false
+  },
+  "minecraft:bamboo": { "oklab": [0.608, -0.099, 0.114], "fullCube": false },
+  "minecraft:bamboo_block": {
+    "oklab": [0.634, -0.049, 0.099],
+    "fullCube": true
+  },
+  "minecraft:bamboo_button": {
+    "oklab": [0.754, -0.014, 0.115],
+    "fullCube": false
+  },
+  "minecraft:bamboo_door": {
+    "oklab": [0.77, -0.014, 0.115],
+    "fullCube": false
+  },
+  "minecraft:bamboo_fence": {
+    "oklab": [0.792, -0.015, 0.118],
+    "fullCube": false
+  },
+  "minecraft:bamboo_fence_gate": {
+    "oklab": [0.788, -0.016, 0.12],
+    "fullCube": false
+  },
+  "minecraft:bamboo_hanging_sign": {
+    "oklab": [0.745, -0.014, 0.107],
+    "fullCube": false
+  },
+  "minecraft:bamboo_mosaic": {
+    "oklab": [0.745, -0.014, 0.115],
+    "fullCube": true
+  },
+  "minecraft:bamboo_mosaic_slab": {
+    "oklab": [0.745, -0.014, 0.115],
+    "fullCube": false
+  },
+  "minecraft:bamboo_mosaic_stairs": {
+    "oklab": [0.745, -0.014, 0.115],
+    "fullCube": false
+  },
+  "minecraft:bamboo_planks": {
+    "oklab": [0.754, -0.014, 0.115],
+    "fullCube": true
+  },
+  "minecraft:bamboo_pressure_plate": {
+    "oklab": [0.754, -0.014, 0.115],
+    "fullCube": false
+  },
+  "minecraft:bamboo_sapling": {
+    "oklab": [0.341, -0.055, 0.068],
+    "fullCube": false
+  },
+  "minecraft:bamboo_shelf": {
+    "oklab": [0.724, -0.015, 0.111],
+    "fullCube": false
+  },
+  "minecraft:bamboo_sign": {
+    "oklab": [0.793, -0.015, 0.12],
+    "fullCube": false
+  },
+  "minecraft:bamboo_slab": {
+    "oklab": [0.754, -0.014, 0.115],
+    "fullCube": false
+  },
+  "minecraft:bamboo_stairs": {
+    "oklab": [0.754, -0.014, 0.115],
+    "fullCube": false
+  },
+  "minecraft:bamboo_trapdoor": {
+    "oklab": [0.772, -0.016, 0.116],
+    "fullCube": false
+  },
+  "minecraft:bamboo_wall_hanging_sign": {
+    "oklab": [0.745, -0.014, 0.107],
+    "fullCube": false
+  },
+  "minecraft:bamboo_wall_sign": {
+    "oklab": [0.793, -0.015, 0.12],
+    "fullCube": false
+  },
+  "minecraft:barrel": { "oklab": [0.487, 0.023, 0.061], "fullCube": true },
+  "minecraft:basalt": { "oklab": [0.429, 0.003, -0.006], "fullCube": true },
+  "minecraft:beacon": { "oklab": [0.703, -0.053, -0.013], "fullCube": false },
+  "minecraft:bedrock": { "oklab": [0.485, 0, 0], "fullCube": true },
+  "minecraft:bee_nest": { "oklab": [0.718, 0.016, 0.102], "fullCube": true },
+  "minecraft:beehive": { "oklab": [0.645, 0.016, 0.079], "fullCube": true },
+  "minecraft:beetroots": { "oklab": [0.575, -0.114, 0.101], "fullCube": false },
+  "minecraft:bell": { "oklab": [0.548, 0.002, 0.003], "fullCube": false },
+  "minecraft:big_dripleaf": {
+    "oklab": [0.58, -0.068, 0.095],
+    "fullCube": false
+  },
+  "minecraft:big_dripleaf_stem": {
+    "oklab": [0.529, -0.059, 0.083],
+    "fullCube": false
+  },
+  "minecraft:birch_button": {
+    "oklab": [0.762, -0.004, 0.075],
+    "fullCube": false
+  },
+  "minecraft:birch_door": {
+    "oklab": [0.824, -0.004, 0.063],
+    "fullCube": false
+  },
+  "minecraft:birch_fence": {
+    "oklab": [0.762, -0.004, 0.075],
+    "fullCube": false
+  },
+  "minecraft:birch_fence_gate": {
+    "oklab": [0.762, -0.004, 0.075],
+    "fullCube": false
+  },
+  "minecraft:birch_hanging_sign": {
+    "oklab": [0.726, 0.001, 0.073],
+    "fullCube": false
+  },
+  "minecraft:birch_leaves": {
+    "oklab": [0.417, -0.046, 0.056],
+    "fullCube": true
+  },
+  "minecraft:birch_log": { "oklab": [0.867, 0, 0.018], "fullCube": true },
+  "minecraft:birch_planks": {
+    "oklab": [0.762, -0.004, 0.075],
+    "fullCube": true
+  },
+  "minecraft:birch_pressure_plate": {
+    "oklab": [0.762, -0.004, 0.075],
+    "fullCube": false
+  },
+  "minecraft:birch_sapling": {
+    "oklab": [0.686, -0.059, 0.082],
+    "fullCube": false
+  },
+  "minecraft:birch_shelf": {
+    "oklab": [0.703, 0.001, 0.071],
+    "fullCube": false
+  },
+  "minecraft:birch_sign": { "oklab": [0.781, -0.002, 0.06], "fullCube": false },
+  "minecraft:birch_slab": {
+    "oklab": [0.762, -0.004, 0.075],
+    "fullCube": false
+  },
+  "minecraft:birch_stairs": {
+    "oklab": [0.762, -0.004, 0.075],
+    "fullCube": false
+  },
+  "minecraft:birch_trapdoor": {
+    "oklab": [0.836, -0.001, 0.045],
+    "fullCube": false
+  },
+  "minecraft:birch_wall_hanging_sign": {
+    "oklab": [0.726, 0.001, 0.073],
+    "fullCube": false
+  },
+  "minecraft:birch_wall_sign": {
+    "oklab": [0.781, -0.002, 0.06],
+    "fullCube": false
+  },
+  "minecraft:birch_wood": { "oklab": [0.904, 0, 0.005], "fullCube": true },
+  "minecraft:black_banner": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:black_bed": { "oklab": [0.477, 0.014, 0.057], "fullCube": false },
+  "minecraft:black_candle": {
+    "oklab": [0.287, 0.012, -0.039],
+    "fullCube": false
+  },
+  "minecraft:black_candle_cake": {
+    "oklab": [0.731, 0.025, 0.023],
+    "fullCube": false
+  },
+  "minecraft:black_carpet": {
+    "oklab": [0.203, 0.001, -0.008],
+    "fullCube": false
+  },
+  "minecraft:black_concrete": {
+    "oklab": [0.147, -0.001, -0.011],
+    "fullCube": true
+  },
+  "minecraft:black_concrete_powder": {
+    "oklab": [0.226, 0.001, -0.01],
+    "fullCube": true
+  },
+  "minecraft:black_concrete_slab": {
+    "oklab": [0.147, -0.001, -0.011],
+    "fullCube": false
+  },
+  "minecraft:black_concrete_stairs": {
+    "oklab": [0.147, -0.001, -0.011],
+    "fullCube": false
+  },
+  "minecraft:black_glazed_terracotta": {
+    "oklab": [0.333, 0.078, 0.028],
+    "fullCube": true
+  },
+  "minecraft:black_shulker_box": {
+    "oklab": [0.22, 0.002, -0.008],
+    "fullCube": false
+  },
+  "minecraft:black_stained_glass": { "oklab": [0.213, 0, 0], "fullCube": true },
+  "minecraft:black_stained_glass_pane": {
+    "oklab": [0.213, 0, 0],
+    "fullCube": false
+  },
+  "minecraft:black_terracotta": {
+    "oklab": [0.221, 0.019, 0.019],
+    "fullCube": true
+  },
+  "minecraft:black_wall_banner": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:black_wool": { "oklab": [0.203, 0.001, -0.008], "fullCube": true },
+  "minecraft:black_wool_slab": {
+    "oklab": [0.203, 0.001, -0.008],
+    "fullCube": false
+  },
+  "minecraft:black_wool_stairs": {
+    "oklab": [0.203, 0.001, -0.008],
+    "fullCube": false
+  },
+  "minecraft:blackstone": { "oklab": [0.282, 0.011, -0.01], "fullCube": true },
+  "minecraft:blackstone_slab": {
+    "oklab": [0.282, 0.011, -0.01],
+    "fullCube": false
+  },
+  "minecraft:blackstone_stairs": {
+    "oklab": [0.282, 0.011, -0.009],
+    "fullCube": false
+  },
+  "minecraft:blackstone_wall": {
+    "oklab": [0.282, 0.011, -0.009],
+    "fullCube": false
+  },
+  "minecraft:blast_furnace": { "oklab": [0.522, 0, 0], "fullCube": true },
+  "minecraft:blue_banner": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:blue_bed": { "oklab": [0.523, 0.028, -0.023], "fullCube": false },
+  "minecraft:blue_candle": { "oklab": [0.456, 0, -0.141], "fullCube": false },
+  "minecraft:blue_candle_cake": {
+    "oklab": [0.74, 0.028, 0.007],
+    "fullCube": false
+  },
+  "minecraft:blue_carpet": {
+    "oklab": [0.409, 0.013, -0.159],
+    "fullCube": false
+  },
+  "minecraft:blue_concrete": {
+    "oklab": [0.37, 0.013, -0.155],
+    "fullCube": true
+  },
+  "minecraft:blue_concrete_powder": {
+    "oklab": [0.458, 0.019, -0.146],
+    "fullCube": true
+  },
+  "minecraft:blue_concrete_slab": {
+    "oklab": [0.37, 0.013, -0.155],
+    "fullCube": false
+  },
+  "minecraft:blue_concrete_stairs": {
+    "oklab": [0.37, 0.013, -0.155],
+    "fullCube": false
+  },
+  "minecraft:blue_glazed_terracotta": {
+    "oklab": [0.44, -0.008, -0.129],
+    "fullCube": true
+  },
+  "minecraft:blue_ice": { "oklab": [0.732, -0.023, -0.134], "fullCube": true },
+  "minecraft:blue_orchid": {
+    "oklab": [0.672, -0.08, -0.075],
+    "fullCube": false
+  },
+  "minecraft:blue_shulker_box": {
+    "oklab": [0.367, 0.013, -0.153],
+    "fullCube": false
+  },
+  "minecraft:blue_stained_glass": {
+    "oklab": [0.459, -0.004, -0.165],
+    "fullCube": true
+  },
+  "minecraft:blue_stained_glass_pane": {
+    "oklab": [0.458, -0.004, -0.164],
+    "fullCube": false
+  },
+  "minecraft:blue_terracotta": {
+    "oklab": [0.384, 0.032, -0.045],
+    "fullCube": true
+  },
+  "minecraft:blue_wall_banner": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:blue_wool": { "oklab": [0.409, 0.013, -0.159], "fullCube": true },
+  "minecraft:blue_wool_slab": {
+    "oklab": [0.409, 0.013, -0.159],
+    "fullCube": false
+  },
+  "minecraft:blue_wool_stairs": {
+    "oklab": [0.409, 0.013, -0.159],
+    "fullCube": false
+  },
+  "minecraft:bone_block": { "oklab": [0.891, -0.004, 0.027], "fullCube": true },
+  "minecraft:bookshelf": { "oklab": [0.581, 0.016, 0.062], "fullCube": true },
+  "minecraft:brain_coral": {
+    "oklab": [0.628, 0.15, -0.036],
+    "fullCube": false
+  },
+  "minecraft:brain_coral_block": {
+    "oklab": [0.646, 0.156, -0.036],
+    "fullCube": true
+  },
+  "minecraft:brain_coral_fan": {
+    "oklab": [0.627, 0.161, -0.037],
+    "fullCube": false
+  },
+  "minecraft:brain_coral_wall_fan": {
+    "oklab": [0.627, 0.161, -0.037],
+    "fullCube": false
+  },
+  "minecraft:brewing_stand": {
+    "oklab": [0.555, 0.013, 0.012],
+    "fullCube": false
+  },
+  "minecraft:brick_slab": { "oklab": [0.559, 0.058, 0.04], "fullCube": false },
+  "minecraft:brick_stairs": {
+    "oklab": [0.559, 0.058, 0.04],
+    "fullCube": false
+  },
+  "minecraft:brick_wall": { "oklab": [0.559, 0.058, 0.04], "fullCube": false },
+  "minecraft:bricks": { "oklab": [0.559, 0.058, 0.04], "fullCube": true },
+  "minecraft:brown_banner": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:brown_bed": { "oklab": [0.522, 0.024, 0.068], "fullCube": false },
+  "minecraft:brown_candle": {
+    "oklab": [0.444, 0.043, 0.06],
+    "fullCube": false
+  },
+  "minecraft:brown_candle_cake": {
+    "oklab": [0.739, 0.028, 0.028],
+    "fullCube": false
+  },
+  "minecraft:brown_carpet": {
+    "oklab": [0.444, 0.042, 0.061],
+    "fullCube": false
+  },
+  "minecraft:brown_concrete": {
+    "oklab": [0.392, 0.037, 0.055],
+    "fullCube": true
+  },
+  "minecraft:brown_concrete_powder": {
+    "oklab": [0.487, 0.038, 0.059],
+    "fullCube": true
+  },
+  "minecraft:brown_concrete_slab": {
+    "oklab": [0.392, 0.037, 0.055],
+    "fullCube": false
+  },
+  "minecraft:brown_concrete_stairs": {
+    "oklab": [0.392, 0.037, 0.055],
+    "fullCube": false
+  },
+  "minecraft:brown_glazed_terracotta": {
+    "oklab": [0.562, 0.027, 0.031],
+    "fullCube": true
+  },
+  "minecraft:brown_mushroom": {
+    "oklab": [0.611, 0.035, 0.049],
+    "fullCube": false
+  },
+  "minecraft:brown_mushroom_block": {
+    "oklab": [0.575, 0.032, 0.056],
+    "fullCube": false
+  },
+  "minecraft:brown_shulker_box": {
+    "oklab": [0.421, 0.04, 0.059],
+    "fullCube": false
+  },
+  "minecraft:brown_stained_glass": {
+    "oklab": [0.438, 0.022, 0.047],
+    "fullCube": true
+  },
+  "minecraft:brown_stained_glass_pane": {
+    "oklab": [0.437, 0.022, 0.047],
+    "fullCube": false
+  },
+  "minecraft:brown_terracotta": {
+    "oklab": [0.348, 0.028, 0.036],
+    "fullCube": true
+  },
+  "minecraft:brown_wall_banner": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:brown_wool": { "oklab": [0.444, 0.042, 0.061], "fullCube": true },
+  "minecraft:brown_wool_slab": {
+    "oklab": [0.444, 0.042, 0.061],
+    "fullCube": false
+  },
+  "minecraft:brown_wool_stairs": {
+    "oklab": [0.444, 0.042, 0.061],
+    "fullCube": false
+  },
+  "minecraft:bubble_column": {
+    "oklab": [0.449, -0.018, -0.134],
+    "fullCube": false
+  },
+  "minecraft:bubble_coral": {
+    "oklab": [0.517, 0.188, -0.111],
+    "fullCube": false
+  },
+  "minecraft:bubble_coral_block": {
+    "oklab": [0.521, 0.189, -0.111],
+    "fullCube": true
+  },
+  "minecraft:bubble_coral_fan": {
+    "oklab": [0.522, 0.177, -0.106],
+    "fullCube": false
+  },
+  "minecraft:bubble_coral_wall_fan": {
+    "oklab": [0.522, 0.177, -0.106],
+    "fullCube": false
+  },
+  "minecraft:budding_amethyst": {
+    "oklab": [0.595, 0.071, -0.111],
+    "fullCube": true
+  },
+  "minecraft:bush": { "oklab": [0.437, -0.052, 0.063], "fullCube": false },
+  "minecraft:cactus": { "oklab": [0.601, -0.07, 0.09], "fullCube": false },
+  "minecraft:cactus_flower": {
+    "oklab": [0.689, 0.109, 0.022],
+    "fullCube": false
+  },
+  "minecraft:cake": { "oklab": [0.785, 0.027, 0.026], "fullCube": false },
+  "minecraft:calcite": { "oklab": [0.91, -0.002, 0.004], "fullCube": true },
+  "minecraft:calibrated_sculk_sensor": {
+    "oklab": [0.498, 0.02, -0.045],
+    "fullCube": false
+  },
+  "minecraft:campfire": { "oklab": [0.523, 0.019, 0.05], "fullCube": false },
+  "minecraft:candle": { "oklab": [0.867, 0.014, 0.072], "fullCube": false },
+  "minecraft:candle_cake": {
+    "oklab": [0.802, 0.024, 0.036],
+    "fullCube": false
+  },
+  "minecraft:carrots": { "oklab": [0.484, -0.098, 0.077], "fullCube": false },
+  "minecraft:cartography_table": {
+    "oklab": [0.418, 0.019, 0.02],
+    "fullCube": true
+  },
+  "minecraft:carved_pumpkin": {
+    "oklab": [0.635, 0.061, 0.121],
+    "fullCube": true
+  },
+  "minecraft:cauldron": { "oklab": [0.4, 0.002, -0.002], "fullCube": false },
+  "minecraft:cave_vines": {
+    "oklab": [0.518, -0.056, 0.084],
+    "fullCube": false
+  },
+  "minecraft:cave_vines_plant": {
+    "oklab": [0.497, -0.049, 0.08],
+    "fullCube": false
+  },
+  "minecraft:chain_command_block": {
+    "oklab": [0.705, -0.035, 0.009],
+    "fullCube": true
+  },
+  "minecraft:cherry_button": {
+    "oklab": [0.811, 0.049, 0.025],
+    "fullCube": false
+  },
+  "minecraft:cherry_door": {
+    "oklab": [0.804, 0.051, 0.026],
+    "fullCube": false
+  },
+  "minecraft:cherry_fence": {
+    "oklab": [0.811, 0.049, 0.025],
+    "fullCube": false
+  },
+  "minecraft:cherry_fence_gate": {
+    "oklab": [0.811, 0.049, 0.025],
+    "fullCube": false
+  },
+  "minecraft:cherry_hanging_sign": {
+    "oklab": [0.687, 0.077, 0.021],
+    "fullCube": false
+  },
+  "minecraft:cherry_leaves": {
+    "oklab": [0.539, -0.045, 0.095],
+    "fullCube": true
+  },
+  "minecraft:cherry_log": { "oklab": [0.529, 0.039, 0.015], "fullCube": true },
+  "minecraft:cherry_planks": {
+    "oklab": [0.811, 0.049, 0.025],
+    "fullCube": true
+  },
+  "minecraft:cherry_pressure_plate": {
+    "oklab": [0.811, 0.049, 0.025],
+    "fullCube": false
+  },
+  "minecraft:cherry_sapling": {
+    "oklab": [0.709, 0.069, -0.018],
+    "fullCube": false
+  },
+  "minecraft:cherry_shelf": {
+    "oklab": [0.687, 0.083, 0.03],
+    "fullCube": false
+  },
+  "minecraft:cherry_sign": {
+    "oklab": [0.772, 0.049, 0.024],
+    "fullCube": false
+  },
+  "minecraft:cherry_slab": {
+    "oklab": [0.811, 0.049, 0.025],
+    "fullCube": false
+  },
+  "minecraft:cherry_stairs": {
+    "oklab": [0.811, 0.049, 0.025],
+    "fullCube": false
+  },
+  "minecraft:cherry_trapdoor": {
+    "oklab": [0.81, 0.049, 0.025],
+    "fullCube": false
+  },
+  "minecraft:cherry_wall_hanging_sign": {
+    "oklab": [0.687, 0.077, 0.021],
+    "fullCube": false
+  },
+  "minecraft:cherry_wall_sign": {
+    "oklab": [0.772, 0.049, 0.024],
+    "fullCube": false
+  },
+  "minecraft:cherry_wood": {
+    "oklab": [0.285, 0.038, -0.008],
+    "fullCube": true
+  },
+  "minecraft:chest": { "oklab": [0.637, 0.015, 0.079], "fullCube": false },
+  "minecraft:chipped_anvil": { "oklab": [0.392, 0, 0], "fullCube": false },
+  "minecraft:chiseled_bookshelf": {
+    "oklab": [0.586, 0.015, 0.072],
+    "fullCube": true
+  },
+  "minecraft:chiseled_cinnabar": {
+    "oklab": [0.477, 0.114, 0.049],
+    "fullCube": true
+  },
+  "minecraft:chiseled_copper": {
+    "oklab": [0.603, 0.09, 0.071],
+    "fullCube": true
+  },
+  "minecraft:chiseled_deepslate": {
+    "oklab": [0.344, 0, -0.001],
+    "fullCube": true
+  },
+  "minecraft:chiseled_nether_bricks": {
+    "oklab": [0.245, 0.039, 0.006],
+    "fullCube": true
+  },
+  "minecraft:chiseled_polished_blackstone": {
+    "oklab": [0.336, 0.01, -0.013],
+    "fullCube": true
+  },
+  "minecraft:chiseled_quartz_block": {
+    "oklab": [0.917, 0.002, 0.013],
+    "fullCube": true
+  },
+  "minecraft:chiseled_red_sandstone": {
+    "oklab": [0.586, 0.079, 0.108],
+    "fullCube": true
+  },
+  "minecraft:chiseled_resin_bricks": {
+    "oklab": [0.604, 0.112, 0.113],
+    "fullCube": true
+  },
+  "minecraft:chiseled_sandstone": {
+    "oklab": [0.855, -0.006, 0.061],
+    "fullCube": true
+  },
+  "minecraft:chiseled_stone_bricks": {
+    "oklab": [0.579, 0.002, -0.001],
+    "fullCube": true
+  },
+  "minecraft:chiseled_sulfur": {
+    "oklab": [0.745, -0.017, 0.103],
+    "fullCube": true
+  },
+  "minecraft:chiseled_tuff": {
+    "oklab": [0.49, -0.008, 0.009],
+    "fullCube": true
+  },
+  "minecraft:chiseled_tuff_bricks": {
+    "oklab": [0.529, -0.007, 0.009],
+    "fullCube": true
+  },
+  "minecraft:chorus_flower": {
+    "oklab": [0.491, 0.047, -0.031],
+    "fullCube": false
+  },
+  "minecraft:chorus_plant": {
+    "oklab": [0.424, 0.057, -0.037],
+    "fullCube": false
+  },
+  "minecraft:cinnabar": { "oklab": [0.526, 0.085, 0.038], "fullCube": true },
+  "minecraft:cinnabar_brick_slab": {
+    "oklab": [0.477, 0.114, 0.052],
+    "fullCube": false
+  },
+  "minecraft:cinnabar_brick_stairs": {
+    "oklab": [0.477, 0.114, 0.052],
+    "fullCube": false
+  },
+  "minecraft:cinnabar_brick_wall": {
+    "oklab": [0.477, 0.114, 0.052],
+    "fullCube": false
+  },
+  "minecraft:cinnabar_bricks": {
+    "oklab": [0.477, 0.114, 0.052],
+    "fullCube": true
+  },
+  "minecraft:cinnabar_slab": {
+    "oklab": [0.526, 0.085, 0.038],
+    "fullCube": false
+  },
+  "minecraft:cinnabar_stairs": {
+    "oklab": [0.526, 0.085, 0.038],
+    "fullCube": false
+  },
+  "minecraft:cinnabar_wall": {
+    "oklab": [0.526, 0.085, 0.038],
+    "fullCube": false
+  },
+  "minecraft:clay": { "oklab": [0.727, -0.001, -0.02], "fullCube": true },
+  "minecraft:closed_eyeblossom": {
+    "oklab": [0.541, 0.015, -0.002],
+    "fullCube": false
+  },
+  "minecraft:coal_block": { "oklab": [0.18, 0, 0], "fullCube": true },
+  "minecraft:coal_ore": { "oklab": [0.541, 0, 0], "fullCube": true },
+  "minecraft:coarse_dirt": { "oklab": [0.497, 0.032, 0.052], "fullCube": true },
+  "minecraft:cobbled_deepslate": {
+    "oklab": [0.435, 0.001, -0.004],
+    "fullCube": true
+  },
+  "minecraft:cobbled_deepslate_slab": {
+    "oklab": [0.435, 0.001, -0.004],
+    "fullCube": false
+  },
+  "minecraft:cobbled_deepslate_stairs": {
+    "oklab": [0.435, 0.001, -0.004],
+    "fullCube": false
+  },
+  "minecraft:cobbled_deepslate_wall": {
+    "oklab": [0.435, 0.001, -0.004],
+    "fullCube": false
+  },
+  "minecraft:cobblestone": { "oklab": [0.612, 0.001, 0], "fullCube": true },
+  "minecraft:cobblestone_slab": {
+    "oklab": [0.612, 0.001, 0],
+    "fullCube": false
+  },
+  "minecraft:cobblestone_stairs": {
+    "oklab": [0.612, 0.001, 0],
+    "fullCube": false
+  },
+  "minecraft:cobblestone_wall": {
+    "oklab": [0.612, 0.001, 0],
+    "fullCube": false
+  },
+  "minecraft:cobweb": { "oklab": [0.935, -0.004, -0.003], "fullCube": false },
+  "minecraft:cocoa": { "oklab": [0.619, -0.035, 0.092], "fullCube": false },
+  "minecraft:command_block": {
+    "oklab": [0.677, 0.041, 0.039],
+    "fullCube": true
+  },
+  "minecraft:comparator": { "oklab": [0.683, 0.002, 0.004], "fullCube": false },
+  "minecraft:composter": { "oklab": [0.471, 0.04, 0.07], "fullCube": false },
+  "minecraft:conduit": { "oklab": [0.67, 0.012, 0.039], "fullCube": false },
+  "minecraft:copper_bars": {
+    "oklab": [0.528, 0.082, 0.067],
+    "fullCube": false
+  },
+  "minecraft:copper_block": { "oklab": [0.625, 0.09, 0.072], "fullCube": true },
+  "minecraft:copper_bulb": { "oklab": [0.552, 0.078, 0.067], "fullCube": true },
+  "minecraft:copper_chain": {
+    "oklab": [0.516, 0.081, 0.066],
+    "fullCube": false
+  },
+  "minecraft:copper_chest": {
+    "oklab": [0.625, 0.09, 0.072],
+    "fullCube": false
+  },
+  "minecraft:copper_door": {
+    "oklab": [0.607, 0.086, 0.069],
+    "fullCube": false
+  },
+  "minecraft:copper_golem_statue": {
+    "oklab": [0.625, 0.09, 0.072],
+    "fullCube": false
+  },
+  "minecraft:copper_grate": { "oklab": [0.625, 0.09, 0.072], "fullCube": true },
+  "minecraft:copper_lantern": {
+    "oklab": [0.62, 0.03, 0.06],
+    "fullCube": false
+  },
+  "minecraft:copper_ore": { "oklab": [0.598, 0.001, 0.008], "fullCube": true },
+  "minecraft:copper_torch": {
+    "oklab": [0.591, -0.013, 0.047],
+    "fullCube": false
+  },
+  "minecraft:copper_trapdoor": {
+    "oklab": [0.623, 0.091, 0.071],
+    "fullCube": false
+  },
+  "minecraft:copper_wall_torch": {
+    "oklab": [0.591, -0.013, 0.047],
+    "fullCube": false
+  },
+  "minecraft:cornflower": {
+    "oklab": [0.579, -0.025, -0.083],
+    "fullCube": false
+  },
+  "minecraft:cracked_deepslate_bricks": {
+    "oklab": [0.392, 0, -0.001],
+    "fullCube": true
+  },
+  "minecraft:cracked_deepslate_tiles": {
+    "oklab": [0.336, 0, -0.001],
+    "fullCube": true
+  },
+  "minecraft:cracked_nether_bricks": {
+    "oklab": [0.228, 0.036, 0.005],
+    "fullCube": true
+  },
+  "minecraft:cracked_polished_blackstone_bricks": {
+    "oklab": [0.294, 0.011, -0.011],
+    "fullCube": true
+  },
+  "minecraft:cracked_stone_bricks": {
+    "oklab": [0.572, 0.001, -0.001],
+    "fullCube": true
+  },
+  "minecraft:crafter": { "oklab": [0.556, 0.007, 0.018], "fullCube": true },
+  "minecraft:crafting_table": {
+    "oklab": [0.586, 0.019, 0.063],
+    "fullCube": true
+  },
+  "minecraft:creaking_heart": {
+    "oklab": [0.407, 0.015, 0.012],
+    "fullCube": true
+  },
+  "minecraft:creeper_head": {
+    "oklab": [0.391, 0.021, 0.027],
+    "fullCube": false
+  },
+  "minecraft:creeper_wall_head": {
+    "oklab": [0.391, 0.021, 0.027],
+    "fullCube": false
+  },
+  "minecraft:crimson_button": {
+    "oklab": [0.397, 0.083, -0.006],
+    "fullCube": false
+  },
+  "minecraft:crimson_door": {
+    "oklab": [0.431, 0.092, -0.006],
+    "fullCube": false
+  },
+  "minecraft:crimson_fence": {
+    "oklab": [0.397, 0.083, -0.006],
+    "fullCube": false
+  },
+  "minecraft:crimson_fence_gate": {
+    "oklab": [0.397, 0.083, -0.006],
+    "fullCube": false
+  },
+  "minecraft:crimson_fungus": {
+    "oklab": [0.492, 0.109, 0.074],
+    "fullCube": false
+  },
+  "minecraft:crimson_hanging_sign": {
+    "oklab": [0.448, 0.101, -0.009],
+    "fullCube": false
+  },
+  "minecraft:crimson_hyphae": {
+    "oklab": [0.343, 0.096, 0.03],
+    "fullCube": true
+  },
+  "minecraft:crimson_nylium": {
+    "oklab": [0.378, 0.102, 0.046],
+    "fullCube": true
+  },
+  "minecraft:crimson_planks": {
+    "oklab": [0.397, 0.083, -0.006],
+    "fullCube": true
+  },
+  "minecraft:crimson_pressure_plate": {
+    "oklab": [0.397, 0.083, -0.006],
+    "fullCube": false
+  },
+  "minecraft:crimson_roots": {
+    "oklab": [0.393, 0.147, 0.038],
+    "fullCube": false
+  },
+  "minecraft:crimson_shelf": {
+    "oklab": [0.446, 0.112, -0.004],
+    "fullCube": false
+  },
+  "minecraft:crimson_sign": {
+    "oklab": [0.393, 0.084, -0.003],
+    "fullCube": false
+  },
+  "minecraft:crimson_slab": {
+    "oklab": [0.397, 0.083, -0.006],
+    "fullCube": false
+  },
+  "minecraft:crimson_stairs": {
+    "oklab": [0.397, 0.083, -0.006],
+    "fullCube": false
+  },
+  "minecraft:crimson_stem": {
+    "oklab": [0.371, 0.095, 0.016],
+    "fullCube": true
+  },
+  "minecraft:crimson_trapdoor": {
+    "oklab": [0.405, 0.084, -0.006],
+    "fullCube": false
+  },
+  "minecraft:crimson_wall_hanging_sign": {
+    "oklab": [0.448, 0.101, -0.009],
+    "fullCube": false
+  },
+  "minecraft:crimson_wall_sign": {
+    "oklab": [0.393, 0.084, -0.003],
+    "fullCube": false
+  },
+  "minecraft:crying_obsidian": {
+    "oklab": [0.274, 0.058, -0.114],
+    "fullCube": true
+  },
+  "minecraft:cut_copper": { "oklab": [0.624, 0.091, 0.07], "fullCube": true },
+  "minecraft:cut_copper_slab": {
+    "oklab": [0.624, 0.091, 0.07],
+    "fullCube": false
+  },
+  "minecraft:cut_copper_stairs": {
+    "oklab": [0.624, 0.091, 0.07],
+    "fullCube": false
+  },
+  "minecraft:cut_red_sandstone": {
+    "oklab": [0.596, 0.08, 0.109],
+    "fullCube": true
+  },
+  "minecraft:cut_red_sandstone_slab": {
+    "oklab": [0.596, 0.08, 0.109],
+    "fullCube": false
+  },
+  "minecraft:cut_sandstone": {
+    "oklab": [0.86, -0.007, 0.06],
+    "fullCube": true
+  },
+  "minecraft:cut_sandstone_slab": {
+    "oklab": [0.86, -0.007, 0.06],
+    "fullCube": false
+  },
+  "minecraft:cyan_banner": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:cyan_bed": { "oklab": [0.553, -0.018, 0.029], "fullCube": false },
+  "minecraft:cyan_candle": {
+    "oklab": [0.545, -0.087, -0.022],
+    "fullCube": false
+  },
+  "minecraft:cyan_candle_cake": {
+    "oklab": [0.748, 0.016, 0.02],
+    "fullCube": false
+  },
+  "minecraft:cyan_carpet": {
+    "oklab": [0.579, -0.088, -0.035],
+    "fullCube": false
+  },
+  "minecraft:cyan_concrete": {
+    "oklab": [0.526, -0.073, -0.047],
+    "fullCube": true
+  },
+  "minecraft:cyan_concrete_powder": {
+    "oklab": [0.613, -0.088, -0.037],
+    "fullCube": true
+  },
+  "minecraft:cyan_concrete_slab": {
+    "oklab": [0.526, -0.073, -0.047],
+    "fullCube": false
+  },
+  "minecraft:cyan_concrete_stairs": {
+    "oklab": [0.526, -0.073, -0.047],
+    "fullCube": false
+  },
+  "minecraft:cyan_glazed_terracotta": {
+    "oklab": [0.574, -0.051, -0.023],
+    "fullCube": true
+  },
+  "minecraft:cyan_shulker_box": {
+    "oklab": [0.534, -0.077, -0.042],
+    "fullCube": false
+  },
+  "minecraft:cyan_stained_glass": {
+    "oklab": [0.571, -0.042, -0.053],
+    "fullCube": true
+  },
+  "minecraft:cyan_stained_glass_pane": {
+    "oklab": [0.57, -0.042, -0.053],
+    "fullCube": false
+  },
+  "minecraft:cyan_terracotta": {
+    "oklab": [0.467, -0.005, -0.002],
+    "fullCube": true
+  },
+  "minecraft:cyan_wall_banner": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:cyan_wool": { "oklab": [0.579, -0.088, -0.035], "fullCube": true },
+  "minecraft:cyan_wool_slab": {
+    "oklab": [0.579, -0.088, -0.035],
+    "fullCube": false
+  },
+  "minecraft:cyan_wool_stairs": {
+    "oklab": [0.579, -0.088, -0.035],
+    "fullCube": false
+  },
+  "minecraft:damaged_anvil": { "oklab": [0.392, 0, 0], "fullCube": false },
+  "minecraft:dandelion": { "oklab": [0.753, -0.044, 0.138], "fullCube": false },
+  "minecraft:dark_oak_button": {
+    "oklab": [0.317, 0.023, 0.045],
+    "fullCube": false
+  },
+  "minecraft:dark_oak_door": {
+    "oklab": [0.347, 0.023, 0.048],
+    "fullCube": false
+  },
+  "minecraft:dark_oak_fence": {
+    "oklab": [0.317, 0.023, 0.045],
+    "fullCube": false
+  },
+  "minecraft:dark_oak_fence_gate": {
+    "oklab": [0.317, 0.023, 0.045],
+    "fullCube": false
+  },
+  "minecraft:dark_oak_hanging_sign": {
+    "oklab": [0.354, 0.011, 0.022],
+    "fullCube": false
+  },
+  "minecraft:dark_oak_leaves": {
+    "oklab": [0.468, -0.071, 0.085],
+    "fullCube": true
+  },
+  "minecraft:dark_oak_log": { "oklab": [0.319, 0.013, 0.04], "fullCube": true },
+  "minecraft:dark_oak_planks": {
+    "oklab": [0.317, 0.023, 0.045],
+    "fullCube": true
+  },
+  "minecraft:dark_oak_pressure_plate": {
+    "oklab": [0.317, 0.023, 0.045],
+    "fullCube": false
+  },
+  "minecraft:dark_oak_sapling": {
+    "oklab": [0.46, -0.061, 0.075],
+    "fullCube": false
+  },
+  "minecraft:dark_oak_shelf": {
+    "oklab": [0.336, 0.011, 0.035],
+    "fullCube": false
+  },
+  "minecraft:dark_oak_sign": {
+    "oklab": [0.313, 0.021, 0.043],
+    "fullCube": false
+  },
+  "minecraft:dark_oak_slab": {
+    "oklab": [0.317, 0.023, 0.045],
+    "fullCube": false
+  },
+  "minecraft:dark_oak_stairs": {
+    "oklab": [0.317, 0.023, 0.045],
+    "fullCube": false
+  },
+  "minecraft:dark_oak_trapdoor": {
+    "oklab": [0.347, 0.024, 0.051],
+    "fullCube": false
+  },
+  "minecraft:dark_oak_wall_hanging_sign": {
+    "oklab": [0.354, 0.011, 0.022],
+    "fullCube": false
+  },
+  "minecraft:dark_oak_wall_sign": {
+    "oklab": [0.313, 0.021, 0.043],
+    "fullCube": false
+  },
+  "minecraft:dark_oak_wood": {
+    "oklab": [0.317, 0.009, 0.038],
+    "fullCube": true
+  },
+  "minecraft:dark_prismarine": {
+    "oklab": [0.449, -0.054, 0.013],
+    "fullCube": true
+  },
+  "minecraft:dark_prismarine_slab": {
+    "oklab": [0.449, -0.054, 0.013],
+    "fullCube": false
+  },
+  "minecraft:dark_prismarine_stairs": {
+    "oklab": [0.449, -0.054, 0.013],
+    "fullCube": false
+  },
+  "minecraft:daylight_detector": {
+    "oklab": [0.428, 0.007, 0.031],
+    "fullCube": false
+  },
+  "minecraft:dead_brain_coral": {
+    "oklab": [0.603, 0.008, 0.009],
+    "fullCube": false
+  },
+  "minecraft:dead_brain_coral_block": {
+    "oklab": [0.578, 0.006, 0.008],
+    "fullCube": true
+  },
+  "minecraft:dead_brain_coral_fan": {
+    "oklab": [0.605, 0.007, 0.008],
+    "fullCube": false
+  },
+  "minecraft:dead_brain_coral_wall_fan": {
+    "oklab": [0.605, 0.007, 0.008],
+    "fullCube": false
+  },
+  "minecraft:dead_bubble_coral": {
+    "oklab": [0.602, 0.007, 0.009],
+    "fullCube": false
+  },
+  "minecraft:dead_bubble_coral_block": {
+    "oklab": [0.597, 0.008, 0.009],
+    "fullCube": true
+  },
+  "minecraft:dead_bubble_coral_fan": {
+    "oklab": [0.635, 0.005, 0.008],
+    "fullCube": false
+  },
+  "minecraft:dead_bubble_coral_wall_fan": {
+    "oklab": [0.635, 0.005, 0.008],
+    "fullCube": false
+  },
+  "minecraft:dead_bush": { "oklab": [0.459, 0.022, 0.066], "fullCube": false },
+  "minecraft:dead_fire_coral": {
+    "oklab": [0.614, 0.007, 0.009],
+    "fullCube": false
+  },
+  "minecraft:dead_fire_coral_block": {
+    "oklab": [0.597, 0.007, 0.009],
+    "fullCube": true
+  },
+  "minecraft:dead_fire_coral_fan": {
+    "oklab": [0.582, 0.006, 0.008],
+    "fullCube": false
+  },
+  "minecraft:dead_fire_coral_wall_fan": {
+    "oklab": [0.582, 0.006, 0.008],
+    "fullCube": false
+  },
+  "minecraft:dead_horn_coral": {
+    "oklab": [0.632, 0.006, 0.01],
+    "fullCube": false
+  },
+  "minecraft:dead_horn_coral_block": {
+    "oklab": [0.608, 0.006, 0.008],
+    "fullCube": true
+  },
+  "minecraft:dead_horn_coral_fan": {
+    "oklab": [0.605, 0.007, 0.009],
+    "fullCube": false
+  },
+  "minecraft:dead_horn_coral_wall_fan": {
+    "oklab": [0.605, 0.007, 0.009],
+    "fullCube": false
+  },
+  "minecraft:dead_tube_coral": {
+    "oklab": [0.555, 0.007, 0.007],
+    "fullCube": false
+  },
+  "minecraft:dead_tube_coral_block": {
+    "oklab": [0.596, 0.007, 0.008],
+    "fullCube": true
+  },
+  "minecraft:dead_tube_coral_fan": {
+    "oklab": [0.595, 0.006, 0.008],
+    "fullCube": false
+  },
+  "minecraft:dead_tube_coral_wall_fan": {
+    "oklab": [0.595, 0.006, 0.008],
+    "fullCube": false
+  },
+  "minecraft:decorated_pot": {
+    "oklab": [0.541, 0.061, 0.06],
+    "fullCube": false
+  },
+  "minecraft:deepslate": { "oklab": [0.452, 0.001, -0.003], "fullCube": true },
+  "minecraft:deepslate_brick_slab": {
+    "oklab": [0.412, 0, -0.001],
+    "fullCube": false
+  },
+  "minecraft:deepslate_brick_stairs": {
+    "oklab": [0.412, 0, -0.001],
+    "fullCube": false
+  },
+  "minecraft:deepslate_brick_wall": {
+    "oklab": [0.412, 0, -0.001],
+    "fullCube": false
+  },
+  "minecraft:deepslate_bricks": {
+    "oklab": [0.412, 0, -0.001],
+    "fullCube": true
+  },
+  "minecraft:deepslate_coal_ore": {
+    "oklab": [0.436, 0, -0.002],
+    "fullCube": true
+  },
+  "minecraft:deepslate_copper_ore": {
+    "oklab": [0.499, 0.001, 0.01],
+    "fullCube": true
+  },
+  "minecraft:deepslate_diamond_ore": {
+    "oklab": [0.551, -0.033, -0.007],
+    "fullCube": true
+  },
+  "minecraft:deepslate_emerald_ore": {
+    "oklab": [0.542, -0.044, 0.024],
+    "fullCube": true
+  },
+  "minecraft:deepslate_gold_ore": {
+    "oklab": [0.565, 0.01, 0.046],
+    "fullCube": true
+  },
+  "minecraft:deepslate_iron_ore": {
+    "oklab": [0.534, 0.01, 0.015],
+    "fullCube": true
+  },
+  "minecraft:deepslate_lapis_ore": {
+    "oklab": [0.491, 0.004, -0.054],
+    "fullCube": true
+  },
+  "minecraft:deepslate_redstone_ore": {
+    "oklab": [0.478, 0.052, 0.016],
+    "fullCube": true
+  },
+  "minecraft:deepslate_tile_slab": {
+    "oklab": [0.345, 0, -0.001],
+    "fullCube": false
+  },
+  "minecraft:deepslate_tile_stairs": {
+    "oklab": [0.345, 0, -0.001],
+    "fullCube": false
+  },
+  "minecraft:deepslate_tile_wall": {
+    "oklab": [0.345, 0, -0.001],
+    "fullCube": false
+  },
+  "minecraft:deepslate_tiles": {
+    "oklab": [0.345, 0, -0.001],
+    "fullCube": true
+  },
+  "minecraft:detector_rail": {
+    "oklab": [0.572, 0.008, 0.019],
+    "fullCube": false
+  },
+  "minecraft:diamond_block": {
+    "oklab": [0.876, -0.112, -0.017],
+    "fullCube": true
+  },
+  "minecraft:diamond_ore": {
+    "oklab": [0.646, -0.023, -0.005],
+    "fullCube": true
+  },
+  "minecraft:diorite": { "oklab": [0.81, 0, -0.001], "fullCube": true },
+  "minecraft:diorite_slab": { "oklab": [0.81, 0, -0.001], "fullCube": false },
+  "minecraft:diorite_stairs": { "oklab": [0.81, 0, -0.001], "fullCube": false },
+  "minecraft:diorite_wall": { "oklab": [0.81, 0, -0.001], "fullCube": false },
+  "minecraft:dirt": { "oklab": [0.534, 0.035, 0.056], "fullCube": true },
+  "minecraft:dirt_path": { "oklab": [0.553, 0.025, 0.065], "fullCube": false },
+  "minecraft:dispenser": { "oklab": [0.586, 0, 0], "fullCube": true },
+  "minecraft:dragon_egg": {
+    "oklab": [0.155, 0.013, -0.014],
+    "fullCube": false
+  },
+  "minecraft:dragon_head": {
+    "oklab": [0.391, 0.021, 0.027],
+    "fullCube": false
+  },
+  "minecraft:dragon_wall_head": {
+    "oklab": [0.391, 0.021, 0.027],
+    "fullCube": false
+  },
+  "minecraft:dried_ghast": {
+    "oklab": [0.583, 0.006, 0.002],
+    "fullCube": false
+  },
+  "minecraft:dried_kelp_block": {
+    "oklab": [0.348, -0.018, 0.025],
+    "fullCube": true
+  },
+  "minecraft:dripstone_block": {
+    "oklab": [0.559, 0.024, 0.033],
+    "fullCube": true
+  },
+  "minecraft:dropper": { "oklab": [0.586, 0, 0], "fullCube": true },
+  "minecraft:emerald_block": {
+    "oklab": [0.752, -0.165, 0.101],
+    "fullCube": true
+  },
+  "minecraft:emerald_ore": { "oklab": [0.624, -0.036, 0.02], "fullCube": true },
+  "minecraft:enchanting_table": {
+    "oklab": [0.495, -0.012, 0.002],
+    "fullCube": false
+  },
+  "minecraft:end_gateway": {
+    "oklab": [0.185, 0.02, -0.037],
+    "fullCube": false
+  },
+  "minecraft:end_portal": { "oklab": [0.185, 0.02, -0.037], "fullCube": false },
+  "minecraft:end_portal_frame": {
+    "oklab": [0.764, -0.027, 0.062],
+    "fullCube": false
+  },
+  "minecraft:end_rod": { "oklab": [0.86, 0.005, 0.018], "fullCube": false },
+  "minecraft:end_stone": { "oklab": [0.888, -0.03, 0.078], "fullCube": true },
+  "minecraft:end_stone_brick_slab": {
+    "oklab": [0.893, -0.031, 0.075],
+    "fullCube": false
+  },
+  "minecraft:end_stone_brick_stairs": {
+    "oklab": [0.893, -0.031, 0.075],
+    "fullCube": false
+  },
+  "minecraft:end_stone_brick_wall": {
+    "oklab": [0.893, -0.031, 0.075],
+    "fullCube": false
+  },
+  "minecraft:end_stone_bricks": {
+    "oklab": [0.893, -0.031, 0.075],
+    "fullCube": true
+  },
+  "minecraft:ender_chest": {
+    "oklab": [0.185, 0.02, -0.037],
+    "fullCube": false
+  },
+  "minecraft:exposed_chiseled_copper": {
+    "oklab": [0.606, 0.037, 0.04],
+    "fullCube": true
+  },
+  "minecraft:exposed_copper": {
+    "oklab": [0.625, 0.035, 0.044],
+    "fullCube": true
+  },
+  "minecraft:exposed_copper_bars": {
+    "oklab": [0.557, 0.028, 0.037],
+    "fullCube": false
+  },
+  "minecraft:exposed_copper_bulb": {
+    "oklab": [0.566, 0.031, 0.037],
+    "fullCube": true
+  },
+  "minecraft:exposed_copper_chain": {
+    "oklab": [0.535, 0.024, 0.037],
+    "fullCube": false
+  },
+  "minecraft:exposed_copper_chest": {
+    "oklab": [0.625, 0.035, 0.044],
+    "fullCube": false
+  },
+  "minecraft:exposed_copper_door": {
+    "oklab": [0.604, 0.037, 0.04],
+    "fullCube": false
+  },
+  "minecraft:exposed_copper_golem_statue": {
+    "oklab": [0.625, 0.035, 0.044],
+    "fullCube": false
+  },
+  "minecraft:exposed_copper_grate": {
+    "oklab": [0.627, 0.036, 0.043],
+    "fullCube": true
+  },
+  "minecraft:exposed_copper_lantern": {
+    "oklab": [0.649, 0.003, 0.044],
+    "fullCube": false
+  },
+  "minecraft:exposed_copper_trapdoor": {
+    "oklab": [0.625, 0.037, 0.042],
+    "fullCube": false
+  },
+  "minecraft:exposed_cut_copper": {
+    "oklab": [0.611, 0.033, 0.041],
+    "fullCube": true
+  },
+  "minecraft:exposed_cut_copper_slab": {
+    "oklab": [0.611, 0.033, 0.041],
+    "fullCube": false
+  },
+  "minecraft:exposed_cut_copper_stairs": {
+    "oklab": [0.611, 0.033, 0.041],
+    "fullCube": false
+  },
+  "minecraft:exposed_lightning_rod": {
+    "oklab": [0.615, 0.044, 0.038],
+    "fullCube": false
+  },
+  "minecraft:farmland": { "oklab": [0.538, 0.035, 0.057], "fullCube": false },
+  "minecraft:fern": { "oklab": [0.446, -0.052, 0.064], "fullCube": false },
+  "minecraft:fire": { "oklab": [0.744, 0.044, 0.082], "fullCube": false },
+  "minecraft:fire_coral": { "oklab": [0.493, 0.155, 0.066], "fullCube": false },
+  "minecraft:fire_coral_block": {
+    "oklab": [0.481, 0.154, 0.063],
+    "fullCube": true
+  },
+  "minecraft:fire_coral_fan": {
+    "oklab": [0.474, 0.15, 0.062],
+    "fullCube": false
+  },
+  "minecraft:fire_coral_wall_fan": {
+    "oklab": [0.474, 0.15, 0.062],
+    "fullCube": false
+  },
+  "minecraft:firefly_bush": {
+    "oklab": [0.465, -0.008, 0.061],
+    "fullCube": false
+  },
+  "minecraft:fletching_table": {
+    "oklab": [0.759, 0.002, 0.059],
+    "fullCube": true
+  },
+  "minecraft:flower_pot": { "oklab": [0.472, 0.058, 0.05], "fullCube": false },
+  "minecraft:flowering_azalea": {
+    "oklab": [0.548, -0.02, 0.044],
+    "fullCube": false
+  },
+  "minecraft:flowering_azalea_leaves": {
+    "oklab": [0.539, -0.022, 0.043],
+    "fullCube": true
+  },
+  "minecraft:frogspawn": { "oklab": [0.52, 0.015, 0.017], "fullCube": false },
+  "minecraft:frosted_ice": {
+    "oklab": [0.774, -0.016, -0.11],
+    "fullCube": true
+  },
+  "minecraft:furnace": { "oklab": [0.573, 0, 0], "fullCube": true },
+  "minecraft:gilded_blackstone": {
+    "oklab": [0.355, 0.017, 0.025],
+    "fullCube": true
+  },
+  "minecraft:glass": { "oklab": [0.856, -0.034, -0.017], "fullCube": true },
+  "minecraft:glass_pane": {
+    "oklab": [0.853, -0.035, -0.017],
+    "fullCube": false
+  },
+  "minecraft:glow_item_frame": {
+    "oklab": [0.751, -0.001, 0.075],
+    "fullCube": false
+  },
+  "minecraft:glow_lichen": {
+    "oklab": [0.595, -0.024, 0.008],
+    "fullCube": false
+  },
+  "minecraft:glowstone": { "oklab": [0.697, 0.022, 0.064], "fullCube": true },
+  "minecraft:gold_block": { "oklab": [0.873, -0.011, 0.157], "fullCube": true },
+  "minecraft:gold_ore": { "oklab": [0.643, 0.007, 0.036], "fullCube": true },
+  "minecraft:golden_dandelion": {
+    "oklab": [0.652, 0.017, 0.09],
+    "fullCube": false
+  },
+  "minecraft:granite": { "oklab": [0.567, 0.049, 0.043], "fullCube": true },
+  "minecraft:granite_slab": {
+    "oklab": [0.567, 0.049, 0.043],
+    "fullCube": false
+  },
+  "minecraft:granite_stairs": {
+    "oklab": [0.567, 0.049, 0.043],
+    "fullCube": false
+  },
+  "minecraft:granite_wall": {
+    "oklab": [0.567, 0.049, 0.043],
+    "fullCube": false
+  },
+  "minecraft:grass_block": {
+    "oklab": [0.543, -0.009, 0.067],
+    "fullCube": true
+  },
+  "minecraft:gravel": { "oklab": [0.606, 0.004, 0.003], "fullCube": true },
+  "minecraft:gray_banner": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:gray_bed": { "oklab": [0.534, 0.008, 0.04], "fullCube": false },
+  "minecraft:gray_candle": {
+    "oklab": [0.478, -0.016, -0.008],
+    "fullCube": false
+  },
+  "minecraft:gray_candle_cake": {
+    "oklab": [0.742, 0.023, 0.023],
+    "fullCube": false
+  },
+  "minecraft:gray_carpet": {
+    "oklab": [0.385, -0.006, -0.007],
+    "fullCube": false
+  },
+  "minecraft:gray_concrete": {
+    "oklab": [0.346, -0.002, -0.008],
+    "fullCube": true
+  },
+  "minecraft:gray_concrete_powder": {
+    "oklab": [0.434, -0.004, -0.008],
+    "fullCube": true
+  },
+  "minecraft:gray_concrete_slab": {
+    "oklab": [0.346, -0.002, -0.008],
+    "fullCube": false
+  },
+  "minecraft:gray_concrete_stairs": {
+    "oklab": [0.346, -0.002, -0.008],
+    "fullCube": false
+  },
+  "minecraft:gray_glazed_terracotta": {
+    "oklab": [0.49, -0.007, -0.007],
+    "fullCube": true
+  },
+  "minecraft:gray_shulker_box": {
+    "oklab": [0.352, -0.003, -0.007],
+    "fullCube": false
+  },
+  "minecraft:gray_stained_glass": { "oklab": [0.417, 0, 0], "fullCube": true },
+  "minecraft:gray_stained_glass_pane": {
+    "oklab": [0.416, 0, 0],
+    "fullCube": false
+  },
+  "minecraft:gray_terracotta": {
+    "oklab": [0.302, 0.018, 0.018],
+    "fullCube": true
+  },
+  "minecraft:gray_wall_banner": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:gray_wool": { "oklab": [0.385, -0.006, -0.007], "fullCube": true },
+  "minecraft:gray_wool_slab": {
+    "oklab": [0.385, -0.006, -0.007],
+    "fullCube": false
+  },
+  "minecraft:gray_wool_stairs": {
+    "oklab": [0.385, -0.006, -0.007],
+    "fullCube": false
+  },
+  "minecraft:green_banner": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:green_bed": { "oklab": [0.526, -0.008, 0.075], "fullCube": false },
+  "minecraft:green_candle": {
+    "oklab": [0.466, -0.062, 0.086],
+    "fullCube": false
+  },
+  "minecraft:green_candle_cake": {
+    "oklab": [0.741, 0.02, 0.03],
+    "fullCube": false
+  },
+  "minecraft:green_carpet": {
+    "oklab": [0.502, -0.064, 0.091],
+    "fullCube": false
+  },
+  "minecraft:green_concrete": {
+    "oklab": [0.444, -0.047, 0.068],
+    "fullCube": true
+  },
+  "minecraft:green_concrete_powder": {
+    "oklab": [0.537, -0.058, 0.087],
+    "fullCube": true
+  },
+  "minecraft:green_concrete_slab": {
+    "oklab": [0.444, -0.047, 0.068],
+    "fullCube": false
+  },
+  "minecraft:green_concrete_stairs": {
+    "oklab": [0.444, -0.047, 0.068],
+    "fullCube": false
+  },
+  "minecraft:green_glazed_terracotta": {
+    "oklab": [0.641, -0.046, 0.059],
+    "fullCube": true
+  },
+  "minecraft:green_shulker_box": {
+    "oklab": [0.474, -0.057, 0.081],
+    "fullCube": false
+  },
+  "minecraft:green_stained_glass": {
+    "oklab": [0.56, -0.061, 0.088],
+    "fullCube": true
+  },
+  "minecraft:green_stained_glass_pane": {
+    "oklab": [0.558, -0.061, 0.087],
+    "fullCube": false
+  },
+  "minecraft:green_terracotta": {
+    "oklab": [0.426, -0.029, 0.055],
+    "fullCube": true
+  },
+  "minecraft:green_wall_banner": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:green_wool": { "oklab": [0.502, -0.064, 0.091], "fullCube": true },
+  "minecraft:green_wool_slab": {
+    "oklab": [0.502, -0.064, 0.091],
+    "fullCube": false
+  },
+  "minecraft:green_wool_stairs": {
+    "oklab": [0.502, -0.064, 0.091],
+    "fullCube": false
+  },
+  "minecraft:grindstone": { "oklab": [0.422, 0.008, 0.017], "fullCube": false },
+  "minecraft:hanging_roots": {
+    "oklab": [0.607, 0.044, 0.047],
+    "fullCube": false
+  },
+  "minecraft:hay_block": { "oklab": [0.65, -0.009, 0.123], "fullCube": true },
+  "minecraft:heavy_core": {
+    "oklab": [0.489, -0.001, -0.017],
+    "fullCube": false
+  },
+  "minecraft:heavy_weighted_pressure_plate": {
+    "oklab": [0.898, 0, 0],
+    "fullCube": false
+  },
+  "minecraft:honey_block": {
+    "oklab": [0.795, 0.043, 0.147],
+    "fullCube": false
+  },
+  "minecraft:honeycomb_block": {
+    "oklab": [0.748, 0.049, 0.136],
+    "fullCube": true
+  },
+  "minecraft:hopper": { "oklab": [0.383, 0.002, -0.003], "fullCube": false },
+  "minecraft:horn_coral": {
+    "oklab": [0.796, -0.025, 0.141],
+    "fullCube": false
+  },
+  "minecraft:horn_coral_block": {
+    "oklab": [0.829, -0.035, 0.148],
+    "fullCube": true
+  },
+  "minecraft:horn_coral_fan": {
+    "oklab": [0.783, -0.023, 0.139],
+    "fullCube": false
+  },
+  "minecraft:horn_coral_wall_fan": {
+    "oklab": [0.783, -0.023, 0.139],
+    "fullCube": false
+  },
+  "minecraft:ice": { "oklab": [0.782, -0.014, -0.108], "fullCube": true },
+  "minecraft:infested_chiseled_stone_bricks": {
+    "oklab": [0.579, 0.002, -0.001],
+    "fullCube": true
+  },
+  "minecraft:infested_cobblestone": {
+    "oklab": [0.612, 0.001, 0],
+    "fullCube": true
+  },
+  "minecraft:infested_cracked_stone_bricks": {
+    "oklab": [0.572, 0.001, -0.001],
+    "fullCube": true
+  },
+  "minecraft:infested_deepslate": {
+    "oklab": [0.452, 0.001, -0.003],
+    "fullCube": true
+  },
+  "minecraft:infested_mossy_stone_bricks": {
+    "oklab": [0.574, -0.011, 0.016],
+    "fullCube": true
+  },
+  "minecraft:infested_stone": { "oklab": [0.594, 0, 0], "fullCube": true },
+  "minecraft:infested_stone_bricks": {
+    "oklab": [0.586, 0.001, -0.001],
+    "fullCube": true
+  },
+  "minecraft:iron_bars": { "oklab": [0.651, -0.003, 0.003], "fullCube": false },
+  "minecraft:iron_block": { "oklab": [0.898, 0, 0], "fullCube": true },
+  "minecraft:iron_chain": {
+    "oklab": [0.356, -0.001, -0.029],
+    "fullCube": false
+  },
+  "minecraft:iron_door": { "oklab": [0.823, 0.001, 0], "fullCube": false },
+  "minecraft:iron_ore": { "oklab": [0.616, 0.008, 0.012], "fullCube": true },
+  "minecraft:iron_trapdoor": { "oklab": [0.842, 0.001, 0], "fullCube": false },
+  "minecraft:item_frame": {
+    "oklab": [0.743, -0.001, 0.074],
+    "fullCube": false
+  },
+  "minecraft:jack_o_lantern": {
+    "oklab": [0.667, 0.056, 0.122],
+    "fullCube": true
+  },
+  "minecraft:jigsaw": { "oklab": [0.434, 0.022, -0.016], "fullCube": true },
+  "minecraft:jukebox": { "oklab": [0.406, 0.037, 0.044], "fullCube": true },
+  "minecraft:jungle_button": {
+    "oklab": [0.603, 0.04, 0.063],
+    "fullCube": false
+  },
+  "minecraft:jungle_door": {
+    "oklab": [0.598, 0.039, 0.064],
+    "fullCube": false
+  },
+  "minecraft:jungle_fence": {
+    "oklab": [0.603, 0.04, 0.063],
+    "fullCube": false
+  },
+  "minecraft:jungle_fence_gate": {
+    "oklab": [0.603, 0.04, 0.063],
+    "fullCube": false
+  },
+  "minecraft:jungle_hanging_sign": {
+    "oklab": [0.605, 0.021, 0.067],
+    "fullCube": false
+  },
+  "minecraft:jungle_leaves": {
+    "oklab": [0.474, -0.071, 0.087],
+    "fullCube": true
+  },
+  "minecraft:jungle_log": { "oklab": [0.477, 0.02, 0.062], "fullCube": true },
+  "minecraft:jungle_planks": {
+    "oklab": [0.603, 0.04, 0.063],
+    "fullCube": true
+  },
+  "minecraft:jungle_pressure_plate": {
+    "oklab": [0.603, 0.04, 0.063],
+    "fullCube": false
+  },
+  "minecraft:jungle_sapling": {
+    "oklab": [0.414, -0.075, 0.076],
+    "fullCube": false
+  },
+  "minecraft:jungle_shelf": {
+    "oklab": [0.605, 0.021, 0.074],
+    "fullCube": false
+  },
+  "minecraft:jungle_sign": {
+    "oklab": [0.581, 0.037, 0.063],
+    "fullCube": false
+  },
+  "minecraft:jungle_slab": { "oklab": [0.603, 0.04, 0.063], "fullCube": false },
+  "minecraft:jungle_stairs": {
+    "oklab": [0.603, 0.04, 0.063],
+    "fullCube": false
+  },
+  "minecraft:jungle_trapdoor": {
+    "oklab": [0.587, 0.038, 0.062],
+    "fullCube": false
+  },
+  "minecraft:jungle_wall_hanging_sign": {
+    "oklab": [0.605, 0.021, 0.067],
+    "fullCube": false
+  },
+  "minecraft:jungle_wall_sign": {
+    "oklab": [0.581, 0.037, 0.063],
+    "fullCube": false
+  },
+  "minecraft:jungle_wood": { "oklab": [0.401, 0.004, 0.065], "fullCube": true },
+  "minecraft:kelp": { "oklab": [0.598, -0.102, 0.103], "fullCube": false },
+  "minecraft:kelp_plant": {
+    "oklab": [0.568, -0.089, 0.097],
+    "fullCube": false
+  },
+  "minecraft:ladder": { "oklab": [0.531, 0.017, 0.071], "fullCube": false },
+  "minecraft:lantern": { "oklab": [0.553, 0.022, 0.035], "fullCube": false },
+  "minecraft:lapis_block": {
+    "oklab": [0.405, -0.018, -0.126],
+    "fullCube": true
+  },
+  "minecraft:lapis_ore": { "oklab": [0.583, 0.004, -0.04], "fullCube": true },
+  "minecraft:large_amethyst_bud": {
+    "oklab": [0.694, 0.06, -0.081],
+    "fullCube": false
+  },
+  "minecraft:large_fern": {
+    "oklab": [0.461, -0.053, 0.066],
+    "fullCube": false
+  },
+  "minecraft:lava": { "oklab": [0.654, 0.098, 0.123], "fullCube": false },
+  "minecraft:lava_cauldron": { "oklab": [0.4, 0.002, 0], "fullCube": false },
+  "minecraft:leaf_litter": {
+    "oklab": [0.512, -0.077, 0.093],
+    "fullCube": false
+  },
+  "minecraft:lectern": { "oklab": [0.609, 0.02, 0.077], "fullCube": false },
+  "minecraft:lever": { "oklab": [0.607, 0.001, 0.001], "fullCube": false },
+  "minecraft:light_blue_banner": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:light_blue_bed": {
+    "oklab": [0.593, -0.009, -0.034],
+    "fullCube": false
+  },
+  "minecraft:light_blue_candle": {
+    "oklab": [0.613, -0.065, -0.11],
+    "fullCube": false
+  },
+  "minecraft:light_blue_candle_cake": {
+    "oklab": [0.756, 0.019, 0.003],
+    "fullCube": false
+  },
+  "minecraft:light_blue_carpet": {
+    "oklab": [0.711, -0.081, -0.085],
+    "fullCube": false
+  },
+  "minecraft:light_blue_concrete": {
+    "oklab": [0.604, -0.062, -0.113],
+    "fullCube": true
+  },
+  "minecraft:light_blue_concrete_powder": {
+    "oklab": [0.726, -0.08, -0.07],
+    "fullCube": true
+  },
+  "minecraft:light_blue_concrete_slab": {
+    "oklab": [0.604, -0.062, -0.113],
+    "fullCube": false
+  },
+  "minecraft:light_blue_concrete_stairs": {
+    "oklab": [0.604, -0.062, -0.113],
+    "fullCube": false
+  },
+  "minecraft:light_blue_glazed_terracotta": {
+    "oklab": [0.746, -0.039, -0.06],
+    "fullCube": true
+  },
+  "minecraft:light_blue_shulker_box": {
+    "oklab": [0.68, -0.077, -0.093],
+    "fullCube": false
+  },
+  "minecraft:light_blue_stained_glass": {
+    "oklab": [0.673, -0.029, -0.105],
+    "fullCube": true
+  },
+  "minecraft:light_blue_stained_glass_pane": {
+    "oklab": [0.671, -0.029, -0.105],
+    "fullCube": false
+  },
+  "minecraft:light_blue_terracotta": {
+    "oklab": [0.549, 0.018, -0.042],
+    "fullCube": true
+  },
+  "minecraft:light_blue_wall_banner": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:light_blue_wool": {
+    "oklab": [0.711, -0.081, -0.085],
+    "fullCube": true
+  },
+  "minecraft:light_blue_wool_slab": {
+    "oklab": [0.711, -0.081, -0.085],
+    "fullCube": false
+  },
+  "minecraft:light_blue_wool_stairs": {
+    "oklab": [0.711, -0.081, -0.085],
+    "fullCube": false
+  },
+  "minecraft:light_gray_banner": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:light_gray_bed": {
+    "oklab": [0.573, 0.008, 0.044],
+    "fullCube": false
+  },
+  "minecraft:light_gray_candle": {
+    "oklab": [0.581, -0.006, 0.012],
+    "fullCube": false
+  },
+  "minecraft:light_gray_candle_cake": {
+    "oklab": [0.752, 0.023, 0.024],
+    "fullCube": false
+  },
+  "minecraft:light_gray_carpet": {
+    "oklab": [0.646, -0.003, 0.01],
+    "fullCube": false
+  },
+  "minecraft:light_gray_concrete": {
+    "oklab": [0.587, -0.004, 0.014],
+    "fullCube": true
+  },
+  "minecraft:light_gray_concrete_powder": {
+    "oklab": [0.689, -0.003, 0.009],
+    "fullCube": true
+  },
+  "minecraft:light_gray_concrete_slab": {
+    "oklab": [0.587, -0.004, 0.014],
+    "fullCube": false
+  },
+  "minecraft:light_gray_concrete_stairs": {
+    "oklab": [0.587, -0.004, 0.014],
+    "fullCube": false
+  },
+  "minecraft:light_gray_glazed_terracotta": {
+    "oklab": [0.735, -0.013, -0.006],
+    "fullCube": true
+  },
+  "minecraft:light_gray_shulker_box": {
+    "oklab": [0.59, -0.004, 0.013],
+    "fullCube": false
+  },
+  "minecraft:light_gray_stained_glass": {
+    "oklab": [0.683, 0, 0],
+    "fullCube": true
+  },
+  "minecraft:light_gray_stained_glass_pane": {
+    "oklab": [0.681, 0, 0],
+    "fullCube": false
+  },
+  "minecraft:light_gray_terracotta": {
+    "oklab": [0.553, 0.03, 0.025],
+    "fullCube": true
+  },
+  "minecraft:light_gray_wall_banner": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:light_gray_wool": {
+    "oklab": [0.646, -0.003, 0.01],
+    "fullCube": true
+  },
+  "minecraft:light_gray_wool_slab": {
+    "oklab": [0.646, -0.003, 0.01],
+    "fullCube": false
+  },
+  "minecraft:light_gray_wool_stairs": {
+    "oklab": [0.646, -0.003, 0.01],
+    "fullCube": false
+  },
+  "minecraft:light_weighted_pressure_plate": {
+    "oklab": [0.873, -0.011, 0.157],
+    "fullCube": false
+  },
+  "minecraft:lightning_rod": {
+    "oklab": [0.637, 0.091, 0.073],
+    "fullCube": false
+  },
+  "minecraft:lilac": { "oklab": [0.632, 0.046, -0.029], "fullCube": false },
+  "minecraft:lily_of_the_valley": {
+    "oklab": [0.739, -0.054, 0.048],
+    "fullCube": false
+  },
+  "minecraft:lily_pad": { "oklab": [0.333, -0.076, 0.052], "fullCube": false },
+  "minecraft:lime_banner": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:lime_bed": { "oklab": [0.621, -0.057, 0.103], "fullCube": false },
+  "minecraft:lime_candle": {
+    "oklab": [0.681, -0.13, 0.135],
+    "fullCube": false
+  },
+  "minecraft:lime_candle_cake": {
+    "oklab": [0.766, 0.004, 0.041],
+    "fullCube": false
+  },
+  "minecraft:lime_carpet": {
+    "oklab": [0.712, -0.13, 0.141],
+    "fullCube": false
+  },
+  "minecraft:lime_concrete": {
+    "oklab": [0.66, -0.128, 0.13],
+    "fullCube": true
+  },
+  "minecraft:lime_concrete_powder": {
+    "oklab": [0.73, -0.12, 0.138],
+    "fullCube": true
+  },
+  "minecraft:lime_concrete_slab": {
+    "oklab": [0.66, -0.128, 0.13],
+    "fullCube": false
+  },
+  "minecraft:lime_concrete_stairs": {
+    "oklab": [0.66, -0.128, 0.13],
+    "fullCube": false
+  },
+  "minecraft:lime_glazed_terracotta": {
+    "oklab": [0.792, -0.072, 0.13],
+    "fullCube": true
+  },
+  "minecraft:lime_shulker_box": {
+    "oklab": [0.676, -0.128, 0.134],
+    "fullCube": false
+  },
+  "minecraft:lime_stained_glass": {
+    "oklab": [0.766, -0.138, 0.153],
+    "fullCube": true
+  },
+  "minecraft:lime_stained_glass_pane": {
+    "oklab": [0.763, -0.137, 0.153],
+    "fullCube": false
+  },
+  "minecraft:lime_terracotta": {
+    "oklab": [0.538, -0.045, 0.079],
+    "fullCube": true
+  },
+  "minecraft:lime_wall_banner": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:lime_wool": { "oklab": [0.712, -0.13, 0.141], "fullCube": true },
+  "minecraft:lime_wool_slab": {
+    "oklab": [0.712, -0.13, 0.141],
+    "fullCube": false
+  },
+  "minecraft:lime_wool_stairs": {
+    "oklab": [0.712, -0.13, 0.141],
+    "fullCube": false
+  },
+  "minecraft:lodestone": { "oklab": [0.624, 0, -0.005], "fullCube": true },
+  "minecraft:loom": { "oklab": [0.565, 0.027, 0.054], "fullCube": true },
+  "minecraft:magenta_banner": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:magenta_bed": {
+    "oklab": [0.551, 0.085, -0.008],
+    "fullCube": false
+  },
+  "minecraft:magenta_candle": {
+    "oklab": [0.524, 0.17, -0.094],
+    "fullCube": false
+  },
+  "minecraft:magenta_candle_cake": {
+    "oklab": [0.746, 0.043, 0.011],
+    "fullCube": false
+  },
+  "minecraft:magenta_carpet": {
+    "oklab": [0.597, 0.174, -0.096],
+    "fullCube": false
+  },
+  "minecraft:magenta_concrete": {
+    "oklab": [0.534, 0.174, -0.094],
+    "fullCube": true
+  },
+  "minecraft:magenta_concrete_powder": {
+    "oklab": [0.621, 0.16, -0.09],
+    "fullCube": true
+  },
+  "minecraft:magenta_concrete_slab": {
+    "oklab": [0.534, 0.174, -0.094],
+    "fullCube": false
+  },
+  "minecraft:magenta_concrete_stairs": {
+    "oklab": [0.534, 0.174, -0.094],
+    "fullCube": false
+  },
+  "minecraft:magenta_glazed_terracotta": {
+    "oklab": [0.683, 0.143, -0.069],
+    "fullCube": true
+  },
+  "minecraft:magenta_shulker_box": {
+    "oklab": [0.551, 0.173, -0.094],
+    "fullCube": false
+  },
+  "minecraft:magenta_stained_glass": {
+    "oklab": [0.608, 0.154, -0.151],
+    "fullCube": true
+  },
+  "minecraft:magenta_stained_glass_pane": {
+    "oklab": [0.606, 0.154, -0.151],
+    "fullCube": false
+  },
+  "minecraft:magenta_terracotta": {
+    "oklab": [0.537, 0.085, -0.002],
+    "fullCube": true
+  },
+  "minecraft:magenta_wall_banner": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:magenta_wool": {
+    "oklab": [0.597, 0.174, -0.096],
+    "fullCube": true
+  },
+  "minecraft:magenta_wool_slab": {
+    "oklab": [0.597, 0.174, -0.096],
+    "fullCube": false
+  },
+  "minecraft:magenta_wool_stairs": {
+    "oklab": [0.597, 0.174, -0.096],
+    "fullCube": false
+  },
+  "minecraft:magma_block": { "oklab": [0.519, 0.089, 0.088], "fullCube": true },
+  "minecraft:mangrove_button": {
+    "oklab": [0.422, 0.079, 0.042],
+    "fullCube": false
+  },
+  "minecraft:mangrove_door": {
+    "oklab": [0.403, 0.082, 0.037],
+    "fullCube": false
+  },
+  "minecraft:mangrove_fence": {
+    "oklab": [0.422, 0.079, 0.042],
+    "fullCube": false
+  },
+  "minecraft:mangrove_fence_gate": {
+    "oklab": [0.422, 0.079, 0.042],
+    "fullCube": false
+  },
+  "minecraft:mangrove_hanging_sign": {
+    "oklab": [0.417, 0.073, 0.031],
+    "fullCube": false
+  },
+  "minecraft:mangrove_leaves": {
+    "oklab": [0.424, -0.064, 0.077],
+    "fullCube": true
+  },
+  "minecraft:mangrove_log": {
+    "oklab": [0.394, 0.029, 0.043],
+    "fullCube": true
+  },
+  "minecraft:mangrove_planks": {
+    "oklab": [0.422, 0.079, 0.042],
+    "fullCube": true
+  },
+  "minecraft:mangrove_pressure_plate": {
+    "oklab": [0.422, 0.079, 0.042],
+    "fullCube": false
+  },
+  "minecraft:mangrove_propagule": {
+    "oklab": [0.689, -0.115, 0.094],
+    "fullCube": false
+  },
+  "minecraft:mangrove_roots": {
+    "oklab": [0.369, 0.01, 0.039],
+    "fullCube": false
+  },
+  "minecraft:mangrove_shelf": {
+    "oklab": [0.392, 0.082, 0.04],
+    "fullCube": false
+  },
+  "minecraft:mangrove_sign": {
+    "oklab": [0.414, 0.071, 0.041],
+    "fullCube": false
+  },
+  "minecraft:mangrove_slab": {
+    "oklab": [0.422, 0.079, 0.042],
+    "fullCube": false
+  },
+  "minecraft:mangrove_stairs": {
+    "oklab": [0.422, 0.079, 0.042],
+    "fullCube": false
+  },
+  "minecraft:mangrove_trapdoor": {
+    "oklab": [0.401, 0.079, 0.042],
+    "fullCube": false
+  },
+  "minecraft:mangrove_wall_hanging_sign": {
+    "oklab": [0.417, 0.073, 0.031],
+    "fullCube": false
+  },
+  "minecraft:mangrove_wall_sign": {
+    "oklab": [0.414, 0.071, 0.041],
+    "fullCube": false
+  },
+  "minecraft:mangrove_wood": {
+    "oklab": [0.396, 0.01, 0.045],
+    "fullCube": true
+  },
+  "minecraft:medium_amethyst_bud": {
+    "oklab": [0.674, 0.07, -0.091],
+    "fullCube": false
+  },
+  "minecraft:melon": { "oklab": [0.625, -0.073, 0.119], "fullCube": true },
+  "minecraft:melon_stem": {
+    "oklab": [0.481, -0.073, 0.087],
+    "fullCube": false
+  },
+  "minecraft:moss_block": { "oklab": [0.511, -0.053, 0.078], "fullCube": true },
+  "minecraft:moss_carpet": {
+    "oklab": [0.511, -0.053, 0.078],
+    "fullCube": false
+  },
+  "minecraft:mossy_cobblestone": {
+    "oklab": [0.565, -0.017, 0.023],
+    "fullCube": true
+  },
+  "minecraft:mossy_cobblestone_slab": {
+    "oklab": [0.565, -0.017, 0.023],
+    "fullCube": false
+  },
+  "minecraft:mossy_cobblestone_stairs": {
+    "oklab": [0.565, -0.017, 0.023],
+    "fullCube": false
+  },
+  "minecraft:mossy_cobblestone_wall": {
+    "oklab": [0.565, -0.017, 0.023],
+    "fullCube": false
+  },
+  "minecraft:mossy_stone_brick_slab": {
+    "oklab": [0.574, -0.011, 0.016],
+    "fullCube": false
+  },
+  "minecraft:mossy_stone_brick_stairs": {
+    "oklab": [0.574, -0.011, 0.016],
+    "fullCube": false
+  },
+  "minecraft:mossy_stone_brick_wall": {
+    "oklab": [0.574, -0.011, 0.016],
+    "fullCube": false
+  },
+  "minecraft:mossy_stone_bricks": {
+    "oklab": [0.574, -0.011, 0.016],
+    "fullCube": true
+  },
+  "minecraft:moving_piston": {
+    "oklab": [0.545, 0.005, 0.015],
+    "fullCube": false
+  },
+  "minecraft:mud": { "oklab": [0.352, 0.005, -0.004], "fullCube": true },
+  "minecraft:mud_brick_slab": {
+    "oklab": [0.55, 0.03, 0.049],
+    "fullCube": false
+  },
+  "minecraft:mud_brick_stairs": {
+    "oklab": [0.55, 0.03, 0.049],
+    "fullCube": false
+  },
+  "minecraft:mud_brick_wall": {
+    "oklab": [0.55, 0.03, 0.049],
+    "fullCube": false
+  },
+  "minecraft:mud_bricks": { "oklab": [0.55, 0.03, 0.049], "fullCube": true },
+  "minecraft:muddy_mangrove_roots": {
+    "oklab": [0.362, 0.009, 0.021],
+    "fullCube": true
+  },
+  "minecraft:mushroom_stem": {
+    "oklab": [0.825, 0.003, 0.016],
+    "fullCube": false
+  },
+  "minecraft:mycelium": { "oklab": [0.507, 0.028, 0.03], "fullCube": true },
+  "minecraft:nether_brick_fence": {
+    "oklab": [0.238, 0.038, 0.006],
+    "fullCube": false
+  },
+  "minecraft:nether_brick_slab": {
+    "oklab": [0.238, 0.038, 0.006],
+    "fullCube": false
+  },
+  "minecraft:nether_brick_stairs": {
+    "oklab": [0.238, 0.038, 0.006],
+    "fullCube": false
+  },
+  "minecraft:nether_brick_wall": {
+    "oklab": [0.238, 0.038, 0.006],
+    "fullCube": false
+  },
+  "minecraft:nether_bricks": {
+    "oklab": [0.238, 0.038, 0.006],
+    "fullCube": true
+  },
+  "minecraft:nether_gold_ore": {
+    "oklab": [0.474, 0.049, 0.062],
+    "fullCube": true
+  },
+  "minecraft:nether_portal": {
+    "oklab": [0.441, 0.092, -0.213],
+    "fullCube": false
+  },
+  "minecraft:nether_quartz_ore": {
+    "oklab": [0.504, 0.044, 0.025],
+    "fullCube": true
+  },
+  "minecraft:nether_sprouts": {
+    "oklab": [0.613, -0.109, 0.002],
+    "fullCube": false
+  },
+  "minecraft:nether_wart": {
+    "oklab": [0.384, 0.123, 0.057],
+    "fullCube": false
+  },
+  "minecraft:nether_wart_block": {
+    "oklab": [0.355, 0.125, 0.069],
+    "fullCube": true
+  },
+  "minecraft:netherite_block": {
+    "oklab": [0.376, 0.007, -0.002],
+    "fullCube": true
+  },
+  "minecraft:netherrack": { "oklab": [0.363, 0.079, 0.033], "fullCube": true },
+  "minecraft:note_block": { "oklab": [0.403, 0.038, 0.044], "fullCube": true },
+  "minecraft:oak_button": { "oklab": [0.637, 0.015, 0.079], "fullCube": false },
+  "minecraft:oak_door": { "oklab": [0.563, 0.018, 0.073], "fullCube": false },
+  "minecraft:oak_fence": { "oklab": [0.637, 0.015, 0.079], "fullCube": false },
+  "minecraft:oak_fence_gate": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:oak_hanging_sign": {
+    "oklab": [0.636, 0.014, 0.075],
+    "fullCube": false
+  },
+  "minecraft:oak_leaves": { "oklab": [0.455, -0.069, 0.083], "fullCube": true },
+  "minecraft:oak_log": { "oklab": [0.53, 0.015, 0.066], "fullCube": true },
+  "minecraft:oak_planks": { "oklab": [0.637, 0.015, 0.079], "fullCube": true },
+  "minecraft:oak_pressure_plate": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:oak_sapling": {
+    "oklab": [0.517, -0.068, 0.082],
+    "fullCube": false
+  },
+  "minecraft:oak_shelf": { "oklab": [0.589, 0.014, 0.075], "fullCube": false },
+  "minecraft:oak_sign": { "oklab": [0.618, 0.014, 0.077], "fullCube": false },
+  "minecraft:oak_slab": { "oklab": [0.637, 0.015, 0.079], "fullCube": false },
+  "minecraft:oak_stairs": { "oklab": [0.637, 0.015, 0.079], "fullCube": false },
+  "minecraft:oak_trapdoor": {
+    "oklab": [0.533, 0.014, 0.069],
+    "fullCube": false
+  },
+  "minecraft:oak_wall_hanging_sign": {
+    "oklab": [0.636, 0.014, 0.075],
+    "fullCube": false
+  },
+  "minecraft:oak_wall_sign": {
+    "oklab": [0.618, 0.014, 0.077],
+    "fullCube": false
+  },
+  "minecraft:oak_wood": { "oklab": [0.478, 0.015, 0.059], "fullCube": true },
+  "minecraft:observer": { "oklab": [0.488, 0.001, 0], "fullCube": true },
+  "minecraft:obsidian": { "oklab": [0.185, 0.02, -0.037], "fullCube": true },
+  "minecraft:ochre_froglight": {
+    "oklab": [0.948, -0.007, 0.055],
+    "fullCube": true
+  },
+  "minecraft:open_eyeblossom": {
+    "oklab": [0.682, 0.016, 0.006],
+    "fullCube": false
+  },
+  "minecraft:orange_banner": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:orange_bed": { "oklab": [0.612, 0.07, 0.1], "fullCube": false },
+  "minecraft:orange_candle": {
+    "oklab": [0.653, 0.115, 0.129],
+    "fullCube": false
+  },
+  "minecraft:orange_candle_cake": {
+    "oklab": [0.762, 0.043, 0.038],
+    "fullCube": false
+  },
+  "minecraft:orange_carpet": {
+    "oklab": [0.699, 0.111, 0.137],
+    "fullCube": false
+  },
+  "minecraft:orange_concrete": {
+    "oklab": [0.643, 0.123, 0.13],
+    "fullCube": true
+  },
+  "minecraft:orange_concrete_powder": {
+    "oklab": [0.703, 0.077, 0.133],
+    "fullCube": true
+  },
+  "minecraft:orange_concrete_slab": {
+    "oklab": [0.643, 0.123, 0.13],
+    "fullCube": false
+  },
+  "minecraft:orange_concrete_stairs": {
+    "oklab": [0.643, 0.123, 0.13],
+    "fullCube": false
+  },
+  "minecraft:orange_glazed_terracotta": {
+    "oklab": [0.716, 0.033, 0.05],
+    "fullCube": true
+  },
+  "minecraft:orange_poplar_leaves": {
+    "oklab": [0.588, 0.101, 0.111],
+    "fullCube": true
+  },
+  "minecraft:orange_shulker_box": {
+    "oklab": [0.672, 0.121, 0.134],
+    "fullCube": false
+  },
+  "minecraft:orange_stained_glass": {
+    "oklab": [0.68, 0.076, 0.118],
+    "fullCube": true
+  },
+  "minecraft:orange_stained_glass_pane": {
+    "oklab": [0.678, 0.076, 0.118],
+    "fullCube": false
+  },
+  "minecraft:orange_terracotta": {
+    "oklab": [0.531, 0.078, 0.089],
+    "fullCube": true
+  },
+  "minecraft:orange_tulip": {
+    "oklab": [0.616, -0.067, 0.115],
+    "fullCube": false
+  },
+  "minecraft:orange_wall_banner": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:orange_wool": { "oklab": [0.699, 0.111, 0.137], "fullCube": true },
+  "minecraft:orange_wool_slab": {
+    "oklab": [0.699, 0.111, 0.137],
+    "fullCube": false
+  },
+  "minecraft:orange_wool_stairs": {
+    "oklab": [0.699, 0.111, 0.137],
+    "fullCube": false
+  },
+  "minecraft:oxeye_daisy": {
+    "oklab": [0.845, -0.019, 0.034],
+    "fullCube": false
+  },
+  "minecraft:oxidized_chiseled_copper": {
+    "oklab": [0.662, -0.089, 0.021],
+    "fullCube": true
+  },
+  "minecraft:oxidized_copper": {
+    "oklab": [0.662, -0.09, 0.021],
+    "fullCube": true
+  },
+  "minecraft:oxidized_copper_bars": {
+    "oklab": [0.542, -0.071, 0.016],
+    "fullCube": false
+  },
+  "minecraft:oxidized_copper_bulb": {
+    "oklab": [0.588, -0.077, 0.017],
+    "fullCube": true
+  },
+  "minecraft:oxidized_copper_chain": {
+    "oklab": [0.526, -0.067, 0.012],
+    "fullCube": false
+  },
+  "minecraft:oxidized_copper_chest": {
+    "oklab": [0.662, -0.09, 0.021],
+    "fullCube": false
+  },
+  "minecraft:oxidized_copper_door": {
+    "oklab": [0.641, -0.085, 0.018],
+    "fullCube": false
+  },
+  "minecraft:oxidized_copper_golem_statue": {
+    "oklab": [0.662, -0.09, 0.021],
+    "fullCube": false
+  },
+  "minecraft:oxidized_copper_grate": {
+    "oklab": [0.659, -0.09, 0.021],
+    "fullCube": true
+  },
+  "minecraft:oxidized_copper_lantern": {
+    "oklab": [0.62, -0.07, 0.026],
+    "fullCube": false
+  },
+  "minecraft:oxidized_copper_trapdoor": {
+    "oklab": [0.661, -0.089, 0.021],
+    "fullCube": false
+  },
+  "minecraft:oxidized_cut_copper": {
+    "oklab": [0.639, -0.085, 0.019],
+    "fullCube": true
+  },
+  "minecraft:oxidized_cut_copper_slab": {
+    "oklab": [0.639, -0.085, 0.019],
+    "fullCube": false
+  },
+  "minecraft:oxidized_cut_copper_stairs": {
+    "oklab": [0.639, -0.085, 0.019],
+    "fullCube": false
+  },
+  "minecraft:oxidized_lightning_rod": {
+    "oklab": [0.642, -0.086, 0.018],
+    "fullCube": false
+  },
+  "minecraft:packed_ice": {
+    "oklab": [0.771, -0.015, -0.108],
+    "fullCube": true
+  },
+  "minecraft:packed_mud": { "oklab": [0.558, 0.032, 0.051], "fullCube": true },
+  "minecraft:pale_hanging_moss": {
+    "oklab": [0.532, -0.009, 0.008],
+    "fullCube": false
+  },
+  "minecraft:pale_moss_block": {
+    "oklab": [0.545, -0.01, 0.009],
+    "fullCube": true
+  },
+  "minecraft:pale_moss_carpet": {
+    "oklab": [0.545, -0.01, 0.009],
+    "fullCube": false
+  },
+  "minecraft:pale_oak_button": {
+    "oklab": [0.9, 0.01, 0.005],
+    "fullCube": false
+  },
+  "minecraft:pale_oak_door": {
+    "oklab": [0.835, 0.01, 0.005],
+    "fullCube": false
+  },
+  "minecraft:pale_oak_fence": {
+    "oklab": [0.9, 0.01, 0.005],
+    "fullCube": false
+  },
+  "minecraft:pale_oak_fence_gate": {
+    "oklab": [0.9, 0.01, 0.005],
+    "fullCube": false
+  },
+  "minecraft:pale_oak_hanging_sign": {
+    "oklab": [0.876, 0.01, 0.003],
+    "fullCube": false
+  },
+  "minecraft:pale_oak_leaves": {
+    "oklab": [0.404, -0.065, 0.074],
+    "fullCube": true
+  },
+  "minecraft:pale_oak_log": {
+    "oklab": [0.634, 0.009, 0.005],
+    "fullCube": true
+  },
+  "minecraft:pale_oak_planks": {
+    "oklab": [0.9, 0.01, 0.005],
+    "fullCube": true
+  },
+  "minecraft:pale_oak_pressure_plate": {
+    "oklab": [0.9, 0.01, 0.005],
+    "fullCube": false
+  },
+  "minecraft:pale_oak_sapling": {
+    "oklab": [0.541, -0.001, 0.011],
+    "fullCube": false
+  },
+  "minecraft:pale_oak_shelf": {
+    "oklab": [0.899, 0.01, 0.004],
+    "fullCube": false
+  },
+  "minecraft:pale_oak_sign": {
+    "oklab": [0.852, 0.01, 0.005],
+    "fullCube": false
+  },
+  "minecraft:pale_oak_slab": { "oklab": [0.9, 0.01, 0.005], "fullCube": false },
+  "minecraft:pale_oak_stairs": {
+    "oklab": [0.9, 0.01, 0.005],
+    "fullCube": false
+  },
+  "minecraft:pale_oak_trapdoor": {
+    "oklab": [0.911, 0.009, 0.005],
+    "fullCube": false
+  },
+  "minecraft:pale_oak_wall_hanging_sign": {
+    "oklab": [0.876, 0.01, 0.003],
+    "fullCube": false
+  },
+  "minecraft:pale_oak_wall_sign": {
+    "oklab": [0.852, 0.01, 0.005],
+    "fullCube": false
+  },
+  "minecraft:pale_oak_wood": {
+    "oklab": [0.439, 0.012, 0.008],
+    "fullCube": true
+  },
+  "minecraft:pearlescent_froglight": {
+    "oklab": [0.938, 0.008, 0.001],
+    "fullCube": true
+  },
+  "minecraft:peony": { "oklab": [0.581, 0.029, -0.032], "fullCube": false },
+  "minecraft:petrified_oak_slab": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:piglin_head": {
+    "oklab": [0.391, 0.021, 0.027],
+    "fullCube": false
+  },
+  "minecraft:piglin_wall_head": {
+    "oklab": [0.391, 0.021, 0.027],
+    "fullCube": false
+  },
+  "minecraft:pink_banner": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:pink_bed": { "oklab": [0.607, 0.082, 0.033], "fullCube": false },
+  "minecraft:pink_candle": {
+    "oklab": [0.661, 0.141, -0.004],
+    "fullCube": false
+  },
+  "minecraft:pink_candle_cake": {
+    "oklab": [0.763, 0.045, 0.022],
+    "fullCube": false
+  },
+  "minecraft:pink_carpet": { "oklab": [0.759, 0.119, 0], "fullCube": false },
+  "minecraft:pink_concrete": {
+    "oklab": [0.653, 0.148, -0.004],
+    "fullCube": true
+  },
+  "minecraft:pink_concrete_powder": {
+    "oklab": [0.769, 0.095, -0.006],
+    "fullCube": true
+  },
+  "minecraft:pink_concrete_slab": {
+    "oklab": [0.653, 0.148, -0.004],
+    "fullCube": false
+  },
+  "minecraft:pink_concrete_stairs": {
+    "oklab": [0.653, 0.148, -0.004],
+    "fullCube": false
+  },
+  "minecraft:pink_glazed_terracotta": {
+    "oklab": [0.784, 0.097, -0.002],
+    "fullCube": true
+  },
+  "minecraft:pink_petals": {
+    "oklab": [0.817, 0.071, -0.017],
+    "fullCube": false
+  },
+  "minecraft:pink_shulker_box": {
+    "oklab": [0.714, 0.138, 0.001],
+    "fullCube": false
+  },
+  "minecraft:pink_stained_glass": {
+    "oklab": [0.735, 0.146, 0.001],
+    "fullCube": true
+  },
+  "minecraft:pink_stained_glass_pane": {
+    "oklab": [0.733, 0.145, 0.001],
+    "fullCube": false
+  },
+  "minecraft:pink_terracotta": {
+    "oklab": [0.529, 0.104, 0.04],
+    "fullCube": true
+  },
+  "minecraft:pink_tulip": {
+    "oklab": [0.677, -0.045, 0.032],
+    "fullCube": false
+  },
+  "minecraft:pink_wall_banner": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:pink_wool": { "oklab": [0.759, 0.119, 0], "fullCube": true },
+  "minecraft:pink_wool_slab": { "oklab": [0.759, 0.119, 0], "fullCube": false },
+  "minecraft:pink_wool_stairs": {
+    "oklab": [0.759, 0.119, 0],
+    "fullCube": false
+  },
+  "minecraft:piston": { "oklab": [0.558, 0.006, 0.021], "fullCube": true },
+  "minecraft:piston_head": {
+    "oklab": [0.567, 0.007, 0.024],
+    "fullCube": false
+  },
+  "minecraft:pitcher_crop": {
+    "oklab": [0.618, 0.029, 0.075],
+    "fullCube": false
+  },
+  "minecraft:pitcher_plant": {
+    "oklab": [0.587, -0.034, 0.029],
+    "fullCube": false
+  },
+  "minecraft:player_head": {
+    "oklab": [0.391, 0.021, 0.027],
+    "fullCube": false
+  },
+  "minecraft:player_wall_head": {
+    "oklab": [0.391, 0.021, 0.027],
+    "fullCube": false
+  },
+  "minecraft:podzol": { "oklab": [0.495, 0.031, 0.056], "fullCube": true },
+  "minecraft:pointed_dripstone": {
+    "oklab": [0.564, 0.025, 0.034],
+    "fullCube": false
+  },
+  "minecraft:polished_andesite": {
+    "oklab": [0.627, -0.003, 0.001],
+    "fullCube": true
+  },
+  "minecraft:polished_andesite_slab": {
+    "oklab": [0.627, -0.003, 0.001],
+    "fullCube": false
+  },
+  "minecraft:polished_andesite_stairs": {
+    "oklab": [0.627, -0.003, 0.001],
+    "fullCube": false
+  },
+  "minecraft:polished_basalt": {
+    "oklab": [0.488, 0.001, -0.003],
+    "fullCube": true
+  },
+  "minecraft:polished_blackstone": {
+    "oklab": [0.329, 0.01, -0.014],
+    "fullCube": true
+  },
+  "minecraft:polished_blackstone_brick_slab": {
+    "oklab": [0.309, 0.01, -0.013],
+    "fullCube": false
+  },
+  "minecraft:polished_blackstone_brick_stairs": {
+    "oklab": [0.309, 0.01, -0.013],
+    "fullCube": false
+  },
+  "minecraft:polished_blackstone_brick_wall": {
+    "oklab": [0.309, 0.01, -0.013],
+    "fullCube": false
+  },
+  "minecraft:polished_blackstone_bricks": {
+    "oklab": [0.309, 0.01, -0.013],
+    "fullCube": true
+  },
+  "minecraft:polished_blackstone_button": {
+    "oklab": [0.329, 0.01, -0.014],
+    "fullCube": false
+  },
+  "minecraft:polished_blackstone_pressure_plate": {
+    "oklab": [0.329, 0.01, -0.014],
+    "fullCube": false
+  },
+  "minecraft:polished_blackstone_slab": {
+    "oklab": [0.329, 0.01, -0.014],
+    "fullCube": false
+  },
+  "minecraft:polished_blackstone_stairs": {
+    "oklab": [0.329, 0.01, -0.014],
+    "fullCube": false
+  },
+  "minecraft:polished_blackstone_wall": {
+    "oklab": [0.329, 0.01, -0.014],
+    "fullCube": false
+  },
+  "minecraft:polished_cinnabar": {
+    "oklab": [0.486, 0.116, 0.053],
+    "fullCube": true
+  },
+  "minecraft:polished_cinnabar_slab": {
+    "oklab": [0.486, 0.116, 0.053],
+    "fullCube": false
+  },
+  "minecraft:polished_cinnabar_stairs": {
+    "oklab": [0.486, 0.116, 0.053],
+    "fullCube": false
+  },
+  "minecraft:polished_cinnabar_wall": {
+    "oklab": [0.486, 0.116, 0.053],
+    "fullCube": false
+  },
+  "minecraft:polished_deepslate": {
+    "oklab": [0.416, 0, -0.001],
+    "fullCube": true
+  },
+  "minecraft:polished_deepslate_slab": {
+    "oklab": [0.416, 0, -0.001],
+    "fullCube": false
+  },
+  "minecraft:polished_deepslate_stairs": {
+    "oklab": [0.416, 0, -0.001],
+    "fullCube": false
+  },
+  "minecraft:polished_deepslate_wall": {
+    "oklab": [0.416, 0, -0.001],
+    "fullCube": false
+  },
+  "minecraft:polished_diorite": {
+    "oklab": [0.823, 0.001, -0.002],
+    "fullCube": true
+  },
+  "minecraft:polished_diorite_slab": {
+    "oklab": [0.823, 0.001, -0.002],
+    "fullCube": false
+  },
+  "minecraft:polished_diorite_stairs": {
+    "oklab": [0.823, 0.001, -0.002],
+    "fullCube": false
+  },
+  "minecraft:polished_granite": {
+    "oklab": [0.58, 0.05, 0.043],
+    "fullCube": true
+  },
+  "minecraft:polished_granite_slab": {
+    "oklab": [0.58, 0.05, 0.043],
+    "fullCube": false
+  },
+  "minecraft:polished_granite_stairs": {
+    "oklab": [0.58, 0.05, 0.043],
+    "fullCube": false
+  },
+  "minecraft:polished_sulfur": {
+    "oklab": [0.744, -0.015, 0.103],
+    "fullCube": true
+  },
+  "minecraft:polished_sulfur_slab": {
+    "oklab": [0.744, -0.015, 0.103],
+    "fullCube": false
+  },
+  "minecraft:polished_sulfur_stairs": {
+    "oklab": [0.744, -0.015, 0.103],
+    "fullCube": false
+  },
+  "minecraft:polished_sulfur_wall": {
+    "oklab": [0.744, -0.015, 0.103],
+    "fullCube": false
+  },
+  "minecraft:polished_tuff": {
+    "oklab": [0.514, -0.009, 0.004],
+    "fullCube": true
+  },
+  "minecraft:polished_tuff_slab": {
+    "oklab": [0.514, -0.009, 0.004],
+    "fullCube": false
+  },
+  "minecraft:polished_tuff_stairs": {
+    "oklab": [0.514, -0.009, 0.004],
+    "fullCube": false
+  },
+  "minecraft:polished_tuff_wall": {
+    "oklab": [0.514, -0.009, 0.004],
+    "fullCube": false
+  },
+  "minecraft:poplar_button": {
+    "oklab": [0.644, 0.009, 0.019],
+    "fullCube": false
+  },
+  "minecraft:poplar_door": {
+    "oklab": [0.639, 0.009, 0.018],
+    "fullCube": false
+  },
+  "minecraft:poplar_fence": {
+    "oklab": [0.644, 0.009, 0.019],
+    "fullCube": false
+  },
+  "minecraft:poplar_fence_gate": {
+    "oklab": [0.644, 0.009, 0.019],
+    "fullCube": false
+  },
+  "minecraft:poplar_hanging_sign": {
+    "oklab": [0.645, 0.008, 0.017],
+    "fullCube": false
+  },
+  "minecraft:poplar_log": { "oklab": [0.481, 0.013, 0.025], "fullCube": true },
+  "minecraft:poplar_planks": {
+    "oklab": [0.644, 0.009, 0.019],
+    "fullCube": true
+  },
+  "minecraft:poplar_pressure_plate": {
+    "oklab": [0.644, 0.009, 0.019],
+    "fullCube": false
+  },
+  "minecraft:poplar_sapling": {
+    "oklab": [0.523, 0.072, 0.086],
+    "fullCube": false
+  },
+  "minecraft:poplar_shelf": {
+    "oklab": [0.639, 0.01, 0.018],
+    "fullCube": false
+  },
+  "minecraft:poplar_sign": { "oklab": [0.621, 0.01, 0.019], "fullCube": false },
+  "minecraft:poplar_slab": {
+    "oklab": [0.644, 0.009, 0.019],
+    "fullCube": false
+  },
+  "minecraft:poplar_stairs": {
+    "oklab": [0.644, 0.009, 0.019],
+    "fullCube": false
+  },
+  "minecraft:poplar_trapdoor": {
+    "oklab": [0.643, 0.009, 0.019],
+    "fullCube": false
+  },
+  "minecraft:poplar_wall_hanging_sign": {
+    "oklab": [0.645, 0.008, 0.017],
+    "fullCube": false
+  },
+  "minecraft:poplar_wall_sign": {
+    "oklab": [0.621, 0.01, 0.019],
+    "fullCube": false
+  },
+  "minecraft:poplar_wood": { "oklab": [0.377, 0.016, 0.036], "fullCube": true },
+  "minecraft:poppy": { "oklab": [0.51, 0.093, 0.082], "fullCube": false },
+  "minecraft:potatoes": { "oklab": [0.553, -0.111, 0.095], "fullCube": false },
+  "minecraft:potent_sulfur": {
+    "oklab": [0.841, -0.041, 0.128],
+    "fullCube": true
+  },
+  "minecraft:potted_acacia_sapling": {
+    "oklab": [0.497, 0.027, 0.066],
+    "fullCube": false
+  },
+  "minecraft:potted_allium": {
+    "oklab": [0.506, 0.06, 0.016],
+    "fullCube": false
+  },
+  "minecraft:potted_azalea_bush": {
+    "oklab": [0.499, 0.005, 0.066],
+    "fullCube": false
+  },
+  "minecraft:potted_azure_bluet": {
+    "oklab": [0.544, 0.03, 0.047],
+    "fullCube": false
+  },
+  "minecraft:potted_bamboo": {
+    "oklab": [0.548, -0.037, 0.088],
+    "fullCube": false
+  },
+  "minecraft:potted_birch_sapling": {
+    "oklab": [0.538, 0.013, 0.06],
+    "fullCube": false
+  },
+  "minecraft:potted_blue_orchid": {
+    "oklab": [0.505, 0.035, 0.014],
+    "fullCube": false
+  },
+  "minecraft:potted_brown_mushroom": {
+    "oklab": [0.489, 0.054, 0.049],
+    "fullCube": false
+  },
+  "minecraft:potted_cactus": {
+    "oklab": [0.548, -0.056, 0.083],
+    "fullCube": false
+  },
+  "minecraft:potted_cherry_sapling": {
+    "oklab": [0.558, 0.063, 0.015],
+    "fullCube": false
+  },
+  "minecraft:potted_closed_eyeblossom": {
+    "oklab": [0.482, 0.052, 0.039],
+    "fullCube": false
+  },
+  "minecraft:potted_cornflower": {
+    "oklab": [0.485, 0.051, 0.024],
+    "fullCube": false
+  },
+  "minecraft:potted_crimson_fungus": {
+    "oklab": [0.475, 0.067, 0.053],
+    "fullCube": false
+  },
+  "minecraft:potted_crimson_roots": {
+    "oklab": [0.462, 0.068, 0.048],
+    "fullCube": false
+  },
+  "minecraft:potted_dandelion": {
+    "oklab": [0.511, 0.037, 0.064],
+    "fullCube": false
+  },
+  "minecraft:potted_dark_oak_sapling": {
+    "oklab": [0.469, 0.03, 0.056],
+    "fullCube": false
+  },
+  "minecraft:potted_dead_bush": {
+    "oklab": [0.47, 0.051, 0.053],
+    "fullCube": false
+  },
+  "minecraft:potted_fern": {
+    "oklab": [0.467, 0.037, 0.052],
+    "fullCube": false
+  },
+  "minecraft:potted_flowering_azalea_bush": {
+    "oklab": [0.504, 0.025, 0.043],
+    "fullCube": false
+  },
+  "minecraft:potted_golden_dandelion": {
+    "oklab": [0.494, 0.051, 0.055],
+    "fullCube": false
+  },
+  "minecraft:potted_jungle_sapling": {
+    "oklab": [0.461, 0.036, 0.054],
+    "fullCube": false
+  },
+  "minecraft:potted_lily_of_the_valley": {
+    "oklab": [0.527, 0.027, 0.047],
+    "fullCube": false
+  },
+  "minecraft:potted_mangrove_propagule": {
+    "oklab": [0.522, 0.008, 0.061],
+    "fullCube": false
+  },
+  "minecraft:potted_oak_sapling": {
+    "oklab": [0.484, 0.023, 0.059],
+    "fullCube": false
+  },
+  "minecraft:potted_open_eyeblossom": {
+    "oklab": [0.516, 0.047, 0.035],
+    "fullCube": false
+  },
+  "minecraft:potted_orange_tulip": {
+    "oklab": [0.493, 0.036, 0.06],
+    "fullCube": false
+  },
+  "minecraft:potted_oxeye_daisy": {
+    "oklab": [0.557, 0.032, 0.04],
+    "fullCube": false
+  },
+  "minecraft:potted_pale_oak_sapling": {
+    "oklab": [0.49, 0.042, 0.037],
+    "fullCube": false
+  },
+  "minecraft:potted_pink_tulip": {
+    "oklab": [0.504, 0.038, 0.044],
+    "fullCube": false
+  },
+  "minecraft:potted_poplar_sapling": {
+    "oklab": [0.482, 0.061, 0.057],
+    "fullCube": false
+  },
+  "minecraft:potted_poppy": {
+    "oklab": [0.476, 0.062, 0.053],
+    "fullCube": false
+  },
+  "minecraft:potted_red_mushroom": {
+    "oklab": [0.497, 0.066, 0.052],
+    "fullCube": false
+  },
+  "minecraft:potted_red_tulip": {
+    "oklab": [0.491, 0.035, 0.06],
+    "fullCube": false
+  },
+  "minecraft:potted_spruce_sapling": {
+    "oklab": [0.452, 0.046, 0.047],
+    "fullCube": false
+  },
+  "minecraft:potted_torchflower": {
+    "oklab": [0.498, 0.044, 0.05],
+    "fullCube": false
+  },
+  "minecraft:potted_warped_fungus": {
+    "oklab": [0.488, 0.046, 0.045],
+    "fullCube": false
+  },
+  "minecraft:potted_warped_roots": {
+    "oklab": [0.495, 0.023, 0.034],
+    "fullCube": false
+  },
+  "minecraft:potted_white_tulip": {
+    "oklab": [0.509, 0.028, 0.051],
+    "fullCube": false
+  },
+  "minecraft:potted_wither_rose": {
+    "oklab": [0.46, 0.054, 0.049],
+    "fullCube": false
+  },
+  "minecraft:powder_snow": {
+    "oklab": [0.991, -0.005, -0.002],
+    "fullCube": false
+  },
+  "minecraft:powder_snow_cauldron": {
+    "oklab": [0.41, -0.003, 0.004],
+    "fullCube": false
+  },
+  "minecraft:powered_rail": {
+    "oklab": [0.608, 0.014, 0.052],
+    "fullCube": false
+  },
+  "minecraft:prismarine": { "oklab": [0.675, -0.067, 0.004], "fullCube": true },
+  "minecraft:prismarine_brick_slab": {
+    "oklab": [0.699, -0.074, -0.002],
+    "fullCube": false
+  },
+  "minecraft:prismarine_brick_stairs": {
+    "oklab": [0.699, -0.074, -0.002],
+    "fullCube": false
+  },
+  "minecraft:prismarine_bricks": {
+    "oklab": [0.699, -0.074, -0.002],
+    "fullCube": true
+  },
+  "minecraft:prismarine_slab": {
+    "oklab": [0.675, -0.067, 0.004],
+    "fullCube": false
+  },
+  "minecraft:prismarine_stairs": {
+    "oklab": [0.675, -0.067, 0.004],
+    "fullCube": false
+  },
+  "minecraft:prismarine_wall": {
+    "oklab": [0.675, -0.067, 0.004],
+    "fullCube": false
+  },
+  "minecraft:pumpkin": { "oklab": [0.646, 0.063, 0.123], "fullCube": true },
+  "minecraft:pumpkin_stem": {
+    "oklab": [0.479, -0.072, 0.087],
+    "fullCube": false
+  },
+  "minecraft:purple_banner": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:purple_bed": {
+    "oklab": [0.518, 0.061, -0.028],
+    "fullCube": false
+  },
+  "minecraft:purple_candle": {
+    "oklab": [0.436, 0.111, -0.155],
+    "fullCube": false
+  },
+  "minecraft:purple_candle_cake": {
+    "oklab": [0.739, 0.036, 0.007],
+    "fullCube": false
+  },
+  "minecraft:purple_carpet": {
+    "oklab": [0.472, 0.122, -0.154],
+    "fullCube": false
+  },
+  "minecraft:purple_concrete": {
+    "oklab": [0.419, 0.105, -0.155],
+    "fullCube": true
+  },
+  "minecraft:purple_concrete_powder": {
+    "oklab": [0.502, 0.121, -0.145],
+    "fullCube": true
+  },
+  "minecraft:purple_concrete_slab": {
+    "oklab": [0.419, 0.105, -0.155],
+    "fullCube": false
+  },
+  "minecraft:purple_concrete_stairs": {
+    "oklab": [0.419, 0.105, -0.155],
+    "fullCube": false
+  },
+  "minecraft:purple_glazed_terracotta": {
+    "oklab": [0.469, 0.11, -0.14],
+    "fullCube": true
+  },
+  "minecraft:purple_shulker_box": {
+    "oklab": [0.425, 0.109, -0.152],
+    "fullCube": false
+  },
+  "minecraft:purple_stained_glass": {
+    "oklab": [0.504, 0.106, -0.143],
+    "fullCube": true
+  },
+  "minecraft:purple_stained_glass_pane": {
+    "oklab": [0.503, 0.106, -0.142],
+    "fullCube": false
+  },
+  "minecraft:purple_terracotta": {
+    "oklab": [0.457, 0.069, -0.001],
+    "fullCube": true
+  },
+  "minecraft:purple_wall_banner": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:purple_wool": {
+    "oklab": [0.472, 0.122, -0.154],
+    "fullCube": true
+  },
+  "minecraft:purple_wool_slab": {
+    "oklab": [0.472, 0.122, -0.154],
+    "fullCube": false
+  },
+  "minecraft:purple_wool_stairs": {
+    "oklab": [0.472, 0.122, -0.154],
+    "fullCube": false
+  },
+  "minecraft:purpur_block": {
+    "oklab": [0.655, 0.066, -0.044],
+    "fullCube": true
+  },
+  "minecraft:purpur_pillar": {
+    "oklab": [0.665, 0.064, -0.042],
+    "fullCube": true
+  },
+  "minecraft:purpur_slab": {
+    "oklab": [0.655, 0.066, -0.044],
+    "fullCube": false
+  },
+  "minecraft:purpur_stairs": {
+    "oklab": [0.655, 0.066, -0.044],
+    "fullCube": false
+  },
+  "minecraft:quartz_block": {
+    "oklab": [0.928, 0.003, 0.011],
+    "fullCube": true
+  },
+  "minecraft:quartz_bricks": {
+    "oklab": [0.925, 0.003, 0.011],
+    "fullCube": true
+  },
+  "minecraft:quartz_pillar": {
+    "oklab": [0.929, 0.003, 0.01],
+    "fullCube": true
+  },
+  "minecraft:quartz_slab": {
+    "oklab": [0.928, 0.003, 0.011],
+    "fullCube": false
+  },
+  "minecraft:quartz_stairs": {
+    "oklab": [0.928, 0.003, 0.011],
+    "fullCube": false
+  },
+  "minecraft:rail": { "oklab": [0.572, 0.008, 0.027], "fullCube": false },
+  "minecraft:raw_copper_block": {
+    "oklab": [0.586, 0.054, 0.058],
+    "fullCube": true
+  },
+  "minecraft:raw_gold_block": {
+    "oklab": [0.783, 0.011, 0.139],
+    "fullCube": true
+  },
+  "minecraft:raw_iron_block": {
+    "oklab": [0.668, 0.025, 0.046],
+    "fullCube": true
+  },
+  "minecraft:red_banner": { "oklab": [0.637, 0.015, 0.079], "fullCube": false },
+  "minecraft:red_bed": { "oklab": [0.527, 0.059, 0.071], "fullCube": false },
+  "minecraft:red_candle": { "oklab": [0.463, 0.137, 0.069], "fullCube": false },
+  "minecraft:red_candle_cake": {
+    "oklab": [0.741, 0.036, 0.028],
+    "fullCube": false
+  },
+  "minecraft:red_carpet": { "oklab": [0.471, 0.141, 0.074], "fullCube": false },
+  "minecraft:red_concrete": {
+    "oklab": [0.429, 0.131, 0.063],
+    "fullCube": true
+  },
+  "minecraft:red_concrete_powder": {
+    "oklab": [0.501, 0.135, 0.066],
+    "fullCube": true
+  },
+  "minecraft:red_concrete_slab": {
+    "oklab": [0.429, 0.131, 0.063],
+    "fullCube": false
+  },
+  "minecraft:red_concrete_stairs": {
+    "oklab": [0.429, 0.131, 0.063],
+    "fullCube": false
+  },
+  "minecraft:red_glazed_terracotta": {
+    "oklab": [0.543, 0.137, 0.07],
+    "fullCube": true
+  },
+  "minecraft:red_mushroom": {
+    "oklab": [0.671, 0.117, 0.067],
+    "fullCube": false
+  },
+  "minecraft:red_mushroom_block": {
+    "oklab": [0.56, 0.163, 0.079],
+    "fullCube": false
+  },
+  "minecraft:red_nether_brick_slab": {
+    "oklab": [0.265, 0.087, 0.041],
+    "fullCube": false
+  },
+  "minecraft:red_nether_brick_stairs": {
+    "oklab": [0.265, 0.087, 0.041],
+    "fullCube": false
+  },
+  "minecraft:red_nether_brick_wall": {
+    "oklab": [0.265, 0.087, 0.041],
+    "fullCube": false
+  },
+  "minecraft:red_nether_bricks": {
+    "oklab": [0.265, 0.087, 0.041],
+    "fullCube": true
+  },
+  "minecraft:red_poplar_leaves": {
+    "oklab": [0.477, 0.135, 0.071],
+    "fullCube": true
+  },
+  "minecraft:red_sand": { "oklab": [0.605, 0.081, 0.111], "fullCube": true },
+  "minecraft:red_sandstone": {
+    "oklab": [0.593, 0.08, 0.109],
+    "fullCube": true
+  },
+  "minecraft:red_sandstone_slab": {
+    "oklab": [0.593, 0.08, 0.109],
+    "fullCube": false
+  },
+  "minecraft:red_sandstone_stairs": {
+    "oklab": [0.593, 0.08, 0.109],
+    "fullCube": false
+  },
+  "minecraft:red_sandstone_wall": {
+    "oklab": [0.596, 0.081, 0.11],
+    "fullCube": false
+  },
+  "minecraft:red_shrub": { "oklab": [0.403, 0.109, 0.066], "fullCube": false },
+  "minecraft:red_shulker_box": {
+    "oklab": [0.426, 0.131, 0.065],
+    "fullCube": false
+  },
+  "minecraft:red_stained_glass": {
+    "oklab": [0.471, 0.125, 0.056],
+    "fullCube": true
+  },
+  "minecraft:red_stained_glass_pane": {
+    "oklab": [0.469, 0.125, 0.055],
+    "fullCube": false
+  },
+  "minecraft:red_terracotta": {
+    "oklab": [0.468, 0.098, 0.06],
+    "fullCube": true
+  },
+  "minecraft:red_tulip": { "oklab": [0.593, -0.065, 0.108], "fullCube": false },
+  "minecraft:red_wall_banner": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:red_wool": { "oklab": [0.471, 0.141, 0.074], "fullCube": true },
+  "minecraft:red_wool_slab": {
+    "oklab": [0.471, 0.141, 0.074],
+    "fullCube": false
+  },
+  "minecraft:red_wool_stairs": {
+    "oklab": [0.471, 0.141, 0.074],
+    "fullCube": false
+  },
+  "minecraft:redstone_block": {
+    "oklab": [0.497, 0.164, 0.098],
+    "fullCube": true
+  },
+  "minecraft:redstone_lamp": {
+    "oklab": [0.412, 0.047, 0.06],
+    "fullCube": true
+  },
+  "minecraft:redstone_ore": {
+    "oklab": [0.592, 0.036, 0.012],
+    "fullCube": true
+  },
+  "minecraft:redstone_torch": {
+    "oklab": [0.6, 0.13, 0.074],
+    "fullCube": false
+  },
+  "minecraft:redstone_wall_torch": {
+    "oklab": [0.6, 0.13, 0.074],
+    "fullCube": false
+  },
+  "minecraft:redstone_wire": {
+    "oklab": [0.248, 0.089, 0.05],
+    "fullCube": false
+  },
+  "minecraft:reinforced_deepslate": {
+    "oklab": [0.549, -0.014, 0.017],
+    "fullCube": true
+  },
+  "minecraft:repeater": { "oklab": [0.688, 0.001, 0.003], "fullCube": false },
+  "minecraft:repeating_command_block": {
+    "oklab": [0.615, 0.036, -0.077],
+    "fullCube": true
+  },
+  "minecraft:resin_block": { "oklab": [0.646, 0.109, 0.122], "fullCube": true },
+  "minecraft:resin_brick_slab": {
+    "oklab": [0.616, 0.111, 0.116],
+    "fullCube": false
+  },
+  "minecraft:resin_brick_stairs": {
+    "oklab": [0.616, 0.111, 0.116],
+    "fullCube": false
+  },
+  "minecraft:resin_brick_wall": {
+    "oklab": [0.616, 0.111, 0.116],
+    "fullCube": false
+  },
+  "minecraft:resin_bricks": {
+    "oklab": [0.616, 0.111, 0.116],
+    "fullCube": true
+  },
+  "minecraft:resin_clump": {
+    "oklab": [0.679, 0.094, 0.129],
+    "fullCube": false
+  },
+  "minecraft:respawn_anchor": {
+    "oklab": [0.288, 0.044, -0.085],
+    "fullCube": true
+  },
+  "minecraft:rooted_dirt": { "oklab": [0.564, 0.038, 0.051], "fullCube": true },
+  "minecraft:rose_bush": { "oklab": [0.508, 0.015, 0.082], "fullCube": false },
+  "minecraft:sand": { "oklab": [0.855, -0.005, 0.059], "fullCube": true },
+  "minecraft:sandstone": { "oklab": [0.849, -0.006, 0.062], "fullCube": true },
+  "minecraft:sandstone_slab": {
+    "oklab": [0.849, -0.006, 0.062],
+    "fullCube": false
+  },
+  "minecraft:sandstone_stairs": {
+    "oklab": [0.85, -0.006, 0.061],
+    "fullCube": false
+  },
+  "minecraft:sandstone_wall": {
+    "oklab": [0.845, -0.005, 0.062],
+    "fullCube": false
+  },
+  "minecraft:scaffolding": { "oklab": [0.74, -0.01, 0.113], "fullCube": false },
+  "minecraft:sculk": { "oklab": [0.228, -0.02, -0.017], "fullCube": true },
+  "minecraft:sculk_catalyst": {
+    "oklab": [0.529, -0.02, 0.009],
+    "fullCube": true
+  },
+  "minecraft:sculk_sensor": {
+    "oklab": [0.319, -0.039, -0.03],
+    "fullCube": false
+  },
+  "minecraft:sculk_shrieker": {
+    "oklab": [0.565, -0.021, 0.019],
+    "fullCube": false
+  },
+  "minecraft:sculk_vein": {
+    "oklab": [0.327, -0.044, -0.029],
+    "fullCube": false
+  },
+  "minecraft:sea_lantern": {
+    "oklab": [0.832, -0.025, 0.005],
+    "fullCube": true
+  },
+  "minecraft:sea_pickle": {
+    "oklab": [0.509, -0.035, 0.063],
+    "fullCube": false
+  },
+  "minecraft:seagrass": { "oklab": [0.534, -0.118, 0.106], "fullCube": false },
+  "minecraft:shelf_mushroom": {
+    "oklab": [0.613, 0.054, 0.084],
+    "fullCube": false
+  },
+  "minecraft:short_dry_grass": {
+    "oklab": [0.725, 0.01, 0.07],
+    "fullCube": false
+  },
+  "minecraft:short_grass": {
+    "oklab": [0.496, -0.057, 0.071],
+    "fullCube": false
+  },
+  "minecraft:shroomlight": { "oklab": [0.768, 0.072, 0.107], "fullCube": true },
+  "minecraft:shulker_box": {
+    "oklab": [0.554, 0.069, -0.045],
+    "fullCube": false
+  },
+  "minecraft:skeleton_skull": {
+    "oklab": [0.391, 0.021, 0.027],
+    "fullCube": false
+  },
+  "minecraft:skeleton_wall_skull": {
+    "oklab": [0.391, 0.021, 0.027],
+    "fullCube": false
+  },
+  "minecraft:slime_block": {
+    "oklab": [0.734, -0.12, 0.101],
+    "fullCube": false
+  },
+  "minecraft:small_amethyst_bud": {
+    "oklab": [0.588, 0.066, -0.123],
+    "fullCube": false
+  },
+  "minecraft:small_dripleaf": {
+    "oklab": [0.549, -0.066, 0.09],
+    "fullCube": false
+  },
+  "minecraft:smithing_table": {
+    "oklab": [0.312, 0.03, 0.002],
+    "fullCube": true
+  },
+  "minecraft:smoker": { "oklab": [0.495, 0.006, 0.014], "fullCube": true },
+  "minecraft:smooth_basalt": {
+    "oklab": [0.414, 0.003, -0.007],
+    "fullCube": true
+  },
+  "minecraft:smooth_quartz": {
+    "oklab": [0.929, 0.004, 0.01],
+    "fullCube": true
+  },
+  "minecraft:smooth_quartz_slab": {
+    "oklab": [0.929, 0.004, 0.01],
+    "fullCube": false
+  },
+  "minecraft:smooth_quartz_stairs": {
+    "oklab": [0.929, 0.004, 0.01],
+    "fullCube": false
+  },
+  "minecraft:smooth_red_sandstone": {
+    "oklab": [0.583, 0.077, 0.106],
+    "fullCube": true
+  },
+  "minecraft:smooth_red_sandstone_slab": {
+    "oklab": [0.583, 0.077, 0.106],
+    "fullCube": false
+  },
+  "minecraft:smooth_red_sandstone_stairs": {
+    "oklab": [0.583, 0.077, 0.106],
+    "fullCube": false
+  },
+  "minecraft:smooth_sandstone": {
+    "oklab": [0.874, -0.007, 0.058],
+    "fullCube": true
+  },
+  "minecraft:smooth_sandstone_slab": {
+    "oklab": [0.874, -0.007, 0.058],
+    "fullCube": false
+  },
+  "minecraft:smooth_sandstone_stairs": {
+    "oklab": [0.874, -0.007, 0.058],
+    "fullCube": false
+  },
+  "minecraft:smooth_stone": { "oklab": [0.706, 0, 0], "fullCube": true },
+  "minecraft:smooth_stone_slab": { "oklab": [0.726, 0, 0], "fullCube": false },
+  "minecraft:sniffer_egg": {
+    "oklab": [0.478, 0.008, 0.053],
+    "fullCube": false
+  },
+  "minecraft:snow": { "oklab": [0.994, -0.005, -0.002], "fullCube": false },
+  "minecraft:snow_block": {
+    "oklab": [0.994, -0.005, -0.002],
+    "fullCube": true
+  },
+  "minecraft:soul_campfire": {
+    "oklab": [0.541, -0.027, -0.003],
+    "fullCube": false
+  },
+  "minecraft:soul_fire": {
+    "oklab": [0.801, -0.089, -0.031],
+    "fullCube": false
+  },
+  "minecraft:soul_lantern": {
+    "oklab": [0.549, -0.038, -0.027],
+    "fullCube": false
+  },
+  "minecraft:soul_sand": { "oklab": [0.391, 0.021, 0.027], "fullCube": true },
+  "minecraft:soul_soil": { "oklab": [0.37, 0.02, 0.026], "fullCube": true },
+  "minecraft:soul_torch": {
+    "oklab": [0.614, -0.018, 0.015],
+    "fullCube": false
+  },
+  "minecraft:soul_wall_torch": {
+    "oklab": [0.614, -0.018, 0.015],
+    "fullCube": false
+  },
+  "minecraft:spawner": { "oklab": [0.321, -0.009, -0.032], "fullCube": false },
+  "minecraft:sponge": { "oklab": [0.794, -0.043, 0.133], "fullCube": true },
+  "minecraft:spore_blossom": {
+    "oklab": [0.652, 0.109, -0.011],
+    "fullCube": false
+  },
+  "minecraft:spruce_button": {
+    "oklab": [0.477, 0.022, 0.062],
+    "fullCube": false
+  },
+  "minecraft:spruce_door": { "oklab": [0.461, 0.019, 0.05], "fullCube": false },
+  "minecraft:spruce_fence": {
+    "oklab": [0.477, 0.022, 0.062],
+    "fullCube": false
+  },
+  "minecraft:spruce_fence_gate": {
+    "oklab": [0.477, 0.022, 0.062],
+    "fullCube": false
+  },
+  "minecraft:spruce_hanging_sign": {
+    "oklab": [0.474, 0.017, 0.05],
+    "fullCube": false
+  },
+  "minecraft:spruce_leaves": {
+    "oklab": [0.385, -0.05, 0.036],
+    "fullCube": true
+  },
+  "minecraft:spruce_log": { "oklab": [0.367, 0.02, 0.049], "fullCube": true },
+  "minecraft:spruce_planks": {
+    "oklab": [0.477, 0.022, 0.062],
+    "fullCube": true
+  },
+  "minecraft:spruce_pressure_plate": {
+    "oklab": [0.477, 0.022, 0.062],
+    "fullCube": false
+  },
+  "minecraft:spruce_sapling": {
+    "oklab": [0.351, -0.035, 0.032],
+    "fullCube": false
+  },
+  "minecraft:spruce_shelf": {
+    "oklab": [0.458, 0.011, 0.057],
+    "fullCube": false
+  },
+  "minecraft:spruce_sign": {
+    "oklab": [0.454, 0.021, 0.059],
+    "fullCube": false
+  },
+  "minecraft:spruce_slab": {
+    "oklab": [0.477, 0.022, 0.062],
+    "fullCube": false
+  },
+  "minecraft:spruce_stairs": {
+    "oklab": [0.477, 0.022, 0.062],
+    "fullCube": false
+  },
+  "minecraft:spruce_trapdoor": {
+    "oklab": [0.451, 0.019, 0.052],
+    "fullCube": false
+  },
+  "minecraft:spruce_wall_hanging_sign": {
+    "oklab": [0.474, 0.017, 0.05],
+    "fullCube": false
+  },
+  "minecraft:spruce_wall_sign": {
+    "oklab": [0.454, 0.021, 0.059],
+    "fullCube": false
+  },
+  "minecraft:spruce_wood": { "oklab": [0.293, 0.02, 0.042], "fullCube": true },
+  "minecraft:sticky_piston": {
+    "oklab": [0.564, -0.008, 0.022],
+    "fullCube": true
+  },
+  "minecraft:stone": { "oklab": [0.594, 0, 0], "fullCube": true },
+  "minecraft:stone_brick_slab": {
+    "oklab": [0.586, 0.001, -0.001],
+    "fullCube": false
+  },
+  "minecraft:stone_brick_stairs": {
+    "oklab": [0.586, 0.001, -0.001],
+    "fullCube": false
+  },
+  "minecraft:stone_brick_wall": {
+    "oklab": [0.586, 0.001, -0.001],
+    "fullCube": false
+  },
+  "minecraft:stone_bricks": {
+    "oklab": [0.586, 0.001, -0.001],
+    "fullCube": true
+  },
+  "minecraft:stone_button": { "oklab": [0.594, 0, 0], "fullCube": false },
+  "minecraft:stone_pressure_plate": {
+    "oklab": [0.594, 0, 0],
+    "fullCube": false
+  },
+  "minecraft:stone_slab": { "oklab": [0.594, 0, 0], "fullCube": false },
+  "minecraft:stone_stairs": { "oklab": [0.594, 0, 0], "fullCube": false },
+  "minecraft:stonecutter": {
+    "oklab": [0.552, -0.009, 0.022],
+    "fullCube": false
+  },
+  "minecraft:straw_bed": { "oklab": [0.616, -0.009, 0.117], "fullCube": false },
+  "minecraft:stripped_acacia_log": {
+    "oklab": [0.564, 0.084, 0.079],
+    "fullCube": true
+  },
+  "minecraft:stripped_acacia_wood": {
+    "oklab": [0.569, 0.087, 0.078],
+    "fullCube": true
+  },
+  "minecraft:stripped_bamboo_block": {
+    "oklab": [0.743, -0.014, 0.113],
+    "fullCube": true
+  },
+  "minecraft:stripped_birch_log": {
+    "oklab": [0.759, -0.001, 0.078],
+    "fullCube": true
+  },
+  "minecraft:stripped_birch_wood": {
+    "oklab": [0.763, -0.001, 0.079],
+    "fullCube": true
+  },
+  "minecraft:stripped_cherry_log": {
+    "oklab": [0.745, 0.073, 0.025],
+    "fullCube": true
+  },
+  "minecraft:stripped_cherry_wood": {
+    "oklab": [0.728, 0.082, 0.023],
+    "fullCube": true
+  },
+  "minecraft:stripped_crimson_hyphae": {
+    "oklab": [0.465, 0.115, -0.006],
+    "fullCube": true
+  },
+  "minecraft:stripped_crimson_stem": {
+    "oklab": [0.457, 0.11, -0.006],
+    "fullCube": true
+  },
+  "minecraft:stripped_dark_oak_log": {
+    "oklab": [0.344, 0.014, 0.039],
+    "fullCube": true
+  },
+  "minecraft:stripped_dark_oak_wood": {
+    "oklab": [0.357, 0.012, 0.039],
+    "fullCube": true
+  },
+  "minecraft:stripped_jungle_log": {
+    "oklab": [0.635, 0.029, 0.074],
+    "fullCube": true
+  },
+  "minecraft:stripped_jungle_wood": {
+    "oklab": [0.644, 0.026, 0.076],
+    "fullCube": true
+  },
+  "minecraft:stripped_mangrove_log": {
+    "oklab": [0.41, 0.083, 0.041],
+    "fullCube": true
+  },
+  "minecraft:stripped_mangrove_wood": {
+    "oklab": [0.421, 0.082, 0.043],
+    "fullCube": true
+  },
+  "minecraft:stripped_oak_log": {
+    "oklab": [0.659, 0.014, 0.083],
+    "fullCube": true
+  },
+  "minecraft:stripped_oak_wood": {
+    "oklab": [0.674, 0.014, 0.085],
+    "fullCube": true
+  },
+  "minecraft:stripped_pale_oak_log": {
+    "oklab": [0.946, 0.008, 0.004],
+    "fullCube": true
+  },
+  "minecraft:stripped_pale_oak_wood": {
+    "oklab": [0.956, 0.007, 0.004],
+    "fullCube": true
+  },
+  "minecraft:stripped_poplar_log": {
+    "oklab": [0.675, 0.009, 0.021],
+    "fullCube": true
+  },
+  "minecraft:stripped_poplar_wood": {
+    "oklab": [0.688, 0.008, 0.022],
+    "fullCube": true
+  },
+  "minecraft:stripped_spruce_log": {
+    "oklab": [0.483, 0.017, 0.061],
+    "fullCube": true
+  },
+  "minecraft:stripped_spruce_wood": {
+    "oklab": [0.486, 0.016, 0.061],
+    "fullCube": true
+  },
+  "minecraft:stripped_warped_hyphae": {
+    "oklab": [0.622, -0.085, -0.018],
+    "fullCube": true
+  },
+  "minecraft:stripped_warped_stem": {
+    "oklab": [0.603, -0.082, -0.017],
+    "fullCube": true
+  },
+  "minecraft:structure_block": {
+    "oklab": [0.46, 0.03, -0.02],
+    "fullCube": true
+  },
+  "minecraft:sugar_cane": { "oklab": [0.591, -0.107, 0.11], "fullCube": false },
+  "minecraft:sulfur": { "oklab": [0.754, -0.015, 0.095], "fullCube": true },
+  "minecraft:sulfur_brick_slab": {
+    "oklab": [0.74, -0.014, 0.101],
+    "fullCube": false
+  },
+  "minecraft:sulfur_brick_stairs": {
+    "oklab": [0.74, -0.014, 0.101],
+    "fullCube": false
+  },
+  "minecraft:sulfur_brick_wall": {
+    "oklab": [0.74, -0.014, 0.101],
+    "fullCube": false
+  },
+  "minecraft:sulfur_bricks": {
+    "oklab": [0.74, -0.014, 0.101],
+    "fullCube": true
+  },
+  "minecraft:sulfur_slab": {
+    "oklab": [0.754, -0.015, 0.095],
+    "fullCube": false
+  },
+  "minecraft:sulfur_spike": {
+    "oklab": [0.754, -0.019, 0.1],
+    "fullCube": false
+  },
+  "minecraft:sulfur_stairs": {
+    "oklab": [0.754, -0.015, 0.095],
+    "fullCube": false
+  },
+  "minecraft:sulfur_wall": {
+    "oklab": [0.754, -0.015, 0.095],
+    "fullCube": false
+  },
+  "minecraft:sunflower": { "oklab": [0.561, -0.116, 0.102], "fullCube": false },
+  "minecraft:suspicious_gravel": {
+    "oklab": [0.6, 0.005, 0.003],
+    "fullCube": true
+  },
+  "minecraft:suspicious_sand": {
+    "oklab": [0.848, -0.004, 0.06],
+    "fullCube": true
+  },
+  "minecraft:sweet_berry_bush": {
+    "oklab": [0.435, -0.068, 0.038],
+    "fullCube": false
+  },
+  "minecraft:tall_dry_grass": {
+    "oklab": [0.762, 0.006, 0.068],
+    "fullCube": false
+  },
+  "minecraft:tall_grass": {
+    "oklab": [0.453, -0.052, 0.065],
+    "fullCube": false
+  },
+  "minecraft:tall_seagrass": {
+    "oklab": [0.508, -0.115, 0.103],
+    "fullCube": false
+  },
+  "minecraft:target": { "oklab": [0.85, 0.031, 0.026], "fullCube": true },
+  "minecraft:terracotta": { "oklab": [0.541, 0.061, 0.06], "fullCube": true },
+  "minecraft:test_block": { "oklab": [0.755, 0.019, 0.036], "fullCube": true },
+  "minecraft:test_instance_block": {
+    "oklab": [0.646, 0.004, 0.002],
+    "fullCube": true
+  },
+  "minecraft:tinted_glass": {
+    "oklab": [0.284, 0.012, -0.012],
+    "fullCube": true
+  },
+  "minecraft:tnt": { "oklab": [0.621, 0.085, 0.033], "fullCube": true },
+  "minecraft:torch": { "oklab": [0.631, 0.01, 0.068], "fullCube": false },
+  "minecraft:torchflower": {
+    "oklab": [0.571, 0.012, 0.052],
+    "fullCube": false
+  },
+  "minecraft:torchflower_crop": {
+    "oklab": [0.457, -0.083, 0.029],
+    "fullCube": false
+  },
+  "minecraft:trapped_chest": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:trial_spawner": {
+    "oklab": [0.416, -0.019, -0.03],
+    "fullCube": false
+  },
+  "minecraft:tripwire": { "oklab": [0.618, 0, 0], "fullCube": false },
+  "minecraft:tripwire_hook": {
+    "oklab": [0.635, 0.014, 0.071],
+    "fullCube": false
+  },
+  "minecraft:tube_coral": {
+    "oklab": [0.501, -0.012, -0.183],
+    "fullCube": false
+  },
+  "minecraft:tube_coral_block": {
+    "oklab": [0.513, -0.014, -0.189],
+    "fullCube": true
+  },
+  "minecraft:tube_coral_fan": {
+    "oklab": [0.525, -0.015, -0.185],
+    "fullCube": false
+  },
+  "minecraft:tube_coral_wall_fan": {
+    "oklab": [0.525, -0.015, -0.185],
+    "fullCube": false
+  },
+  "minecraft:tuff": { "oklab": [0.541, -0.004, 0.009], "fullCube": true },
+  "minecraft:tuff_brick_slab": {
+    "oklab": [0.516, -0.007, 0.009],
+    "fullCube": false
+  },
+  "minecraft:tuff_brick_stairs": {
+    "oklab": [0.516, -0.007, 0.009],
+    "fullCube": false
+  },
+  "minecraft:tuff_brick_wall": {
+    "oklab": [0.516, -0.007, 0.009],
+    "fullCube": false
+  },
+  "minecraft:tuff_bricks": {
+    "oklab": [0.516, -0.007, 0.009],
+    "fullCube": true
+  },
+  "minecraft:tuff_slab": { "oklab": [0.541, -0.004, 0.009], "fullCube": false },
+  "minecraft:tuff_stairs": {
+    "oklab": [0.541, -0.004, 0.009],
+    "fullCube": false
+  },
+  "minecraft:tuff_wall": { "oklab": [0.541, -0.004, 0.009], "fullCube": false },
+  "minecraft:turtle_egg": {
+    "oklab": [0.917, -0.007, 0.046],
+    "fullCube": false
+  },
+  "minecraft:twisting_vines": {
+    "oklab": [0.596, -0.106, 0.005],
+    "fullCube": false
+  },
+  "minecraft:twisting_vines_plant": {
+    "oklab": [0.576, -0.1, -0.001],
+    "fullCube": false
+  },
+  "minecraft:vault": { "oklab": [0.405, -0.011, -0.013], "fullCube": false },
+  "minecraft:verdant_froglight": {
+    "oklab": [0.933, -0.026, 0.019],
+    "fullCube": true
+  },
+  "minecraft:vine": { "oklab": [0.39, -0.059, 0.071], "fullCube": false },
+  "minecraft:wall_torch": { "oklab": [0.631, 0.01, 0.068], "fullCube": false },
+  "minecraft:warped_button": {
+    "oklab": [0.493, -0.065, -0.01],
+    "fullCube": false
+  },
+  "minecraft:warped_door": {
+    "oklab": [0.534, -0.075, -0.011],
+    "fullCube": false
+  },
+  "minecraft:warped_fence": {
+    "oklab": [0.493, -0.065, -0.01],
+    "fullCube": false
+  },
+  "minecraft:warped_fence_gate": {
+    "oklab": [0.493, -0.065, -0.01],
+    "fullCube": false
+  },
+  "minecraft:warped_fungus": {
+    "oklab": [0.572, -0.01, 0.029],
+    "fullCube": false
+  },
+  "minecraft:warped_hanging_sign": {
+    "oklab": [0.587, -0.078, -0.017],
+    "fullCube": false
+  },
+  "minecraft:warped_hyphae": {
+    "oklab": [0.39, -0.002, -0.022],
+    "fullCube": true
+  },
+  "minecraft:warped_nylium": {
+    "oklab": [0.431, -0.003, 0.01],
+    "fullCube": true
+  },
+  "minecraft:warped_planks": {
+    "oklab": [0.493, -0.065, -0.01],
+    "fullCube": true
+  },
+  "minecraft:warped_pressure_plate": {
+    "oklab": [0.493, -0.065, -0.01],
+    "fullCube": false
+  },
+  "minecraft:warped_roots": {
+    "oklab": [0.582, -0.101, -0.001],
+    "fullCube": false
+  },
+  "minecraft:warped_shelf": {
+    "oklab": [0.592, -0.084, -0.013],
+    "fullCube": false
+  },
+  "minecraft:warped_sign": {
+    "oklab": [0.484, -0.061, -0.011],
+    "fullCube": false
+  },
+  "minecraft:warped_slab": {
+    "oklab": [0.493, -0.065, -0.01],
+    "fullCube": false
+  },
+  "minecraft:warped_stairs": {
+    "oklab": [0.493, -0.065, -0.01],
+    "fullCube": false
+  },
+  "minecraft:warped_stem": {
+    "oklab": [0.442, -0.029, -0.018],
+    "fullCube": true
+  },
+  "minecraft:warped_trapdoor": {
+    "oklab": [0.535, -0.074, -0.008],
+    "fullCube": false
+  },
+  "minecraft:warped_wall_hanging_sign": {
+    "oklab": [0.587, -0.078, -0.017],
+    "fullCube": false
+  },
+  "minecraft:warped_wall_sign": {
+    "oklab": [0.484, -0.061, -0.011],
+    "fullCube": false
+  },
+  "minecraft:warped_wart_block": {
+    "oklab": [0.526, -0.081, -0.023],
+    "fullCube": true
+  },
+  "minecraft:water": { "oklab": [0.449, -0.018, -0.134], "fullCube": false },
+  "minecraft:water_cauldron": {
+    "oklab": [0.401, 0.002, -0.005],
+    "fullCube": false
+  },
+  "minecraft:waxed_chiseled_copper": {
+    "oklab": [0.603, 0.09, 0.071],
+    "fullCube": true
+  },
+  "minecraft:waxed_copper_bars": {
+    "oklab": [0.528, 0.082, 0.067],
+    "fullCube": false
+  },
+  "minecraft:waxed_copper_block": {
+    "oklab": [0.625, 0.09, 0.072],
+    "fullCube": true
+  },
+  "minecraft:waxed_copper_bulb": {
+    "oklab": [0.552, 0.078, 0.067],
+    "fullCube": true
+  },
+  "minecraft:waxed_copper_chain": {
+    "oklab": [0.516, 0.081, 0.066],
+    "fullCube": false
+  },
+  "minecraft:waxed_copper_chest": {
+    "oklab": [0.625, 0.09, 0.072],
+    "fullCube": false
+  },
+  "minecraft:waxed_copper_door": {
+    "oklab": [0.607, 0.086, 0.069],
+    "fullCube": false
+  },
+  "minecraft:waxed_copper_golem_statue": {
+    "oklab": [0.625, 0.09, 0.072],
+    "fullCube": false
+  },
+  "minecraft:waxed_copper_grate": {
+    "oklab": [0.625, 0.09, 0.072],
+    "fullCube": true
+  },
+  "minecraft:waxed_copper_lantern": {
+    "oklab": [0.62, 0.03, 0.06],
+    "fullCube": false
+  },
+  "minecraft:waxed_copper_trapdoor": {
+    "oklab": [0.623, 0.091, 0.071],
+    "fullCube": false
+  },
+  "minecraft:waxed_cut_copper": {
+    "oklab": [0.624, 0.091, 0.07],
+    "fullCube": true
+  },
+  "minecraft:waxed_cut_copper_slab": {
+    "oklab": [0.624, 0.091, 0.07],
+    "fullCube": false
+  },
+  "minecraft:waxed_cut_copper_stairs": {
+    "oklab": [0.624, 0.091, 0.07],
+    "fullCube": false
+  },
+  "minecraft:waxed_exposed_chiseled_copper": {
+    "oklab": [0.606, 0.037, 0.04],
+    "fullCube": true
+  },
+  "minecraft:waxed_exposed_copper": {
+    "oklab": [0.625, 0.035, 0.044],
+    "fullCube": true
+  },
+  "minecraft:waxed_exposed_copper_bars": {
+    "oklab": [0.557, 0.028, 0.037],
+    "fullCube": false
+  },
+  "minecraft:waxed_exposed_copper_bulb": {
+    "oklab": [0.566, 0.031, 0.037],
+    "fullCube": true
+  },
+  "minecraft:waxed_exposed_copper_chain": {
+    "oklab": [0.535, 0.024, 0.037],
+    "fullCube": false
+  },
+  "minecraft:waxed_exposed_copper_chest": {
+    "oklab": [0.625, 0.035, 0.044],
+    "fullCube": false
+  },
+  "minecraft:waxed_exposed_copper_door": {
+    "oklab": [0.604, 0.037, 0.04],
+    "fullCube": false
+  },
+  "minecraft:waxed_exposed_copper_golem_statue": {
+    "oklab": [0.625, 0.035, 0.044],
+    "fullCube": false
+  },
+  "minecraft:waxed_exposed_copper_grate": {
+    "oklab": [0.627, 0.036, 0.043],
+    "fullCube": true
+  },
+  "minecraft:waxed_exposed_copper_lantern": {
+    "oklab": [0.649, 0.003, 0.044],
+    "fullCube": false
+  },
+  "minecraft:waxed_exposed_copper_trapdoor": {
+    "oklab": [0.625, 0.037, 0.042],
+    "fullCube": false
+  },
+  "minecraft:waxed_exposed_cut_copper": {
+    "oklab": [0.611, 0.033, 0.041],
+    "fullCube": true
+  },
+  "minecraft:waxed_exposed_cut_copper_slab": {
+    "oklab": [0.611, 0.033, 0.041],
+    "fullCube": false
+  },
+  "minecraft:waxed_exposed_cut_copper_stairs": {
+    "oklab": [0.611, 0.033, 0.041],
+    "fullCube": false
+  },
+  "minecraft:waxed_exposed_lightning_rod": {
+    "oklab": [0.615, 0.044, 0.038],
+    "fullCube": false
+  },
+  "minecraft:waxed_lightning_rod": {
+    "oklab": [0.637, 0.091, 0.073],
+    "fullCube": false
+  },
+  "minecraft:waxed_oxidized_chiseled_copper": {
+    "oklab": [0.662, -0.089, 0.021],
+    "fullCube": true
+  },
+  "minecraft:waxed_oxidized_copper": {
+    "oklab": [0.662, -0.09, 0.021],
+    "fullCube": true
+  },
+  "minecraft:waxed_oxidized_copper_bars": {
+    "oklab": [0.542, -0.071, 0.016],
+    "fullCube": false
+  },
+  "minecraft:waxed_oxidized_copper_bulb": {
+    "oklab": [0.588, -0.077, 0.017],
+    "fullCube": true
+  },
+  "minecraft:waxed_oxidized_copper_chain": {
+    "oklab": [0.526, -0.067, 0.012],
+    "fullCube": false
+  },
+  "minecraft:waxed_oxidized_copper_chest": {
+    "oklab": [0.662, -0.09, 0.021],
+    "fullCube": false
+  },
+  "minecraft:waxed_oxidized_copper_door": {
+    "oklab": [0.641, -0.085, 0.018],
+    "fullCube": false
+  },
+  "minecraft:waxed_oxidized_copper_golem_statue": {
+    "oklab": [0.662, -0.09, 0.021],
+    "fullCube": false
+  },
+  "minecraft:waxed_oxidized_copper_grate": {
+    "oklab": [0.659, -0.09, 0.021],
+    "fullCube": true
+  },
+  "minecraft:waxed_oxidized_copper_lantern": {
+    "oklab": [0.62, -0.07, 0.026],
+    "fullCube": false
+  },
+  "minecraft:waxed_oxidized_copper_trapdoor": {
+    "oklab": [0.661, -0.089, 0.021],
+    "fullCube": false
+  },
+  "minecraft:waxed_oxidized_cut_copper": {
+    "oklab": [0.639, -0.085, 0.019],
+    "fullCube": true
+  },
+  "minecraft:waxed_oxidized_cut_copper_slab": {
+    "oklab": [0.639, -0.085, 0.019],
+    "fullCube": false
+  },
+  "minecraft:waxed_oxidized_cut_copper_stairs": {
+    "oklab": [0.639, -0.085, 0.019],
+    "fullCube": false
+  },
+  "minecraft:waxed_oxidized_lightning_rod": {
+    "oklab": [0.642, -0.086, 0.018],
+    "fullCube": false
+  },
+  "minecraft:waxed_weathered_chiseled_copper": {
+    "oklab": [0.641, -0.067, 0.04],
+    "fullCube": true
+  },
+  "minecraft:waxed_weathered_copper": {
+    "oklab": [0.644, -0.066, 0.043],
+    "fullCube": true
+  },
+  "minecraft:waxed_weathered_copper_bars": {
+    "oklab": [0.556, -0.056, 0.032],
+    "fullCube": false
+  },
+  "minecraft:waxed_weathered_copper_bulb": {
+    "oklab": [0.578, -0.053, 0.03],
+    "fullCube": true
+  },
+  "minecraft:waxed_weathered_copper_chain": {
+    "oklab": [0.507, -0.047, 0.016],
+    "fullCube": false
+  },
+  "minecraft:waxed_weathered_copper_chest": {
+    "oklab": [0.644, -0.066, 0.043],
+    "fullCube": false
+  },
+  "minecraft:waxed_weathered_copper_door": {
+    "oklab": [0.622, -0.059, 0.045],
+    "fullCube": false
+  },
+  "minecraft:waxed_weathered_copper_golem_statue": {
+    "oklab": [0.644, -0.066, 0.043],
+    "fullCube": false
+  },
+  "minecraft:waxed_weathered_copper_grate": {
+    "oklab": [0.643, -0.067, 0.042],
+    "fullCube": true
+  },
+  "minecraft:waxed_weathered_copper_lantern": {
+    "oklab": [0.616, -0.056, 0.038],
+    "fullCube": false
+  },
+  "minecraft:waxed_weathered_copper_trapdoor": {
+    "oklab": [0.646, -0.066, 0.043],
+    "fullCube": false
+  },
+  "minecraft:waxed_weathered_cut_copper": {
+    "oklab": [0.628, -0.055, 0.04],
+    "fullCube": true
+  },
+  "minecraft:waxed_weathered_cut_copper_slab": {
+    "oklab": [0.628, -0.055, 0.04],
+    "fullCube": false
+  },
+  "minecraft:waxed_weathered_cut_copper_stairs": {
+    "oklab": [0.628, -0.055, 0.04],
+    "fullCube": false
+  },
+  "minecraft:waxed_weathered_lightning_rod": {
+    "oklab": [0.617, -0.065, 0.039],
+    "fullCube": false
+  },
+  "minecraft:weathered_chiseled_copper": {
+    "oklab": [0.641, -0.067, 0.04],
+    "fullCube": true
+  },
+  "minecraft:weathered_copper": {
+    "oklab": [0.644, -0.066, 0.043],
+    "fullCube": true
+  },
+  "minecraft:weathered_copper_bars": {
+    "oklab": [0.556, -0.056, 0.032],
+    "fullCube": false
+  },
+  "minecraft:weathered_copper_bulb": {
+    "oklab": [0.578, -0.053, 0.03],
+    "fullCube": true
+  },
+  "minecraft:weathered_copper_chain": {
+    "oklab": [0.507, -0.047, 0.016],
+    "fullCube": false
+  },
+  "minecraft:weathered_copper_chest": {
+    "oklab": [0.644, -0.066, 0.043],
+    "fullCube": false
+  },
+  "minecraft:weathered_copper_door": {
+    "oklab": [0.622, -0.059, 0.045],
+    "fullCube": false
+  },
+  "minecraft:weathered_copper_golem_statue": {
+    "oklab": [0.644, -0.066, 0.043],
+    "fullCube": false
+  },
+  "minecraft:weathered_copper_grate": {
+    "oklab": [0.643, -0.067, 0.042],
+    "fullCube": true
+  },
+  "minecraft:weathered_copper_lantern": {
+    "oklab": [0.616, -0.056, 0.038],
+    "fullCube": false
+  },
+  "minecraft:weathered_copper_trapdoor": {
+    "oklab": [0.646, -0.066, 0.043],
+    "fullCube": false
+  },
+  "minecraft:weathered_cut_copper": {
+    "oklab": [0.628, -0.055, 0.04],
+    "fullCube": true
+  },
+  "minecraft:weathered_cut_copper_slab": {
+    "oklab": [0.628, -0.055, 0.04],
+    "fullCube": false
+  },
+  "minecraft:weathered_cut_copper_stairs": {
+    "oklab": [0.628, -0.055, 0.04],
+    "fullCube": false
+  },
+  "minecraft:weathered_lightning_rod": {
+    "oklab": [0.617, -0.065, 0.039],
+    "fullCube": false
+  },
+  "minecraft:weeping_vines": {
+    "oklab": [0.329, 0.117, 0.066],
+    "fullCube": false
+  },
+  "minecraft:weeping_vines_plant": {
+    "oklab": [0.423, 0.13, 0.072],
+    "fullCube": false
+  },
+  "minecraft:wet_sponge": { "oklab": [0.749, -0.055, 0.124], "fullCube": true },
+  "minecraft:wheat": { "oklab": [0.528, -0.138, 0.103], "fullCube": false },
+  "minecraft:white_banner": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:white_bed": { "oklab": [0.754, 0.005, 0.019], "fullCube": false },
+  "minecraft:white_candle": {
+    "oklab": [0.896, -0.006, -0.002],
+    "fullCube": false
+  },
+  "minecraft:white_candle_cake": {
+    "oklab": [0.809, 0.019, 0.019],
+    "fullCube": false
+  },
+  "minecraft:white_carpet": {
+    "oklab": [0.943, -0.002, -0.001],
+    "fullCube": false
+  },
+  "minecraft:white_concrete": {
+    "oklab": [0.869, -0.006, -0.003],
+    "fullCube": true
+  },
+  "minecraft:white_concrete_powder": {
+    "oklab": [0.917, -0.002, -0.001],
+    "fullCube": true
+  },
+  "minecraft:white_concrete_slab": {
+    "oklab": [0.869, -0.006, -0.003],
+    "fullCube": false
+  },
+  "minecraft:white_concrete_stairs": {
+    "oklab": [0.869, -0.006, -0.003],
+    "fullCube": false
+  },
+  "minecraft:white_glazed_terracotta": {
+    "oklab": [0.886, -0.008, 0.003],
+    "fullCube": true
+  },
+  "minecraft:white_shulker_box": {
+    "oklab": [0.895, -0.005, -0.002],
+    "fullCube": false
+  },
+  "minecraft:white_stained_glass": { "oklab": [1, 0, 0], "fullCube": true },
+  "minecraft:white_stained_glass_pane": {
+    "oklab": [0.997, 0, 0],
+    "fullCube": false
+  },
+  "minecraft:white_terracotta": {
+    "oklab": [0.787, 0.028, 0.033],
+    "fullCube": true
+  },
+  "minecraft:white_tulip": {
+    "oklab": [0.685, -0.078, 0.06],
+    "fullCube": false
+  },
+  "minecraft:white_wall_banner": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:white_wool": {
+    "oklab": [0.943, -0.002, -0.001],
+    "fullCube": true
+  },
+  "minecraft:white_wool_slab": {
+    "oklab": [0.943, -0.002, -0.001],
+    "fullCube": false
+  },
+  "minecraft:white_wool_stairs": {
+    "oklab": [0.943, -0.002, -0.001],
+    "fullCube": false
+  },
+  "minecraft:wildflowers": {
+    "oklab": [0.827, -0.007, 0.083],
+    "fullCube": false
+  },
+  "minecraft:wither_rose": {
+    "oklab": [0.299, -0.018, 0.035],
+    "fullCube": false
+  },
+  "minecraft:wither_skeleton_skull": {
+    "oklab": [0.391, 0.021, 0.027],
+    "fullCube": false
+  },
+  "minecraft:wither_skeleton_wall_skull": {
+    "oklab": [0.391, 0.021, 0.027],
+    "fullCube": false
+  },
+  "minecraft:yellow_banner": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:yellow_bed": { "oklab": [0.702, 0.021, 0.123], "fullCube": false },
+  "minecraft:yellow_candle": {
+    "oklab": [0.758, 0.008, 0.138],
+    "fullCube": false
+  },
+  "minecraft:yellow_candle_cake": {
+    "oklab": [0.779, 0.026, 0.044],
+    "fullCube": false
+  },
+  "minecraft:yellow_carpet": {
+    "oklab": [0.849, 0.003, 0.165],
+    "fullCube": false
+  },
+  "minecraft:yellow_concrete": {
+    "oklab": [0.796, 0.026, 0.159],
+    "fullCube": true
+  },
+  "minecraft:yellow_concrete_powder": {
+    "oklab": [0.837, -0.014, 0.155],
+    "fullCube": true
+  },
+  "minecraft:yellow_concrete_slab": {
+    "oklab": [0.796, 0.026, 0.159],
+    "fullCube": false
+  },
+  "minecraft:yellow_concrete_stairs": {
+    "oklab": [0.796, 0.026, 0.159],
+    "fullCube": false
+  },
+  "minecraft:yellow_glazed_terracotta": {
+    "oklab": [0.844, 0.009, 0.113],
+    "fullCube": true
+  },
+  "minecraft:yellow_poplar_leaves": {
+    "oklab": [0.708, 0.053, 0.132],
+    "fullCube": true
+  },
+  "minecraft:yellow_shulker_box": {
+    "oklab": [0.831, 0.014, 0.164],
+    "fullCube": false
+  },
+  "minecraft:yellow_stained_glass": {
+    "oklab": [0.894, -0.061, 0.172],
+    "fullCube": true
+  },
+  "minecraft:yellow_stained_glass_pane": {
+    "oklab": [0.891, -0.061, 0.171],
+    "fullCube": false
+  },
+  "minecraft:yellow_terracotta": {
+    "oklab": [0.654, 0.027, 0.122],
+    "fullCube": true
+  },
+  "minecraft:yellow_wall_banner": {
+    "oklab": [0.637, 0.015, 0.079],
+    "fullCube": false
+  },
+  "minecraft:yellow_wool": { "oklab": [0.849, 0.003, 0.165], "fullCube": true },
+  "minecraft:yellow_wool_slab": {
+    "oklab": [0.849, 0.003, 0.165],
+    "fullCube": false
+  },
+  "minecraft:yellow_wool_stairs": {
+    "oklab": [0.849, 0.003, 0.165],
+    "fullCube": false
+  },
+  "minecraft:zombie_head": {
+    "oklab": [0.391, 0.021, 0.027],
+    "fullCube": false
+  },
+  "minecraft:zombie_wall_head": {
+    "oklab": [0.391, 0.021, 0.027],
+    "fullCube": false
+  }
+}

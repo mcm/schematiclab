@@ -10,7 +10,8 @@
 //   - src/lib/schemlib/data/manual-overrides.ts
 //
 // Output:
-//   - src/lib/schemlib/data/block-translations.generated.ts
+//   - src/lib/schemlib/data/block-translations.generated.ts (flatten tables,
+//     anchor diffs and the 1.13.2 block list)
 //
 // Usage:
 //   node --experimental-strip-types scripts/generate-block-translations.mts
@@ -271,6 +272,7 @@ function emitBundle(
   diffs: readonly VersionDiff[],
   flattenTable: Record<string, string>,
   reverseFlattenTable: Record<string, string>,
+  baseBlocks: readonly string[],
 ): string {
   // JSON.stringify with 2-space indent produces a deterministic, diff-friendly
   // module. We then wrap it as `export const X = (...) as const;`.
@@ -286,6 +288,10 @@ function emitBundle(
     )};`,
     "",
     `export const VERSION_DIFFS: readonly VersionDiff[] = ${json(diffs)};`,
+    "",
+    "// Every block in the 1.13.2 anchor. Later anchors' block sets follow from",
+    "// VERSION_DIFFS (see `vanillaBlocksAtAnchor`).",
+    `export const BASE_BLOCKS_1_13_2: readonly string[] = ${json(baseBlocks)};`,
     "",
   ].join("\n");
 }
@@ -341,7 +347,11 @@ function main(): void {
   const reverseFlattenTable = buildReverseFlattenTable(flattenTable);
 
   process.stderr.write(`Writing ${OUT_PATH}…\n`);
-  writeFileSync(OUT_PATH, emitBundle(diffs, flattenTable, reverseFlattenTable));
+  const baseBlocks = Object.keys(schemas["1.13.2"]).sort();
+  writeFileSync(
+    OUT_PATH,
+    emitBundle(diffs, flattenTable, reverseFlattenTable, baseBlocks),
+  );
 
   // Summary so reviewers can sanity-check the diff sizes.
   for (const d of diffs) {

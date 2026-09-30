@@ -12,12 +12,18 @@ import {
   Input,
   Label,
 } from "@iamthemcmaster/ui";
+import { knownVersionIdFor } from "@/lib/advanced/effective-mod-version";
 import { isCatalogedBlockId, searchBlockCatalog } from "@/lib/block-catalog";
+import { useEditorState } from "@/lib/editor-state";
 import {
   getLoadedModBlock,
   getModForBlockId,
   useLoadedMods,
 } from "@/lib/mods/registry";
+import {
+  BlockSuggestions,
+  type BlockSuggestionContext,
+} from "./block-suggestions";
 
 export interface BlockStatePickerSource {
   blockState: string;
@@ -41,6 +47,9 @@ interface BlockStatePickerProps {
   title?: string;
   description?: string;
   confirmLabel?: string;
+  // When opened from a problematic Version Mapping row: show "Suggest a
+  // block" candidates for the source above the identifier input.
+  suggestionContext?: BlockSuggestionContext;
 }
 
 const INPUT_ID = "block-state-picker-input";
@@ -93,6 +102,7 @@ export function BlockStatePicker({
   title = "Swap block state",
   description = "Replace every instance of the source block state with a new target. Type a block identifier — autocomplete suggestions come from the schemlib catalog and loaded mods. Free-text input is accepted for identifiers outside the catalog.",
   confirmLabel = "Confirm swap",
+  suggestionContext,
 }: BlockStatePickerProps) {
   const [query, setQuery] = React.useState("");
   const [highlightIndex, setHighlightIndex] = React.useState(0);
@@ -104,6 +114,15 @@ export function BlockStatePicker({
   // Re-run the search whenever the set of loaded mods changes so modded
   // blocks appear (or disappear) without reopening the picker.
   const loadedMods = useLoadedMods();
+  // Which loaded file of a mod describes a block (properties, name) when
+  // files for several versions are loaded: the version being mapped to, else
+  // the schematic's current version.
+  const { parseStatus } = useEditorState();
+  const modVersionId =
+    suggestionContext?.versionId ??
+    (parseStatus.status === "ready"
+      ? knownVersionIdFor(parseStatus.schematic.minecraftVersion)
+      : null);
   const suggestions = React.useMemo(() => {
     void loadedMods;
     return searchBlockCatalog(query, MAX_SUGGESTIONS);
@@ -124,10 +143,10 @@ export function BlockStatePicker({
       ? formatStateDisplay(parsedTarget.blockId, parsedTarget.properties)
       : "—";
   const targetModBlock = parsedTarget
-    ? getLoadedModBlock(parsedTarget.blockId)
+    ? getLoadedModBlock(parsedTarget.blockId, modVersionId)
     : null;
   const targetMod = parsedTarget
-    ? getModForBlockId(parsedTarget.blockId)
+    ? getModForBlockId(parsedTarget.blockId, modVersionId)
     : null;
 
   function selectSuggestion(id: string) {
@@ -212,6 +231,33 @@ export function BlockStatePicker({
           />
         </div>
 
+        {suggestionContext && source ? (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "var(--space-2)",
+              paddingBottom: "var(--space-3)",
+            }}
+          >
+            <span
+              style={{
+                fontSize: "var(--text-xs)",
+                fontWeight: 500,
+                color: "var(--text-secondary)",
+              }}
+            >
+              Suggested blocks in {suggestionContext.versionId}
+            </span>
+            <BlockSuggestions
+              sourceBlockId={source.blockId}
+              context={suggestionContext}
+              onChoose={(candidate) => selectSuggestion(candidate.id)}
+              chooseLabel="Select"
+            />
+          </div>
+        ) : null}
+
         <div
           style={{
             display: "flex",
@@ -271,7 +317,7 @@ export function BlockStatePicker({
             ) : (
               suggestions.map((id, i) => {
                 const isHighlighted = i === activeIndex;
-                const mod = getModForBlockId(id);
+                const mod = getModForBlockId(id, modVersionId);
                 return (
                   <li
                     key={id}

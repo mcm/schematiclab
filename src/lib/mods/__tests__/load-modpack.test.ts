@@ -68,8 +68,9 @@ function makeDeps(overrides: Partial<ModpackLoadDeps> = {}): ModpackLoadDeps {
     download: vi.fn(async () => new Uint8Array([9])),
     parse: vi.fn(async () => parsed()),
     addMany: vi.fn(async () => {}),
+    mapNamespaces: vi.fn(async () => []),
     now: () => 1234,
-    loadedKeys: async () => new Set<string>(),
+    loadedFiles: async () => new Map<string, number>(),
     ...overrides,
   };
 }
@@ -94,18 +95,26 @@ describe("startModpackLoad", () => {
     expect(deps.parse).toHaveBeenCalledWith(new Uint8Array([1, 2, 3]));
     expect(deps.addMany).toHaveBeenCalledTimes(1);
     const batch = vi.mocked(deps.addMany).mock.calls[0][0];
-    expect(batch.map(({ meta }) => meta.key)).toEqual(["1:10", "2:20"]);
+    expect(batch.map(({ meta }) => meta.key)).toEqual(["1:1.21.1", "2:1.21.1"]);
     expect(batch[0].meta).toMatchObject({
-      key: "1:10",
+      key: "1:1.21.1",
       modId: 1,
       fileId: 10,
       modName: "alpha",
       modSlug: "alpha",
       fileDisplayName: "alpha.jar",
+      gameVersion: "1.21.1",
       gameVersions: ["1.21.1"],
       loader: "neoforge",
       loadedAt: 1234,
     });
+    // Each registered file's namespaces are auto-mapped to its mod.
+    expect(deps.mapNamespaces).toHaveBeenCalledTimes(2);
+    expect(deps.mapNamespaces).toHaveBeenCalledWith(
+      batch[0].meta.namespaces,
+      batch[0].meta,
+      1234,
+    );
     expect(getModpackLoad()).toEqual({
       status: "done",
       packName: "Pack",
@@ -165,7 +174,7 @@ describe("startModpackLoad", () => {
 
   it("counts blockless and already-loaded mods and collects failures", async () => {
     const deps = makeDeps({
-      loadedKeys: async () => new Set(["1:10"]),
+      loadedFiles: async () => new Map([["1:1.21.1", 10]]),
       parse: vi
         .fn()
         .mockResolvedValueOnce(parsed(0))
@@ -240,7 +249,7 @@ describe("startModpackLoad", () => {
     // What was parsed before cancelling is still registered.
     expect(
       vi.mocked(deps.addMany).mock.calls[0][0].map(({ meta }) => meta.key),
-    ).toEqual(["1:10"]);
+    ).toEqual(["1:1.21.1"]);
     expect(getModpackLoad()).toMatchObject({
       status: "cancelled",
       processed: 1,
@@ -277,7 +286,7 @@ describe("startModpackLoad", () => {
     await startModpackLoad(
       files,
       makeDeps({
-        loadedKeys: async () => {
+        loadedFiles: async () => {
           throw new Error("storage blocked");
         },
       }),

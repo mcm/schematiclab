@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { ModJarWorkerRequest } from "../mod-jar.worker";
+import type { ModJarWorkerRequest, ParseJarPayload } from "../mod-jar.worker";
 
 type Listener = (event: unknown) => void;
 
@@ -71,7 +71,8 @@ describe("parseModJarInWorker", () => {
     void parseModJarInWorker(bytes);
 
     const { message, transfer } = FakeWorker.instances[0].posted[0];
-    expect(message.payload.bytes).toBe(bytes);
+    const payload = message.payload as ParseJarPayload;
+    expect(payload.bytes).toBe(bytes);
     expect(transfer).toEqual([bytes.buffer]);
   });
 
@@ -81,9 +82,58 @@ describe("parseModJarInWorker", () => {
     void parseModJarInWorker(shared.subarray(1, 3));
 
     const { message, transfer } = FakeWorker.instances[0].posted[0];
-    expect(message.payload.bytes).toEqual(new Uint8Array([2, 3]));
-    expect(message.payload.bytes.buffer).not.toBe(shared.buffer);
-    expect(transfer).toEqual([message.payload.bytes.buffer]);
+    const payload = message.payload as ParseJarPayload;
+    expect(payload.bytes).toEqual(new Uint8Array([2, 3]));
+    expect(payload.bytes.buffer).not.toBe(shared.buffer);
+    expect(transfer).toEqual([payload.bytes.buffer]);
+  });
+
+  it("computes appearances without transferring texture buffers", async () => {
+    const { computeModAppearancesInWorker } = await loadClient();
+    const input = {
+      blockIds: ["a:x"],
+      blockstates: {},
+      models: {},
+      textures: { "a:block/x": new Uint8Array([1]) },
+      textureMeta: {},
+    };
+    const result = computeModAppearancesInWorker(input);
+
+    const w = FakeWorker.instances[0];
+    const { message, transfer } = w.posted[0];
+    expect(message).toEqual({
+      id: message.id,
+      type: "computeAppearances",
+      payload: input,
+    });
+    expect(transfer).toEqual([]);
+    const done = { appearances: {}, complete: true };
+    w.emit("message", {
+      data: {
+        id: message.id,
+        ok: true,
+        type: "computeAppearances",
+        result: done,
+      },
+    });
+    await expect(result).resolves.toBe(done);
+  });
+
+  it("rejects a response of the wrong type", async () => {
+    const { parseModJarInWorker } = await loadClient();
+    const result = parseModJarInWorker(new Uint8Array([1]));
+    const w = FakeWorker.instances[0];
+    w.emit("message", {
+      data: {
+        id: w.posted[0].message.id,
+        ok: true,
+        type: "computeAppearances",
+        result: { appearances: {}, complete: true },
+      },
+    });
+    await expect(result).rejects.toThrow(
+      "Expected a parseJar response, got computeAppearances",
+    );
   });
 
   it("rejects and forgets the request when postMessage throws", async () => {

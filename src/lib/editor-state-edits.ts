@@ -12,6 +12,7 @@ import {
   applyVersionMapping as applyVersionMappingTransform,
   type VersionMappingOverrides,
 } from "./advanced/edit";
+import type { ModMappingContext } from "./advanced/mod-mapping";
 import type { MinecraftVersion } from "./schemlib/schematic-formats/version-mapping";
 
 // Apply a global block swap. Every placement whose state matches
@@ -53,16 +54,17 @@ export function undoLastSwap(): boolean {
   return true;
 }
 
-// Commit a version-mapping translation (with optional overrides) to the
-// in-memory schematic. The pre-translation projection is stashed as
+// Commit a version-mapping translation (with optional overrides and mod
+// mapping) to the in-memory schematic. A null target applies only the mod
+// mapping and keeps `minecraftVersion`. The pre-translation projection is stashed as
 // `lastTranslationSnapshot` for the single-step undo affordance.
 //
 // No-op when there is no ready parse. Returns true if a translation was
 // applied so callers can drive UI affordances off the same signal.
 export function applyVersionMapping(
-  targetVersion: MinecraftVersion,
+  targetVersion: MinecraftVersion | null,
   overrides: VersionMappingOverrides = {},
-  loadedModBlockIds: ReadonlySet<string> | readonly string[] = [],
+  mods: ModMappingContext = {},
 ): boolean {
   const state = getEditorState();
   if (state.parseStatus.status !== "ready") return false;
@@ -71,7 +73,7 @@ export function applyVersionMapping(
     prior,
     targetVersion,
     overrides,
-    loadedModBlockIds,
+    mods,
   );
   _emitEditorState({
     ...state,

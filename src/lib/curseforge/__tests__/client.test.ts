@@ -29,6 +29,12 @@ describe("buildSearchUrl", () => {
       "/api/curseforge/search?q=create&gameVersion=1.20.1&index=20&loader=forge",
     );
   });
+
+  it("omits gameVersion when null", () => {
+    expect(buildSearchUrl({ ...PARAMS, gameVersion: null })).toBe(
+      "/api/curseforge/search?q=create&index=0",
+    );
+  });
 });
 
 describe("searchCurseForgeMods", () => {

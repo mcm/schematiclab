@@ -10,11 +10,14 @@ import {
 import { mat4 } from "gl-matrix";
 import { Button } from "@iamthemcmaster/ui";
 import { IconRefresh } from "@tabler/icons-react";
+import { knownVersionIdFor } from "@/lib/advanced/effective-mod-version";
 import type { ParsedSchematicProjection } from "@/lib/convert";
 import {
   ensureMinecraftResourcesLoading,
+  setMinecraftResourcesVersion,
   getCachedMinecraftResources,
   getMinecraftResourcesError,
+  isMinecraftResourcesRebuildPending,
   isInvisibleBlockId,
   subscribeMinecraftResources,
 } from "@/lib/render/minecraft-resources";
@@ -222,9 +225,10 @@ function isWebGLAvailable(): boolean {
   return webGLAvailableCache;
 }
 
-function useMinecraftResources(): {
+function useMinecraftResources(versionId: string): {
   resources: Resources | null;
   error: Error | null;
+  rebuildPending: boolean;
 } {
   const resources = React.useSyncExternalStore(
     subscribeMinecraftResources,
@@ -236,6 +240,11 @@ function useMinecraftResources(): {
     getMinecraftResourcesError,
     () => null,
   );
+  const rebuildPending = React.useSyncExternalStore(
+    subscribeMinecraftResources,
+    isMinecraftResourcesRebuildPending,
+    () => false,
+  );
 
   // Trigger the load on first mount. The function is idempotent — repeated
   // calls share the same singleton promise — so it's safe to call from every
@@ -243,8 +252,12 @@ function useMinecraftResources(): {
   React.useEffect(() => {
     ensureMinecraftResourcesLoading();
   }, []);
+  // Mods render with their file for the schematic's version when loaded.
+  React.useEffect(() => {
+    setMinecraftResourcesVersion(versionId);
+  }, [versionId]);
 
-  return { resources, error };
+  return { resources, error, rebuildPending };
 }
 
 // Yields control to the browser so layout, input, and other tasks can run.
@@ -318,7 +331,13 @@ export function ThreeDPreview({
     [projection],
   );
   const webGLOk = React.useMemo(() => isWebGLAvailable(), []);
-  const { resources, error: resourcesError } = useMinecraftResources();
+  const {
+    resources,
+    error: resourcesError,
+    rebuildPending,
+  } = useMinecraftResources(
+    knownVersionIdFor(editedProjection.minecraftVersion),
+  );
 
   // Cleared back to false once the chunked builder finishes (or aborts via
   // cleanup). Drives the "Building preview…" overlay.
@@ -328,6 +347,11 @@ export function ThreeDPreview({
     if (!webGLOk || stats.bounds === null || resources === null) {
       return;
     }
+    // The resources are about to be replaced (new preview files); meshing
+    // with them now would flash missing cubes. Keep the last frame on screen
+    // and mesh once the rebuild lands. Read the store directly too: a version
+    // change marks the rebuild pending in an earlier effect of this commit.
+    if (rebuildPending || isMinecraftResourcesRebuildPending()) return;
     const canvasMaybe = canvasRef.current;
     if (!canvasMaybe) return;
     const canvas: HTMLCanvasElement = canvasMaybe;
@@ -602,7 +626,7 @@ export function ThreeDPreview({
       // second mount's StructureRenderer (shader compile returns no log).
       renderer = null;
     };
-  }, [projection, stats, webGLOk, resources]);
+  }, [projection, stats, webGLOk, resources, rebuildPending]);
 
   if (!webGLOk) {
     return (

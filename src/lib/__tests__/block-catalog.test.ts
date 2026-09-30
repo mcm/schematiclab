@@ -20,13 +20,14 @@ const EMPTY_ASSETS: LoadedModAssets = {
 
 function createMod(blockPaths: string[]): LoadedModMeta {
   return {
-    key: "328085:4835191",
+    key: "328085:1.20.1",
     modId: 328085,
     modName: "Create",
     modSlug: "create",
     logoUrl: null,
     fileId: 4835191,
     fileDisplayName: "Create 0.5.1f",
+    gameVersion: "1.20.1",
     gameVersions: ["1.20.1"],
     loader: "forge",
     namespaces: ["create"],

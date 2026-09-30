@@ -17,7 +17,13 @@
 import * as React from "react";
 
 import { downloadModJar, type DownloadProgress } from "../curseforge/client";
-import { ModJarError, registerModJar, type ModLoadDeps } from "./load-mod";
+import {
+  ModJarError,
+  mapModNamespaces,
+  registerModJar,
+  type ModLoadDeps,
+} from "./load-mod";
+import { autoMapNamespaces } from "./mappings";
 import { parseModJarInWorker } from "./mod-jar-client";
 import {
   MODPACK_MANIFEST_NAME,
@@ -71,21 +77,22 @@ export type ModpackLoadState =
 
 export interface ModpackLoadDeps extends Pick<
   ModLoadDeps,
-  "download" | "parse" | "now"
+  "download" | "parse" | "mapNamespaces" | "now"
 > {
   addMany: typeof addLoadedMods;
-  /** Keys of mod files already loaded (after hydration). */
-  loadedKeys: () => Promise<ReadonlySet<string>>;
+  /** File id of each loaded mod file, by key (after hydration). */
+  loadedFiles: () => Promise<ReadonlyMap<string, number>>;
 }
 
 const DEFAULT_DEPS: ModpackLoadDeps = {
   download: downloadModJar,
   parse: parseModJarInWorker,
   addMany: addLoadedMods,
+  mapNamespaces: autoMapNamespaces,
   now: Date.now,
-  loadedKeys: async () => {
+  loadedFiles: async () => {
     await hydrateLoadedMods();
-    return new Set(getSnapshot().map((mod) => mod.key));
+    return new Map(getSnapshot().map((mod) => [mod.key, mod.fileId]));
   },
 };
 
@@ -205,9 +212,9 @@ export async function startModpackLoad(
     return;
   }
 
-  let loadedKeys: ReadonlySet<string>;
+  let loadedFiles: ReadonlyMap<string, number>;
   try {
-    loadedKeys = await deps.loadedKeys();
+    loadedFiles = await deps.loadedFiles();
   } catch (err) {
     fail(errorMessage(err, "Could not read your loaded mods."));
     return;
@@ -237,7 +244,10 @@ export async function startModpackLoad(
 
   for (const mod of instance.mods) {
     if (abort.signal.aborted) break;
-    if (loadedKeys.has(loadedModKey(mod.modId, mod.fileId))) {
+    // Files are registered for the instance's Minecraft version.
+    const gameVersion =
+      instance.gameVersion ?? mod.gameVersions[0] ?? "unknown";
+    if (loadedFiles.get(loadedModKey(mod.modId, gameVersion)) === mod.fileId) {
       update({
         processed: progress.processed + 1,
         alreadyLoaded: progress.alreadyLoaded + 1,
@@ -275,6 +285,7 @@ export async function startModpackLoad(
           logoUrl: mod.logoUrl,
           fileId: mod.fileId,
           fileDisplayName: mod.fileDisplayName,
+          gameVersion,
           gameVersions: mod.gameVersions,
           loader: mod.loader,
         },
@@ -304,6 +315,10 @@ export async function startModpackLoad(
     setState({ status: "saving", ...progress });
     try {
       await deps.addMany(parsed);
+      await mapModNamespaces(
+        parsed.map(({ meta }) => meta),
+        deps,
+      );
     } catch (err) {
       const message = errorMessage(err, "Could not save the mods.");
       progress = {
