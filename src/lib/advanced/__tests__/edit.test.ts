@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 
+import type { ParsedSchematicBlockEntity } from "../../convert";
 import type { MinecraftVersion } from "../../schemlib/schematic-formats/version-mapping";
 import {
   applyBlockSwap,
   applyVersionMapping,
   type Schematic,
   type SchematicRegion,
-  type SchematicTileEntity,
 } from "../edit";
 
 const V_1_16_5: MinecraftVersion = {
@@ -38,7 +38,7 @@ function schematic(
     origin?: [number, number, number];
     size?: [number, number, number];
     blocks: Array<{ pos: [number, number, number]; paletteIndex: number }>;
-    tileEntities?: SchematicTileEntity[];
+    blockEntities?: ParsedSchematicBlockEntity[];
   }>,
   version: MinecraftVersion = V_1_20_1,
 ): Schematic {
@@ -46,7 +46,7 @@ function schematic(
     origin: r.origin ?? [0, 0, 0],
     size: r.size ?? [4, 1, 1],
     blocks: r.blocks,
-    ...(r.tileEntities !== undefined ? { tileEntities: r.tileEntities } : {}),
+    blockEntities: r.blockEntities ?? [],
   }));
   const totalBlocks = builtRegions.reduce(
     (sum, region) => sum + region.blocks.length,
@@ -173,10 +173,12 @@ describe("applyBlockSwap", () => {
   });
 
   it("keeps tile entities when the swap is to the same block id (property change)", () => {
-    const tileEntity: SchematicTileEntity = {
+    const blockEntity: ParsedSchematicBlockEntity = {
       pos: [0, 0, 0],
-      blockId: "minecraft:chest",
-      data: { Items: [{ id: "minecraft:diamond", Count: 1 }] },
+      nbt: {
+        type: "compound",
+        entries: { id: { type: "string", value: "minecraft:chest" } },
+      },
     };
     const before = schematic(
       [
@@ -190,7 +192,7 @@ describe("applyBlockSwap", () => {
       [
         {
           blocks: [{ pos: [0, 0, 0], paletteIndex: 0 }],
-          tileEntities: [tileEntity],
+          blockEntities: [blockEntity],
         },
       ],
     );
@@ -198,8 +200,7 @@ describe("applyBlockSwap", () => {
       blockId: "minecraft:chest",
       properties: { facing: "south" },
     });
-    expect(after.regions[0].tileEntities).toHaveLength(1);
-    expect(after.regions[0].tileEntities?.[0]).toEqual(tileEntity);
+    expect(after.regions[0].blockEntities).toEqual([blockEntity]);
   });
 
   it("drops tile entities when the swap changes the block id", () => {
@@ -215,11 +216,13 @@ describe("applyBlockSwap", () => {
       [
         {
           blocks: [{ pos: [0, 0, 0], paletteIndex: 0 }],
-          tileEntities: [
+          blockEntities: [
             {
               pos: [0, 0, 0],
-              blockId: "minecraft:chest",
-              data: { Items: [] },
+              nbt: {
+                type: "compound",
+                entries: { id: { type: "string", value: "minecraft:chest" } },
+              },
             },
           ],
         },
@@ -229,7 +232,7 @@ describe("applyBlockSwap", () => {
       blockId: "minecraft:stone",
       properties: {},
     });
-    expect(after.regions[0].tileEntities).toEqual([]);
+    expect(after.regions[0].blockEntities).toEqual([]);
   });
 });
 

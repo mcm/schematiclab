@@ -62,8 +62,21 @@ export class IntermediateRegion extends AbstractRegion {
   }
 
   getTileEntityMatrix(): Map<string, Entity> {
+    // Tile entities are chunk-shape compounds ({id, x, y, z, ...}), not the
+    // entity shape `Entity.blockPos` reads (a `Pos` list). Keying through
+    // blockPos put every tile entity at 0,0,0, so only one survived.
     const out = new Map<string, Entity>();
-    for (const e of this.tileEntities) out.set(posKey(e.blockPos), e);
+    for (const e of this.tileEntities) {
+      const c = e.toCompound();
+      const xt = c.get("x");
+      const yt = c.get("y");
+      const zt = c.get("z");
+      const key =
+        xt instanceof nbt.Int && yt instanceof nbt.Int && zt instanceof nbt.Int
+          ? `${xt.value},${yt.value},${zt.value}`
+          : posKey(e.blockPos);
+      out.set(key, e);
+    }
     return out;
   }
 

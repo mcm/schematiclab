@@ -28,6 +28,14 @@ import {
   IntermediateRegion,
   IntermediateSchematic,
 } from "./schemlib/schematic-formats/intermediate";
+import { Entity } from "./schemlib/entities";
+import * as nbt from "./schemlib/nbt";
+import { posKey } from "./schemlib/schematic-formats/version-mapping";
+import {
+  type NbtCompoundValue,
+  fromNbtCompoundValue,
+  toNbtCompoundValue,
+} from "./nbt-value";
 
 // ── Public types ──────────────────────────────────────────────────────────
 
@@ -88,10 +96,20 @@ export interface ParsedSchematicBlockPlacement {
   paletteIndex: number;
 }
 
+// Block-entity data (chest contents, sign text, camos) for the block at `pos`,
+// which uses the same coordinates as the region's placements. `nbt` is the
+// chunk-format compound (`id` plus the block entity's fields) without the
+// `x`/`y`/`z` keys; the position lives in `pos` so edits can't desync them.
+export interface ParsedSchematicBlockEntity {
+  pos: [number, number, number];
+  nbt: NbtCompoundValue;
+}
+
 export interface ParsedSchematicRegion {
   origin: [number, number, number];
   size: [number, number, number];
   blocks: ParsedSchematicBlockPlacement[];
+  blockEntities: ParsedSchematicBlockEntity[];
 }
 
 export interface ParsedSchematicProjection {
@@ -427,10 +445,40 @@ export function serializeSchematic(
   };
 }
 
+const BLOCK_ENTITY_POS_KEYS = new Set(["x", "y", "z"]);
+
+function projectBlockEntity(
+  pos: [number, number, number],
+  entity: Entity,
+): ParsedSchematicBlockEntity {
+  const data = new nbt.Compound();
+  for (const [k, v] of entity.toCompound().entries) {
+    if (!BLOCK_ENTITY_POS_KEYS.has(k)) data.set(k, v);
+  }
+  return { pos, nbt: toNbtCompoundValue(data) };
+}
+
+function blockEntityToEntity(blockEntity: ParsedSchematicBlockEntity): Entity {
+  const compound = fromNbtCompoundValue(blockEntity.nbt);
+  for (const k of BLOCK_ENTITY_POS_KEYS) compound.delete(k);
+  compound.set("x", new nbt.Int(blockEntity.pos[0]));
+  compound.set("y", new nbt.Int(blockEntity.pos[1]));
+  compound.set("z", new nbt.Int(blockEntity.pos[2]));
+  return new Entity(compound);
+}
+
 function projectionToIntermediate(
   projection: ParsedSchematicProjection,
 ): IntermediateSchematic {
   const regions = projection.regions.map((region) => {
+    // Only block entities that still sit on a block are written out; a stray
+    // one (its block was deleted) would otherwise land on air.
+    const occupied = new Set(
+      region.blocks.map((p) => `${p.pos[0]},${p.pos[1]},${p.pos[2]}`),
+    );
+    const tileEntities = region.blockEntities
+      .filter((be) => occupied.has(`${be.pos[0]},${be.pos[1]},${be.pos[2]}`))
+      .map(blockEntityToEntity);
     const blocks: Block[] = region.blocks.map((placement) => {
       const entry = projection.palette[placement.paletteIndex];
       const state = new BlockState({
@@ -447,6 +495,8 @@ function projectionToIntermediate(
       new BlockPos(region.origin[0], region.origin[1], region.origin[2]),
       [region.size[0], region.size[1], region.size[2]],
       blocks,
+      [],
+      tileEntities,
     );
   });
 
@@ -479,12 +529,18 @@ function projectSchematic(
     const origin = region.getOrigin().astuple();
     const size = region.getSize();
     const placements: ParsedSchematicBlockPlacement[] = [];
+    const blockEntities: ParsedSchematicBlockEntity[] = [];
     const projectedRegion: ParsedSchematicRegion = {
       origin: [origin[0], origin[1], origin[2]],
       size: [size[0], size[1], size[2]],
       blocks: placements,
+      blockEntities,
     };
     regionAccumulators.push({ region: projectedRegion, placements });
+
+    // Keys are block positions (`posKey`), so each block picks up the block
+    // entity at its own position.
+    const tileEntities = region.getTileEntityMatrix();
 
     for (const block of region.getBlocks()) {
       totalBlocks += 1;
@@ -510,6 +566,12 @@ function projectSchematic(
         pos: [pos[0], pos[1], pos[2]],
         paletteIndex: entry.insertionIndex,
       });
+      const tileEntity = tileEntities.get(posKey(block.pos));
+      if (tileEntity !== undefined) {
+        blockEntities.push(
+          projectBlockEntity([pos[0], pos[1], pos[2]], tileEntity),
+        );
+      }
     }
   }
 

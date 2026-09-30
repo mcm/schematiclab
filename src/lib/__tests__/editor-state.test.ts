@@ -148,6 +148,7 @@ describe("editor-state store", () => {
         {
           origin: [0, 0, 0],
           size: [2, 1, 1],
+          blockEntities: [],
           blocks: [
             { pos: [0, 0, 0], paletteIndex: 0 },
             { pos: [1, 0, 0], paletteIndex: 1 },
@@ -215,6 +216,7 @@ describe("editor-state store", () => {
         {
           origin: [0, 0, 0],
           size: [1, 1, 1],
+          blockEntities: [],
           blocks: [{ pos: [0, 0, 0], paletteIndex: 0 }],
         },
       ],
@@ -260,6 +262,7 @@ describe("editor-state store", () => {
         {
           origin: [0, 0, 0],
           size: [1, 1, 1],
+          blockEntities: [],
           blocks: [{ pos: [0, 0, 0], paletteIndex: 0 }],
         },
       ],
@@ -421,6 +424,7 @@ describe("editor-state store", () => {
         {
           origin: [0, 0, 0],
           size: [1, 1, 1],
+          blockEntities: [],
           blocks: [{ pos: [0, 0, 0], paletteIndex: 0 }],
         },
       ],
@@ -458,6 +462,7 @@ describe("editor-state store", () => {
         {
           origin: [0, 0, 0],
           size: [1, 1, 1],
+          blockEntities: [],
           blocks: [{ pos: [0, 0, 0], paletteIndex: 0 }],
         },
       ],
@@ -494,6 +499,7 @@ describe("editor-state store", () => {
         {
           origin: [0, 0, 0],
           size: [1, 1, 1],
+          blockEntities: [],
           blocks: [{ pos: [0, 0, 0], paletteIndex: 0 }],
         },
       ],

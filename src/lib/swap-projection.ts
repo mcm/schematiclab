@@ -4,10 +4,12 @@
 // to the source is redirected to the target. The palette is rebuilt: counts
 // recomputed, zero-count entries dropped, sort restored (count desc, ID asc).
 //
-// Positions and tile-entity associations on each placement are untouched —
-// only the palette mapping changes. Air-like targets effectively delete the
-// source from the visible world (the placement row vanishes from the palette
-// because its count drops to zero).
+// Positions are untouched — only the palette mapping changes. Block entities
+// at swapped positions survive a property-only change (rotating a chest) and
+// are dropped when the block id changes (chest → stone), since the inventory,
+// sign text or camo no longer belongs to the new block. Air-like targets
+// effectively delete the source from the visible world (the placement row
+// vanishes from the palette because its count drops to zero).
 
 import type {
   ParsedSchematicPaletteEntry,
@@ -19,6 +21,10 @@ import { isInvisibleBlockId } from "./invisible-blocks";
 export interface SwapTarget {
   blockId: string;
   properties: Record<string, string>;
+}
+
+function posKey(pos: readonly [number, number, number]): string {
+  return `${pos[0]},${pos[1]},${pos[2]}`;
 }
 
 function blockStateKey(target: SwapTarget): string {
@@ -44,6 +50,8 @@ export function swapBlockState(
   const targetKey = blockStateKey(target);
   // If the swap is a no-op (target equals source), short-circuit.
   if (targetKey === sourceBlockState) return projection;
+  const keepBlockEntities =
+    projection.palette[sourceIndex].blockId === target.blockId;
 
   // Build a working palette: start from the existing entries, then make sure
   // the target exists (either reusing a matching entry or appending a new
@@ -76,16 +84,24 @@ export function swapBlockState(
 
   const counts = new Array<number>(working.length).fill(0);
   const newRegions: ParsedSchematicRegion[] = projection.regions.map(
-    (region) => ({
-      origin: region.origin,
-      size: region.size,
-      blocks: region.blocks.map((placement) => {
+    (region) => {
+      const swapped = new Set<string>();
+      const blocks = region.blocks.map((placement) => {
         const remapped = indexRemap[placement.paletteIndex];
         counts[remapped] += 1;
         if (remapped === placement.paletteIndex) return placement;
+        swapped.add(posKey(placement.pos));
         return { pos: placement.pos, paletteIndex: remapped };
-      }),
-    }),
+      });
+      return {
+        origin: region.origin,
+        size: region.size,
+        blocks,
+        blockEntities: keepBlockEntities
+          ? region.blockEntities
+          : region.blockEntities.filter((be) => !swapped.has(posKey(be.pos))),
+      };
+    },
   );
 
   // If the target is air-like, those placements still exist in the projection
@@ -97,8 +113,7 @@ export function swapBlockState(
   if (targetIsAir) {
     // Drop placements whose paletteIndex points at the target entry.
     regionsAfterAirFilter = newRegions.map((region) => ({
-      origin: region.origin,
-      size: region.size,
+      ...region,
       blocks: region.blocks.filter(
         (placement) => placement.paletteIndex !== targetWorkingIndex,
       ),
@@ -135,8 +150,7 @@ export function swapBlockState(
 
   const finalRegions: ParsedSchematicRegion[] = regionsAfterAirFilter.map(
     (region) => ({
-      origin: region.origin,
-      size: region.size,
+      ...region,
       blocks: region.blocks.map((placement) => ({
         pos: placement.pos,
         paletteIndex: finalRemap[placement.paletteIndex],

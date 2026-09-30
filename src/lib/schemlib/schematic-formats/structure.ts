@@ -69,6 +69,21 @@ function readPosTriple(tag: nbt.NbtTag | undefined): [number, number, number] {
   return [0, 0, 0];
 }
 
+/**
+ * Structure files store block entities without `x`/`y`/`z` (the block's `pos`
+ * is the position; Minecraft fills them in on load). Tile entities from other
+ * formats arrive in chunk shape, in the source's coordinates, so drop them.
+ */
+function withoutChunkPos(tileEntity: Entity): Entity {
+  const c = tileEntity.toCompound();
+  if (!c.has("x") && !c.has("y") && !c.has("z")) return tileEntity;
+  const out = new nbt.Compound();
+  for (const [k, v] of c.entries) {
+    if (k !== "x" && k !== "y" && k !== "z") out.set(k, v);
+  }
+  return new Entity(out);
+}
+
 function blockStateFromCompound(c: nbt.Compound): BlockState {
   const name = readString(c.get("Name"));
   const propsTag = c.get("Properties");
@@ -262,11 +277,11 @@ export class StructureSchematic extends AbstractRegion {
     const blocks: StructureBlockRecord[] = [];
     for (const sourceBlock of sourceBlocks) {
       const key = posKey(sourceBlock.pos);
-      const tileEntity = sourceTileEntityMatrix.get(key) ?? null;
+      const tileEntity = sourceTileEntityMatrix.get(key);
       blocks.push({
         pos: sourceBlock.pos,
         state: indexOfState(sourceBlock.state),
-        nbt: tileEntity,
+        nbt: tileEntity ? withoutChunkPos(tileEntity) : null,
       });
     }
 
