@@ -19,9 +19,6 @@
 // layer counts 1/4/8, and a few connection sets. `falling` marks states that
 // `/setblock` would recompute from neighbours on 1.21.1 (connections, stair
 // shapes, gate in_wall, doors); the generator lands those as falling blocks.
-//
-// Keep this module free of runtime imports: node's type stripping needs
-// `.ts` import extensions, which `tsc` rejects.
 
 export type State = Record<string, string>;
 
