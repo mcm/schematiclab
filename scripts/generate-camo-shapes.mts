@@ -39,12 +39,14 @@ import { format } from "prettier";
 import {
   DIRECTIONS,
   SHAPE_PACK_FORMAT_VERSION,
+  parseFramedTemplate,
   validateShapePack,
   type Box,
   type Direction,
   type ShapePack,
   type ShapePiece,
   type ShapeRule,
+  type TemplateCube,
   type TransformOp,
 } from "../src/lib/render/camo/shape-pack.ts";
 import {
@@ -83,12 +85,6 @@ function findCheckout(envVar: string, name: string): string {
 
 // ── Templates ──────────────────────────────────────────────────────────────
 
-interface TemplateCube {
-  box: Box;
-  /** Face → cullable. */
-  faces: Partial<Record<Direction, boolean>>;
-}
-
 type Vec3 = [number, number, number];
 
 function toVec3(value: unknown, where: string): Vec3 {
@@ -115,26 +111,16 @@ function isDirection(value: string): value is Direction {
   return (DIRECTIONS as readonly string[]).includes(value);
 }
 
-/** `GeometryTemplate.CODEC`: faces map to a cullable flag. */
+/** Every `framed_templates/*.json`, parsed as a loaded jar's would be. */
 function readFramedTemplates(dir: string): Map<string, TemplateCube[]> {
   const templates = new Map<string, TemplateCube[]>();
   for (const file of readdirSync(dir).filter((f) => f.endsWith(".json"))) {
-    const name = `framedblocks:${basename(file, ".json")}`;
-    const json = JSON.parse(readFileSync(join(dir, file), "utf-8")) as {
-      elements: {
-        from: unknown;
-        to: unknown;
-        faces: Record<string, boolean>;
-      }[];
-    };
     templates.set(
-      name,
-      json.elements.map((element, i) => ({
-        box: toBox(element.from, element.to, `${file}.elements[${i}]`),
-        faces: Object.fromEntries(
-          Object.entries(element.faces).filter(([face]) => isDirection(face)),
-        ),
-      })),
+      `framedblocks:${basename(file, ".json")}`,
+      parseFramedTemplate(
+        JSON.parse(readFileSync(join(dir, file), "utf-8")),
+        file,
+      ),
     );
   }
   return templates;
@@ -215,7 +201,9 @@ function templatePieces(
   const pieces: ShapePiece[] = [];
   for (const source of geometry.sources) {
     const transform = [...xformOps(source.xform), ...specOps];
-    for (const cube of template(source.id)) {
+    // Tagged so a loaded jar's copy of the template can replace them.
+    const tagged = !source.id.startsWith("minecraft:");
+    for (const [element, cube] of template(source.id).entries()) {
       const faces = DIRECTIONS.filter((dir) => cube.faces[dir] !== undefined);
       const piece: ShapePiece = {
         slot,
@@ -228,6 +216,7 @@ function templatePieces(
           : faces.filter((dir) => cube.faces[dir] === true),
         faces,
         ops: [],
+        ...(tagged ? { template: { id: source.id, element } } : {}),
       };
       if (geometry.postModifier) {
         const { axis, origin, angle } = geometry.postModifier;
@@ -540,6 +529,7 @@ function compactPack(pack: ShapePack): unknown {
             if (piece.cull.length > 0) out.cull = piece.cull;
             if (piece.faces.join(",") !== all) out.faces = piece.faces;
             if (piece.ops.length > 0) out.ops = piece.ops;
+            if (piece.template !== undefined) out.template = piece.template;
             return out;
           }),
         })),

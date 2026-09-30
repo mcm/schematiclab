@@ -312,6 +312,7 @@ describe("textureTransferables", () => {
       models: {},
       textures,
       textureMeta: {},
+      templates: {},
       warnings: [],
     };
 

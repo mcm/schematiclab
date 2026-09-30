@@ -28,6 +28,7 @@ import {
 } from "idb";
 
 import { forEachLimit } from "./for-each-limit";
+import type { TemplateCube } from "../render/camo/shape-pack";
 import type { LoadedModAssets, LoadedModMeta, NamespaceMapping } from "./types";
 
 export const MODS_DB_NAME = "schematiclab-mods";
@@ -43,6 +44,8 @@ interface StoredModAssets {
   textures: Record<string, string>;
   /** Small and rarely shared, so kept inline. */
   textureMeta: Record<string, unknown>;
+  /** FramedBlocks templates, kept inline like `textureMeta`. */
+  templates?: Record<string, TemplateCube[]>;
 }
 
 interface ModsDB extends DBSchema {
@@ -234,6 +237,7 @@ async function hashAssets(assets: LoadedModAssets): Promise<HashedAssets> {
       models: await hashJson(assets.models),
       textures,
       textureMeta: assets.textureMeta,
+      ...(assets.templates ? { templates: assets.templates } : {}),
     },
     blobs,
   };
@@ -333,7 +337,13 @@ export async function getModAssets(
       `Stored assets for mod ${key} reference missing blobs: ${[...new Set(missing)].join(", ")}`,
     );
   }
-  return { blockstates, models, textures, textureMeta: record.textureMeta };
+  return {
+    blockstates,
+    models,
+    textures,
+    textureMeta: record.textureMeta,
+    ...(record.templates ? { templates: record.templates } : {}),
+  };
 }
 
 /**

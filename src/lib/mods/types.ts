@@ -4,6 +4,7 @@
 // cross the mod-jar worker boundary and be persisted to IndexedDB.
 
 import type { BlockAppearance } from "../render/block-appearance";
+import type { TemplateCube } from "../render/camo/shape-pack";
 
 /** A single block contributed by a mod (one per blockstates file). */
 export interface ModBlock {
@@ -35,6 +36,11 @@ export interface ParsedModAssets {
   textures: Record<string, Uint8Array>;
   /** Same keys as `textures` → parsed `.png.mcmeta` JSON, where present. */
   textureMeta: Record<string, unknown>;
+  /**
+   * `framedblocks:<name>` → parsed `assets/framedblocks/framed_templates/<name>.json`.
+   * Empty for jars without templates.
+   */
+  templates: Record<string, TemplateCube[]>;
   /** Non-fatal problems encountered while parsing (malformed JSON, …). */
   warnings: string[];
   /**
@@ -91,6 +97,11 @@ export interface LoadedModAssets {
   textures: Record<string, Blob>;
   /** Same keys as `textures` → parsed `.png.mcmeta` JSON, where present. */
   textureMeta: Record<string, unknown>;
+  /**
+   * FramedBlocks geometry templates the jar ships, replacing the shape pack's
+   * templates of the same id. Absent on older records and template-less jars.
+   */
+  templates?: Record<string, TemplateCube[]>;
 }
 
 /** A mod namespace mapped to the CurseForge project that provides it. */
@@ -120,5 +131,8 @@ export function toLoadedModAssets(parsed: ParsedModAssets): LoadedModAssets {
     models: parsed.models,
     textures,
     textureMeta: parsed.textureMeta,
+    ...(Object.keys(parsed.templates).length > 0
+      ? { templates: parsed.templates }
+      : {}),
   };
 }

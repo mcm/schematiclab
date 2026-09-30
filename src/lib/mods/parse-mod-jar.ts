@@ -1,17 +1,26 @@
 // Pure, worker-safe mod jar parser.
 //
 // Inflates only the client assets needed to catalog and render a mod's blocks
-// (blockstates, block models, textures, English lang file) and turns them into
-// plain data. Never touches class files — no mod code is ever loaded.
+// (blockstates, block models, textures, English lang file, FramedBlocks
+// geometry templates) and turns them into plain data. Never touches class
+// files — no mod code is ever loaded.
 
 import { strFromU8, unzipSync, type UnzipFileInfo } from "fflate";
 
 import type { AppearanceSources } from "../render/block-appearance";
 import { computeModAppearances } from "./mod-appearance";
+import {
+  parseFramedTemplate,
+  type TemplateCube,
+} from "../render/camo/shape-pack";
 import type { ModBlock, ParsedModAssets } from "./types";
 
 const ASSET_PATH_RE =
   /^assets\/([^/]+)\/(blockstates\/.+\.json|models\/.+\.json|textures\/.+\.png(?:\.mcmeta)?|lang\/en_us\.json)$/;
+
+/** FramedBlocks geometry templates (`GeometryTemplateManager`). */
+const TEMPLATE_PATH_RE =
+  /^assets\/framedblocks\/framed_templates\/([^/]+)\.json$/;
 
 /** Max `parent` hops followed per model (guards against cycles). */
 const MAX_PARENT_DEPTH = 32;
@@ -29,6 +38,7 @@ export const NO_BLOCKS_WARNING = "No blocks found in this mod";
 
 /** True if a zip entry should be inflated by `parseModJar`. */
 export function isModAssetEntry(name: string): boolean {
+  if (TEMPLATE_PATH_RE.test(name)) return true;
   const match = ASSET_PATH_RE.exec(name);
   return match !== null && match[1] !== "minecraft";
 }
@@ -71,9 +81,22 @@ export function parseModJar(
   const allTextures: Record<string, Uint8Array> = {};
   const allTextureMeta: Record<string, unknown> = {};
   const lang: Record<string, string> = {};
+  const templates: Record<string, TemplateCube[]> = {};
 
   const names = Object.keys(entries).sort();
   for (const name of names) {
+    const template = TEMPLATE_PATH_RE.exec(name);
+    if (template !== null) {
+      const json = parseJson(name, entries[name], warnings);
+      if (json === undefined) continue;
+      try {
+        templates[`framedblocks:${template[1]}`] = parseFramedTemplate(json);
+      } catch (err) {
+        const reason = err instanceof Error ? err.message : String(err);
+        warnings.push(`Skipped ${name}: ${reason}`);
+      }
+      continue;
+    }
     const match = ASSET_PATH_RE.exec(name);
     if (match === null) continue;
     const ns = match[1];
@@ -181,6 +204,7 @@ export function parseModJar(
     models,
     textures,
     textureMeta,
+    templates,
     warnings,
     appearancesComputed: vanilla !== null,
   };
