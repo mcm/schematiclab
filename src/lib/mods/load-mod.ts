@@ -5,6 +5,8 @@
 // for the same mod is ignored while one is running.
 //
 // Nothing is persisted until parsing succeeds with at least one block.
+// `registerModJar` (parse + register) is shared with modpack loads
+// (`load-modpack.ts`).
 
 import * as React from "react";
 
@@ -157,30 +159,80 @@ export async function startModLoad(
   }
 
   update({ phase: "extracting" });
+  try {
+    await registerModJar(
+      bytes,
+      {
+        modId,
+        modName: request.mod.name,
+        modSlug: request.mod.slug,
+        logoUrl: request.mod.logoThumbnailUrl,
+        fileId: file.id,
+        fileDisplayName: file.displayName || file.fileName,
+        gameVersions: file.gameVersions,
+        loader:
+          request.loader ??
+          (file.loaders.length === 1 ? file.loaders[0] : null),
+      },
+      deps,
+      () => update({ phase: "saving" }),
+    );
+  } catch (err) {
+    fail(errorMessage(err, "Could not save the mod."));
+    return;
+  }
+  setEntry(modId, null);
+}
+
+/** A mod file's CurseForge metadata; the rest of `LoadedModMeta` comes from the jar. */
+export type ModFileInfo = Omit<
+  LoadedModMeta,
+  "key" | "namespaces" | "blocks" | "warnings" | "loadedAt"
+>;
+
+/** A `registerModJar` failure; `message` is user-facing. */
+export class ModJarError extends Error {
+  constructor(
+    message: string,
+    readonly code: "parse" | "no_blocks" | "save",
+  ) {
+    super(message);
+    this.name = "ModJarError";
+  }
+}
+
+/**
+ * Parse a mod jar in the worker, then register + persist it. Shared by
+ * CurseForge adds and modpack loads. Rejects with `ModJarError`; nothing is
+ * registered unless the jar has at least one block. `bytes` may be detached
+ * (transferred to the worker).
+ */
+export async function registerModJar(
+  bytes: Uint8Array,
+  info: ModFileInfo,
+  deps: Pick<ModLoadDeps, "parse" | "add" | "now">,
+  onSaving?: () => void,
+): Promise<void> {
   let parsed;
   try {
     parsed = await deps.parse(bytes);
   } catch (err) {
-    fail(`Could not read the mod jar: ${errorMessage(err, "parse error")}`);
-    return;
+    throw new ModJarError(
+      `Could not read the mod jar: ${errorMessage(err, "parse error")}`,
+      "parse",
+    );
   }
   if (parsed.blocks.length === 0) {
-    fail("This mod file doesn't contain any blocks.");
-    return;
+    throw new ModJarError(
+      "This mod file doesn't contain any blocks.",
+      "no_blocks",
+    );
   }
 
-  update({ phase: "saving" });
+  onSaving?.();
   const meta: LoadedModMeta = {
-    key: loadedModKey(modId, file.id),
-    modId,
-    modName: request.mod.name,
-    modSlug: request.mod.slug,
-    logoUrl: request.mod.logoThumbnailUrl,
-    fileId: file.id,
-    fileDisplayName: file.displayName || file.fileName,
-    gameVersions: file.gameVersions,
-    loader:
-      request.loader ?? (file.loaders.length === 1 ? file.loaders[0] : null),
+    ...info,
+    key: loadedModKey(info.modId, info.fileId),
     namespaces: parsed.namespaces,
     blocks: parsed.blocks,
     warnings: parsed.warnings,
@@ -189,10 +241,8 @@ export async function startModLoad(
   try {
     await deps.add(meta, toLoadedModAssets(parsed));
   } catch (err) {
-    fail(errorMessage(err, "Could not save the mod."));
-    return;
+    throw new ModJarError(errorMessage(err, "Could not save the mod."), "save");
   }
-  setEntry(modId, null);
 }
 
 /** "Downloading 42%", "Extracting", … for an in-flight load. */

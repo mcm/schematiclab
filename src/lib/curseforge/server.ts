@@ -8,6 +8,7 @@ import { KNOWN_VERSIONS } from "@/lib/schemlib/schematic-formats/known-versions"
 import {
   MOD_LOADERS,
   isModLoader,
+  splitGameVersionTags,
   type CurseForgeModFile,
   type CurseForgeModSummary,
   type ModLoader,
@@ -175,28 +176,11 @@ export function trimMod(raw: unknown): CurseForgeModSummary {
   };
 }
 
-const LOADER_TAGS: Record<string, ModLoader> = {
-  forge: "forge",
-  neoforge: "neoforge",
-  fabric: "fabric",
-  quilt: "quilt",
-};
-
 export function trimFile(raw: unknown): CurseForgeModFile {
   const f = asObject(raw);
-  const tags = Array.isArray(f.gameVersions)
-    ? f.gameVersions.filter((v): v is string => typeof v === "string")
-    : [];
-  const loaders: ModLoader[] = [];
-  const gameVersions: string[] = [];
-  for (const tag of tags) {
-    const loader = LOADER_TAGS[tag.toLowerCase()];
-    if (loader) {
-      if (!loaders.includes(loader)) loaders.push(loader);
-    } else if (/^\d+\.\d+(\.\d+)?(-Snapshot)?$/i.test(tag)) {
-      gameVersions.push(tag);
-    }
-  }
+  const { gameVersions, loaders } = splitGameVersionTags(
+    Array.isArray(f.gameVersions) ? f.gameVersions : [],
+  );
   return {
     id: num(f.id),
     modId: num(f.modId),

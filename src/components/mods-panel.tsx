@@ -7,6 +7,7 @@ import {
   IconCheck,
   IconDownload,
   IconExternalLink,
+  IconFolderOpen,
   IconLoader2,
   IconPackage,
   IconPlus,
@@ -34,6 +35,13 @@ import {
   useModLoads,
   type ModLoadEntry,
 } from "@/lib/mods/load-mod";
+import {
+  cancelModpackLoad,
+  dismissModpackLoad,
+  startModpackLoad,
+  useModpackLoad,
+  type ModpackLoadState,
+} from "@/lib/mods/load-modpack";
 import { removeLoadedMod, useLoadedMods } from "@/lib/mods/registry";
 import type { LoadedModMeta } from "@/lib/mods/types";
 
@@ -666,7 +674,18 @@ function LoadedModsSection({
         flexShrink: 0,
       }}
     >
-      <SectionHeading>Loaded mods</SectionHeading>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "var(--space-2)",
+        }}
+      >
+        <SectionHeading>Loaded mods</SectionHeading>
+        <ModpackFolderButton />
+      </div>
+      <ModpackLoadStatus />
       {empty ? (
         <p
           style={{
@@ -675,7 +694,8 @@ function LoadedModsSection({
             fontSize: "var(--text-xs)",
           }}
         >
-          No mods loaded. Search CurseForge below and click Add.
+          No mods loaded. Search CurseForge below and click Add, or load a
+          CurseForge modpack folder.
         </p>
       ) : (
         <div
@@ -699,6 +719,237 @@ function LoadedModsSection({
       )}
     </section>
   );
+}
+
+// Picks a CurseForge instance folder (the one holding minecraftinstance.json).
+// Nothing is uploaded: the browser only hands over File handles, and just the
+// manifest and mods/*.jar are ever read.
+function ModpackFolderButton() {
+  const modpackLoad = useModpackLoad();
+  const inputRef = React.useRef<HTMLInputElement | null>(null);
+  const busy =
+    modpackLoad?.status === "reading" || modpackLoad?.status === "running";
+
+  return (
+    <>
+      <input
+        ref={(el) => {
+          inputRef.current = el;
+          // Not in React's input typings; supported by all major browsers.
+          el?.setAttribute("webkitdirectory", "");
+        }}
+        type="file"
+        multiple
+        hidden
+        tabIndex={-1}
+        aria-hidden="true"
+        onChange={(e) => {
+          const input = e.currentTarget;
+          const files = Array.from(input.files ?? [], (file) => ({
+            path: file.webkitRelativePath || file.name,
+            file,
+          }));
+          // Let the same folder be picked again later.
+          input.value = "";
+          if (files.length > 0) void startModpackLoad(files);
+        }}
+      />
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        disabled={busy}
+        onClick={() => inputRef.current?.click()}
+        title="Load every mod from a CurseForge instance folder on this computer"
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "var(--space-1)",
+          flexShrink: 0,
+        }}
+      >
+        <IconFolderOpen size={14} aria-hidden="true" />
+        Load modpack…
+      </Button>
+    </>
+  );
+}
+
+function ModpackLoadStatus() {
+  const modpackLoad = useModpackLoad();
+  if (modpackLoad === null) return null;
+
+  const box: React.CSSProperties = {
+    display: "flex",
+    flexDirection: "column",
+    gap: "var(--space-1)",
+    padding: "var(--space-2) var(--space-3)",
+    border: "1px solid var(--border-subtle)",
+    borderRadius: "var(--radius-md)",
+    background: "var(--bg-page)",
+    fontSize: "var(--text-xs)",
+  };
+
+  if (modpackLoad.status === "error") {
+    return (
+      <div style={{ ...box, flexDirection: "row", alignItems: "start" }}>
+        <span
+          role="alert"
+          style={{ flex: 1, color: "var(--color-error)", minWidth: 0 }}
+        >
+          {modpackLoad.message}
+        </span>
+        <DismissModpackButton />
+      </div>
+    );
+  }
+  if (modpackLoad.status === "reading") {
+    return (
+      <div role="status" style={{ ...box, color: "var(--text-secondary)" }}>
+        Reading modpack…
+      </div>
+    );
+  }
+
+  const running = modpackLoad.status === "running";
+  return (
+    <div style={box}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "var(--space-2)",
+          minWidth: 0,
+        }}
+      >
+        <span
+          role="status"
+          style={{
+            flex: 1,
+            minWidth: 0,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
+            color: "var(--text-secondary)",
+          }}
+        >
+          {running ? (
+            <IconLoader2
+              size={14}
+              aria-hidden="true"
+              style={{
+                flexShrink: 0,
+                animation: "schematiclab-spin 0.9s linear infinite",
+              }}
+            />
+          ) : null}
+          <span
+            style={{
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+            title={modpackLoad.packName}
+          >
+            {describeModpackHeadline(modpackLoad)}
+          </span>
+        </span>
+        {running ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={cancelModpackLoad}
+          >
+            Cancel
+          </Button>
+        ) : (
+          <DismissModpackButton />
+        )}
+      </div>
+      {running ? (
+        <progress
+          value={modpackLoad.processed}
+          max={Math.max(1, modpackLoad.total)}
+          aria-label={`Loading ${modpackLoad.packName}`}
+          style={{ width: "100%", height: 6 }}
+        />
+      ) : null}
+      <span style={{ color: "var(--text-tertiary)" }}>
+        {describeModpackCounts(modpackLoad)}
+      </span>
+      {modpackLoad.failures.length > 0 ? (
+        <details>
+          <summary style={{ cursor: "pointer", color: "var(--color-error)" }}>
+            {modpackLoad.failures.length}{" "}
+            {modpackLoad.failures.length === 1 ? "mod" : "mods"} failed
+          </summary>
+          <ul
+            style={{
+              margin: "var(--space-1) 0 0",
+              paddingLeft: "var(--space-4)",
+              maxHeight: 160,
+              overflowY: "auto",
+              color: "var(--text-tertiary)",
+              wordBreak: "break-word",
+            }}
+          >
+            {modpackLoad.failures.map((failure, i) => (
+              <li key={i}>
+                <strong>{failure.modName}</strong>: {failure.message}
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
+    </div>
+  );
+}
+
+function DismissModpackButton() {
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      onClick={dismissModpackLoad}
+      aria-label="Dismiss modpack status"
+    >
+      <IconX size={14} aria-hidden="true" />
+    </Button>
+  );
+}
+
+type ModpackProgressState = Extract<
+  ModpackLoadState,
+  { status: "running" | "done" | "cancelled" }
+>;
+
+function describeModpackHeadline(load: ModpackProgressState): string {
+  switch (load.status) {
+    case "running":
+      return `${load.packName}: ${load.processed} / ${load.total}${
+        load.current ? ` · ${load.current}` : ""
+      }`;
+    case "done":
+      return `Loaded ${load.packName}`;
+    case "cancelled":
+      return `Stopped loading ${load.packName} (${load.processed} / ${load.total})`;
+  }
+}
+
+function describeModpackCounts(load: ModpackProgressState): string {
+  const plural = (n: number, one: string, many: string) =>
+    `${n.toLocaleString()} ${n === 1 ? one : many}`;
+  return [
+    plural(load.loaded, "mod added", "mods added"),
+    load.alreadyLoaded > 0 ? `${load.alreadyLoaded} already loaded` : null,
+    load.noBlocks > 0
+      ? `${load.noBlocks.toLocaleString()} without blocks`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 const ROW_STYLE: React.CSSProperties = {

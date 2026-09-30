@@ -26,6 +26,35 @@ export function isModLoader(value: unknown): value is ModLoader {
   );
 }
 
+const LOADER_TAGS: Record<string, ModLoader> = {
+  forge: "forge",
+  neoforge: "neoforge",
+  fabric: "fabric",
+  quilt: "quilt",
+};
+
+/**
+ * Split a CurseForge file's `gameVersions` tags into Minecraft versions and
+ * loaders, dropping everything else (`Client`, `Java 21`, …).
+ */
+export function splitGameVersionTags(tags: readonly unknown[]): {
+  gameVersions: string[];
+  loaders: ModLoader[];
+} {
+  const loaders: ModLoader[] = [];
+  const gameVersions: string[] = [];
+  for (const tag of tags) {
+    if (typeof tag !== "string") continue;
+    const loader = LOADER_TAGS[tag.toLowerCase()];
+    if (loader) {
+      if (!loaders.includes(loader)) loaders.push(loader);
+    } else if (/^\d+\.\d+(\.\d+)?(-Snapshot)?$/i.test(tag)) {
+      gameVersions.push(tag);
+    }
+  }
+  return { gameVersions, loaders };
+}
+
 export interface CurseForgeModSummary {
   id: number;
   name: string;
