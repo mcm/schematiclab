@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import type { ParsedSchematicProjection } from "../../convert";
 import type { MinecraftVersion } from "../../schemlib/schematic-formats/version-mapping";
-import { previewVersionMapping } from "../version-mapping-preview";
+import {
+  groupProblematicEntries,
+  previewVersionMapping,
+} from "../version-mapping-preview";
 
 // Unknown (modded) ids only warn across the 1.13 flattening boundary.
 const V_1_12_2: MinecraftVersion = {
@@ -353,5 +356,71 @@ describe("previewVersionMapping with a ModMappingContext", () => {
     expect(result.targetVersion).toBeNull();
     expect(result.cleanCount).toBe(4);
     expect(result.problematic).toEqual([]);
+  });
+});
+
+describe("groupProblematicEntries", () => {
+  it("groups states of one block and dedupes their warnings", () => {
+    const schematic = projection(
+      [
+        {
+          blockState: "create:pipe[north=true,waterlogged=false]",
+          blockId: "create:pipe",
+          properties: { north: "true", waterlogged: "false" },
+          count: 3,
+        },
+        {
+          blockState: "create:gone_block",
+          blockId: "create:gone_block",
+          count: 2,
+        },
+        {
+          blockState: "create:pipe[north=false,waterlogged=true]",
+          blockId: "create:pipe",
+          properties: { north: "false", waterlogged: "true" },
+          count: 5,
+        },
+      ],
+      V_1_20_1,
+    );
+    const result = previewVersionMapping(schematic, V_1_20_1, {
+      create: {
+        kind: "target",
+        blocks: { "create:pipe": { north: ["false", "true"] } },
+      },
+    });
+    const groups = groupProblematicEntries(result.problematic);
+    expect(groups.map((g) => [g.sourceBlockId, g.reason])).toEqual([
+      ["create:pipe", "invalid-state"],
+      ["create:gone_block", "missing-block"],
+    ]);
+    const pipe = groups[0];
+    expect(pipe.totalCount).toBe(8);
+    expect(pipe.entries.map((e) => e.sourceBlockState)).toEqual([
+      "create:pipe[north=true,waterlogged=false]",
+      "create:pipe[north=false,waterlogged=true]",
+    ]);
+    expect(pipe.warnings).toEqual([
+      'create:pipe has no property "waterlogged"; dropped.',
+    ]);
+  });
+
+  it("keeps states mapping to different target blocks apart", () => {
+    const entry = (state: string, target: string) => ({
+      sourceBlockState: state,
+      sourceBlockId: "minecraft:wool",
+      sourceProperties: {},
+      sourceCount: 1,
+      proposedTargetBlockState: target,
+      proposedTargetBlockId: target,
+      proposedTargetProperties: {},
+      warnings: ["w"],
+      reason: "vanilla" as const,
+    });
+    const groups = groupProblematicEntries([
+      entry("minecraft:wool[color=red]", "minecraft:red_wool"),
+      entry("minecraft:wool[color=blue]", "minecraft:blue_wool"),
+    ]);
+    expect(groups).toHaveLength(2);
   });
 });
