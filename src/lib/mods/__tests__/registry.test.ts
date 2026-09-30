@@ -151,6 +151,12 @@ describe("loaded-mods registry", () => {
     expect(listener).toHaveBeenCalledTimes(1);
     expect(registry.getSnapshot().map((m) => m.key)).toEqual(["1:11", "2:21"]);
     expect(await registry.getLoadedModAssets("2:20")).toBeNull();
+    expect((await registry.getLoadedModAssets("2:21"))?.models).toEqual(
+      makeAssets("c").models,
+    );
+    expect((await store.getModAssets("2:21"))?.models).toEqual(
+      makeAssets("c").models,
+    );
     expect((await store.listLoadedMods()).map((m) => m.key).sort()).toEqual([
       "1:11",
       "2:21",
