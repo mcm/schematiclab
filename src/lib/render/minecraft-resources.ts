@@ -191,6 +191,21 @@ export function isMinecraftResourcesRebuildPending(): boolean {
   return rebuildPending;
 }
 
+/**
+ * Whether the cached resources are being, or are about to be, replaced for
+ * `versionId`: a rebuild is in flight, or that version selects other preview
+ * files than the last build (before `setMinecraftResourcesVersion` runs).
+ * Reads only; safe to call during render.
+ */
+export function minecraftResourcesStaleFor(versionId: string | null): boolean {
+  if (rebuildPending) return true;
+  if (builtFiles === null) return false;
+  return previewFilesChanged(
+    builtFiles,
+    modRegistry.getPreviewModFiles(versionId),
+  );
+}
+
 export function getMinecraftResourcesError(): Error | null {
   return loadError;
 }

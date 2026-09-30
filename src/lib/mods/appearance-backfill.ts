@@ -16,19 +16,32 @@ import type { LoadedModMeta } from "./types";
 
 export interface AppearanceBackfillDeps {
   compute: typeof computeModAppearancesInWorker;
+  now?: () => number;
 }
 
 const DEFAULT_DEPS: AppearanceBackfillDeps = {
   compute: computeModAppearancesInWorker,
 };
 
-// Keyed by file key; `meta` is the metadata being backfilled, so a replaced
-// file (same key, new metadata) starts its own computation.
+// A loaded file across metadata updates. The backfill's own registry update
+// keeps it; a replacement (even of the same CurseForge file) gets a new
+// `loadedAt`, so it starts its own computation.
+function fileIdentity(meta: LoadedModMeta): string {
+  return `${meta.fileId}:${meta.loadedAt}`;
+}
+
+// Keyed by file key.
 interface Backfill {
-  meta: LoadedModMeta;
+  identity: string;
   promise: Promise<LoadedModMeta | null>;
 }
 const inFlight = new Map<string, Backfill>();
+
+// Files whose last backfill was incomplete (no vanilla bundle), by key. The
+// registry update it made re-triggers callers, so wait before retrying
+// instead of recomputing in a loop.
+const RETRY_AFTER_MS = 60_000;
+const incomplete = new Map<string, { identity: string; at: number }>();
 
 // Textures read at once; each holds its bytes in memory until computed.
 const READ_CONCURRENCY = 8;
@@ -37,7 +50,8 @@ const READ_CONCURRENCY = 8;
  * The loaded file `key` with block appearances computed, or null when it isn't
  * loaded. Concurrent calls for one file share a single computation. Never
  * rejects: on failure the file's current metadata is returned unchanged, and
- * the next call tries again.
+ * the next call tries again (after `RETRY_AFTER_MS` when the result was only
+ * incomplete).
  */
 export function ensureModAppearances(
   key: string,
@@ -47,10 +61,16 @@ export function ensureModAppearances(
   if (meta === null || meta.appearancesComputed === true) {
     return Promise.resolve(meta);
   }
+  const identity = fileIdentity(meta);
+  const now = (deps.now ?? Date.now)();
+  const last = incomplete.get(key);
+  if (last?.identity === identity && now - last.at < RETRY_AFTER_MS) {
+    return Promise.resolve(meta);
+  }
   const running = inFlight.get(key);
-  if (running !== undefined && running.meta === meta) return running.promise;
+  if (running?.identity === identity) return running.promise;
   const entry: Backfill = {
-    meta,
+    identity,
     promise: backfill(meta, deps).finally(() => {
       if (inFlight.get(key) === entry) inFlight.delete(key);
     }),
@@ -84,7 +104,17 @@ async function backfill(
 
     // The file may have been removed or replaced while we computed.
     const current = getSnapshot().find((mod) => mod.key === meta.key);
-    if (current !== meta) return current ?? meta;
+    if (current === undefined || fileIdentity(current) !== fileIdentity(meta)) {
+      return current ?? meta;
+    }
+    if (complete) {
+      incomplete.delete(meta.key);
+    } else {
+      incomplete.set(meta.key, {
+        identity: fileIdentity(meta),
+        at: (deps.now ?? Date.now)(),
+      });
+    }
     const next: LoadedModMeta = {
       ...meta,
       blocks: meta.blocks.map((block) =>
@@ -107,4 +137,5 @@ async function backfill(
 // Test-only: forget in-flight computations.
 export function __resetAppearanceBackfillForTests(): void {
   inFlight.clear();
+  incomplete.clear();
 }
