@@ -8,6 +8,8 @@
 //       gradle.properties (mod_version), git HEAD (commit)
 //   - scripts/camo-shapes/framedblocks/template-specs.ts
 //       hand port of TemplateSpecs.java and double-block calculateParts()
+//   - scripts/camo-shapes/framedblocks/geometry-specs.ts
+//       hand ports of the bespoke (non-templated) *Geometry.java classes
 //   - public/minecraft-assets/models.json
 //       vanilla models FramedBlocks uses as templates (slab, trapdoor, …)
 //
@@ -52,6 +54,10 @@ import {
   type TemplateSpec,
   type Xform,
 } from "./camo-shapes/framedblocks/template-specs.ts";
+import {
+  GEOMETRY_SPECS,
+  type QuadPiece,
+} from "./camo-shapes/framedblocks/geometry-specs.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, "..");
@@ -240,6 +246,68 @@ function templatePieces(
   return pieces;
 }
 
+const FULL_CUBE: Box = { from: [0, 0, 0], to: [16, 16, 16] };
+
+/**
+ * Pieces of a bespoke-geometry block in `state`, all in camo slot `slot`:
+ * full faces pass the camo quad through, every other face goes through the
+ * ported `transformQuad`. Quads sharing their ops merge into one piece.
+ */
+function geometryPieces(
+  block: string,
+  state: BlockState,
+  slot: string,
+): ShapePiece[] {
+  const spec = GEOMETRY_SPECS[block];
+  if (spec === undefined) throw new Error(`No geometry spec for ${block}`);
+  const fullState = { ...defaultState(spec), ...state };
+  const fullFaces = new Set(spec.fullFaces?.(fullState) ?? []);
+  const transformQuad = spec.geometry(fullState);
+  const quads: QuadPiece[] = [];
+  for (const dir of DIRECTIONS) {
+    if (fullFaces.has(dir)) quads.push({ face: dir, ops: [], cull: true });
+    if (!fullFaces.has(dir) || spec.transformAllQuads) {
+      transformQuad(dir, quads);
+    }
+  }
+
+  const merged = new Map<
+    string,
+    { faces: Set<Direction>; cull: Set<Direction>; quad: QuadPiece }
+  >();
+  for (const quad of quads) {
+    const key = JSON.stringify(quad.ops);
+    let entry = merged.get(key);
+    if (entry === undefined) {
+      entry = { faces: new Set(), cull: new Set(), quad };
+      merged.set(key, entry);
+    }
+    entry.faces.add(quad.face);
+    if (quad.cull) entry.cull.add(quad.face);
+  }
+  return [...merged.values()].map(({ faces, cull, quad }) => ({
+    slot,
+    select: FULL_CUBE,
+    offset: [0, 0, 0],
+    transform: [],
+    cull: DIRECTIONS.filter((dir) => cull.has(dir)),
+    faces: DIRECTIONS.filter((dir) => faces.has(dir)),
+    ops: quad.ops,
+  }));
+}
+
+/** Pieces of a templated or bespoke-geometry block. */
+function partPieces(
+  block: string,
+  state: BlockState,
+  slot: string,
+  template: TemplateLookup,
+): ShapePiece[] {
+  return GEOMETRY_SPECS[block] !== undefined
+    ? geometryPieces(block, state, slot)
+    : templatePieces(block, state, slot, template);
+}
+
 /** Every combination of `properties`, in declaration order. */
 function allStates(
   properties: Readonly<Record<string, readonly string[]>>,
@@ -395,13 +463,22 @@ async function generateFramedBlocks(): Promise<void> {
       templatePieces(block, state, "camo", template),
     );
   }
+  for (const [block, spec] of Object.entries(GEOMETRY_SPECS)) {
+    if (!known.has(block)) throw new Error(`${block} is not a BlockType`);
+    if (blocks[`framedblocks:${block}`] !== undefined) {
+      throw new Error(`${block} has both a template and a geometry spec`);
+    }
+    blocks[`framedblocks:${block}`] = blockRules(spec.properties, (state) =>
+      geometryPieces(block, state, "camo"),
+    );
+  }
   for (const [block, spec] of Object.entries(DOUBLE_BLOCK_SPECS)) {
     if (!known.has(block)) throw new Error(`${block} is not a BlockType`);
     blocks[`framedblocks:${block}`] = blockRules(spec.properties, (state) => {
       const [one, two] = spec.parts(state);
       return [
-        ...templatePieces(one.block, one.props, "camo", template),
-        ...templatePieces(two.block, two.props, "camo_two", template),
+        ...partPieces(one.block, one.props, "camo", template),
+        ...partPieces(two.block, two.props, "camo_two", template),
       ];
     });
   }

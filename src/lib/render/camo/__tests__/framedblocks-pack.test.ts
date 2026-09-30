@@ -1,8 +1,14 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import {
+  BlockDefinition,
+  BlockModel,
+  Identifier,
+  type TextureAtlasProvider,
+} from "deepslate";
 
-import { transformBox } from "../mesh-crop";
+import { buildCamoMesh, transformBox } from "../mesh-crop";
 import {
   matchShapeRule,
   validateShapePack,
@@ -46,6 +52,62 @@ function placedBoxes(id: string, props: Record<string, string>): string[] {
       }),
     )
     .sort();
+}
+
+// A plain full-cube camo mesh, block units.
+const ATLAS: TextureAtlasProvider = {
+  getTextureAtlas: () => ({ width: 4, height: 4 }) as unknown as ImageData,
+  getTextureUV: () => [0, 0, 1, 1],
+};
+const ALL = { texture: "#all" };
+const CUBE_MODEL = BlockModel.fromJson({
+  textures: { all: "test:block/all" },
+  elements: [
+    {
+      from: [0, 0, 0],
+      to: [16, 16, 16],
+      faces: {
+        down: ALL,
+        up: ALL,
+        north: ALL,
+        south: ALL,
+        west: ALL,
+        east: ALL,
+      },
+    },
+  ],
+});
+const CUBE = BlockDefinition.fromJson({
+  variants: { "": { model: "test:block/cube" } },
+}).getMesh(
+  Identifier.parse("test:cube"),
+  {},
+  ATLAS,
+  { getBlockModel: () => CUBE_MODEL },
+  {},
+);
+
+/** The mesh a state builds from a full-cube camo in every slot. */
+function camoMesh(id: string, props: Record<string, string>) {
+  const rule = matchShapeRule(PACK.blocks[`framedblocks:${id}`], props);
+  expect(rule, `${id} ${JSON.stringify(props)}`).not.toBeNull();
+  return buildCamoMesh(rule!.pieces, () => CUBE, {});
+}
+
+/** Bounding box of a state's mesh in model pixels, rounded to 0.01. */
+function meshBounds(id: string, props: Record<string, string>): Box {
+  const from: [number, number, number] = [Infinity, Infinity, Infinity];
+  const to: [number, number, number] = [-Infinity, -Infinity, -Infinity];
+  for (const quad of camoMesh(id, props).quads) {
+    for (const { pos } of quad.vertices()) {
+      [pos.x, pos.y, pos.z].forEach((n, axis) => {
+        const px = Math.round(n * 1600) / 100;
+        from[axis] = Math.min(from[axis], px);
+        to[axis] = Math.max(to[axis], px);
+      });
+    }
+  }
+  return { from, to };
 }
 
 const box = (
@@ -197,6 +259,161 @@ describe("framedblocks shape pack", () => {
           }
         }
         expect(bad, JSON.stringify(props)).toEqual([]);
+      }
+    },
+  );
+
+  const WALL_SIDES = ["none", "low", "tall"];
+
+  it("resolves every framed_wall state to non-empty pieces", () => {
+    const states = product({
+      up: ["true", "false"],
+      north: WALL_SIDES,
+      east: WALL_SIDES,
+      south: WALL_SIDES,
+      west: WALL_SIDES,
+    });
+    expect(states).toHaveLength(162);
+    for (const props of states) {
+      const rule = matchShapeRule(
+        PACK.blocks["framedblocks:framed_wall"],
+        props,
+      );
+      expect(rule, JSON.stringify(props)).not.toBeNull();
+      expect(rule!.pieces.length, JSON.stringify(props)).toBeGreaterThan(0);
+      expect(
+        camoMesh("framed_wall", props).quads.length,
+        JSON.stringify(props),
+      ).toBeGreaterThan(0);
+    }
+  });
+
+  it.each<[string, Record<string, string>, Box]>([
+    [
+      "framed_wall",
+      { up: "true", north: "none", east: "none", south: "none", west: "none" },
+      { from: [4, 0, 4], to: [12, 16, 12] },
+    ],
+    [
+      "framed_wall",
+      { up: "false", north: "low", east: "none", south: "low", west: "none" },
+      { from: [5, 0, 0], to: [11, 14, 16] },
+    ],
+    [
+      "framed_wall",
+      { up: "false", north: "tall", east: "tall", south: "none", west: "none" },
+      { from: [5, 0, 0], to: [16, 16, 11] },
+    ],
+    [
+      "framed_pane",
+      { north: "false", east: "false", south: "false", west: "false" },
+      { from: [7, 0, 7], to: [9, 16, 9] },
+    ],
+    [
+      "framed_bars",
+      { north: "true", east: "true", south: "false", west: "false" },
+      { from: [7, 0, 0], to: [16, 16, 9] },
+    ],
+    ["framed_board", { faces: "4" }, { from: [0, 0, 0], to: [16, 16, 1] }],
+    ["framed_torch", {}, { from: [7, 0, 7], to: [9, 8, 9] }],
+    [
+      "framed_lantern",
+      { hanging: "true", chain: "camo" },
+      { from: [5, 1, 5], to: [11, 16, 11] },
+    ],
+    [
+      "framed_lever",
+      { face: "wall", facing: "north" },
+      { from: [5, 4, 13], to: [11, 12, 16] },
+    ],
+    ["framed_flower_pot", {}, { from: [5, 0, 5], to: [11, 6, 11] }],
+    [
+      "framed_chest",
+      { facing: "north", type: "left", state: "closed", latch: "none" },
+      { from: [1, 0, 1], to: [16, 14, 15] },
+    ],
+    [
+      "framed_mini_cube",
+      { rotation: "0", top: "false" },
+      { from: [4, 0, 4], to: [12, 8, 12] },
+    ],
+  ])("builds %s %j in shape", (id, props, bounds) => {
+    expect(meshBounds(id, props)).toEqual(bounds);
+  });
+
+  it("drops the tinted glass face of framed_one_way_window", () => {
+    const faces = camoMesh("framed_one_way_window", { face: "north" }).quads;
+    expect(faces).toHaveLength(5);
+    expect(faces.every((q) => q.vertices().some((v) => v.pos.z > 0))).toBe(
+      true,
+    );
+  });
+
+  it("maps framed_adj_double_panel camo away from its facing", () => {
+    expect(placedBoxes("framed_adj_double_panel", { facing: "east" })).toEqual([
+      box("camo", [0, 0, 0], [8, 16, 16]),
+      box("camo_two", [8, 0, 0], [16, 16, 16]),
+    ]);
+  });
+
+  // Blocks ported from bespoke `*Geometry.java` classes.
+  const BESPOKE = [
+    "framed_cube",
+    "framed_secret_storage",
+    "framed_tank",
+    "framed_bouncy_cube",
+    "framed_redstone_block",
+    "framed_target",
+    "framed_one_way_window",
+    "framed_collapsible_block",
+    "framed_collapsible_copycat_block",
+    "framed_mini_cube",
+    "framed_chest",
+    "framed_wall",
+    "framed_chain",
+    "framed_lightning_rod",
+    "framed_pane",
+    "framed_bars",
+    "framed_board",
+    "framed_torch",
+    "framed_soul_torch",
+    "framed_copper_torch",
+    "framed_redstone_torch",
+    "framed_wall_torch",
+    "framed_soul_wall_torch",
+    "framed_copper_wall_torch",
+    "framed_redstone_wall_torch",
+    "framed_lantern",
+    "framed_soul_lantern",
+    "framed_copper_lantern",
+    "framed_sign",
+    "framed_hanging_sign",
+    "framed_wall_hanging_sign",
+    "framed_lever",
+    "framed_flower_pot",
+    "framed_item_frame",
+    "framed_glowing_item_frame",
+    "framed_banner",
+    "framed_wall_banner",
+    "framed_fancy_rail",
+    "framed_fancy_powered_rail",
+    "framed_fancy_detector_rail",
+    "framed_fancy_activator_rail",
+  ];
+
+  it.each(BESPOKE)(
+    "builds a finite, non-empty mesh for every %s rule",
+    (id) => {
+      const rules = PACK.blocks[`framedblocks:${id}`];
+      expect(rules, id).toBeDefined();
+      for (const rule of rules) {
+        const quads = buildCamoMesh(rule.pieces, () => CUBE, {}).quads;
+        expect(quads.length, JSON.stringify(rule.when)).toBeGreaterThan(0);
+        for (const quad of quads) {
+          for (const { pos } of quad.vertices()) {
+            expect([pos.x, pos.y, pos.z].every(Number.isFinite)).toBe(true);
+          }
+        }
       }
     },
   );
