@@ -20,24 +20,10 @@ import { resolveModdedState, type ModMappingContext } from "./mod-mapping";
 
 // ── Public types ──────────────────────────────────────────────────────────
 
-// A schematic in the editor's in-memory form. Superset of the parser's
-// projection: each region may optionally carry tile entities (chests, signs,
-// banners, etc.). The parser doesn't populate tile entities yet; the field is
-// declared here so the transform layer can preserve/drop them per the
-// compatibility rule below as soon as the parser starts emitting them.
-export interface SchematicTileEntity {
-  pos: [number, number, number];
-  blockId: string;
-  data: Record<string, unknown>;
-}
-
-export interface SchematicRegion extends ParsedSchematicRegion {
-  tileEntities?: SchematicTileEntity[];
-}
-
-export interface Schematic extends Omit<ParsedSchematicProjection, "regions"> {
-  regions: SchematicRegion[];
-}
+// A schematic in the editor's in-memory form: the parser's projection,
+// including each region's block entities (chests, signs, camos, etc.).
+export type SchematicRegion = ParsedSchematicRegion;
+export type Schematic = ParsedSchematicProjection;
 
 export interface BlockStateTarget {
   blockId: string;
@@ -157,14 +143,7 @@ export function applyBlockSwap(
       if (remapped === placement.paletteIndex) return placement;
       return { pos: placement.pos, paletteIndex: remapped };
     });
-    return {
-      origin: region.origin,
-      size: region.size,
-      blocks,
-      ...(region.tileEntities !== undefined
-        ? { tileEntities: region.tileEntities }
-        : {}),
-    };
+    return { ...region, blocks };
   });
 
   // Air-like target: drop the swapped placements entirely so the editor doesn't
@@ -183,8 +162,8 @@ export function applyBlockSwap(
   // Filter tile entities at the positions that changed state. Positions that
   // changed are exactly the positions whose ORIGINAL paletteIndex === sourceIndex.
   remappedRegions = remappedRegions.map((region, regionIndex) => {
-    const originalTEs = schematic.regions[regionIndex]?.tileEntities;
-    if (!originalTEs || originalTEs.length === 0) return region;
+    const originalTEs = schematic.regions[regionIndex].blockEntities;
+    if (originalTEs.length === 0) return region;
 
     const originalRegion = schematic.regions[regionIndex];
     const changedPositions = new Set<string>();
@@ -202,7 +181,7 @@ export function applyBlockSwap(
       return compatible;
     });
 
-    return { ...region, tileEntities: keptTEs };
+    return { ...region, blockEntities: keptTEs };
   });
 
   // Compact the palette: drop zero-count entries; sort survivors by count desc
@@ -377,14 +356,7 @@ export function applyVersionMapping(
       counts[remapped] += 1;
       return { pos: placement.pos, paletteIndex: remapped };
     });
-    return {
-      origin: region.origin,
-      size: region.size,
-      blocks,
-      ...(region.tileEntities !== undefined
-        ? { tileEntities: region.tileEntities }
-        : {}),
-    };
+    return { ...region, blocks };
   });
 
   // Step 4: drop placements whose target state is air-like so the editor
@@ -410,8 +382,8 @@ export function applyVersionMapping(
   // (or if the post-mapping state is air).
   remappedRegions = remappedRegions.map((region, regionIndex) => {
     const originalRegion = schematic.regions[regionIndex];
-    const originalTEs = originalRegion?.tileEntities;
-    if (!originalTEs || originalTEs.length === 0) return region;
+    const originalTEs = originalRegion.blockEntities;
+    if (originalTEs.length === 0) return region;
 
     // Build a position → original paletteIndex lookup so we can locate each
     // tile entity's pre-mapping state.
@@ -429,7 +401,7 @@ export function applyVersionMapping(
       return isTileEntityCompatible(oldBlockId, newBlockId);
     });
 
-    return { ...region, tileEntities: keptTEs };
+    return { ...region, blockEntities: keptTEs };
   });
 
   // Step 6: compact + sort the palette.

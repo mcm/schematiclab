@@ -22,7 +22,9 @@ function projection(
     },
     totalBlocks: blocks.length,
     palette: palette.map((e) => ({ ...e, properties: e.properties ?? {} })),
-    regions: [{ origin: [0, 0, 0], size: [4, 1, 1], blocks }],
+    regions: [
+      { origin: [0, 0, 0], size: [4, 1, 1], blocks, blockEntities: [] },
+    ],
   };
 }
 

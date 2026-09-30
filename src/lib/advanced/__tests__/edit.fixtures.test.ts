@@ -405,11 +405,9 @@ describe("applyVersionMapping on real fixtures", () => {
 });
 
 describe("tile-entity compatibility on a real synthetic schematic", () => {
-  // Build a v2 with a chest, parse it via real schemlib, then drive the
-  // edit-layer transform. Parser doesn't currently populate the projection's
-  // `tileEntities` field, so we attach a TE manually after parsing — this
-  // mirrors what a future parser change would do and locks in the
-  // compatibility contract documented in `edit.ts`.
+  // Build a v2 with a chest, parse it via real schemlib (which carries the
+  // chest's block entity into the projection), then drive the edit-layer
+  // transform to lock in the compatibility contract documented in `edit.ts`.
   function makeChestTE(x: number, y: number, z: number): Entity {
     const c = new nbt.Compound();
     c.set("id", new nbt.StringTag("minecraft:chest"));
@@ -443,25 +441,10 @@ describe("tile-entity compatibility on a real synthetic schematic", () => {
   }
 
   it("preserves tile entities across a property-only swap (same block id)", () => {
-    const parsed = parsedChestSchematic();
-    // Locate the chest's region and attach a TE record (parser doesn't yet
-    // expose tileEntities on the projection — the transform contract is
-    // tested here against the schema declared by `Schematic`).
-    const projection = {
-      ...parsed,
-      regions: parsed.regions.map((r) => ({
-        ...r,
-        tileEntities: [
-          {
-            pos: [0, 0, 0] as [number, number, number],
-            blockId: "minecraft:chest",
-            data: { Items: [] as unknown[] },
-          },
-        ],
-      })),
-    };
+    const projection = parsedChestSchematic();
+    expect(projection.regions[0].blockEntities).toHaveLength(1);
 
-    const sourceState = parsed.palette.find(
+    const sourceState = projection.palette.find(
       (e) => e.blockId === "minecraft:chest",
     )?.blockState;
     expect(sourceState).toBeDefined();
@@ -471,27 +454,16 @@ describe("tile-entity compatibility on a real synthetic schematic", () => {
       blockId: "minecraft:chest",
       properties: { facing: "south", type: "single", waterlogged: "false" },
     });
-    expect(after.regions[0].tileEntities).toHaveLength(1);
-    expect(after.regions[0].tileEntities?.[0].blockId).toBe("minecraft:chest");
+    expect(after.regions[0].blockEntities).toEqual(
+      projection.regions[0].blockEntities,
+    );
   });
 
   it("drops tile entities when the swap changes the block id", () => {
-    const parsed = parsedChestSchematic();
-    const projection = {
-      ...parsed,
-      regions: parsed.regions.map((r) => ({
-        ...r,
-        tileEntities: [
-          {
-            pos: [0, 0, 0] as [number, number, number],
-            blockId: "minecraft:chest",
-            data: { Items: [] as unknown[] },
-          },
-        ],
-      })),
-    };
+    const projection = parsedChestSchematic();
+    expect(projection.regions[0].blockEntities).toHaveLength(1);
 
-    const sourceState = parsed.palette.find(
+    const sourceState = projection.palette.find(
       (e) => e.blockId === "minecraft:chest",
     )?.blockState;
     expect(sourceState).toBeDefined();
@@ -501,6 +473,6 @@ describe("tile-entity compatibility on a real synthetic schematic", () => {
       blockId: "minecraft:stone",
       properties: {},
     });
-    expect(after.regions[0].tileEntities).toEqual([]);
+    expect(after.regions[0].blockEntities).toEqual([]);
   });
 });

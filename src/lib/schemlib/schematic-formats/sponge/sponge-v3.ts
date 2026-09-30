@@ -88,14 +88,23 @@ export function encodeVarintArray(values: ArrayLike<number>): number[] {
 // lowercase `id` and individual `x`/`y`/`z` ints. We translate on read for
 // cross-format consumers and on write for v3-targeted dumps.
 
-function v3BlockEntityToChunkShape(c: nbt.Compound): nbt.Compound | null {
+// Block entity `Pos` is in the same linear index space as `Data`. On read we
+// shift it by the same Offset getBlockMatrix applies to blocks (including its
+// axis order), and on write by the same bounding-box min fromSchematic
+// subtracts from blocks, so a block entity stays on its block either way.
+function v3BlockEntityToChunkShape(
+  c: nbt.Compound,
+  offset: readonly [number, number, number],
+): nbt.Compound | null {
   const idTag = c.get("Id");
   const posTag = c.get("Pos");
   if (!(idTag instanceof nbt.StringTag)) return null;
   if (!(posTag instanceof nbt.IntArray)) return null;
   const posArr = posTag.toObject() as number[];
   if (posArr.length < 3) return null;
-  const [x, y, z] = posArr;
+  const x = posArr[0] - offset[0];
+  const y = posArr[1] - offset[2];
+  const z = posArr[2] - offset[1];
 
   const out = new nbt.Compound();
   const dataTag = c.get("Data");
@@ -109,7 +118,10 @@ function v3BlockEntityToChunkShape(c: nbt.Compound): nbt.Compound | null {
   return out;
 }
 
-function chunkShapeToV3BlockEntity(c: nbt.Compound): nbt.Compound | null {
+function chunkShapeToV3BlockEntity(
+  c: nbt.Compound,
+  origin: BlockPos,
+): nbt.Compound | null {
   // Pull id from either `id` (chunk-shape) or `Id` (already-v3-shape).
   const idTag = c.get("id") ?? c.get("Id");
   if (!(idTag instanceof nbt.StringTag)) return null;
@@ -133,7 +145,7 @@ function chunkShapeToV3BlockEntity(c: nbt.Compound): nbt.Compound | null {
 
   const out = new nbt.Compound();
   out.set("Id", new nbt.StringTag(idTag.value));
-  out.set("Pos", new nbt.IntArray([x, y, z]));
+  out.set("Pos", new nbt.IntArray([x - origin.x, y - origin.y, z - origin.z]));
   if (data.entries.size > 0) out.set("Data", data);
   return out;
 }
@@ -390,7 +402,7 @@ export class SpongeSchematicV3
   getTileEntityMatrix(): Map<string, Entity> {
     const out = new Map<string, Entity>();
     for (const be of this.BlockEntities) {
-      const chunkShape = v3BlockEntityToChunkShape(be);
+      const chunkShape = v3BlockEntityToChunkShape(be, this.Offset);
       if (!chunkShape) continue;
       const e = new Entity(chunkShape);
       const xt = chunkShape.get("x");
@@ -539,7 +551,7 @@ export class SpongeSchematicV3
     // into the v3 BlockEntity compound shape.
     const blockEntities: nbt.Compound[] = [];
     for (const e of sourceTileEntities) {
-      const v3 = chunkShapeToV3BlockEntity(e.toCompound());
+      const v3 = chunkShapeToV3BlockEntity(e.toCompound(), pos1);
       if (v3) blockEntities.push(v3);
     }
 
