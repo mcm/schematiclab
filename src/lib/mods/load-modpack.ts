@@ -5,15 +5,18 @@
 // one listed in the manifest but missing from `mods/` is downloaded from
 // CurseForge instead.
 //
-// Mods run one at a time (the jar worker is single-threaded anyway, and it
-// keeps at most one jar in memory). Mods without blocks are skipped quietly;
-// files already loaded are skipped without re-parsing. One modpack load runs
-// at a time; its progress lives in a module-level store subscribed via
+// Mods are parsed one at a time (the jar worker is single-threaded anyway, and
+// it keeps at most one jar in memory), then registered together in one
+// `addLoadedMods` batch, so the registry, and the 3D preview's atlas rebuild,
+// update once per pack instead of once per mod. A cancelled load still
+// registers what it parsed. Mods without blocks are skipped quietly; files
+// already loaded are skipped without re-parsing. One modpack load runs at a
+// time; its progress lives in a module-level store subscribed via
 // `useSyncExternalStore`.
 
 import * as React from "react";
 
-import { downloadModJar } from "../curseforge/client";
+import { downloadModJar, type DownloadProgress } from "../curseforge/client";
 import { ModJarError, registerModJar, type ModLoadDeps } from "./load-mod";
 import { parseModJarInWorker } from "./mod-jar-client";
 import {
@@ -22,8 +25,12 @@ import {
   parseMinecraftInstance,
   type ModpackMod,
 } from "./modpack-instance";
-import { addLoadedMod, getSnapshot, hydrateLoadedMods } from "./registry";
-import { loadedModKey } from "./types";
+import { addLoadedMods, getSnapshot, hydrateLoadedMods } from "./registry";
+import {
+  loadedModKey,
+  type LoadedModAssets,
+  type LoadedModMeta,
+} from "./types";
 
 /** Local jars larger than this are skipped rather than read into memory. */
 export const MAX_LOCAL_JAR_BYTES = 256 * 1024 * 1024;
@@ -47,6 +54,8 @@ export interface ModpackLoadProgress {
   processed: number;
   /** Mod currently being read, while running. */
   current: string | null;
+  /** Download progress while `current` is fetched from CurseForge. */
+  download: DownloadProgress | null;
   loaded: number;
   alreadyLoaded: number;
   noBlocks: number;
@@ -55,13 +64,16 @@ export interface ModpackLoadProgress {
 
 export type ModpackLoadState =
   | { status: "reading" }
-  | ({ status: "running" | "done" | "cancelled" } & ModpackLoadProgress)
+  | ({
+      status: "running" | "saving" | "done" | "cancelled";
+    } & ModpackLoadProgress)
   | { status: "error"; message: string };
 
 export interface ModpackLoadDeps extends Pick<
   ModLoadDeps,
-  "download" | "parse" | "add" | "now"
+  "download" | "parse" | "now"
 > {
+  addMany: typeof addLoadedMods;
   /** Keys of mod files already loaded (after hydration). */
   loadedKeys: () => Promise<ReadonlySet<string>>;
 }
@@ -69,7 +81,7 @@ export interface ModpackLoadDeps extends Pick<
 const DEFAULT_DEPS: ModpackLoadDeps = {
   download: downloadModJar,
   parse: parseModJarInWorker,
-  add: addLoadedMod,
+  addMany: addLoadedMods,
   now: Date.now,
   loadedKeys: async () => {
     await hydrateLoadedMods();
@@ -111,18 +123,23 @@ export function useModpackLoad(): ModpackLoadState | null {
   );
 }
 
-function isActive(current: ModpackLoadState | null): boolean {
-  return current?.status === "reading" || current?.status === "running";
+/** True while a modpack load is reading, parsing or saving. */
+export function isModpackLoadActive(current: ModpackLoadState | null): boolean {
+  return (
+    current?.status === "reading" ||
+    current?.status === "running" ||
+    current?.status === "saving"
+  );
 }
 
-/** Stop the running modpack load after the current mod. */
+/** Stop the running modpack load after the current mod (keeping those done). */
 export function cancelModpackLoad(): void {
   controller?.abort();
 }
 
 /** Forget a finished, cancelled or failed modpack load. */
 export function dismissModpackLoad(): void {
-  if (!isActive(state)) setState(null);
+  if (!isModpackLoadActive(state)) setState(null);
 }
 
 function errorMessage(err: unknown, fallback: string): string {
@@ -134,11 +151,12 @@ async function readJar(
   jar: Blob | undefined,
   deps: ModpackLoadDeps,
   signal: AbortSignal,
+  onProgress: (progress: DownloadProgress) => void,
 ): Promise<Uint8Array> {
   if (jar === undefined) {
     // Not on disk (deleted, or not synced yet): fetch the exact file the
     // manifest names.
-    return deps.download(mod.modId, mod.fileId, () => {}, signal);
+    return deps.download(mod.modId, mod.fileId, onProgress, signal);
   }
   if (jar.size > MAX_LOCAL_JAR_BYTES) {
     throw new Error(
@@ -156,17 +174,20 @@ export async function startModpackLoad(
   files: readonly ModpackFile[],
   deps: ModpackLoadDeps = DEFAULT_DEPS,
 ): Promise<void> {
-  if (isActive(state)) return;
+  if (isModpackLoadActive(state)) return;
   const abort = new AbortController();
   controller = abort;
   setState({ status: "reading" });
 
   const located = locateModpackFiles(files);
+  const fail = (message: string) => {
+    if (controller === abort) controller = null;
+    setState({ status: "error", message });
+  };
   if (located === null) {
-    setState({
-      status: "error",
-      message: `No ${MODPACK_MANIFEST_NAME} in that folder. Pick a CurseForge instance folder (the one containing mods/).`,
-    });
+    fail(
+      `No ${MODPACK_MANIFEST_NAME} in that folder. Pick a CurseForge instance folder (the one containing mods/).`,
+    );
     return;
   }
 
@@ -176,22 +197,27 @@ export async function startModpackLoad(
       JSON.parse(await located.manifest.file.text()),
     );
   } catch (err) {
-    setState({
-      status: "error",
-      message:
-        err instanceof SyntaxError
-          ? `${MODPACK_MANIFEST_NAME} isn't valid JSON.`
-          : errorMessage(err, `Could not read ${MODPACK_MANIFEST_NAME}.`),
-    });
+    fail(
+      err instanceof SyntaxError
+        ? `${MODPACK_MANIFEST_NAME} isn't valid JSON.`
+        : errorMessage(err, `Could not read ${MODPACK_MANIFEST_NAME}.`),
+    );
     return;
   }
 
-  const loadedKeys = await deps.loadedKeys();
+  let loadedKeys: ReadonlySet<string>;
+  try {
+    loadedKeys = await deps.loadedKeys();
+  } catch (err) {
+    fail(errorMessage(err, "Could not read your loaded mods."));
+    return;
+  }
   let progress: ModpackLoadProgress = {
     packName: instance.name,
     total: instance.mods.length,
     processed: 0,
     current: null,
+    download: null,
     loaded: 0,
     alreadyLoaded: 0,
     noBlocks: 0,
@@ -203,6 +229,12 @@ export async function startModpackLoad(
   };
   update({});
 
+  // Parsed mods waiting for the batch registration at the end.
+  const parsed: { meta: LoadedModMeta; assets: LoadedModAssets }[] = [];
+  const collect = async (meta: LoadedModMeta, assets: LoadedModAssets) => {
+    parsed.push({ meta, assets });
+  };
+
   for (const mod of instance.mods) {
     if (abort.signal.aborted) break;
     if (loadedKeys.has(loadedModKey(mod.modId, mod.fileId))) {
@@ -212,7 +244,8 @@ export async function startModpackLoad(
       });
       continue;
     }
-    update({ current: mod.name });
+    update({ current: mod.name, download: null });
+    let lastPercent = -1;
 
     let outcome: Partial<ModpackLoadProgress>;
     try {
@@ -221,6 +254,17 @@ export async function startModpackLoad(
         located.jars.get(mod.fileName)?.file,
         deps,
         abort.signal,
+        (download) => {
+          // Re-render only when the visible percentage changes.
+          const { received, total } = download;
+          const percent =
+            total === null
+              ? received >> 18
+              : Math.floor((received / total) * 100);
+          if (percent === lastPercent) return;
+          lastPercent = percent;
+          update({ download });
+        },
       );
       await registerModJar(
         bytes,
@@ -234,7 +278,7 @@ export async function startModpackLoad(
           gameVersions: mod.gameVersions,
           loader: mod.loader,
         },
-        deps,
+        { ...deps, add: collect },
       );
       outcome = { loaded: progress.loaded + 1 };
     } catch (err) {
@@ -252,14 +296,31 @@ export async function startModpackLoad(
               ],
             };
     }
-    update({ ...outcome, processed: progress.processed + 1 });
+    update({ ...outcome, processed: progress.processed + 1, download: null });
+  }
+
+  progress = { ...progress, current: null, download: null };
+  if (parsed.length > 0) {
+    setState({ status: "saving", ...progress });
+    try {
+      await deps.addMany(parsed);
+    } catch (err) {
+      const message = errorMessage(err, "Could not save the mods.");
+      progress = {
+        ...progress,
+        loaded: 0,
+        failures: [
+          ...progress.failures,
+          ...parsed.map(({ meta }) => ({ modName: meta.modName, message })),
+        ],
+      };
+    }
   }
 
   if (controller === abort) controller = null;
   setState({
     status: abort.signal.aborted ? "cancelled" : "done",
     ...progress,
-    current: null,
   });
 }
 

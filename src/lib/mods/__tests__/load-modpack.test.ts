@@ -67,7 +67,7 @@ function makeDeps(overrides: Partial<ModpackLoadDeps> = {}): ModpackLoadDeps {
   return {
     download: vi.fn(async () => new Uint8Array([9])),
     parse: vi.fn(async () => parsed()),
-    add: vi.fn(async () => {}),
+    addMany: vi.fn(async () => {}),
     now: () => 1234,
     loadedKeys: async () => new Set<string>(),
     ...overrides,
@@ -79,7 +79,7 @@ beforeEach(() => {
 });
 
 describe("startModpackLoad", () => {
-  it("registers each local jar with the manifest's CurseForge ids", async () => {
+  it("registers every local jar in one batch with the manifest's CurseForge ids", async () => {
     const deps = makeDeps();
     await startModpackLoad(
       [
@@ -92,8 +92,10 @@ describe("startModpackLoad", () => {
 
     expect(deps.download).not.toHaveBeenCalled();
     expect(deps.parse).toHaveBeenCalledWith(new Uint8Array([1, 2, 3]));
-    expect(deps.add).toHaveBeenCalledTimes(2);
-    expect(vi.mocked(deps.add).mock.calls[0][0]).toMatchObject({
+    expect(deps.addMany).toHaveBeenCalledTimes(1);
+    const batch = vi.mocked(deps.addMany).mock.calls[0][0];
+    expect(batch.map(({ meta }) => meta.key)).toEqual(["1:10", "2:20"]);
+    expect(batch[0].meta).toMatchObject({
       key: "1:10",
       modId: 1,
       fileId: 10,
@@ -110,6 +112,7 @@ describe("startModpackLoad", () => {
       total: 2,
       processed: 2,
       current: null,
+      download: null,
       loaded: 2,
       alreadyLoaded: 0,
       noBlocks: 0,
@@ -129,6 +132,35 @@ describe("startModpackLoad", () => {
     );
     expect(deps.parse).toHaveBeenCalledWith(new Uint8Array([9]));
     expect(getModpackLoad()).toMatchObject({ status: "done", loaded: 1 });
+  });
+
+  it("reports download progress for a missing jar", async () => {
+    const seen: unknown[] = [];
+    const deps = makeDeps({
+      download: vi.fn(async (_modId, _fileId, onProgress) => {
+        onProgress({ received: 0, total: 4 });
+        onProgress({ received: 0, total: 4 }); // same percent: no update
+        seen.push(getModpackLoad());
+        onProgress({ received: 2, total: 4 });
+        seen.push(getModpackLoad());
+        return new Uint8Array([9]);
+      }),
+    });
+    await startModpackLoad([manifest([addon(1, 10, "alpha")])], deps);
+
+    expect(seen).toMatchObject([
+      {
+        status: "running",
+        current: "alpha",
+        download: { received: 0, total: 4 },
+      },
+      {
+        status: "running",
+        current: "alpha",
+        download: { received: 2, total: 4 },
+      },
+    ]);
+    expect(getModpackLoad()).toMatchObject({ status: "done", download: null });
   });
 
   it("counts blockless and already-loaded mods and collects failures", async () => {
@@ -159,7 +191,7 @@ describe("startModpackLoad", () => {
       deps,
     );
 
-    expect(deps.add).not.toHaveBeenCalled();
+    expect(deps.addMany).not.toHaveBeenCalled();
     expect(getModpackLoad()).toMatchObject({
       status: "done",
       processed: 4,
@@ -205,11 +237,59 @@ describe("startModpackLoad", () => {
     );
 
     expect(deps.parse).toHaveBeenCalledTimes(1);
+    // What was parsed before cancelling is still registered.
+    expect(
+      vi.mocked(deps.addMany).mock.calls[0][0].map(({ meta }) => meta.key),
+    ).toEqual(["1:10"]);
     expect(getModpackLoad()).toMatchObject({
       status: "cancelled",
       processed: 1,
       loaded: 1,
     });
+  });
+
+  it("shows a saving state, then reports a failed batch save per mod", async () => {
+    let during: unknown = null;
+    const deps = makeDeps({
+      addMany: vi.fn(async () => {
+        during = getModpackLoad();
+        throw new Error("quota exceeded");
+      }),
+    });
+    await startModpackLoad(
+      [manifest([addon(1, 10, "a"), addon(2, 20, "b")]), jar("a"), jar("b")],
+      deps,
+    );
+
+    expect(during).toMatchObject({ status: "saving", loaded: 2 });
+    expect(getModpackLoad()).toMatchObject({
+      status: "done",
+      loaded: 0,
+      failures: [
+        { modName: "a", message: "quota exceeded" },
+        { modName: "b", message: "quota exceeded" },
+      ],
+    });
+  });
+
+  it("recovers when the loaded mods can't be read", async () => {
+    const files = [manifest([addon(1, 10, "a")]), jar("a")];
+    await startModpackLoad(
+      files,
+      makeDeps({
+        loadedKeys: async () => {
+          throw new Error("storage blocked");
+        },
+      }),
+    );
+    expect(getModpackLoad()).toEqual({
+      status: "error",
+      message: "storage blocked",
+    });
+
+    // Not stuck: a new load can start.
+    await startModpackLoad(files, makeDeps());
+    expect(getModpackLoad()).toMatchObject({ status: "done", loaded: 1 });
   });
 
   it("reports a missing or invalid manifest", async () => {

@@ -100,11 +100,14 @@ function rebuild(): Promise<void> {
     return building;
   }
   building = (async () => {
-    do {
-      rebuildQueued = false;
-      await buildOnce();
-    } while (rebuildQueued);
-    building = null;
+    try {
+      do {
+        rebuildQueued = false;
+        await buildOnce();
+      } while (rebuildQueued);
+    } finally {
+      building = null;
+    }
   })();
   return building;
 }
@@ -113,9 +116,13 @@ async function buildOnce(): Promise<void> {
   const snapshot = modRegistry.getSnapshot();
   try {
     const resources = await buildResources(snapshot);
+    // Superseded while building: keep what's shown until the queued build
+    // finishes, unless there's nothing to show yet.
+    if (rebuildQueued && cachedResources !== null) return;
     cachedResources = resources;
     loadError = null;
   } catch (err: unknown) {
+    if (rebuildQueued) return;
     console.error("Failed to build Minecraft resources", err);
     // Keep showing the last good resources; only surface a hard error when
     // there's nothing to show.
