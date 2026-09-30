@@ -780,6 +780,38 @@ export const DOUBLE_BLOCK_SPECS: Readonly<Record<string, DoubleBlockSpec>> = {
       part("framed_panel", { facing: opposite(s.facing) }),
     ],
   },
+  // `FramedAdjustableDoubleBlock.makeStandardParts`/`makeCopycatParts`:
+  // two collapsible blocks split at the block entity's `first_height`
+  // (default 8); part one collapses from `facing` (up for the slab), part
+  // two from the opposite side. Only the default split is representable.
+  framed_adj_double_slab: {
+    properties: {},
+    parts: () => [
+      part("framed_slab", { top: "false" }),
+      part("framed_slab", { top: "true" }),
+    ],
+  },
+  framed_adj_double_copycat_slab: {
+    properties: {},
+    parts: () => [
+      part("framed_slab", { top: "false" }),
+      part("framed_slab", { top: "true" }),
+    ],
+  },
+  framed_adj_double_panel: {
+    properties: { facing: HORIZONTAL },
+    parts: (s) => [
+      part("framed_panel", { facing: opposite(s.facing) }),
+      part("framed_panel", { facing: s.facing }),
+    ],
+  },
+  framed_adj_double_copycat_panel: {
+    properties: { facing: HORIZONTAL },
+    parts: (s) => [
+      part("framed_panel", { facing: opposite(s.facing) }),
+      part("framed_panel", { facing: s.facing }),
+    ],
+  },
   framed_double_stairs: {
     properties: STAIRS_PROPERTIES,
     parts: (s) => {
