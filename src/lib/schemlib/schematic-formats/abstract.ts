@@ -123,14 +123,29 @@ export abstract class AbstractRegion {
     return this.getEntityMatrix();
   }
 
-  getTranslatedTileEntities(_targetVersion: MinecraftVersion): Entity[] {
-    return this.getTileEntities();
+  getTranslatedTileEntities(targetVersion: MinecraftVersion): Entity[] {
+    return [...this.getTranslatedTileEntityMatrix(targetVersion).values()];
   }
 
   getTranslatedTileEntityMatrix(
-    _targetVersion: MinecraftVersion,
+    targetVersion: MinecraftVersion,
   ): Map<string, Entity> {
-    return this.getTileEntityMatrix();
+    // Camo block entities hold block states of their own (the camo), which
+    // translate like placed blocks.
+    const blocks = this.getBlockMatrix();
+    const mapper = new MinecraftVersionMapper(
+      blocks,
+      this.getMinecraftVersion(),
+    );
+    const out = new Map<string, Entity>();
+    for (const [k, e] of this.getTileEntityMatrix()) {
+      const block = blocks.get(k);
+      out.set(
+        k,
+        block === undefined ? e : mapper.mapBlockEntity(block, e, targetVersion),
+      );
+    }
+    return out;
   }
 
   getTranslatedPalette(targetVersion: MinecraftVersion): BlockState[] {

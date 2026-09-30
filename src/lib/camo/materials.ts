@@ -12,12 +12,7 @@ import type {
   ParsedSchematicProjection,
 } from "../convert";
 import { extractCamoSlots, isCamoCapableBlockId } from "./extract";
-
-function stateKey(name: string, properties: Record<string, string>): string {
-  const keys = Object.keys(properties).sort();
-  if (keys.length === 0) return name;
-  return `${name}[${keys.map((k) => `${k}=${properties[k]}`).join(",")}]`;
-}
+import { stateKey } from "./write";
 
 const posKey = (pos: readonly [number, number, number]) =>
   `${pos[0]},${pos[1]},${pos[2]}`;
