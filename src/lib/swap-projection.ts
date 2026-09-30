@@ -7,7 +7,9 @@
 // Positions are untouched — only the palette mapping changes. Block entities
 // at swapped positions survive a property-only change (rotating a chest) and
 // are dropped when the block id changes (chest → stone), since the inventory,
-// sign text or camo no longer belongs to the new block. Air-like targets
+// sign text or camo no longer belongs to the new block. The exception is a
+// camo block swapped to another camo block with the same block-entity type
+// (framed panel → framed slab), which keeps its camo. Air-like targets
 // effectively delete the source from the visible world (the placement row
 // vanishes from the palette because its count drops to zero).
 
@@ -17,6 +19,7 @@ import type {
   ParsedSchematicRegion,
 } from "./convert";
 import { isInvisibleBlockId } from "./invisible-blocks";
+import { keepsBlockEntity } from "./camo/block-entity-type";
 import { withCamoMaterials } from "./camo/materials";
 
 export interface SwapTarget {
@@ -51,8 +54,10 @@ export function swapBlockState(
   const targetKey = blockStateKey(target);
   // If the swap is a no-op (target equals source), short-circuit.
   if (targetKey === sourceBlockState) return projection;
-  const keepBlockEntities =
-    projection.palette[sourceIndex].blockId === target.blockId;
+  const keepBlockEntities = keepsBlockEntity(
+    projection.palette[sourceIndex].blockId,
+    target.blockId,
+  );
 
   // Build a working palette: start from the existing entries, then make sure
   // the target exists (either reusing a matching entry or appending a new

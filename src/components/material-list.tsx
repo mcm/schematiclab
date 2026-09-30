@@ -15,6 +15,7 @@ import {
 import {
   IconArrowsExchange,
   IconChevronDown,
+  IconReplace,
   IconSearch,
 } from "@tabler/icons-react";
 import { materialTotals } from "@/lib/camo/materials";
@@ -43,9 +44,18 @@ import {
 
 type SortOrder = "count-desc" | "id-asc";
 
+// A camo child row's swap: "parent" changes only the camo under `parent`,
+// "all" every camo slot holding `material` in the schematic.
+export interface CamoSwapRequest {
+  parent: ParsedSchematicPaletteEntry;
+  material: ParsedCamoMaterial;
+  scope: "parent" | "all";
+}
+
 interface MaterialListProps {
   palette: readonly ParsedSchematicPaletteEntry[];
   onRequestSwap?: (entry: ParsedSchematicPaletteEntry) => void;
+  onRequestCamoSwap?: (request: CamoSwapRequest) => void;
   // Called with a block's namespace when the user asks to find its (unloaded)
   // mod on CurseForge; the editor opens the project picker for it.
   onSearchMod?: (namespace: string) => void;
@@ -102,6 +112,7 @@ const NO_NAMESPACES: ReadonlySet<string> = new Set();
 export function MaterialList({
   palette,
   onRequestSwap,
+  onRequestCamoSwap,
   onSearchMod,
 }: MaterialListProps) {
   const [search, setSearch] = React.useState("");
@@ -310,6 +321,7 @@ export function MaterialList({
               modInfo={modInfoByBlockId.get(entry.blockId) ?? null}
               total={totals.get(entry.blockState) ?? entry.count}
               onRequestSwap={onRequestSwap}
+              onRequestCamoSwap={onRequestCamoSwap}
               onSearchMod={onSearchMod}
             />
           ))
@@ -524,6 +536,7 @@ function PaletteRow({
   modInfo,
   total,
   onRequestSwap,
+  onRequestCamoSwap,
   onSearchMod,
 }: {
   entry: ParsedSchematicPaletteEntry;
@@ -531,6 +544,7 @@ function PaletteRow({
   // `entry.count` plus the camo slots holding this block state elsewhere.
   total: number;
   onRequestSwap?: (entry: ParsedSchematicPaletteEntry) => void;
+  onRequestCamoSwap?: (request: CamoSwapRequest) => void;
   onSearchMod?: (namespace: string) => void;
 }) {
   const propertyKeys = Object.keys(entry.properties);
@@ -716,6 +730,12 @@ function PaletteRow({
             <CamoMaterialRow
               key={`${material.kind}:${material.blockState}`}
               material={material}
+              onRequestSwap={
+                onRequestCamoSwap
+                  ? (scope) =>
+                      onRequestCamoSwap({ parent: entry, material, scope })
+                  : undefined
+              }
             />
           ))}
         </div>
@@ -724,7 +744,13 @@ function PaletteRow({
   );
 }
 
-function CamoMaterialRow({ material }: { material: ParsedCamoMaterial }) {
+function CamoMaterialRow({
+  material,
+  onRequestSwap,
+}: {
+  material: ParsedCamoMaterial;
+  onRequestSwap?: (scope: CamoSwapRequest["scope"]) => void;
+}) {
   const displayName = displayNameFor(material.blockId);
   const propertiesLabel = formatProperties(
     material.properties,
@@ -735,7 +761,9 @@ function CamoMaterialRow({ material }: { material: ParsedCamoMaterial }) {
       role="listitem"
       style={{
         display: "grid",
-        gridTemplateColumns: "14px minmax(0, 1fr) auto",
+        gridTemplateColumns: onRequestSwap
+          ? "14px minmax(0, 1fr) auto auto"
+          : "14px minmax(0, 1fr) auto",
         alignItems: "center",
         gap: "var(--space-3)",
         padding:
@@ -810,9 +838,44 @@ function CamoMaterialRow({ material }: { material: ParsedCamoMaterial }) {
       >
         {material.count.toLocaleString()}
       </span>
+      {onRequestSwap ? (
+        <span style={{ display: "inline-flex", gap: "var(--space-1)" }}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => onRequestSwap("parent")}
+            aria-label={`Swap camo ${material.blockState} in this block`}
+            title="Swap this camo in this block state only…"
+            style={CAMO_ACTION_STYLE}
+          >
+            <IconArrowsExchange size={12} aria-hidden="true" />
+            Swap…
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => onRequestSwap("all")}
+            aria-label={`Replace camo ${material.blockState} everywhere`}
+            title="Replace this camo under every block…"
+            style={CAMO_ACTION_STYLE}
+          >
+            <IconReplace size={12} aria-hidden="true" />
+            Replace all
+          </Button>
+        </span>
+      ) : null}
     </div>
   );
 }
+
+const CAMO_ACTION_STYLE: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "var(--space-1)",
+  fontSize: "var(--text-xs)",
+};
 
 function formatProperties(
   properties: Record<string, string>,
