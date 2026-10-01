@@ -17,6 +17,7 @@ import {
   IconChevronDown,
   IconReplace,
   IconSearch,
+  IconTrash,
 } from "@tabler/icons-react";
 import { materialTotals } from "@/lib/camo/materials";
 import type {
@@ -45,7 +46,8 @@ import {
 type SortOrder = "count-desc" | "id-asc";
 
 // A camo child row's swap: "parent" changes only the camo under `parent`,
-// "all" every camo slot holding `material` in the schematic.
+// "all" every camo slot holding `material` in the schematic. For the "empty"
+// material it fills the empty slots.
 export interface CamoSwapRequest {
   parent: ParsedSchematicPaletteEntry;
   material: ParsedCamoMaterial;
@@ -56,6 +58,11 @@ interface MaterialListProps {
   palette: readonly ParsedSchematicPaletteEntry[];
   onRequestSwap?: (entry: ParsedSchematicPaletteEntry) => void;
   onRequestCamoSwap?: (request: CamoSwapRequest) => void;
+  // Removes `material` from the camo slots under `parent`.
+  onRemoveCamo?: (
+    parent: ParsedSchematicPaletteEntry,
+    material: ParsedCamoMaterial,
+  ) => void;
   // Called with a block's namespace when the user asks to find its (unloaded)
   // mod on CurseForge; the editor opens the project picker for it.
   onSearchMod?: (namespace: string) => void;
@@ -113,6 +120,7 @@ export function MaterialList({
   palette,
   onRequestSwap,
   onRequestCamoSwap,
+  onRemoveCamo,
   onSearchMod,
 }: MaterialListProps) {
   const [search, setSearch] = React.useState("");
@@ -210,7 +218,11 @@ export function MaterialList({
     () =>
       filtered.reduce(
         (sum, entry) =>
-          sum + (entry.camoMaterials ?? []).reduce((n, m) => n + m.count, 0),
+          sum +
+          (entry.camoMaterials ?? []).reduce(
+            (n, m) => (m.kind === "empty" ? n : n + m.count),
+            0,
+          ),
         0,
       ),
     [filtered],
@@ -322,6 +334,7 @@ export function MaterialList({
               total={totals.get(entry.blockState) ?? entry.count}
               onRequestSwap={onRequestSwap}
               onRequestCamoSwap={onRequestCamoSwap}
+              onRemoveCamo={onRemoveCamo}
               onSearchMod={onSearchMod}
             />
           ))
@@ -537,6 +550,7 @@ function PaletteRow({
   total,
   onRequestSwap,
   onRequestCamoSwap,
+  onRemoveCamo,
   onSearchMod,
 }: {
   entry: ParsedSchematicPaletteEntry;
@@ -545,6 +559,7 @@ function PaletteRow({
   total: number;
   onRequestSwap?: (entry: ParsedSchematicPaletteEntry) => void;
   onRequestCamoSwap?: (request: CamoSwapRequest) => void;
+  onRemoveCamo?: MaterialListProps["onRemoveCamo"];
   onSearchMod?: (namespace: string) => void;
 }) {
   const propertyKeys = Object.keys(entry.properties);
@@ -736,6 +751,11 @@ function PaletteRow({
                       onRequestCamoSwap({ parent: entry, material, scope })
                   : undefined
               }
+              onRemove={
+                onRemoveCamo && material.kind !== "empty"
+                  ? () => onRemoveCamo(entry, material)
+                  : undefined
+              }
             />
           ))}
         </div>
@@ -747,21 +767,26 @@ function PaletteRow({
 function CamoMaterialRow({
   material,
   onRequestSwap,
+  onRemove,
 }: {
   material: ParsedCamoMaterial;
   onRequestSwap?: (scope: CamoSwapRequest["scope"]) => void;
+  onRemove?: () => void;
 }) {
-  const displayName = displayNameFor(material.blockId);
+  const isEmpty = material.kind === "empty";
+  const displayName = isEmpty ? "No camo" : displayNameFor(material.blockId);
   const propertiesLabel = formatProperties(
     material.properties,
     Object.keys(material.properties),
   );
+  const label = isEmpty ? "empty camo slots" : `camo ${material.blockState}`;
+  const hasActions = onRequestSwap !== undefined || onRemove !== undefined;
   return (
     <div
       role="listitem"
       style={{
         display: "grid",
-        gridTemplateColumns: onRequestSwap
+        gridTemplateColumns: hasActions
           ? "14px minmax(0, 1fr) auto auto"
           : "14px minmax(0, 1fr) auto",
         alignItems: "center",
@@ -778,9 +803,10 @@ function CamoMaterialRow({
           width: 14,
           height: 14,
           borderRadius: "var(--radius-sm)",
-          background: swatchColorFor(material.blockState),
-          border:
-            "1px solid color-mix(in srgb, var(--text-primary) 18%, transparent)",
+          background: isEmpty
+            ? "transparent"
+            : swatchColorFor(material.blockState),
+          border: `1px ${isEmpty ? "dashed" : "solid"} color-mix(in srgb, var(--text-primary) ${isEmpty ? 40 : 18}%, transparent)`,
         }}
       />
       <div
@@ -824,10 +850,9 @@ function CamoMaterialRow({
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
           }}
-          title={material.blockState}
+          title={isEmpty ? undefined : material.blockState}
         >
-          {material.blockId}
-          {propertiesLabel}
+          {isEmpty ? "Empty slots" : `${material.blockId}${propertiesLabel}`}
         </span>
       </div>
       <span
@@ -838,32 +863,66 @@ function CamoMaterialRow({
       >
         {material.count.toLocaleString()}
       </span>
-      {onRequestSwap ? (
+      {hasActions ? (
         <span style={{ display: "inline-flex", gap: "var(--space-1)" }}>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => onRequestSwap("parent")}
-            aria-label={`Swap camo ${material.blockState} in this block`}
-            title="Swap this camo in this block state only…"
-            style={CAMO_ACTION_STYLE}
-          >
-            <IconArrowsExchange size={12} aria-hidden="true" />
-            Swap…
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => onRequestSwap("all")}
-            aria-label={`Replace camo ${material.blockState} everywhere`}
-            title="Replace this camo under every block…"
-            style={CAMO_ACTION_STYLE}
-          >
-            <IconReplace size={12} aria-hidden="true" />
-            Replace all
-          </Button>
+          {onRequestSwap ? (
+            <>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => onRequestSwap("parent")}
+                aria-label={
+                  isEmpty
+                    ? "Set the camo of empty slots in this block"
+                    : `Swap ${label} in this block`
+                }
+                title={
+                  isEmpty
+                    ? "Set a camo in this block state's empty slots…"
+                    : "Swap this camo in this block state only…"
+                }
+                style={CAMO_ACTION_STYLE}
+              >
+                <IconArrowsExchange size={12} aria-hidden="true" />
+                {isEmpty ? "Set…" : "Swap…"}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => onRequestSwap("all")}
+                aria-label={
+                  isEmpty
+                    ? "Set the camo of empty slots everywhere"
+                    : `Replace ${label} everywhere`
+                }
+                title={
+                  isEmpty
+                    ? "Set a camo in the empty slots of every block…"
+                    : "Replace this camo under every block…"
+                }
+                style={CAMO_ACTION_STYLE}
+              >
+                <IconReplace size={12} aria-hidden="true" />
+                {isEmpty ? "Set all" : "Replace all"}
+              </Button>
+            </>
+          ) : null}
+          {onRemove ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onRemove}
+              aria-label={`Remove ${label} from this block`}
+              title="Remove this camo from this block state, leaving the slots empty"
+              style={CAMO_ACTION_STYLE}
+            >
+              <IconTrash size={12} aria-hidden="true" />
+              Remove
+            </Button>
+          ) : null}
         </span>
       ) : null}
     </div>

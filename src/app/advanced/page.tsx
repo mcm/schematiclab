@@ -25,7 +25,10 @@ import {
   applyCamoSwap,
   undoLastSwap,
 } from "@/lib/editor-state-edits";
-import type { ParsedSchematicPaletteEntry } from "@/lib/convert";
+import type {
+  ParsedCamoMaterial,
+  ParsedSchematicPaletteEntry,
+} from "@/lib/convert";
 import { knownVersionIdFor } from "@/lib/advanced/effective-mod-version";
 import {
   BlockStatePicker,
@@ -177,6 +180,18 @@ function previewBody(parseStatus: ParseStatus): React.ReactNode {
   return <PanelSkeleton />;
 }
 
+// Removes a camo from the slots under one palette entry; "Undo last swap"
+// reverts it like any camo swap.
+function removeCamo(
+  parent: ParsedSchematicPaletteEntry,
+  material: ParsedCamoMaterial,
+): void {
+  applyCamoSwap(material, null, {
+    kind: "parent",
+    parentBlockState: parent.blockState,
+  });
+}
+
 function materialListBody(
   parseStatus: ParseStatus,
   onRequestSwap: (entry: ParsedSchematicPaletteEntry) => void,
@@ -189,6 +204,7 @@ function materialListBody(
         palette={parseStatus.schematic.palette}
         onRequestSwap={onRequestSwap}
         onRequestCamoSwap={onRequestCamoSwap}
+        onRemoveCamo={removeCamo}
         onSearchMod={onMapNamespace}
       />
     );
@@ -632,8 +648,29 @@ function EmptyState() {
   );
 }
 
+// The picker's source card for a camo swap: the material, or the empty slots.
+function camoPickerSource({ material }: CamoSwapRequest) {
+  return material.kind === "empty"
+    ? { blockState: "Empty camo slots", blockId: "No camo", properties: {} }
+    : material;
+}
+
 // Picker copy for a camo swap, naming its scope.
 function camoPickerCopy({ parent, material, scope }: CamoSwapRequest) {
+  if (material.kind === "empty") {
+    return scope === "all"
+      ? {
+          title: "Set camo everywhere",
+          description:
+            "Put a camo in every empty camo slot of the schematic, under any block. Type the block identifier to use.",
+          confirmLabel: "Set all",
+        }
+      : {
+          title: "Set camo",
+          description: `Put a camo in the empty camo slots of ${parent.blockState}. Type the block identifier to use.`,
+          confirmLabel: "Set camo",
+        };
+  }
   return scope === "all"
     ? {
         title: "Replace camo everywhere",
@@ -834,7 +871,7 @@ export default function AdvancedPage() {
       {picker?.kind === "camo" ? (
         <BlockStatePicker
           open
-          source={picker.request.material}
+          source={camoPickerSource(picker.request)}
           onCancel={handleCancelSwap}
           onConfirm={handleConfirmSwap}
           {...camoPickerCopy(picker.request)}

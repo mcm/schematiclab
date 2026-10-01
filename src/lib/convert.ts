@@ -87,16 +87,18 @@ export interface ParsedSchematicPaletteEntry {
   properties: Record<string, string>;
   count: number;
   // Camo-capable entries only: the distinct camo states in their placements'
-  // non-empty slots (see `src/lib/camo/materials.ts`). Rebuild it with
+  // slots, plus one "empty" material for their empty slots (see
+  // `src/lib/camo/materials.ts`). Rebuild it with
   // `withCamoMaterials` whenever the palette or block entities change.
   camoMaterials?: ParsedCamoMaterial[];
 }
 
 // One camo state inside a camo-capable palette entry's placements. `count` is
 // the number of slots holding it. For a fluid camo, `blockId` and
-// `blockState` are the fluid id.
+// `blockState` are the fluid id. The "empty" material counts the empty slots,
+// with `blockId` and `blockState` "" and no properties.
 export interface ParsedCamoMaterial {
-  kind: "block" | "fluid";
+  kind: "block" | "fluid" | "empty";
   blockState: string;
   blockId: string;
   properties: Record<string, string>;

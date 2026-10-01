@@ -1,29 +1,57 @@
 // Camo material swaps.
 //
-// Rewrites the camo slots whose material equals a source camo state, either
-// under one parent palette entry ("Swap…") or under every camo block in the
-// schematic ("Replace all"). Placements and the palette's block states are
-// untouched; only block-entity NBT changes, and the palette's camoMaterials
-// are recomputed. The NBT itself is written by write.ts.
+// Rewrites the camo slots whose material equals a source camo material,
+// either under one parent palette entry ("Swap…") or under every camo block
+// in the schematic ("Replace all"). The source can be the empty slots, which
+// fills them, and the target can be null, which removes the camo. A camo
+// block without a block entity (just swapped in) has all its slots empty, and
+// filling one creates the block entity. Placements and the palette's block
+// states are untouched; only block entities change, and the palette's
+// camoMaterials are recomputed. The NBT itself is written by write.ts.
 //
 // Worker-safe: no DOM access. Must not import from src/lib/render/.
 
 import type {
   ParsedCamoMaterial,
+  ParsedSchematicBlockEntity,
   ParsedSchematicProjection,
   ParsedSchematicRegion,
 } from "../convert";
-import { extractCamoSlots, isCamoCapableBlockId } from "./extract";
+import type { CamoSlot } from "./extract";
+import { isCamoCapableBlockId, placedCamoSlots } from "./extract";
 import { withCamoMaterials } from "./materials";
-import { stateKey, writeCamoSlots, type CamoTarget } from "./write";
+import {
+  newCamoBlockEntity,
+  stateKey,
+  writeCamoSlots,
+  type CamoTarget,
+} from "./write";
 
 /** The camo material to replace, as listed in a palette entry's camoMaterials. */
 export type CamoSwapSource = Pick<ParsedCamoMaterial, "kind" | "blockState">;
 
-export type CamoSwapTarget = CamoTarget;
+/** The new camo, or null to empty the slots. */
+export type CamoSwapTarget = CamoTarget | null;
 
 const posKey = (pos: readonly [number, number, number]) =>
   `${pos[0]},${pos[1]},${pos[2]}`;
+
+/** Item stacks save `count` instead of `Count` from 1.20.5 on. */
+function savesLegacyItemCount(
+  version: ParsedSchematicProjection["minecraftVersion"],
+): boolean {
+  const [major, minor, patch] = version.versionNumber;
+  return major === 1 && (minor < 20 || (minor === 20 && patch < 5));
+}
+
+function matchesSource(slot: CamoSlot, source: CamoSwapSource): boolean {
+  if (source.kind === "empty") return slot.kind === "empty";
+  return (
+    slot.kind === source.kind &&
+    slot.state !== null &&
+    stateKey(slot.state.name, slot.state.properties) === source.blockState
+  );
+}
 
 /**
  * "parent" changes only the slots under the palette entry with block state
@@ -44,8 +72,12 @@ export function swapCamoMaterial(
   target: CamoSwapTarget,
   scope: CamoSwapScope,
 ): ParsedSchematicProjection {
-  const targetKey = stateKey(target.blockId, target.properties);
-  if (source.kind === "block" && source.blockState === targetKey) {
+  if (
+    target === null
+      ? source.kind === "empty"
+      : source.kind === "block" &&
+        source.blockState === stateKey(target.blockId, target.properties)
+  ) {
     return projection;
   }
 
@@ -55,39 +87,51 @@ export function swapCamoMaterial(
       (scope.kind === "all" || entry.blockState === scope.parentBlockState),
   );
   if (!inScope.includes(true)) return projection;
+  const options = {
+    legacyItemCount: savesLegacyItemCount(projection.minecraftVersion),
+  };
 
   let changed = false;
   const regions: ParsedSchematicRegion[] = projection.regions.map((region) => {
-    if (region.blockEntities.length === 0) return region;
-    const indexAt = new Map<string, number>();
+    const indexAt = new Map(
+      region.blockEntities.map((blockEntity, i) => [
+        posKey(blockEntity.pos),
+        i,
+      ]),
+    );
+    let blockEntities: ParsedSchematicBlockEntity[] | null = null;
     for (const placement of region.blocks) {
-      if (inScope[placement.paletteIndex]) {
-        indexAt.set(posKey(placement.pos), placement.paletteIndex);
-      }
-    }
-    let regionChanged = false;
-    const blockEntities = region.blockEntities.map((blockEntity) => {
-      const index = indexAt.get(posKey(blockEntity.pos));
-      if (index === undefined) return blockEntity;
-      const entry = projection.palette[index];
+      if (!inScope[placement.paletteIndex]) continue;
+      const entry = projection.palette[placement.paletteIndex];
+      const key = posKey(placement.pos);
+      const index = indexAt.get(key);
+      const existing =
+        index === undefined ? undefined : region.blockEntities[index].nbt;
       const matching = new Set(
-        extractCamoSlots(entry.blockId, entry.properties, blockEntity.nbt)
-          .filter(
-            ({ kind, state }) =>
-              kind === source.kind &&
-              state !== null &&
-              stateKey(state.name, state.properties) === source.blockState,
-          )
+        placedCamoSlots(entry.blockId, entry.properties, existing)
+          .filter((slot) => matchesSource(slot, source))
           .map(({ slot }) => slot),
       );
-      if (matching.size === 0) return blockEntity;
-      regionChanged = true;
-      return {
-        pos: blockEntity.pos,
-        nbt: writeCamoSlots(entry.blockId, blockEntity.nbt, matching, target),
-      };
-    });
-    if (!regionChanged) return region;
+      if (matching.size === 0) continue;
+      const base =
+        existing ?? newCamoBlockEntity(entry.blockId, entry.properties);
+      if (base === undefined) continue;
+      const nbt = writeCamoSlots(
+        entry.blockId,
+        base,
+        matching,
+        target,
+        options,
+      );
+      blockEntities ??= [...region.blockEntities];
+      if (index === undefined) {
+        indexAt.set(key, blockEntities.length);
+        blockEntities.push({ pos: placement.pos, nbt });
+      } else {
+        blockEntities[index] = { pos: placement.pos, nbt };
+      }
+    }
+    if (blockEntities === null) return region;
     changed = true;
     return { ...region, blockEntities };
   });

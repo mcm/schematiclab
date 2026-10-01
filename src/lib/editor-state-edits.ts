@@ -12,6 +12,7 @@ import {
   swapCamoMaterial,
   type CamoSwapScope,
   type CamoSwapSource,
+  type CamoSwapTarget,
 } from "./camo/swap";
 import {
   applyVersionMapping as applyVersionMappingTransform,
@@ -45,14 +46,15 @@ export function applyBlockSwap(
 }
 
 // Replace a camo material: every camo slot in `scope` (one parent palette
-// entry, or the whole schematic) holding `source` gets `target`. Shares the
+// entry, or the whole schematic) holding `source` gets `target`. The source
+// can be the empty slots, and a null target removes the camo. Shares the
 // block swap's single-step undo (`lastSwapSnapshot`), so "Undo last swap"
 // reverts whichever swap came last, and a translation clears it the same way.
 //
 // Returns true if any camo slot changed.
 export function applyCamoSwap(
   source: CamoSwapSource,
-  target: SwapTarget,
+  target: CamoSwapTarget,
   scope: CamoSwapScope,
 ): boolean {
   const state = getEditorState();

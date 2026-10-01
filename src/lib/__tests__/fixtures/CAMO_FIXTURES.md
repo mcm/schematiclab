@@ -42,6 +42,14 @@ checkout's Java and the shape pack's rules. Copycats states are hand-written in
 - Multi-state copycats alternate two materials across their parts so each
   part's material shows.
 
+## Generated tables
+
+`pnpm gen:camo-block-states` reads the datapack fixtures (not the two older
+samples) and writes the app's tables of camo blocks, FramedBlocks double
+blocks and camo block properties (`src/lib/camo/*.generated.ts`). Re-run it
+whenever the fixtures are re-saved; `block-tables.fixtures.test.ts` fails
+when the tables and the fixtures disagree.
+
 ## Checked against the placements
 
 Every saved block state was checked against what the datapack placed

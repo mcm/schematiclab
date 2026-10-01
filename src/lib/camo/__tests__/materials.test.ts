@@ -35,6 +35,13 @@ const framed = (state: string) =>
     `{id:"framedblocks:framed_tile",camo:{type:"framedblocks:block",state:${state}}}`,
   );
 const MANGROVE = `{Name:"minecraft:mangrove_planks"}`;
+const EMPTY = (count: number) => ({
+  kind: "empty",
+  blockState: "",
+  blockId: "",
+  properties: {},
+  count,
+});
 
 function entry(
   blockId: string,
@@ -112,7 +119,7 @@ describe("countCamoMaterials", () => {
     ).toBe(5);
   });
 
-  it("groups by full camo state and sorts by count", () => {
+  it("groups by full camo state and sorts by count, empty slots last", () => {
     const schematic = projection(
       [entry("framedblocks:framed_cube", 4)],
       [0, 0, 0, 0],
@@ -128,6 +135,7 @@ describe("countCamoMaterials", () => {
     ).toEqual([
       ["minecraft:oak_log[axis=y]", 2],
       ["minecraft:oak_log[axis=x]", 1],
+      ["", 1],
     ]);
   });
 
@@ -151,7 +159,7 @@ describe("countCamoMaterials", () => {
     expect(schematic.palette[1].camoMaterials?.[0].count).toBe(1);
   });
 
-  it("skips empty camos and lists fluids by fluid id", () => {
+  it("counts empty slots as one empty material and lists fluids by fluid id", () => {
     const schematic = projection(
       [
         entry("framedblocks:framed_cube", 2),
@@ -176,9 +184,33 @@ describe("countCamoMaterials", () => {
         properties: {},
         count: 1,
       },
+      EMPTY(1),
     ]);
-    expect(schematic.palette[1].camoMaterials).toEqual([]);
-    expect(schematic.palette[2].camoMaterials).toEqual([]);
+    expect(schematic.palette[1].camoMaterials).toEqual([EMPTY(1)]);
+    // No block entity yet: its one slot is empty.
+    expect(schematic.palette[2].camoMaterials).toEqual([EMPTY(1)]);
+    expect(materialTotals(schematic.palette).has("")).toBe(false);
+  });
+
+  it("counts every default slot of camo blocks without a block entity", () => {
+    const schematic = projection(
+      [
+        entry("framedblocks:framed_double_slab", 2),
+        entry("copycats:copycat_slab", 1, { type: "double" }),
+        entry("copycats:copycat_slab", 1, { type: "top" }),
+        entry("create:copycat_base", 1),
+        entry("framedblocks:framing_saw", 1),
+      ],
+      [0, 0, 1, 2, 3, 4],
+      [],
+    );
+    expect(schematic.palette.map((e) => e.camoMaterials)).toEqual([
+      [EMPTY(4)],
+      [EMPTY(2)],
+      [EMPTY(1)],
+      [],
+      [],
+    ]);
   });
 
   it("leaves non-camo entries without camoMaterials", () => {
