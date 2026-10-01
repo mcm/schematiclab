@@ -20,6 +20,7 @@
 //
 // Worker-safe: no DOM access. Must not import from src/lib/render/.
 
+import type { ParsedSchematicProjection } from "../convert";
 import type { NbtCompoundValue, NbtValue } from "../nbt-value";
 import { camoBlockEntityType } from "./block-entity-type";
 import { defaultCamoSlots, multiStateParts } from "./extract";
@@ -37,6 +38,23 @@ export interface CamoWriteOptions {
    */
   legacyItemCount?: boolean;
 }
+
+/** Write options for a schematic of `version`. */
+export function camoWriteOptionsFor(
+  version: ParsedSchematicProjection["minecraftVersion"],
+): CamoWriteOptions {
+  const [major, minor, patch] = version.versionNumber;
+  return {
+    legacyItemCount: major === 1 && (minor < 20 || (minor === 20 && patch < 5)),
+  };
+}
+
+/**
+ * Camo to put on a block that is swapped or mapped to a camo block, by slot
+ * name (`camo`, `camo_two`, `material`, a multi-state part). Slots the block
+ * doesn't have are ignored.
+ */
+export type CamoChoice = Readonly<Record<string, CamoTarget>>;
 
 const FRAMED_BLOCK = "framedblocks:block";
 const FRAMED_EMPTY = "framedblocks:empty";
@@ -204,4 +222,37 @@ export function writeCamoSlots(
   entries.Material = material;
   entries.Item = item(compoundAt(nbt, "Item"));
   return compound(entries);
+}
+
+/**
+ * The block entity of a placed `blockId` with `camo` written into its slots,
+ * creating the block entity when `nbt` is undefined. Returns `nbt` itself
+ * when the block has none of the chosen slots.
+ */
+export function writeCamoChoice(
+  blockId: string,
+  blockProperties: Record<string, string>,
+  nbt: NbtCompoundValue | undefined,
+  camo: CamoChoice,
+  options?: CamoWriteOptions,
+): NbtCompoundValue | undefined {
+  const slots = defaultCamoSlots(blockId, blockProperties).filter((slot) =>
+    Object.hasOwn(camo, slot),
+  );
+  if (slots.length === 0) return nbt;
+  let out = nbt ?? newCamoBlockEntity(blockId, blockProperties);
+  if (out === undefined) return nbt;
+  // One write per distinct camo state.
+  const groups = new Map<string, { target: CamoTarget; slots: Set<string> }>();
+  for (const slot of slots) {
+    const target = camo[slot];
+    const key = stateKey(target.blockId, target.properties);
+    const group = groups.get(key);
+    if (group) group.slots.add(slot);
+    else groups.set(key, { target, slots: new Set([slot]) });
+  }
+  for (const { target, slots: group } of groups.values()) {
+    out = writeCamoSlots(blockId, out, group, target, options);
+  }
+  return out;
 }

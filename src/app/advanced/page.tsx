@@ -21,7 +21,7 @@ import {
   type ParseStatus,
 } from "@/lib/editor-state";
 import {
-  applyBlockSwap,
+  applyBlockSwaps,
   applyCamoSwap,
   undoLastSwap,
 } from "@/lib/editor-state-edits";
@@ -32,7 +32,7 @@ import type {
 import { knownVersionIdFor } from "@/lib/advanced/effective-mod-version";
 import {
   BlockStatePicker,
-  type BlockStatePickerResult,
+  type BlockStatePickerChoice,
   type BlockStatePickerSource,
 } from "@/components/block-state-picker";
 import { ExportPanel } from "@/components/export-panel";
@@ -690,26 +690,37 @@ export default function AdvancedPage() {
   const hasStagedFile = stagedFile !== null;
   const isNarrow = useIsNarrowViewport();
 
-  // What the open picker swaps: a palette entry, or a camo material under
+  // What the open picker swaps: a palette entry (with every state of its
+  // block, which the picker can widen the swap to), or a camo material under
   // one parent ("Swap…") or everywhere ("Replace all").
   const [picker, setPicker] = React.useState<
-    | { kind: "block"; source: BlockStatePickerSource }
+    | {
+        kind: "block";
+        source: BlockStatePickerSource;
+        allStates: BlockStatePickerSource[];
+      }
     | { kind: "camo"; request: CamoSwapRequest }
     | null
   >(null);
 
   const handleRequestSwap = React.useCallback(
     (entry: ParsedSchematicPaletteEntry) => {
+      const palette =
+        parseStatus.status === "ready" ? parseStatus.schematic.palette : [];
+      const toSource = (e: ParsedSchematicPaletteEntry) => ({
+        blockState: e.blockState,
+        blockId: e.blockId,
+        properties: e.properties,
+      });
       setPicker({
         kind: "block",
-        source: {
-          blockState: entry.blockState,
-          blockId: entry.blockId,
-          properties: entry.properties,
-        },
+        source: toSource(entry),
+        allStates: palette
+          .filter((e) => e.blockId === entry.blockId)
+          .map(toSource),
       });
     },
-    [],
+    [parseStatus],
   );
 
   const handleRequestCamoSwap = React.useCallback(
@@ -720,10 +731,20 @@ export default function AdvancedPage() {
   );
 
   const handleConfirmSwap = React.useCallback(
-    (target: BlockStatePickerResult) => {
+    (choice: BlockStatePickerChoice) => {
       if (picker?.kind === "block") {
-        applyBlockSwap(picker.source.blockState, target);
+        applyBlockSwaps(
+          choice.targets.map(({ source, target }) => ({
+            sourceBlockState: source.blockState,
+            target,
+            camo: choice.camo,
+          })),
+        );
       } else if (picker?.kind === "camo") {
+        const target = {
+          blockId: choice.blockId,
+          properties: choice.properties,
+        };
         const { parent, material, scope } = picker.request;
         applyCamoSwap(
           material,
@@ -864,6 +885,8 @@ export default function AdvancedPage() {
         <BlockStatePicker
           open
           source={picker.source}
+          allStates={picker.allStates}
+          allowCamo
           onCancel={handleCancelSwap}
           onConfirm={handleConfirmSwap}
         />

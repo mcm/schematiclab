@@ -9,7 +9,8 @@
 // are dropped when the block id changes (chest → stone), since the inventory,
 // sign text or camo no longer belongs to the new block. The exception is a
 // camo block swapped to another camo block with the same block-entity type
-// (framed panel → framed slab), which keeps its camo. Air-like targets
+// (framed panel → framed slab), which keeps its camo. A swap to a camo block
+// can also put a camo on every swapped block (`camo`). Air-like targets
 // effectively delete the source from the visible world (the placement row
 // vanishes from the palette because its count drops to zero).
 
@@ -21,10 +22,23 @@ import type {
 import { isInvisibleBlockId } from "./invisible-blocks";
 import { keepsBlockEntity } from "./camo/block-entity-type";
 import { withCamoMaterials } from "./camo/materials";
+import {
+  camoWriteOptionsFor,
+  writeCamoChoice,
+  type CamoChoice,
+} from "./camo/write";
 
 export interface SwapTarget {
   blockId: string;
   properties: Record<string, string>;
+}
+
+/** One source block state's swap, for `swapBlockStates`. */
+export interface BlockStateSwap {
+  sourceBlockState: string;
+  target: SwapTarget;
+  /** Camo for the swapped blocks, when the target is a camo block. */
+  camo?: CamoChoice;
 }
 
 function posKey(pos: readonly [number, number, number]): string {
@@ -42,6 +56,7 @@ export function swapBlockState(
   projection: ParsedSchematicProjection,
   sourceBlockState: string,
   target: SwapTarget,
+  camo?: CamoChoice,
 ): ParsedSchematicProjection {
   const sourceIndex = projection.palette.findIndex(
     (entry) => entry.blockState === sourceBlockState,
@@ -52,12 +67,63 @@ export function swapBlockState(
   if (sourceIndex === -1) return projection;
 
   const targetKey = blockStateKey(target);
-  // If the swap is a no-op (target equals source), short-circuit.
-  if (targetKey === sourceBlockState) return projection;
   const keepBlockEntities = keepsBlockEntity(
     projection.palette[sourceIndex].blockId,
     target.blockId,
   );
+  const camoOptions = camoWriteOptionsFor(projection.minecraftVersion);
+  // The swapped blocks' block entities, with `camo` written in.
+  const withCamo = (
+    blockEntities: ParsedSchematicRegion["blockEntities"],
+    swapped: ReadonlyMap<string, [number, number, number]>,
+  ): ParsedSchematicRegion["blockEntities"] => {
+    if (camo === undefined || swapped.size === 0) return blockEntities;
+    const pending = new Map(swapped);
+    const out = blockEntities.map((be) => {
+      const key = posKey(be.pos);
+      if (!pending.delete(key)) return be;
+      const nbt = writeCamoChoice(
+        target.blockId,
+        target.properties,
+        be.nbt,
+        camo,
+        camoOptions,
+      );
+      return nbt === undefined || nbt === be.nbt ? be : { pos: be.pos, nbt };
+    });
+    for (const pos of pending.values()) {
+      const nbt = writeCamoChoice(
+        target.blockId,
+        target.properties,
+        undefined,
+        camo,
+        camoOptions,
+      );
+      if (nbt !== undefined) out.push({ pos, nbt });
+    }
+    return out;
+  };
+
+  // Same state: nothing to swap, but the camo still goes on.
+  if (targetKey === sourceBlockState) {
+    if (camo === undefined) return projection;
+    const regions = projection.regions.map((region) => {
+      const positions = new Map(
+        region.blocks
+          .filter((placement) => placement.paletteIndex === sourceIndex)
+          .map((placement) => [posKey(placement.pos), placement.pos] as const),
+      );
+      const blockEntities = withCamo(region.blockEntities, positions);
+      return blockEntities === region.blockEntities
+        ? region
+        : { ...region, blockEntities };
+    });
+    return {
+      ...projection,
+      palette: withCamoMaterials(projection.palette, regions),
+      regions,
+    };
+  }
 
   // Build a working palette: start from the existing entries, then make sure
   // the target exists (either reusing a matching entry or appending a new
@@ -91,21 +157,24 @@ export function swapBlockState(
   const counts = new Array<number>(working.length).fill(0);
   const newRegions: ParsedSchematicRegion[] = projection.regions.map(
     (region) => {
-      const swapped = new Set<string>();
+      const swapped = new Map<string, [number, number, number]>();
       const blocks = region.blocks.map((placement) => {
         const remapped = indexRemap[placement.paletteIndex];
         counts[remapped] += 1;
         if (remapped === placement.paletteIndex) return placement;
-        swapped.add(posKey(placement.pos));
+        swapped.set(posKey(placement.pos), placement.pos);
         return { pos: placement.pos, paletteIndex: remapped };
       });
       return {
         origin: region.origin,
         size: region.size,
         blocks,
-        blockEntities: keepBlockEntities
-          ? region.blockEntities
-          : region.blockEntities.filter((be) => !swapped.has(posKey(be.pos))),
+        blockEntities: withCamo(
+          keepBlockEntities
+            ? region.blockEntities
+            : region.blockEntities.filter((be) => !swapped.has(posKey(be.pos))),
+          swapped,
+        ),
       };
     },
   );
@@ -177,4 +246,19 @@ export function swapBlockState(
     palette: withCamoMaterials(finalPalette, finalRegions),
     regions: finalRegions,
   };
+}
+
+/**
+ * `swapBlockState` for several source states at once, e.g. every state of
+ * one block swapped to a camo block that keeps each state's properties.
+ */
+export function swapBlockStates(
+  projection: ParsedSchematicProjection,
+  swaps: readonly BlockStateSwap[],
+): ParsedSchematicProjection {
+  return swaps.reduce(
+    (current, swap) =>
+      swapBlockState(current, swap.sourceBlockState, swap.target, swap.camo),
+    projection,
+  );
 }

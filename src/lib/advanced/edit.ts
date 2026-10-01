@@ -22,6 +22,12 @@ import { isInvisibleBlockId } from "../invisible-blocks";
 import { keepsBlockEntity } from "../camo/block-entity-type";
 import { resolveModdedState, type ModMappingContext } from "./mod-mapping";
 import { withCamoMaterials } from "../camo/materials";
+import { isCamoCapableBlockId } from "../camo/extract";
+import {
+  camoWriteOptionsFor,
+  writeCamoChoice,
+  type CamoChoice,
+} from "../camo/write";
 
 // ── Public types ──────────────────────────────────────────────────────────
 
@@ -37,8 +43,12 @@ export interface BlockStateTarget {
 
 // Overrides for `applyVersionMapping`. Keys are source `BlockState.toString()`
 // strings (i.e. `Name[sorted=props]`). Each override replaces the target state
-// the natural mapper would have produced for that source state.
-export type VersionMappingOverrides = Record<string, BlockStateTarget>;
+// the natural mapper would have produced for that source state; a camo block
+// target can also carry the camo to put on those blocks.
+export interface VersionMappingOverride extends BlockStateTarget {
+  camo?: CamoChoice;
+}
+export type VersionMappingOverrides = Record<string, VersionMappingOverride>;
 
 // ── Tile-entity compatibility ─────────────────────────────────────────────
 //
@@ -390,8 +400,11 @@ export function applyVersionMapping(
     state: BlockStateTarget,
     key: string,
   ): BlockStateTarget | undefined => {
+    // An override to a camo block is for placed blocks; a camo can't be one.
     const override = overrides[key];
-    if (override !== undefined) return override;
+    if (override !== undefined && !isCamoCapableBlockId(override.blockId)) {
+      return { blockId: override.blockId, properties: override.properties };
+    }
     const modded = resolveModdedState(state.blockId, state.properties, mods);
     if (modded.status === "resolved") {
       return { blockId: modded.blockId, properties: modded.properties };
@@ -437,6 +450,50 @@ export function applyVersionMapping(
 
     return { ...region, blockEntities: keptTEs };
   });
+
+  // Step 5b: overrides with a camo put it on every block they replaced,
+  // creating the block entity when the block has none.
+  const camoOptions = camoWriteOptionsFor(targetVersion ?? sourceVersion);
+  const camoBySource = schematic.palette.map((entry, i) => {
+    const camo = overrides[entry.blockState]?.camo;
+    return camo === undefined ||
+      isInvisibleBlockId(working[indexRemap[i]].blockId)
+      ? undefined
+      : camo;
+  });
+  if (camoBySource.some((camo) => camo !== undefined)) {
+    remappedRegions = remappedRegions.map((region, regionIndex) => {
+      const indexAt = new Map(
+        region.blockEntities.map((be, i) => [posKey(be.pos), i]),
+      );
+      let blockEntities: SchematicRegion["blockEntities"] | null = null;
+      for (const placement of schematic.regions[regionIndex].blocks) {
+        const camo = camoBySource[placement.paletteIndex];
+        if (camo === undefined) continue;
+        const target = working[indexRemap[placement.paletteIndex]];
+        const key = posKey(placement.pos);
+        const index = indexAt.get(key);
+        const existing =
+          index === undefined ? undefined : region.blockEntities[index].nbt;
+        const nbt = writeCamoChoice(
+          target.blockId,
+          target.properties,
+          existing,
+          camo,
+          camoOptions,
+        );
+        if (nbt === undefined || nbt === existing) continue;
+        blockEntities ??= [...region.blockEntities];
+        if (index === undefined) {
+          indexAt.set(key, blockEntities.length);
+          blockEntities.push({ pos: placement.pos, nbt });
+        } else {
+          blockEntities[index] = { pos: placement.pos, nbt };
+        }
+      }
+      return blockEntities === null ? region : { ...region, blockEntities };
+    });
+  }
 
   // Step 6: compact + sort the palette.
   const survivingIndices: number[] = [];

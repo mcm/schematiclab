@@ -29,6 +29,8 @@ import {
   type VersionMappingPreview,
 } from "@/lib/advanced/version-mapping-preview";
 import type { VersionMappingOverrides } from "@/lib/advanced/edit";
+import { carryCamoBlockProperties } from "@/lib/camo/block-properties";
+import type { CamoChoice } from "@/lib/camo/write";
 import type { ModMappingContext } from "@/lib/advanced/mod-mapping";
 import { useAdvancedTargetVersion } from "@/lib/advanced/target-version-state";
 import { useEditorState } from "@/lib/editor-state";
@@ -70,6 +72,7 @@ import {
 } from "@/lib/editor-state-edits";
 import {
   BlockStatePicker,
+  type BlockStatePickerChoice,
   type BlockStatePickerResult,
   type BlockStatePickerSource,
 } from "./block-state-picker";
@@ -105,16 +108,32 @@ type PreviewState =
   | { status: "error"; targetVersionId: string | null; message: string };
 
 // Per-row decision. A row is "resolved" once it has either an accepted-default
-// or an override entry — see `allRowsResolved` below.
+// or an override entry — see `allRowsResolved` below. An override's `target`
+// is this state's own (a camo block keeps the state's properties); `choice`
+// is what the user picked for the whole group, and `camo` goes on the new
+// blocks.
 type Decision =
   | { kind: "accepted" }
-  | { kind: "override"; target: BlockStatePickerResult };
+  | {
+      kind: "override";
+      target: BlockStatePickerResult;
+      camo?: CamoChoice;
+      choice: OverrideChoice;
+    };
+
+// The group-wide part of an override, for display and for telling whether a
+// group's states share one decision.
+interface OverrideChoice {
+  blockId: string;
+  typedProperties: Record<string, string>;
+  carriedNames: string[];
+}
 
 // The replacement picker's open state: the group's first state is shown as
 // the source, and the choice lands on every state in the group.
 interface PickerRequest {
   source: BlockStatePickerSource;
-  stateKeys: string[];
+  sources: BlockStatePickerSource[];
 }
 
 const EMPTY_CHOICES: Readonly<Record<string, ModChoice>> = {};
@@ -561,40 +580,89 @@ export function VersionMappingPanel({
     [setDecisionsForCurrentVersion],
   );
 
+  // Sets one override decision per source state.
+  const setOverrides = React.useCallback(
+    (
+      targets: readonly {
+        sourceBlockState: string;
+        target: BlockStatePickerResult;
+      }[],
+      choice: OverrideChoice,
+      camo: CamoChoice | undefined,
+    ) => {
+      setDecisionsByVersion((prev) => {
+        const next = { ...(prev[versionKey] ?? {}) };
+        for (const { sourceBlockState, target } of targets) {
+          next[sourceBlockState] = {
+            kind: "override",
+            target,
+            choice,
+            ...(camo ? { camo } : {}),
+          };
+        }
+        return { ...prev, [versionKey]: next };
+      });
+    },
+    [versionKey],
+  );
+
   const handlePickReplacement = React.useCallback((group: ProblematicGroup) => {
-    const first = group.entries[0];
-    setPickerRequest({
-      source: {
-        blockState: first.sourceBlockState,
-        blockId: first.sourceBlockId,
-        properties: first.sourceProperties,
-      },
-      stateKeys: stateKeysOf(group),
-    });
+    const sources = group.entries.map((entry) => ({
+      blockState: entry.sourceBlockState,
+      blockId: entry.sourceBlockId,
+      properties: entry.sourceProperties,
+    }));
+    setPickerRequest({ source: sources[0], sources });
   }, []);
 
   const handleConfirmReplacement = React.useCallback(
-    (target: BlockStatePickerResult) => {
-      if (pickerRequest) {
-        setDecisionsForCurrentVersion(pickerRequest.stateKeys, {
-          kind: "override",
+    (picked: BlockStatePickerChoice) => {
+      setOverrides(
+        picked.targets.map(({ source, target }) => ({
+          sourceBlockState: source.blockState,
           target,
-        });
-      }
+        })),
+        {
+          blockId: picked.blockId,
+          typedProperties: picked.typedProperties,
+          carriedNames: picked.carriedNames,
+        },
+        picked.camo,
+      );
       setPickerRequest(null);
     },
-    [pickerRequest, setDecisionsForCurrentVersion],
+    [setOverrides],
   );
 
   const handleChooseSuggestion = React.useCallback(
     (group: ProblematicGroup, candidate: SuggestionCandidate) => {
-      // The candidate's default state: no explicit properties.
-      setDecisionsForCurrentVersion(stateKeysOf(group), {
-        kind: "override",
-        target: { blockId: candidate.id, properties: {} },
-      });
+      // The candidate's default state, keeping each state's properties when
+      // it's a camo block.
+      const targets = group.entries.map((entry) => ({
+        sourceBlockState: entry.sourceBlockState,
+        target: {
+          blockId: candidate.id,
+          properties: carryCamoBlockProperties(
+            entry.sourceProperties,
+            candidate.id,
+          ),
+        },
+      }));
+      setOverrides(
+        targets,
+        {
+          blockId: candidate.id,
+          typedProperties: {},
+          carriedNames: [
+            ...new Set(
+              targets.flatMap((t) => Object.keys(t.target.properties)),
+            ),
+          ].sort(),
+        },
+        undefined,
+      );
     },
-    [setDecisionsForCurrentVersion],
+    [setOverrides],
   );
 
   const handleCancelPicker = React.useCallback(() => {
@@ -624,6 +692,7 @@ export function VersionMappingPanel({
         overrides[entry.sourceBlockState] = {
           blockId: decision.target.blockId,
           properties: decision.target.properties,
+          ...(decision.camo ? { camo: decision.camo } : {}),
         };
       }
     }
@@ -790,12 +859,14 @@ export function VersionMappingPanel({
         <BlockStatePicker
           open
           source={pickerRequest.source}
+          sources={pickerRequest.sources}
+          allowCamo
           onCancel={handleCancelPicker}
           onConfirm={handleConfirmReplacement}
           title="Pick replacement block"
           description={
-            pickerRequest.stateKeys.length > 1
-              ? `Choose the block to substitute for all ${pickerRequest.stateKeys.length} states of this block in the translated schematic. The choice overrides the mapper's proposal for this row only. Free-text input is accepted for identifiers outside the catalog.`
+            pickerRequest.sources.length > 1
+              ? `Choose the block to substitute for all ${pickerRequest.sources.length} states of this block in the translated schematic. The choice overrides the mapper's proposal for this row only. Free-text input is accepted for identifiers outside the catalog.`
               : "Choose the block to substitute for this source state in the translated schematic. The choice overrides the mapper's proposal for this row only. Free-text input is accepted for identifiers outside the catalog."
           }
           confirmLabel="Set replacement"
@@ -816,24 +887,16 @@ function groupDecision(
   group: ProblematicGroup,
   decisions: Record<string, Decision>,
 ): Decision | undefined {
+  const signature = (decision: Decision) =>
+    decision.kind === "override"
+      ? JSON.stringify([decision.choice, decision.camo ?? null])
+      : decision.kind;
   const first = decisions[group.entries[0].sourceBlockState];
   if (first === undefined) return undefined;
-  const firstTarget =
-    first.kind === "override"
-      ? formatStateDisplay(first.target.blockId, first.target.properties)
-      : null;
+  const firstSignature = signature(first);
   for (const entry of group.entries) {
     const decision = decisions[entry.sourceBlockState];
-    if (decision === undefined || decision.kind !== first.kind) {
-      return undefined;
-    }
-    if (
-      decision.kind === "override" &&
-      formatStateDisplay(
-        decision.target.blockId,
-        decision.target.properties,
-      ) !== firstTarget
-    ) {
+    if (decision === undefined || signature(decision) !== firstSignature) {
       return undefined;
     }
   }
@@ -1311,10 +1374,26 @@ function DecisionFooter({
     );
   }
 
+  const { choice, camo } = decision;
   const overrideDisplay = formatStateDisplay(
-    decision.target.blockId,
-    decision.target.properties,
+    choice.blockId,
+    choice.typedProperties,
   );
+  const camoDisplay = camo
+    ? Object.entries(camo)
+        .map(
+          ([slot, target]) =>
+            `${slot}: ${formatStateDisplay(target.blockId, target.properties)}`,
+        )
+        .join(", ")
+    : null;
+  const noteStyle: React.CSSProperties = {
+    color: "var(--text-tertiary)",
+    fontSize: "var(--text-xs)",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  };
 
   return (
     <div
@@ -1337,13 +1416,23 @@ function DecisionFooter({
         title={overrideDisplay}
       >
         <span style={{ color: "var(--text-tertiary)" }}>→ replace with </span>
-        <strong>{decision.target.blockId}</strong>
-        {Object.keys(decision.target.properties).length > 0 ? (
+        <strong>{choice.blockId}</strong>
+        {Object.keys(choice.typedProperties).length > 0 ? (
           <span style={{ color: "var(--text-tertiary)" }}>
-            {formatProperties(decision.target.properties)}
+            {formatProperties(choice.typedProperties)}
           </span>
         ) : null}
       </div>
+      {choice.carriedNames.length > 0 ? (
+        <div style={noteStyle} title={choice.carriedNames.join(", ")}>
+          Keeps each state&apos;s {choice.carriedNames.join(", ")}
+        </div>
+      ) : null}
+      {camoDisplay !== null ? (
+        <div style={noteStyle} title={camoDisplay}>
+          Camo: {camoDisplay}
+        </div>
+      ) : null}
       <div
         style={{
           display: "flex",
