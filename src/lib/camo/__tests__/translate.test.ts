@@ -273,6 +273,83 @@ describe("camo translation on version conversion", () => {
   });
 });
 
+describe("version-mapping overrides to camo blocks", () => {
+  const STAIRS = (facing: string, half: string) =>
+    entry("absentbydesign:stairs_concrete_white", { facing, half });
+  const framedStairs = (facing: string, half: string) => ({
+    blockId: "framedblocks:framed_stairs",
+    properties: { facing, half },
+  });
+
+  it("puts the override's camo on every replaced block, per state", () => {
+    const source = projection(
+      [STAIRS("east", "top"), STAIRS("west", "bottom")],
+      [[0], [1], [0]],
+      V_1_16_5,
+    );
+    const camo = {
+      camo: { blockId: "minecraft:oak_planks", properties: {} },
+    };
+    const mapped = applyVersionMapping(source, V_1_17_1, {
+      [STAIRS("east", "top").blockState]: {
+        ...framedStairs("east", "top"),
+        camo,
+      },
+      [STAIRS("west", "bottom").blockState]: {
+        ...framedStairs("west", "bottom"),
+        camo,
+      },
+    });
+    expect(mapped.palette.map((e) => [e.blockState, e.count])).toEqual([
+      ["framedblocks:framed_stairs[facing=east,half=top]", 2],
+      ["framedblocks:framed_stairs[facing=west,half=bottom]", 1],
+    ]);
+    const blockEntities = mapped.regions[0].blockEntities;
+    expect(blockEntities.map((b) => b.pos[0]).sort()).toEqual([0, 1, 2]);
+    for (const b of blockEntities) {
+      expect(snbt(b.nbt)).toBe(
+        `{id:"framedblocks:framed_tile",camo:{type:"framedblocks:block",state:{Name:"minecraft:oak_planks"}}}`,
+      );
+    }
+    expect(mapped.palette[0].camoMaterials).toEqual([
+      expect.objectContaining({ blockId: "minecraft:oak_planks", count: 2 }),
+    ]);
+  });
+
+  it("leaves the blocks without camo when the override has none", () => {
+    const source = projection([STAIRS("east", "top")], [[0]], V_1_16_5);
+    const mapped = applyVersionMapping(source, V_1_17_1, {
+      [STAIRS("east", "top").blockState]: framedStairs("east", "top"),
+    });
+    expect(mapped.regions[0].blockEntities).toEqual([]);
+    expect(mapped.palette[0].camoMaterials).toEqual([
+      expect.objectContaining({ kind: "empty", count: 1 }),
+    ]);
+  });
+
+  it("doesn't turn a camo of the replaced block into a camo block", () => {
+    const source = projection(
+      [entry("framedblocks:framed_cube"), STAIRS("east", "top")],
+      [
+        [
+          0,
+          be(
+            `{id:"framedblocks:framed_tile",camo:{type:"framedblocks:block",state:{Name:"absentbydesign:stairs_concrete_white",Properties:{facing:"east",half:"top"}}}}`,
+          ),
+        ],
+        [1],
+      ],
+      V_1_16_5,
+    );
+    const mapped = applyVersionMapping(source, V_1_17_1, {
+      [STAIRS("east", "top").blockState]: framedStairs("east", "top"),
+    });
+    expect(snbt(mapped.regions[0].blockEntities[0].nbt)).toContain(
+      `Name:"absentbydesign:stairs_concrete_white"`,
+    );
+  });
+});
+
 describe("previewVersionMapping with camo states", () => {
   it("counts clean camo-only states and merges camo slots into palette rows", () => {
     const preview = previewVersionMapping(scene(), V_1_17_1);

@@ -30,7 +30,7 @@ import type {
 } from "../../advanced/mod-mapping";
 import * as nbt from "../../schemlib/nbt";
 import { fromSnbt, toSnbt } from "../../schemlib/snbt";
-import { swapBlockState } from "../../swap-projection";
+import { swapBlockState, swapBlockStates } from "../../swap-projection";
 import { camoBlockEntityType, keepsBlockEntity } from "../block-entity-type";
 import { withCamoMaterials } from "../materials";
 import { swapCamoMaterial, type CamoSwapTarget } from "../swap";
@@ -610,6 +610,61 @@ describe("swapCamoMaterial empty slots and removal", () => {
     expect(snbtAt(fill(swapped), 0)).toBe(
       `{id:"framedblocks:framed_chest",camo:{type:"framedblocks:block",state:{Name:"minecraft:oak_planks"}}}`,
     );
+  });
+});
+
+describe("block swaps to a camo block with camo", () => {
+  const OAK = { blockId: "minecraft:oak_planks", properties: {} };
+  const STAIRS = (facing: string) =>
+    entry("absentbydesign:stairs_concrete_white", { facing, half: "top" });
+  const FRAMED = (facing: string) => ({
+    blockId: "framedblocks:framed_stairs",
+    properties: { facing, half: "top" },
+  });
+
+  it("swaps every state, keeping each one's properties, with camo", () => {
+    const p = projection([STAIRS("east"), STAIRS("west")], [[0], [1], [0]]);
+    const next = swapBlockStates(p, [
+      {
+        sourceBlockState: STAIRS("east").blockState,
+        target: FRAMED("east"),
+        camo: { camo: OAK },
+      },
+      {
+        sourceBlockState: STAIRS("west").blockState,
+        target: FRAMED("west"),
+        camo: { camo: OAK },
+      },
+    ]);
+    expect(next.palette.map((e) => [e.blockState, e.count])).toEqual([
+      ["framedblocks:framed_stairs[facing=east,half=top]", 2],
+      ["framedblocks:framed_stairs[facing=west,half=top]", 1],
+    ]);
+    for (const x of [0, 1, 2]) {
+      expect(snbtAt(next, x)).toBe(
+        `{id:"framedblocks:framed_tile",camo:{type:"framedblocks:block",state:{Name:"minecraft:oak_planks"}}}`,
+      );
+    }
+  });
+
+  it("writes camo into a kept block entity and skips slots the block lacks", () => {
+    const p = projection([PANEL], [[0, framed("minecraft:stone")]]);
+    const next = swapBlockState(
+      p,
+      PANEL.blockState,
+      { blockId: "framedblocks:framed_slab", properties: {} },
+      { camo: OAK, camo_two: OAK },
+    );
+    expect(snbtAt(next, 0)).toBe(
+      `{id:"framedblocks:framed_tile",camo:{type:"framedblocks:block",state:{Name:"minecraft:oak_planks"}}}`,
+    );
+  });
+
+  it("puts camo on a state swapped to itself", () => {
+    const p = projection([PANEL], [[0]]);
+    const next = swapBlockState(p, PANEL.blockState, PANEL, { camo: OAK });
+    expect(snbtAt(next, 0)).toContain(`state:{Name:"minecraft:oak_planks"}`);
+    expect(swapBlockState(p, PANEL.blockState, PANEL)).toBe(p);
   });
 });
 

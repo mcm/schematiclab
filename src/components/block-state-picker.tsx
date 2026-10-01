@@ -3,6 +3,7 @@
 import * as React from "react";
 import {
   Button,
+  Checkbox,
   Dialog,
   DialogContent,
   DialogDescription,
@@ -15,6 +16,8 @@ import {
 import { knownVersionIdFor } from "@/lib/advanced/effective-mod-version";
 import { isCatalogedBlockId, searchBlockCatalog } from "@/lib/block-catalog";
 import { carryCamoBlockProperties } from "@/lib/camo/block-properties";
+import { defaultCamoSlots } from "@/lib/camo/extract";
+import type { CamoChoice } from "@/lib/camo/write";
 import { useEditorState } from "@/lib/editor-state";
 import { completeBlockProperties } from "@/lib/mods/property-domains";
 import {
@@ -38,11 +41,32 @@ export interface BlockStatePickerResult {
   properties: Record<string, string>;
 }
 
+// What the user confirmed. `blockId` / `properties` are the target for
+// `source`; `targets` has one per source state the choice applies to, each
+// keeping that state's properties when the target is a camo block. `camo`
+// is set when camo was chosen for a camo block target.
+export interface BlockStatePickerChoice extends BlockStatePickerResult {
+  targets: { source: BlockStatePickerSource; target: BlockStatePickerResult }[];
+  camo?: CamoChoice;
+  /** The properties typed after the identifier (set on every target). */
+  typedProperties: Record<string, string>;
+  /** Properties some target keeps from its source state. */
+  carriedNames: string[];
+}
+
 interface BlockStatePickerProps {
   open: boolean;
   source: BlockStatePickerSource | null;
   onCancel: () => void;
-  onConfirm: (target: BlockStatePickerResult) => void;
+  onConfirm: (choice: BlockStatePickerChoice) => void;
+  // Every source state the choice applies to (a Version Mapping block
+  // group); defaults to `source` alone.
+  sources?: readonly BlockStatePickerSource[];
+  // Every state of the source's block in the schematic. With more than one,
+  // a checkbox widens the choice from `source` to all of them.
+  allStates?: readonly BlockStatePickerSource[];
+  // Offer camo inputs when the target is a camo block.
+  allowCamo?: boolean;
   // Optional copy overrides so the picker can be reused outside of the
   // material-list "swap every instance" flow (e.g. the version-mapping
   // override picker in US-014 reads "Pick replacement block").
@@ -55,6 +79,9 @@ interface BlockStatePickerProps {
 }
 
 const INPUT_ID = "block-state-picker-input";
+const ALL_STATES_ID = "block-state-picker-all-states";
+const CAMO_INPUT_ID = "block-state-picker-camo";
+const MAX_CAMO_SUGGESTIONS = 12;
 const MAX_SUGGESTIONS = 25;
 
 // Parse "minecraft:foo[a=b,c=d]" into { blockId, properties }. Free-text input
@@ -105,9 +132,15 @@ export function BlockStatePicker({
   description = "Replace every instance of the source block state with a new target. Type a block identifier — autocomplete suggestions come from the schemlib catalog and loaded mods. Free-text input is accepted for identifiers outside the catalog.",
   confirmLabel = "Confirm swap",
   suggestionContext,
+  sources,
+  allStates,
+  allowCamo = false,
 }: BlockStatePickerProps) {
   const [query, setQuery] = React.useState("");
   const [highlightIndex, setHighlightIndex] = React.useState(0);
+  const [applyToAllStates, setApplyToAllStates] = React.useState(false);
+  // Typed camo per slot; empty means no camo.
+  const [camoText, setCamoText] = React.useState<Record<string, string>>({});
 
   // Reset across opens is handled by the parent — `<BlockStatePicker>` is only
   // mounted while `source !== null`, so each open creates a fresh component
@@ -138,24 +171,68 @@ export function BlockStatePicker({
   );
 
   const typedTarget = parseTargetEntry(query);
-  // A camo block target keeps the source's properties it also has (a
+  const canWiden = allStates !== undefined && allStates.length > 1;
+  const appliesTo: readonly BlockStatePickerSource[] =
+    canWiden && applyToAllStates
+      ? allStates
+      : (sources ?? (source ? [source] : []));
+  // A camo block target keeps each source state's properties it also has (a
   // stairs' facing/half/shape/waterlogged); typed properties win.
-  const carried =
-    typedTarget && source
-      ? carryCamoBlockProperties(source.properties, typedTarget.blockId)
-      : {};
-  const carriedNames = Object.keys(carried)
+  const targetFor = (from: BlockStatePickerSource): BlockStatePickerResult =>
+    typedTarget === null
+      ? { blockId: "", properties: {} }
+      : {
+          blockId: typedTarget.blockId,
+          properties: {
+            ...carryCamoBlockProperties(from.properties, typedTarget.blockId),
+            ...typedTarget.properties,
+          },
+        };
+  const carriedNames = [
+    ...new Set(
+      appliesTo.flatMap((from) =>
+        typedTarget === null
+          ? []
+          : Object.keys(
+              carryCamoBlockProperties(from.properties, typedTarget.blockId),
+            ),
+      ),
+    ),
+  ]
     .filter((name) => !Object.hasOwn(typedTarget?.properties ?? {}, name))
     .sort();
-  const parsedTarget = typedTarget && {
-    blockId: typedTarget.blockId,
-    properties: { ...carried, ...typedTarget.properties },
-  };
+  const parsedTarget =
+    typedTarget && (source ? targetFor(source) : typedTarget);
+  // Camo slots of the target across every state it applies to.
+  const camoSlots =
+    allowCamo && typedTarget
+      ? [
+          ...new Set(
+            appliesTo.flatMap((from) => {
+              const target = targetFor(from);
+              return defaultCamoSlots(target.blockId, target.properties);
+            }),
+          ),
+        ]
+      : [];
+  const camoEntries = camoSlots.flatMap((slot) => {
+    const parsed = parseTargetEntry(camoText[slot] ?? "");
+    return parsed === null ? [] : [[slot, parsed] as const];
+  });
+  const camoValid = camoEntries.every(([, target]) =>
+    isValidBlockId(target.blockId),
+  );
   const targetValid =
     parsedTarget !== null && isValidBlockId(parsedTarget.blockId);
+  const manyStates = appliesTo.length > 1;
   const targetDisplay =
     parsedTarget && parsedTarget.blockId
-      ? formatStateDisplay(parsedTarget.blockId, parsedTarget.properties)
+      ? manyStates
+        ? formatStateDisplay(
+            parsedTarget.blockId,
+            typedTarget?.properties ?? {},
+          )
+        : formatStateDisplay(parsedTarget.blockId, parsedTarget.properties)
       : "—";
   const targetModBlock = parsedTarget
     ? getLoadedModBlock(parsedTarget.blockId, modVersionId)
@@ -191,8 +268,19 @@ export function BlockStatePicker({
   }
 
   function handleConfirm() {
-    if (!parsedTarget || !targetValid) return;
-    onConfirm(parsedTarget);
+    if (!parsedTarget || !targetValid || !camoValid) return;
+    onConfirm({
+      ...parsedTarget,
+      typedProperties: typedTarget?.properties ?? {},
+      carriedNames,
+      targets: appliesTo.map((from) => ({
+        source: from,
+        target: targetFor(from),
+      })),
+      ...(camoEntries.length > 0
+        ? { camo: Object.fromEntries(camoEntries) }
+        : {}),
+    });
   }
 
   return (
@@ -233,7 +321,13 @@ export function BlockStatePicker({
           <StateCard
             label="Source"
             blockId={source?.blockId ?? "—"}
-            display={source ? source.blockState : "—"}
+            display={
+              source
+                ? manyStates
+                  ? `${appliesTo.length} states`
+                  : source.blockState
+                : "—"
+            }
           />
           <span aria-hidden style={{ color: "var(--text-tertiary)" }}>
             →
@@ -405,9 +499,44 @@ export function BlockStatePicker({
                 color: "var(--text-tertiary)",
               }}
             >
-              Kept from the source: {carriedNames.join(", ")}. Type{" "}
-              <code>[name=value]</code> after the identifier to change one.
+              {appliesTo.length > 1
+                ? `Each of the ${appliesTo.length} states keeps its own`
+                : "Kept from the source:"}{" "}
+              {carriedNames.join(", ")}. Type <code>[name=value]</code> after
+              the identifier to set one for all.
             </span>
+          ) : null}
+          {canWiden ? (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "var(--space-2)",
+              }}
+            >
+              <Checkbox
+                id={ALL_STATES_ID}
+                checked={applyToAllStates}
+                onCheckedChange={(checked) =>
+                  setApplyToAllStates(checked === true)
+                }
+              />
+              <Label
+                htmlFor={ALL_STATES_ID}
+                style={{ fontSize: "var(--text-xs)" }}
+              >
+                Replace all {allStates.length} states of {source?.blockId}
+              </Label>
+            </div>
+          ) : null}
+          {targetValid && camoSlots.length > 0 ? (
+            <CamoInputs
+              slots={camoSlots}
+              values={camoText}
+              onChange={(slot, value) =>
+                setCamoText((prev) => ({ ...prev, [slot]: value }))
+              }
+            />
           ) : null}
           {targetModBlock ? (
             <ModBlockHint
@@ -426,13 +555,106 @@ export function BlockStatePicker({
             type="button"
             variant="primary"
             onClick={handleConfirm}
-            disabled={!targetValid || source === null}
+            disabled={!targetValid || !camoValid || source === null}
           >
             {confirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+const CAMO_SLOT_LABELS: Record<string, string> = {
+  camo: "Camo",
+  camo_two: "Second camo",
+  material: "Camo",
+};
+
+// "top_northeast" → "Top northeast camo"
+function camoSlotLabel(slot: string): string {
+  if (Object.hasOwn(CAMO_SLOT_LABELS, slot)) return CAMO_SLOT_LABELS[slot];
+  const words = slot.replace(/_/g, " ");
+  return `${words[0].toUpperCase()}${words.slice(1)} camo`;
+}
+
+// One identifier input per camo slot of a camo block target, with catalog
+// suggestions. An empty input leaves that slot without camo.
+function CamoInputs({
+  slots,
+  values,
+  onChange,
+}: {
+  slots: readonly string[];
+  values: Record<string, string>;
+  onChange: (slot: string, value: string) => void;
+}) {
+  return (
+    <div
+      role="group"
+      aria-label="Camo"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--space-2)",
+        padding: "var(--space-2) var(--space-3)",
+        border: "1px solid var(--border-subtle)",
+        borderRadius: "var(--radius-md)",
+      }}
+    >
+      <span
+        style={{
+          fontSize: "var(--text-xs)",
+          color: "var(--text-tertiary)",
+        }}
+      >
+        Camo for the new blocks. Leave a slot empty for no camo.
+      </span>
+      {slots.map((slot) => {
+        const id = `${CAMO_INPUT_ID}-${slot}`;
+        const value = values[slot] ?? "";
+        const parsed = parseTargetEntry(value);
+        return (
+          <div
+            key={slot}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "var(--space-1)",
+            }}
+          >
+            <Label htmlFor={id} style={{ fontSize: "var(--text-xs)" }}>
+              {camoSlotLabel(slot)}
+            </Label>
+            <Input
+              id={id}
+              type="text"
+              value={value}
+              placeholder="No camo (e.g. minecraft:oak_planks)"
+              autoComplete="off"
+              spellCheck={false}
+              list={`${id}-suggestions`}
+              onChange={(e) => onChange(slot, e.currentTarget.value)}
+            />
+            <datalist id={`${id}-suggestions`}>
+              {searchBlockCatalog(value, MAX_CAMO_SUGGESTIONS).map((option) => (
+                <option key={option} value={option} />
+              ))}
+            </datalist>
+            {parsed !== null && !isValidBlockId(parsed.blockId) ? (
+              <span
+                style={{
+                  fontSize: "var(--text-xs)",
+                  color: "var(--text-tertiary)",
+                }}
+              >
+                Identifier must look like `namespace:path`.
+              </span>
+            ) : null}
+          </div>
+        );
+      })}
+    </div>
   );
 }
 

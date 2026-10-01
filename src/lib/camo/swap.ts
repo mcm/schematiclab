@@ -21,6 +21,7 @@ import type { CamoSlot } from "./extract";
 import { isCamoCapableBlockId, placedCamoSlots } from "./extract";
 import { withCamoMaterials } from "./materials";
 import {
+  camoWriteOptionsFor,
   newCamoBlockEntity,
   stateKey,
   writeCamoSlots,
@@ -35,14 +36,6 @@ export type CamoSwapTarget = CamoTarget | null;
 
 const posKey = (pos: readonly [number, number, number]) =>
   `${pos[0]},${pos[1]},${pos[2]}`;
-
-/** Item stacks save `count` instead of `Count` from 1.20.5 on. */
-function savesLegacyItemCount(
-  version: ParsedSchematicProjection["minecraftVersion"],
-): boolean {
-  const [major, minor, patch] = version.versionNumber;
-  return major === 1 && (minor < 20 || (minor === 20 && patch < 5));
-}
 
 function matchesSource(slot: CamoSlot, source: CamoSwapSource): boolean {
   if (source.kind === "empty") return slot.kind === "empty";
@@ -87,9 +80,7 @@ export function swapCamoMaterial(
       (scope.kind === "all" || entry.blockState === scope.parentBlockState),
   );
   if (!inScope.includes(true)) return projection;
-  const options = {
-    legacyItemCount: savesLegacyItemCount(projection.minecraftVersion),
-  };
+  const options = camoWriteOptionsFor(projection.minecraftVersion);
 
   let changed = false;
   const regions: ParsedSchematicRegion[] = projection.regions.map((region) => {

@@ -7,7 +7,12 @@
 // mapping / swap UI need these.
 
 import { _emitEditorState, getEditorState } from "./editor-state";
-import { swapBlockState, type SwapTarget } from "./swap-projection";
+import {
+  swapBlockStates,
+  type BlockStateSwap,
+  type SwapTarget,
+} from "./swap-projection";
+import type { CamoChoice } from "./camo/write";
 import {
   swapCamoMaterial,
   type CamoSwapScope,
@@ -22,8 +27,9 @@ import type { ModMappingContext } from "./advanced/mod-mapping";
 import type { MinecraftVersion } from "./schemlib/schematic-formats/version-mapping";
 
 // Apply a global block swap. Every placement whose state matches
-// `sourceBlockState` is redirected to `target`. The pre-swap projection is
-// stashed as `lastSwapSnapshot` so the UI can offer a single-step undo.
+// `sourceBlockState` is redirected to `target`, with `camo` put on it when the
+// target is a camo block. The pre-swap projection is stashed as
+// `lastSwapSnapshot` so the UI can offer a single-step undo.
 //
 // No-op if there is no ready parse, or if the source isn't in the palette.
 // Returns true if a swap was applied (so callers can drive toasts / undo
@@ -31,11 +37,17 @@ import type { MinecraftVersion } from "./schemlib/schematic-formats/version-mapp
 export function applyBlockSwap(
   sourceBlockState: string,
   target: SwapTarget,
+  camo?: CamoChoice,
 ): boolean {
+  return applyBlockSwaps([{ sourceBlockState, target, camo }]);
+}
+
+// Several block swaps (e.g. every state of one block) as one undo step.
+export function applyBlockSwaps(swaps: readonly BlockStateSwap[]): boolean {
   const state = getEditorState();
   if (state.parseStatus.status !== "ready") return false;
   const prior = state.parseStatus.schematic;
-  const next = swapBlockState(prior, sourceBlockState, target);
+  const next = swapBlockStates(prior, swaps);
   if (next === prior) return false;
   _emitEditorState({
     ...state,
