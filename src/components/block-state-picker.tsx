@@ -14,6 +14,7 @@ import {
 } from "@iamthemcmaster/ui";
 import { knownVersionIdFor } from "@/lib/advanced/effective-mod-version";
 import { isCatalogedBlockId, searchBlockCatalog } from "@/lib/block-catalog";
+import { carryCamoBlockProperties } from "@/lib/camo/block-properties";
 import { useEditorState } from "@/lib/editor-state";
 import { completeBlockProperties } from "@/lib/mods/property-domains";
 import {
@@ -136,7 +137,20 @@ export function BlockStatePicker({
     Math.min(highlightIndex, suggestions.length - 1),
   );
 
-  const parsedTarget = parseTargetEntry(query);
+  const typedTarget = parseTargetEntry(query);
+  // A camo block target keeps the source's properties it also has (a
+  // stairs' facing/half/shape/waterlogged); typed properties win.
+  const carried =
+    typedTarget && source
+      ? carryCamoBlockProperties(source.properties, typedTarget.blockId)
+      : {};
+  const carriedNames = Object.keys(carried)
+    .filter((name) => !Object.hasOwn(typedTarget?.properties ?? {}, name))
+    .sort();
+  const parsedTarget = typedTarget && {
+    blockId: typedTarget.blockId,
+    properties: { ...carried, ...typedTarget.properties },
+  };
   const targetValid =
     parsedTarget !== null && isValidBlockId(parsedTarget.blockId);
   const targetDisplay =
@@ -382,6 +396,17 @@ export function BlockStatePicker({
               {targetValid
                 ? `"${parsedTarget.blockId}" isn't in the catalog — it'll be used as-is.`
                 : "Identifier must look like `namespace:path`."}
+            </span>
+          ) : null}
+          {targetValid && carriedNames.length > 0 ? (
+            <span
+              style={{
+                fontSize: "var(--text-xs)",
+                color: "var(--text-tertiary)",
+              }}
+            >
+              Kept from the source: {carriedNames.join(", ")}. Type{" "}
+              <code>[name=value]</code> after the identifier to change one.
             </span>
           ) : null}
           {targetModBlock ? (

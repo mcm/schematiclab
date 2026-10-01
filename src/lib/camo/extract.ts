@@ -17,6 +17,7 @@
 // Worker-safe: no DOM access. Must not import from src/lib/render/.
 
 import type { NbtCompoundValue, NbtValue } from "../nbt-value";
+import { CAMO_BLOCK_IDS, DOUBLE_CAMO_BLOCK_IDS } from "./camo-blocks.generated";
 
 export interface CamoState {
   name: string;
@@ -36,6 +37,9 @@ const COPYCAT_BASE = "create:copycat_base";
 const FRAMED_EMPTY = "framedblocks:empty";
 const FRAMED_FLUID = "framedblocks:fluid";
 const FRAMED_SLOTS = ["camo", "camo_two"];
+const COPYCAT_SLOT = "material";
+const CAMO_BLOCKS: ReadonlySet<string> = new Set(CAMO_BLOCK_IDS);
+const DOUBLE_CAMO_BLOCKS: ReadonlySet<string> = new Set(DOUBLE_CAMO_BLOCK_IDS);
 
 export function isCamoCapableBlockId(id: string): boolean {
   return (
@@ -237,5 +241,50 @@ export function extractCamoSlots(
       .filter((part) => multi.enabled(blockProperties, part))
       .map((part) => copycatSlot(part, sameState(state)));
   }
-  return [copycatSlot("material", state)];
+  return [copycatSlot(COPYCAT_SLOT, state)];
+}
+
+/** The Copycats+ multi-state parts `blockId` has, or undefined. */
+export function multiStateParts(
+  blockId: string,
+  blockProperties: Record<string, string>,
+): string[] | undefined {
+  if (!Object.hasOwn(MULTI_STATE_BLOCKS, blockId)) return undefined;
+  const multi = MULTI_STATE_BLOCKS[blockId];
+  return multi.parts.filter((part) => multi.enabled(blockProperties, part));
+}
+
+/**
+ * The camo slots a camo block has before it has any camo data (a block just
+ * swapped in, whose block entity was dropped): `camo` (plus `camo_two` on
+ * double blocks), a multi-state copycat's enabled parts, or `material`.
+ * Empty for blocks that don't save camo (create:copycat_base, the framing
+ * saw).
+ */
+export function defaultCamoSlots(
+  blockId: string,
+  blockProperties: Record<string, string>,
+): string[] {
+  if (!CAMO_BLOCKS.has(blockId)) return [];
+  if (blockId.startsWith("framedblocks:")) {
+    return DOUBLE_CAMO_BLOCKS.has(blockId)
+      ? [...FRAMED_SLOTS]
+      : [FRAMED_SLOTS[0]];
+  }
+  return multiStateParts(blockId, blockProperties) ?? [COPYCAT_SLOT];
+}
+
+/**
+ * The camo slots of a placed camo block: `extractCamoSlots` of its block
+ * entity, or every `defaultCamoSlots` slot, empty, when it has none.
+ */
+export function placedCamoSlots(
+  blockId: string,
+  blockProperties: Record<string, string>,
+  blockEntityNbt: NbtCompoundValue | undefined,
+): CamoSlot[] {
+  if (blockEntityNbt !== undefined) {
+    return extractCamoSlots(blockId, blockProperties, blockEntityNbt);
+  }
+  return defaultCamoSlots(blockId, blockProperties).map(empty);
 }

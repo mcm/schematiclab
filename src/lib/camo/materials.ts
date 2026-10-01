@@ -1,8 +1,10 @@
 // Camo materials per palette entry, for the material list.
 //
 // Counts the distinct camo states that each camo-capable palette entry's
-// placements hold, one count per non-empty slot. Empty slots (including
-// create:copycat_base parts) aren't counted; fluids count under their fluid id.
+// placements hold, one count per slot; fluids count under their fluid id.
+// Empty slots (including create:copycat_base parts, and every slot of a camo
+// block without a block entity yet) count together as one "empty" material,
+// so the material list can offer to fill them.
 //
 // Worker-safe: no DOM access. Must not import from src/lib/render/.
 
@@ -11,16 +13,20 @@ import type {
   ParsedSchematicPaletteEntry,
   ParsedSchematicProjection,
 } from "../convert";
-import { extractCamoSlots, isCamoCapableBlockId } from "./extract";
+import { isCamoCapableBlockId, placedCamoSlots } from "./extract";
 import { stateKey } from "./write";
 
 const posKey = (pos: readonly [number, number, number]) =>
   `${pos[0]},${pos[1]},${pos[2]}`;
 
+/** The material standing for empty slots. */
+export const EMPTY_CAMO_MATERIAL_KEY = "";
+
 /**
  * The camo materials of every palette entry, indexed like `palette`: a list
  * (possibly empty) for camo-capable entries and undefined for the rest. Lists
- * are sorted by count (high to low), then by block state.
+ * are sorted by count (high to low), then by block state, with the empty
+ * material last.
  */
 export function countCamoMaterials(
   palette: readonly ParsedSchematicPaletteEntry[],
@@ -33,30 +39,35 @@ export function countCamoMaterials(
   );
   if (byEntry.some((materials) => materials !== undefined)) {
     for (const region of regions) {
-      if (region.blockEntities.length === 0) continue;
-      const indexAt = new Map<string, number>();
+      const nbtAt = new Map(
+        region.blockEntities.map((be) => [posKey(be.pos), be.nbt]),
+      );
       for (const placement of region.blocks) {
-        if (byEntry[placement.paletteIndex] !== undefined) {
-          indexAt.set(posKey(placement.pos), placement.paletteIndex);
-        }
-      }
-      for (const blockEntity of region.blockEntities) {
-        const index = indexAt.get(posKey(blockEntity.pos));
-        if (index === undefined) continue;
-        const entry = palette[index];
-        const materials = byEntry[index]!;
-        const slots = extractCamoSlots(
+        const materials = byEntry[placement.paletteIndex];
+        if (materials === undefined) continue;
+        const entry = palette[placement.paletteIndex];
+        const slots = placedCamoSlots(
           entry.blockId,
           entry.properties,
-          blockEntity.nbt,
+          nbtAt.get(posKey(placement.pos)),
         );
         for (const { state, kind } of slots) {
-          if (kind === "empty" || state === null) continue;
-          const blockState = stateKey(state.name, state.properties);
+          const blockState =
+            kind === "empty" || state === null
+              ? EMPTY_CAMO_MATERIAL_KEY
+              : stateKey(state.name, state.properties);
           const key = `${kind}:${blockState}`;
           const existing = materials.get(key);
           if (existing !== undefined) {
             existing.count += 1;
+          } else if (kind === "empty" || state === null) {
+            materials.set(key, {
+              kind: "empty",
+              blockState,
+              blockId: "",
+              properties: {},
+              count: 1,
+            });
           } else {
             materials.set(key, {
               kind,
@@ -75,7 +86,9 @@ export function countCamoMaterials(
       ? undefined
       : [...materials.values()].sort(
           (a, b) =>
-            b.count - a.count || a.blockState.localeCompare(b.blockState),
+            Number(a.kind === "empty") - Number(b.kind === "empty") ||
+            b.count - a.count ||
+            a.blockState.localeCompare(b.blockState),
         ),
   );
 }
@@ -98,7 +111,8 @@ export function withCamoMaterials(
 
 /**
  * Material totals keyed by block state (fluid camos by fluid id): each
- * palette entry's own count plus every camo slot holding that state.
+ * palette entry's own count plus every camo slot holding that state. Empty
+ * slots aren't materials.
  */
 export function materialTotals(
   palette: readonly ParsedSchematicPaletteEntry[],
@@ -109,7 +123,7 @@ export function materialTotals(
   for (const entry of palette) {
     add(entry.blockState, entry.count);
     for (const material of entry.camoMaterials ?? []) {
-      add(material.blockState, material.count);
+      if (material.kind !== "empty") add(material.blockState, material.count);
     }
   }
   return totals;

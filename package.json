@@ -13,6 +13,7 @@
     "gen:mc-assets": "node --experimental-strip-types scripts/build-minecraft-assets.mts",
     "gen:camo-shapes": "node --experimental-strip-types scripts/generate-camo-shapes.mts",
     "gen:camo-fixture-datapacks": "node --experimental-strip-types scripts/generate-camo-fixture-datapacks.mts",
+    "gen:camo-block-states": "node --experimental-strip-types scripts/generate-camo-block-states.mts",
     "lint": "eslint",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

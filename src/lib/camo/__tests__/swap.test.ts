@@ -436,6 +436,183 @@ describe("swapCamoMaterial NBT", () => {
   });
 });
 
+describe("swapCamoMaterial empty slots and removal", () => {
+  const OAK: CamoSwapTarget = {
+    blockId: "minecraft:oak_planks",
+    properties: {},
+  };
+  const EMPTY_SOURCE = { kind: "empty", blockState: "" } as const;
+  const fill = (
+    p: ParsedSchematicProjection,
+    scope: Parameters<typeof swapCamoMaterial>[3] = { kind: "all" },
+  ) => swapCamoMaterial(p, EMPTY_SOURCE, OAK, scope);
+  const remove = (p: ParsedSchematicProjection, blockState: string) =>
+    swapCamoMaterial(p, { kind: "block", blockState }, null, { kind: "all" });
+
+  it("creates the block entity of a framed block that has none", () => {
+    const next = fill(projection([entry("framedblocks:framed_stairs")], [[0]]));
+    expect(snbtAt(next, 0)).toBe(
+      `{id:"framedblocks:framed_tile",camo:{type:"framedblocks:block",state:{Name:"minecraft:oak_planks"}}}`,
+    );
+    expect(next.palette[0].camoMaterials).toEqual([
+      expect.objectContaining({ kind: "block", count: 1 }),
+    ]);
+  });
+
+  it("fills both slots of a new double block's block entity", () => {
+    const next = fill(
+      projection([entry("framedblocks:framed_double_slab")], [[0]]),
+    );
+    expect(snbtAt(next, 0)).toBe(
+      `{id:"framedblocks:framed_double_tile",camo:{type:"framedblocks:block",state:{Name:"minecraft:oak_planks"}},camo_two:{type:"framedblocks:block",state:{Name:"minecraft:oak_planks"}}}`,
+    );
+  });
+
+  it("creates copycat block entities in each format", () => {
+    const next = fill(
+      projection(
+        [
+          entry("create:copycat_step", { facing: "north", half: "top" }),
+          entry("copycats:copycat_slab", { type: "top" }),
+        ],
+        [[0], [1]],
+      ),
+    );
+    expect(snbtAt(next, 0)).toBe(
+      `{id:"create:copycat",Material:{Name:"minecraft:oak_planks"},Item:{id:"minecraft:oak_planks",count:1},EnableCT:1B}`,
+    );
+    expect(snbtAt(next, 1)).toBe(
+      `{id:"copycats:multistate_copycat",material_data:{top:{material:{Name:"minecraft:oak_planks"},enableCT:1B,consumedItem:{id:"minecraft:oak_planks",count:1}}}}`,
+    );
+  });
+
+  it("writes 1.20.1's Item Count into a new block entity", () => {
+    const p = projection([entry("copycats:copycat_block")], [[0]]);
+    const legacy = fill({
+      ...p,
+      minecraftVersion: {
+        platform: "java",
+        versionNumber: [1, 20, 1],
+        dataVersion: 3465,
+      },
+    });
+    expect(snbtAt(legacy, 0)).toContain(
+      `Item:{id:"minecraft:oak_planks",Count:1B}`,
+    );
+  });
+
+  it("fills only the empty slots, under one parent with a parent scope", () => {
+    const p = projection(
+      [PANEL, SOUTH],
+      [
+        [
+          0,
+          be(
+            `{id:"framedblocks:framed_double_tile",camo:{type:"framedblocks:block",state:{Name:"minecraft:stone"}},camo_two:{type:"framedblocks:empty"}}`,
+          ),
+        ],
+        [1],
+      ],
+    );
+    const next = fill(p, {
+      kind: "parent",
+      parentBlockState: PANEL.blockState,
+    });
+    expect(snbtAt(next, 0)).toBe(
+      `{id:"framedblocks:framed_double_tile",camo:{type:"framedblocks:block",state:{Name:"minecraft:stone"}},camo_two:{type:"framedblocks:block",state:{Name:"minecraft:oak_planks"}}}`,
+    );
+    expect(next.regions[0].blockEntities).toHaveLength(1);
+  });
+
+  it("removes a FramedBlocks block or fluid camo", () => {
+    const p = projection(
+      [PANEL],
+      [
+        [0, framed("minecraft:stone", "minecraft:oak_planks")],
+        [
+          0,
+          be(
+            `{id:"framedblocks:framed_tile",reinforced:0b,camo:{type:"framedblocks:fluid",fluid:"minecraft:water",flow_dir:"up"}}`,
+          ),
+        ],
+      ],
+    );
+    expect(snbtAt(remove(p, "minecraft:stone"), 0)).toBe(
+      `{id:"framedblocks:framed_double_tile",camo:{type:"framedblocks:empty"},camo_two:{type:"framedblocks:block",state:{Name:"minecraft:oak_planks"}}}`,
+    );
+    const noFluid = swapCamoMaterial(
+      p,
+      { kind: "fluid", blockState: "minecraft:water" },
+      null,
+      { kind: "all" },
+    );
+    expect(snbtAt(noFluid, 1)).toBe(
+      `{id:"framedblocks:framed_tile",reinforced:0B,camo:{type:"framedblocks:empty"}}`,
+    );
+  });
+
+  it("removes copycat camos the way the mods save an empty copycat", () => {
+    const p = projection(
+      [
+        entry("create:copycat_panel", { facing: "up" }),
+        entry("copycats:copycat_slab", { type: "double" }),
+      ],
+      [
+        [
+          0,
+          be(
+            `{id:"create:copycat",EnableCT:1b,Material:{Name:"minecraft:stone"},Item:{id:"minecraft:stone",count:1}}`,
+          ),
+        ],
+        [
+          1,
+          be(
+            `{id:"copycats:multistate_copycat",material_data:{top:{material:{Name:"minecraft:stone"},enableCT:1b,consumedItem:{id:"minecraft:stone",count:1}},bottom:{material:{Name:"minecraft:oak_planks"},enableCT:1b,consumedItem:{id:"minecraft:oak_planks",count:1}}}}`,
+          ),
+        ],
+      ],
+    );
+    const next = remove(p, "minecraft:stone");
+    expect(snbtAt(next, 0)).toBe(
+      `{id:"create:copycat",EnableCT:1B,Material:{Name:"create:copycat_base"},Item:{}}`,
+    );
+    expect(snbtAt(next, 1)).toBe(
+      `{id:"copycats:multistate_copycat",material_data:{top:{material:{Name:"create:copycat_base"},enableCT:1B,consumedItem:{}},bottom:{material:{Name:"minecraft:oak_planks"},enableCT:1B,consumedItem:{id:"minecraft:oak_planks",count:1}}}}`,
+    );
+    expect(next.palette[0].camoMaterials).toEqual([
+      expect.objectContaining({ kind: "empty", count: 1 }),
+    ]);
+  });
+
+  it("is a no-op for removing empty slots or a block without camo", () => {
+    const p = projection(
+      [entry("framedblocks:framed_cube"), entry("create:copycat_base")],
+      [[0], [1]],
+    );
+    expect(swapCamoMaterial(p, EMPTY_SOURCE, null, { kind: "all" })).toBe(p);
+    const base = projection([entry("create:copycat_base")], [[0]]);
+    expect(fill(base)).toBe(base);
+  });
+
+  it("lets a block swapped to a framed block take a camo", () => {
+    const p = projection(
+      [entry("minecraft:chest")],
+      [[0, be(`{id:"minecraft:chest"}`)]],
+    );
+    const swapped = swapBlockState(p, "minecraft:chest", {
+      blockId: "framedblocks:framed_chest",
+      properties: { facing: "north" },
+    });
+    expect(swapped.regions[0].blockEntities).toEqual([]);
+    expect(swapped.palette[0].camoMaterials).toEqual([
+      expect.objectContaining({ kind: "empty", count: 1 }),
+    ]);
+    expect(snbtAt(fill(swapped), 0)).toBe(
+      `{id:"framedblocks:framed_chest",camo:{type:"framedblocks:block",state:{Name:"minecraft:oak_planks"}}}`,
+    );
+  });
+});
+
 describe("parent swaps and camo block entities", () => {
   it("keeps the camo when the target has the same block-entity type", () => {
     const p = projection([PANEL], [[0, framed(DARK_OAK)]]);
