@@ -15,6 +15,7 @@ import {
 import { knownVersionIdFor } from "@/lib/advanced/effective-mod-version";
 import { isCatalogedBlockId, searchBlockCatalog } from "@/lib/block-catalog";
 import { useEditorState } from "@/lib/editor-state";
+import { completeBlockProperties } from "@/lib/mods/property-domains";
 import {
   getLoadedModBlock,
   getModForBlockId,
@@ -387,7 +388,7 @@ export function BlockStatePicker({
             <ModBlockHint
               displayName={targetModBlock.displayName}
               modName={targetMod?.modName ?? null}
-              properties={targetModBlock.properties}
+              properties={completeBlockProperties(targetModBlock.properties)}
             />
           ) : null}
         </div>
@@ -411,7 +412,7 @@ export function BlockStatePicker({
 }
 
 // Known properties/values for a loaded mod block, derived from its blockstates
-// file. Shown as a hint so users can type a valid `[prop=value]` suffix.
+// file and completed with `completeBlockProperties`. Shown as a hint so users can type a valid `[prop=value]` suffix.
 function ModBlockHint({
   displayName,
   modName,

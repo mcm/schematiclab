@@ -11,18 +11,29 @@
 //
 // Pure TS, no DOM, Worker-safe.
 
+import {
+  completePropertyValues,
+  isVanillaPropertyName,
+} from "../mods/property-domains";
+
 /** Property name → allowed values, first value is the fallback. */
 export type ModBlockProperties = Record<string, string[]>;
 
 export type ModNamespaceMapping =
   | { kind: "unmapped" }
-  // The mod's file for the target version.
-  | { kind: "target"; blocks: Record<string, ModBlockProperties> }
+  // The mod's file for the target version. `sourceBlocks` holds the mapped
+  // mod's file for the schematic's version, when loaded.
+  | {
+      kind: "target";
+      blocks: Record<string, ModBlockProperties>;
+      sourceBlocks?: Record<string, ModBlockProperties>;
+    }
   // A replacement mod: `oldns:path` is rewritten to `newNamespace:path`.
   | {
       kind: "replace";
       newNamespace: string;
       blocks: Record<string, ModBlockProperties>;
+      sourceBlocks?: Record<string, ModBlockProperties>;
     }
   // The user declined a replacement.
   | { kind: "keep" }
@@ -56,24 +67,50 @@ function namespaceAndPath(blockId: string): [string, string] {
 }
 
 /**
- * Best-effort fit of `properties` to a block's known property values:
- * unknown properties are dropped, unknown values become the first listed
- * value, and properties the source lacks stay unset.
+ * Best-effort fit of `properties` to a block's known property values.
+ *
+ * `known` and `source` come from blockstate files, which only list the
+ * properties and values that pick a model, so they're treated as partial
+ * evidence (see `property-domains.ts`). `source` is the block in the mod's
+ * file for the schematic's version, or null when that isn't loaded.
+ *
+ * - A property `known` lacks is dropped only when `source` lists it (it
+ *   mattered before and is gone now) or, without `source`, when no vanilla
+ *   block has a property of that name. Otherwise it's kept as-is.
+ * - A value outside the completed `known` values becomes the first known
+ *   value, unless `source` exists and doesn't list that value either.
+ * - Properties the source lacks stay unset.
  */
 export function fitProperties(
   blockId: string,
   properties: Record<string, string>,
   known: ModBlockProperties,
+  source: ModBlockProperties | null = null,
 ): { properties: Record<string, string>; warnings: string[] } {
   const out: Record<string, string> = {};
   const warnings: string[] = [];
+  const sourceValues = (name: string): string[] | undefined =>
+    source !== null && Object.hasOwn(source, name)
+      ? completePropertyValues(name, source[name])
+      : undefined;
   for (const [name, value] of Object.entries(properties)) {
-    const values = Object.hasOwn(known, name) ? known[name] : undefined;
-    if (values === undefined) {
-      warnings.push(`${blockId} has no property "${name}"; dropped.`);
+    const observed = Object.hasOwn(known, name) ? known[name] : undefined;
+    if (observed === undefined) {
+      const dropped =
+        source !== null
+          ? sourceValues(name) !== undefined
+          : !isVanillaPropertyName(name);
+      if (dropped) {
+        warnings.push(`${blockId} has no property "${name}"; dropped.`);
+      } else {
+        out[name] = value;
+      }
       continue;
     }
-    if (values.length > 0 && !values.includes(value)) {
+    const values = completePropertyValues(name, observed);
+    const evidence =
+      source === null || (sourceValues(name)?.includes(value) ?? false);
+    if (values.length > 0 && !values.includes(value) && evidence) {
       out[name] = values[0];
       warnings.push(
         `${blockId} has no ${name}=${value}; using ${name}=${values[0]}.`,
@@ -89,6 +126,7 @@ function validateAgainst(
   blockId: string,
   properties: Record<string, string>,
   blocks: Record<string, ModBlockProperties>,
+  sourceBlocks: Record<string, ModBlockProperties> | undefined,
   sourceBlockId: string,
   sourceProperties: Record<string, string>,
   missingMessage: string,
@@ -101,7 +139,11 @@ function validateAgainst(
       problem: { reason: "missing-block", warnings: [missingMessage] },
     };
   }
-  const fitted = fitProperties(blockId, properties, blocks[blockId]);
+  const source =
+    sourceBlocks !== undefined && Object.hasOwn(sourceBlocks, sourceBlockId)
+      ? sourceBlocks[sourceBlockId]
+      : null;
+  const fitted = fitProperties(blockId, properties, blocks[blockId], source);
   return {
     status: "resolved",
     blockId,
@@ -148,6 +190,7 @@ export function resolveModdedState(
         blockId,
         properties,
         mapping.blocks,
+        mapping.sourceBlocks,
         blockId,
         properties,
         `${blockId} doesn't exist in the target version of the mod.`,
@@ -158,6 +201,7 @@ export function resolveModdedState(
         rewritten,
         properties,
         mapping.blocks,
+        mapping.sourceBlocks,
         blockId,
         properties,
         `${rewritten} doesn't exist in the replacement mod.`,

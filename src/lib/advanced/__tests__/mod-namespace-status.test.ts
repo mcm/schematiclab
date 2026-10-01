@@ -310,6 +310,31 @@ describe("buildModMappingContext", () => {
     });
   });
 
+  it("adds the mapped mod's file for the schematic's version as evidence", () => {
+    const sourceFile = file(1, "1.20.1", ["create:old", "other:c"]);
+    const [row] = describeModNamespaces(input({ loadedMods: [sourceFile] }));
+    expect(row.sourceFile).toBe(sourceFile);
+
+    const sourceBlocks = { "create:old": { facing: ["north", "south"] } };
+    expect(
+      context({
+        loadedMods: [sourceFile, file(1, "1.21", ["create:a"])],
+      }),
+    ).toEqual({
+      create: {
+        kind: "target",
+        blocks: { "create:a": { facing: ["north", "south"] } },
+        sourceBlocks,
+      },
+    });
+    expect(
+      context({
+        choices: { create: REPLACEMENT },
+        loadedMods: [sourceFile, file(7, "1.21", ["other:a"])],
+      }),
+    ).toMatchObject({ create: { kind: "replace", sourceBlocks } });
+  });
+
   it("rewrites to a loaded replacement, pending until then", () => {
     expect(context({ choices: { create: REPLACEMENT } })).toEqual({
       create: { kind: "pending" },

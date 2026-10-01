@@ -254,6 +254,13 @@ describe("previewVersionMapping with a ModMappingContext", () => {
             casing: ["false", "true"],
           },
         },
+        sourceBlocks: {
+          "create:belt": {
+            facing: ["east", "north", "south", "up", "west"],
+            part: ["end", "middle", "start"],
+            slope: ["flat", "up"],
+          },
+        },
       },
     });
     expect(result.cleanCount).toBe(0);
@@ -294,6 +301,7 @@ describe("previewVersionMapping with a ModMappingContext", () => {
         kind: "replace",
         newNamespace: "createplus",
         blocks: { "createplus:andesite_casing": {} },
+        sourceBlocks: { "create:andesite_casing": { axis: ["x", "y", "z"] } },
       },
     });
     const row = result.problematic[0];
@@ -388,6 +396,9 @@ describe("groupProblematicEntries", () => {
       create: {
         kind: "target",
         blocks: { "create:pipe": { north: ["false", "true"] } },
+        sourceBlocks: {
+          "create:pipe": { north: ["false", "true"], waterlogged: ["false"] },
+        },
       },
     });
     const groups = groupProblematicEntries(result.problematic);

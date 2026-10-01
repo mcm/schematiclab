@@ -52,6 +52,11 @@ export type ReplacementStatus =
 
 export interface ModNamespaceRow extends SchematicNamespace {
   mapping: NamespaceMapping | null;
+  /**
+   * The mapped project's loaded file for the schematic's version, if any.
+   * Shows which properties mattered before, when fitting block states.
+   */
+  sourceFile: LoadedModMeta | null;
   /** The mapped project's target-version file; null without a target or mapping. */
   target: TargetFileStatus | null;
   choice: ModChoice | null;
@@ -194,6 +199,10 @@ export function describeModNamespaces(
     const choice = Object.hasOwn(input.choices, summary.namespace)
       ? input.choices[summary.namespace]
       : null;
+    const sourceFile =
+      mapping !== null
+        ? findFile(input.loadedMods, mapping.modId, input.sourceVersionId)
+        : null;
     const target =
       mapping !== null && targetVersionId !== null
         ? targetStatus(mapping, input, targetVersionId)
@@ -204,7 +213,15 @@ export function describeModNamespaces(
       replacement?.status === "error" ||
       (choice === null &&
         (target?.status === "unavailable" || target?.status === "error"));
-    return { ...summary, mapping, target, choice, replacement, needsDecision };
+    return {
+      ...summary,
+      mapping,
+      sourceFile,
+      target,
+      choice,
+      replacement,
+      needsDecision,
+    };
   });
 }
 
@@ -220,12 +237,17 @@ export function buildModMappingContext(
   const context: ModMappingContext = {};
   for (const row of rows) {
     const { namespace, replacement, target } = row;
+    const source =
+      row.sourceFile !== null
+        ? { sourceBlocks: blocksIn(row.sourceFile, namespace) }
+        : {};
     if (replacement !== null) {
       if (replacement.status === "loaded") {
         context[namespace] = {
           kind: "replace",
           newNamespace: replacement.newNamespace,
           blocks: blocksIn(replacement.file, replacement.newNamespace),
+          ...source,
         };
       } else if (replacement.status === "loading") {
         context[namespace] = { kind: "pending" };
@@ -243,6 +265,7 @@ export function buildModMappingContext(
       context[namespace] = {
         kind: "target",
         blocks: blocksIn(target.file, namespace),
+        ...source,
       };
     } else if (target.status === "resolving" || target.status === "loading") {
       context[namespace] = { kind: "pending" };

@@ -497,6 +497,13 @@ describe("applyVersionMapping with a ModMappingContext", () => {
         "createplus:andesite_casing": { axis: ["x", "y", "z"] },
         "createplus:belt": { facing: ["east", "north"] },
       },
+      // The old mod's file, showing `part` and `facing=up` mattered.
+      sourceBlocks: {
+        "create:belt": {
+          facing: ["east", "north", "up"],
+          part: ["end", "middle", "start"],
+        },
+      },
     },
   };
 
