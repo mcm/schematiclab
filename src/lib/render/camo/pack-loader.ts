@@ -35,13 +35,13 @@ function loadShapePack(
       try {
         return validateShapePack(json);
       } catch (err) {
-        console.warn(`Ignoring camo shape pack ${url}`, err);
+        console.warn("Ignoring camo shape pack %s", url, err);
         return null;
       }
     })().catch((err: unknown) => {
       // Network trouble: retry on the next build.
       packs.delete(namespace);
-      console.warn(`Could not load camo shape pack ${url}`, err);
+      console.warn("Could not load camo shape pack %s", url, err);
       return null;
     });
     packs.set(namespace, pending);
