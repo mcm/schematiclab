@@ -334,9 +334,11 @@ export function assembleResources(
 
   const missingUv = uvMap[MISSING_TEXTURE_ID];
   const transparentUv = uvMap[TRANSPARENT_TEXTURE_ID] ?? missingUv;
-  // Shader half-texel inset; the atlas may be non-square once mod textures
-  // are packed in, so use the larger per-axis texel (smaller dimension).
-  const pixelSize = 1 / Math.min(atlasImage.width, atlasImage.height);
+  // deepslate's shader insets UVs by half of this scalar on both axes. The
+  // atlas may be non-square once mod textures are packed in, so use the
+  // smaller per-axis texel (larger dimension): the larger one would inset the
+  // short axis by several texels and collapse whole textures to one row.
+  const pixelSize = 1 / Math.max(atlasImage.width, atlasImage.height);
   const placeholderFlags: BlockFlags = { opaque: true };
 
   const loadedNamespaces =

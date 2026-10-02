@@ -429,7 +429,7 @@ describe("assembleResources", () => {
     },
   );
 
-  it("sizes the shader pixel inset by the atlas's smaller dimension", () => {
+  it("sizes the shader pixel inset by the atlas's larger dimension", () => {
     const atlasImage = { width: 64, height: 256 } as unknown as ImageData;
     const { resources } = assembleResources({
       vanilla,
@@ -437,7 +437,7 @@ describe("assembleResources", () => {
       uvMap: UV_MAP,
       atlasImage,
     });
-    expect(resources.getPixelSize?.()).toBe(1 / 64);
+    expect(resources.getPixelSize?.()).toBe(1 / 256);
   });
 
   it("renders a placeholder for modded ids with no blockstate (e.g. mod removed)", () => {
