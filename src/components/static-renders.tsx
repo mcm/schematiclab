@@ -8,6 +8,12 @@ import { sourceAppearance } from "@/lib/advanced/suggest-blocks";
 import { useVanillaBlockColors } from "@/lib/advanced/vanilla-block-colors";
 import type { ParsedSchematicProjection } from "@/lib/convert";
 import { ensureModAppearances } from "@/lib/mods/appearance-backfill";
+import {
+  getGeneratedBlock,
+  getGeneratedBlocksRevision,
+  requestGeneratedBlocks,
+  subscribeGeneratedBlocks,
+} from "@/lib/mods/generated/block-store";
 import { useLoadedMods } from "@/lib/mods/registry";
 import {
   contactSheetLayout,
@@ -47,6 +53,11 @@ export function StaticRenders({
     [projection],
   );
   const versionId = knownVersionIdFor(projection.minecraftVersion);
+  const generatedRevision = React.useSyncExternalStore(
+    subscribeGeneratedBlocks,
+    getGeneratedBlocksRevision,
+    () => 0,
+  );
 
   // Mod files loaded before appearances existed get them computed in the
   // background; the registry update redraws the sheet.
@@ -64,12 +75,32 @@ export function StaticRenders({
     }
   }, [displayProjection, loadedMods]);
 
+  // Generated blocks (Unlimited Chisel Works) get their colours from their
+  // generated textures, computed in the background.
+  React.useEffect(() => {
+    requestGeneratedBlocks(
+      displayProjection.palette.map((entry) => entry.blockId),
+      versionId,
+    );
+  }, [displayProjection, loadedMods, versionId]);
+
   const model = React.useMemo(() => {
-    const colors = staticRenderColors(displayProjection, (blockId) =>
-      sourceAppearance(blockId, vanillaColors, loadedMods, versionId),
+    const colors = staticRenderColors(
+      displayProjection,
+      (blockId) =>
+        getGeneratedBlock(blockId, versionId)?.appearance ??
+        sourceAppearance(blockId, vanillaColors, loadedMods, versionId),
     );
     return buildVoxelModel(displayProjection, colors.colorFor, colors.colorAt);
-  }, [displayProjection, vanillaColors, loadedMods, versionId]);
+    // `generatedRevision` changes when generated blocks finish loading.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    displayProjection,
+    vanillaColors,
+    loadedMods,
+    versionId,
+    generatedRevision,
+  ]);
 
   const height = model.size[1];
   const defaults = React.useMemo(() => defaultPlanLevels(model), [model]);

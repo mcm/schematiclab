@@ -19,6 +19,20 @@ import type { LoadedModAssets, LoadedModMeta, ModBlock } from "../types";
 export type GeneratedBlockProperties = Readonly<Record<string, string>>;
 
 /**
+ * Vanilla blockstates, models and textures (the 3D-preview bundle in
+ * `public/minecraft-assets/`, from the newest Minecraft version), for
+ * providers whose blocks are generated from vanilla ones.
+ */
+export interface GeneratedVanillaAssets {
+  /** Blockstate JSON of `minecraft:<block>`, or undefined. */
+  blockstate(blockId: string): unknown;
+  /** Model JSON by normalized id (`minecraft:block/x`), or undefined. */
+  model(modelId: string): unknown;
+  /** A texture by id (`minecraft:block/x`), first animation frame, or null. */
+  texture(textureId: string): RgbaImage | null;
+}
+
+/**
  * The loaded mod files of one Minecraft version, as a provider sees them.
  * Built by `getGeneratedBlockFiles` / `loadGeneratedBlockFiles`.
  */
@@ -42,6 +56,11 @@ export interface GeneratedBlockFiles {
    * a file loaded before the provider existed).
    */
   providerData(providerNamespace: string): unknown;
+  /**
+   * Vanilla assets, or null/absent while they aren't loaded
+   * (`loadGeneratedBlockFiles` loads them).
+   */
+  readonly vanilla?: GeneratedVanillaAssets | null;
 }
 
 /**
@@ -76,7 +95,10 @@ export interface GeneratedBlockResolved {
   provider: string;
   /** The synthesized block (display name, properties, appearance when known). */
   block: ModBlock;
-  /** Synthesized blockstate JSON for `block.id`. */
+  /**
+   * Synthesized blockstate JSON for `block.id` (every state of the block),
+   * or null when the provider can't draw it.
+   */
   blockstate: unknown;
   /** Synthesized models, `<ns>:<path>` → model JSON, referenced by `blockstate`. */
   models: Record<string, unknown>;
@@ -93,6 +115,15 @@ export interface GeneratedBlockResolved {
   warnings?: string[];
 }
 
+/**
+ * Synthesized render assets of a block: its blockstate and the models it
+ * references, keyed like a mod's (`blockstates`, `models`).
+ */
+export interface GeneratedBlockModels {
+  blockstate: unknown;
+  models: Record<string, unknown>;
+}
+
 /** A block the provider recognises but whose source mods aren't loaded. */
 export interface GeneratedBlockNeedsMods {
   kind: "needs-mods";
@@ -107,6 +138,11 @@ export interface GeneratedBlockNeedsMods {
    * block), when one is available.
    */
   fallback?: { id: string; properties: GeneratedBlockProperties };
+  /**
+   * The block drawn as `fallback` (its blockstate and models, with the
+   * fallback's own textures), when the provider can synthesize it.
+   */
+  fallbackModels?: GeneratedBlockModels;
 }
 
 /** No provider produces this block id. */

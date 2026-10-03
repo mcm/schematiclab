@@ -21,6 +21,7 @@ import {
 } from "../../types";
 import {
   __setGeneratedBlockProvidersForTests,
+  __setGeneratedVanillaLoaderForTests,
   enumerateGeneratedBlocks,
   getGeneratedBlockFiles,
   getGeneratedBlockProvider,
@@ -158,10 +159,12 @@ beforeEach(async () => {
   modRegistry.__resetLoadedModsForTests();
   globalThis.indexedDB = new IDBFactory();
   __setGeneratedBlockProvidersForTests([FAKE_PROVIDER]);
+  __setGeneratedVanillaLoaderForTests(async () => null);
 });
 
 afterEach(() => {
   __setGeneratedBlockProvidersForTests(null);
+  __setGeneratedVanillaLoaderForTests(null);
   vi.restoreAllMocks();
 });
 
@@ -258,6 +261,21 @@ describe("generated block providers", () => {
     expect(
       resolveGeneratedBlock("fakegen:stonemod_stone", {}, "1.12.2").kind,
     ).toBe("resolved");
+  });
+
+  it("loads the vanilla assets once", async () => {
+    const vanilla = {
+      blockstate: () => undefined,
+      model: () => undefined,
+      texture: () => null,
+    };
+    const loader = vi.fn(async () => vanilla);
+    __setGeneratedVanillaLoaderForTests(loader);
+    expect(getGeneratedBlockFiles("1.12.2").vanilla).toBeNull();
+    expect((await loadGeneratedBlockFiles("1.12.2")).vanilla).toBe(vanilla);
+    expect((await loadGeneratedBlockFiles("1.20.1")).vanilla).toBe(vanilla);
+    expect(getGeneratedBlockFiles("1.12.2").vanilla).toBe(vanilla);
+    expect(loader).toHaveBeenCalledTimes(1);
   });
 
   it("generates textures from decoded sources", () => {
