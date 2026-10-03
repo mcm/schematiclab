@@ -42,6 +42,7 @@ import {
   type ModProjectPickerRequest,
 } from "@/components/mod-project-picker";
 import { ModsPanel } from "@/components/mods-panel";
+import { StaticRenders } from "@/components/static-renders";
 import { ThreeDPreview } from "@/components/three-d-preview";
 import { VersionMappingPanel } from "@/components/version-mapping-panel";
 
@@ -118,61 +119,6 @@ function PanelSkeleton() {
   );
 }
 
-function PanelCard({
-  title,
-  children,
-}: {
-  title: string;
-  children?: React.ReactNode;
-}) {
-  return (
-    <Card
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        minHeight: 0,
-      }}
-    >
-      <CardContent
-        style={{
-          padding: "var(--space-4)",
-          display: "flex",
-          flexDirection: "column",
-          gap: "var(--space-3)",
-          flex: 1,
-          minHeight: 0,
-        }}
-      >
-        <h2
-          style={{
-            margin: 0,
-            fontSize: "var(--text-sm)",
-            fontWeight: 600,
-            textTransform: "uppercase",
-            letterSpacing: "0.04em",
-            color: "var(--text-secondary)",
-          }}
-        >
-          {title}
-        </h2>
-        <div
-          style={{
-            flex: 1,
-            minHeight: 0,
-            display: "flex",
-            flexDirection: "column",
-            gap: "var(--space-2)",
-            color: "var(--text-tertiary)",
-            fontSize: "var(--text-sm)",
-          }}
-        >
-          {children}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
 const UNAVAILABLE_LABEL = "Unavailable — see error above.";
 
 function previewBody(parseStatus: ParseStatus): React.ReactNode {
@@ -190,6 +136,22 @@ function removeCamo(
     kind: "parent",
     parentBlockState: parent.blockState,
   });
+}
+
+function staticRendersBody(
+  parseStatus: ParseStatus,
+  inputFilename: string | null,
+): React.ReactNode {
+  if (parseStatus.status === "ready") {
+    return (
+      <StaticRenders
+        projection={parseStatus.schematic}
+        inputFilename={inputFilename ?? "schematic"}
+      />
+    );
+  }
+  if (parseStatus.status === "error") return UNAVAILABLE_LABEL;
+  return <PanelSkeleton />;
 }
 
 function materialListBody(
@@ -297,37 +259,7 @@ function EditorShell({
         overflow: "hidden",
       }}
     >
-      <PanelCard title="3D Preview">
-        {parseStatus.status === "ready" ? (
-          <div
-            style={{
-              flex: 1,
-              minHeight: 200,
-              border: "1px solid var(--border-subtle)",
-              borderRadius: "var(--radius-md)",
-              overflow: "hidden",
-              background: "var(--bg-page)",
-            }}
-          >
-            <ThreeDPreview projection={parseStatus.schematic} />
-          </div>
-        ) : (
-          <div
-            style={{
-              flex: 1,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              border: "1px dashed var(--border-subtle)",
-              borderRadius: "var(--radius-md)",
-              minHeight: 200,
-              padding: "var(--space-4)",
-            }}
-          >
-            {previewBody(parseStatus)}
-          </div>
-        )}
-      </PanelCard>
+      <PreviewTabs parseStatus={parseStatus} inputFilename={inputFilename} />
 
       <RightTabs
         parseStatus={parseStatus}
@@ -338,6 +270,117 @@ function EditorShell({
         inputFilename={inputFilename}
       />
     </div>
+  );
+}
+
+type PreviewTabId = "3d" | "static";
+
+const PREVIEW_TAB_CONTENT_STYLE: React.CSSProperties = {
+  flex: 1,
+  minHeight: 0,
+  flexDirection: "column",
+  gap: "var(--space-2)",
+  color: "var(--text-tertiary)",
+  fontSize: "var(--text-sm)",
+};
+
+function PreviewTabs({
+  parseStatus,
+  inputFilename,
+}: {
+  parseStatus: ParseStatus;
+  inputFilename: string | null;
+}) {
+  // Both panels stay mounted once opened (the 3D preview's meshes are costly
+  // to rebuild); the static renders are only drawn once their tab is opened.
+  const [activeTab, setActiveTab] = React.useState<PreviewTabId>("3d");
+  const [staticTabOpened, setStaticTabOpened] = React.useState(false);
+  if (activeTab === "static" && !staticTabOpened) setStaticTabOpened(true);
+
+  return (
+    <Card
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        minHeight: 0,
+      }}
+    >
+      <CardContent
+        style={{
+          padding: "var(--space-4)",
+          flex: 1,
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        <TabsLine
+          value={activeTab}
+          onValueChange={(next) => setActiveTab(next as PreviewTabId)}
+          style={{
+            flex: 1,
+            minHeight: 0,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <TabsLineList>
+            <TabsLineTrigger value="3d">3D Preview</TabsLineTrigger>
+            <TabsLineTrigger value="static">Static Renders</TabsLineTrigger>
+          </TabsLineList>
+          <TabsContent
+            value="3d"
+            forceMount
+            style={{
+              ...PREVIEW_TAB_CONTENT_STYLE,
+              display: activeTab === "3d" ? "flex" : "none",
+            }}
+          >
+            {parseStatus.status === "ready" ? (
+              <div
+                style={{
+                  flex: 1,
+                  minHeight: 200,
+                  border: "1px solid var(--border-subtle)",
+                  borderRadius: "var(--radius-md)",
+                  overflow: "hidden",
+                  background: "var(--bg-page)",
+                }}
+              >
+                <ThreeDPreview projection={parseStatus.schematic} />
+              </div>
+            ) : (
+              <div
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  border: "1px dashed var(--border-subtle)",
+                  borderRadius: "var(--radius-md)",
+                  minHeight: 200,
+                  padding: "var(--space-4)",
+                }}
+              >
+                {previewBody(parseStatus)}
+              </div>
+            )}
+          </TabsContent>
+          <TabsContent
+            value="static"
+            forceMount
+            style={{
+              ...PREVIEW_TAB_CONTENT_STYLE,
+              display: activeTab === "static" ? "flex" : "none",
+            }}
+          >
+            {staticTabOpened
+              ? staticRendersBody(parseStatus, inputFilename)
+              : null}
+          </TabsContent>
+        </TabsLine>
+      </CardContent>
+    </Card>
   );
 }
 

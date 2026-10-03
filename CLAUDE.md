@@ -70,6 +70,8 @@ State lives in module-level stores that components subscribe to with `useSyncExt
 
 The preview uses deepslate. `minecraft-resources.ts` fetches the vanilla bundle from `public/minecraft-assets/` and rebuilds a combined texture atlas and model set whenever the set of preview files changes. It uses exactly one file per mod (`getPreviewModFiles`): the file for the schematic's current version when loaded, else the most recently loaded one. Layout (`atlas-layout.ts`, capped at a power-of-two size, downscales textures when they don't fit) and resource assembly (`block-resources.ts`) are pure and unit-tested. Only pixel drawing touches the DOM. Modded blocks that can't be rendered fall back to a magenta/black "missing" cube instead of disappearing.
 
+The preview card's "Static Renders" tab (`components/static-renders.tsx`) draws a contact sheet on a 2D canvas, with a PNG download. It doesn't use deepslate. It shows four isometric views, front/side/top elevations, two plan slices and a cutaway. Blocks are flat-coloured cubes. Colours come from `block-colors.json` and `ModBlock.appearance` (camo blocks use their camo's colour, `static-render-colors.ts`), and blocks with no colour data get a stable colour hashed from their id. The geometry (`static-views.ts`) and the layout (`contact-sheet.ts`) are pure and unit-tested.
+
 ### Camo blocks
 
 FramedBlocks (26.1.2) and Create/Copycats+ copycats (1.21.1) take their look from a camo block stored in their block entity.
