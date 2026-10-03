@@ -10,6 +10,7 @@ import type {
   GeneratedBlockProvider,
   GeneratedBlockResolution,
 } from "../types";
+import { generateUcwTexture } from "./recolour";
 import {
   resolveUcwBlock,
   ucwBlockId,
@@ -134,9 +135,9 @@ export const UCW_PROVIDER: GeneratedBlockProvider = {
           : {}),
       };
     }
-    // The blockstate, models and texture recipes are synthesised from the
-    // `through` block's once UCW's recolouring is ported; until then the
-    // block resolves without render output.
+    // The blockstate, models and texture recipes (run by `generateTexture`)
+    // are synthesised from the `through` block's in the preview story; until
+    // then the block resolves without render output.
     return {
       kind: "resolved",
       provider: UCW_NAMESPACE,
@@ -152,7 +153,7 @@ export const UCW_PROVIDER: GeneratedBlockProvider = {
     };
   },
 
-  generateTexture() {
-    return null;
+  generateTexture(recipe, sources) {
+    return generateUcwTexture(recipe, sources);
   },
 };
