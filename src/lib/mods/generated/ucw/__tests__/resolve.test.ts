@@ -152,6 +152,10 @@ const ALABASTER: FakeMod = {
   },
 };
 
+// `meta-overrides.ts` pins alabaster's real (dye) order; tests of the
+// blockstate-order guess pass no overrides.
+const NO_OVERRIDES = {};
+
 const ALABASTER_RULES = ruleFile("chisel/environmentalmaterials.json", {
   modid: ["chisel", "environmentalmaterials"],
   blocks: ["chisel:stonebrick", "chisel:stonebrick1", "chisel:stonebrick2"].map(
@@ -305,7 +309,12 @@ describe("resolveUcwBlock", () => {
       `unlimitedchiselworks:chisel_${through}_environmentalmaterials_alabaster_bricks_${meta}`;
 
     const plain = expectResolved(
-      resolveUcwBlock(id("stonebrick", 3), { variation: "0" }, files),
+      resolveUcwBlock(
+        id("stonebrick", 3),
+        { variation: "0" },
+        files,
+        NO_OVERRIDES,
+      ),
     );
     expect(plain.rule).toBe(ALABASTER_RULES.rules[0]);
     expect(plain.from.properties).toEqual({ color: "light_blue" });
@@ -314,7 +323,12 @@ describe("resolveUcwBlock", () => {
 
     const one = expectResolved(
       // Chisel's stonebrick1 has 10 variations (`chisel.ts`).
-      resolveUcwBlock(id("stonebrick1", 5), { variation: "9" }, files),
+      resolveUcwBlock(
+        id("stonebrick1", 5),
+        { variation: "9" },
+        files,
+        NO_OVERRIDES,
+      ),
     );
     expect(one.rule).toBe(ALABASTER_RULES.rules[1]);
     expect(one.from.properties).toEqual({ color: "lime" });
@@ -405,10 +419,14 @@ describe("resolveUcwBlock", () => {
     });
     const id = (meta: number) =>
       `unlimitedchiselworks:chisel_stonebrick_environmentalmaterials_alabaster_bricks_${meta}`;
-    const first = expectResolved(resolveUcwBlock(id(0), {}, files));
+    const first = expectResolved(
+      resolveUcwBlock(id(0), {}, files, NO_OVERRIDES),
+    );
     expect(first.from.properties).toEqual({ color: "yellow" });
     expect(first.approximate).toBe(true);
-    const second = expectResolved(resolveUcwBlock(id(1), {}, files));
+    const second = expectResolved(
+      resolveUcwBlock(id(1), {}, files, NO_OVERRIDES),
+    );
     expect(second.from.properties).toEqual({ color: "white" });
   });
 
