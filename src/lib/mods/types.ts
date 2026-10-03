@@ -41,6 +41,12 @@ export interface ParsedModAssets {
    * Empty for jars without templates.
    */
   templates: Record<string, TemplateCube[]>;
+  /**
+   * Generated-block provider namespace (e.g. `unlimitedchiselworks`) → the
+   * plain data that provider reads from the jar (see `mods/generated/`).
+   * Absent or empty for jars no provider reads.
+   */
+  providerData?: ProviderData;
   /** Non-fatal problems encountered while parsing (malformed JSON, …). */
   warnings: string[];
   /**
@@ -83,6 +89,12 @@ export interface LoadedModMeta {
    * bundle). Absent on files loaded before appearances existed.
    */
   appearancesComputed?: boolean;
+  /**
+   * Generated-block provider namespaces whose jar data was read when the file
+   * was loaded (see `mods/generated/jar-data.ts`), sorted. Absent on files
+   * loaded before provider data existed.
+   */
+  providerDataRead?: string[];
   /** `Date.now()` when the mod was loaded. */
   loadedAt: number;
 }
@@ -102,7 +114,18 @@ export interface LoadedModAssets {
    * templates of the same id. Absent on older records and template-less jars.
    */
   templates?: Record<string, TemplateCube[]>;
+  /**
+   * Generated-block provider data the jar ships, keyed by provider namespace.
+   * Absent on older records and on jars no provider reads.
+   */
+  providerData?: ProviderData;
 }
+
+/**
+ * Generated-block provider namespace → that provider's parsed jar data. Each
+ * value must be structured-cloneable plain data.
+ */
+export type ProviderData = Record<string, unknown>;
 
 /** A mod namespace mapped to the CurseForge project that provides it. */
 export interface NamespaceMapping {
@@ -133,6 +156,9 @@ export function toLoadedModAssets(parsed: ParsedModAssets): LoadedModAssets {
     textureMeta: parsed.textureMeta,
     ...(Object.keys(parsed.templates).length > 0
       ? { templates: parsed.templates }
+      : {}),
+    ...(parsed.providerData && Object.keys(parsed.providerData).length > 0
+      ? { providerData: parsed.providerData }
       : {}),
   };
 }
