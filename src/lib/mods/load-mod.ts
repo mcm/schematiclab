@@ -21,7 +21,7 @@ import {
 import type { ModLoader } from "../curseforge/types";
 import { autoMapNamespaces } from "./mappings";
 import { parseModJarInWorker } from "./mod-jar-client";
-import { addLoadedMod } from "./registry";
+import { addLoadedMod, getUnloadGeneration } from "./registry";
 import { loadedModKey, toLoadedModAssets, type LoadedModMeta } from "./types";
 
 export interface ModLoadRequest {
@@ -135,6 +135,8 @@ export async function startModLoad(
 
   const update = (state: ModLoadState) => setEntry(key, { request, state });
   const fail = (message: string) => update({ phase: "error", message });
+  // "Unload all" while this load runs drops its file.
+  const generation = getUnloadGeneration();
 
   update({ phase: "resolving" });
 
@@ -191,8 +193,13 @@ export async function startModLoad(
       },
       deps,
       () => update({ phase: "saving" }),
+      generation,
     );
   } catch (err) {
+    if (err instanceof ModJarError && err.code === "unloaded") {
+      setEntry(key, null);
+      return;
+    }
     fail(errorMessage(err, "Could not save the mod."));
     return;
   }
@@ -233,7 +240,7 @@ export type ModFileInfo = Omit<
 export class ModJarError extends Error {
   constructor(
     message: string,
-    readonly code: "parse" | "no_blocks" | "save",
+    readonly code: "parse" | "no_blocks" | "save" | "unloaded",
   ) {
     super(message);
     this.name = "ModJarError";
@@ -243,14 +250,17 @@ export class ModJarError extends Error {
 /**
  * Parse a mod jar in the worker, then register + persist it. Shared by
  * CurseForge adds and modpack loads. Rejects with `ModJarError`; nothing is
- * registered unless the jar has at least one block. Resolves to the registered
- * file's metadata. `bytes` may be detached (transferred to the worker).
+ * registered unless the jar has at least one block, or (code `unloaded`) when
+ * every mod was unloaded since `generation` (`getUnloadGeneration()`).
+ * Resolves to the registered file's metadata. `bytes` may be detached
+ * (transferred to the worker).
  */
 export async function registerModJar(
   bytes: Uint8Array,
   info: ModFileInfo,
   deps: Pick<ModLoadDeps, "parse" | "add" | "now">,
   onSaving?: () => void,
+  generation?: number,
 ): Promise<LoadedModMeta> {
   let parsed;
   try {
@@ -278,10 +288,17 @@ export async function registerModJar(
     appearancesComputed: parsed.appearancesComputed === true,
     loadedAt: deps.now(),
   };
+  let added: boolean;
   try {
-    await deps.add(meta, toLoadedModAssets(parsed));
+    added = await deps.add(meta, toLoadedModAssets(parsed), { generation });
   } catch (err) {
     throw new ModJarError(errorMessage(err, "Could not save the mod."), "save");
+  }
+  if (!added) {
+    throw new ModJarError(
+      "Every mod was unloaded while this one was loading.",
+      "unloaded",
+    );
   }
   return meta;
 }

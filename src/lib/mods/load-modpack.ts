@@ -31,7 +31,12 @@ import {
   parseMinecraftInstance,
   type ModpackMod,
 } from "./modpack-instance";
-import { addLoadedMods, getSnapshot, hydrateLoadedMods } from "./registry";
+import {
+  addLoadedMods,
+  getSnapshot,
+  getUnloadGeneration,
+  hydrateLoadedMods,
+} from "./registry";
 import {
   loadedModKey,
   type LoadedModAssets,
@@ -185,6 +190,8 @@ export async function startModpackLoad(
   const abort = new AbortController();
   controller = abort;
   setState({ status: "reading" });
+  // "Unload all" while this load runs drops its files.
+  const generation = getUnloadGeneration();
 
   const located = locateModpackFiles(files);
   const fail = (message: string) => {
@@ -240,6 +247,7 @@ export async function startModpackLoad(
   const parsed: { meta: LoadedModMeta; assets: LoadedModAssets }[] = [];
   const collect = async (meta: LoadedModMeta, assets: LoadedModAssets) => {
     parsed.push({ meta, assets });
+    return true;
   };
 
   for (const mod of instance.mods) {
@@ -311,14 +319,19 @@ export async function startModpackLoad(
   }
 
   progress = { ...progress, current: null, download: null };
+  let unloaded = false;
   if (parsed.length > 0) {
     setState({ status: "saving", ...progress });
     try {
-      await deps.addMany(parsed);
-      await mapModNamespaces(
-        parsed.map(({ meta }) => meta),
-        deps,
-      );
+      if (await deps.addMany(parsed, { generation })) {
+        await mapModNamespaces(
+          parsed.map(({ meta }) => meta),
+          deps,
+        );
+      } else {
+        unloaded = true;
+        progress = { ...progress, loaded: 0 };
+      }
     } catch (err) {
       const message = errorMessage(err, "Could not save the mods.");
       progress = {
@@ -334,7 +347,7 @@ export async function startModpackLoad(
 
   if (controller === abort) controller = null;
   setState({
-    status: abort.signal.aborted ? "cancelled" : "done",
+    status: abort.signal.aborted || unloaded ? "cancelled" : "done",
     ...progress,
   });
 }

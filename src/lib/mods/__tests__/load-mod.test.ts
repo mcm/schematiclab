@@ -10,6 +10,12 @@ import {
   type ModLoadDeps,
   type ModLoadRequest,
 } from "../load-mod";
+import {
+  __resetLoadedModsForTests,
+  addLoadedMod,
+  getSnapshot,
+  removeAllLoadedMods,
+} from "../registry";
 import type { ParsedModAssets } from "../types";
 
 const KEY = "42:1.20.1";
@@ -63,7 +69,7 @@ function makeDeps(overrides: Partial<ModLoadDeps> = {}): ModLoadDeps {
       return new Uint8Array([1, 2, 3]);
     }),
     parse: vi.fn(async () => parsed()),
-    add: vi.fn(async () => {}),
+    add: vi.fn(async () => true),
     mapNamespaces: vi.fn(async () => []),
     now: () => 1234,
     ...overrides,
@@ -105,6 +111,25 @@ describe("startModLoad", () => {
     expect(assets.textures["create:block/casing"]).toBeInstanceOf(Blob);
     expect(deps.mapNamespaces).toHaveBeenCalledWith(["create"], meta, 1234);
     expect(getModLoads().size).toBe(0);
+  });
+
+  it("drops the file when every mod is unloaded mid-load", async () => {
+    __resetLoadedModsForTests();
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const deps = makeDeps({
+      download: vi.fn(async () => {
+        await removeAllLoadedMods();
+        return new Uint8Array([1, 2, 3]);
+      }),
+      add: vi.fn(addLoadedMod),
+    });
+    await startModLoad(REQUEST, deps);
+
+    expect(deps.add).toHaveBeenCalledTimes(1);
+    expect(getSnapshot()).toEqual([]);
+    expect(deps.mapNamespaces).not.toHaveBeenCalled();
+    expect(getModLoads().size).toBe(0);
+    __resetLoadedModsForTests();
   });
 
   it("still finishes the load when namespace mapping fails", async () => {

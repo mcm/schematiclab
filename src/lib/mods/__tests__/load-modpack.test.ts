@@ -68,7 +68,7 @@ function makeDeps(overrides: Partial<ModpackLoadDeps> = {}): ModpackLoadDeps {
   return {
     download: vi.fn(async () => new Uint8Array([9])),
     parse: vi.fn(async () => parsed()),
-    addMany: vi.fn(async () => {}),
+    addMany: vi.fn(async () => true),
     mapNamespaces: vi.fn(async () => []),
     now: () => 1234,
     loadedFiles: async () => new Map<string, number>(),
@@ -256,6 +256,17 @@ describe("startModpackLoad", () => {
       processed: 1,
       loaded: 1,
     });
+  });
+
+  it("registers nothing when every mod was unloaded mid-load", async () => {
+    const deps = makeDeps({ addMany: vi.fn(async () => false) });
+    await startModpackLoad([manifest([addon(1, 10, "a")]), jar("a")], deps);
+
+    expect(vi.mocked(deps.addMany).mock.calls[0][1]).toEqual({
+      generation: expect.any(Number),
+    });
+    expect(deps.mapNamespaces).not.toHaveBeenCalled();
+    expect(getModpackLoad()).toMatchObject({ status: "cancelled", loaded: 0 });
   });
 
   it("shows a saving state, then reports a failed batch save per mod", async () => {
