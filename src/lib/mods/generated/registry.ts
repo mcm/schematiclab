@@ -23,9 +23,10 @@ import type {
   GeneratedBlockProvider,
   GeneratedBlockResolution,
 } from "./types";
+import { UCW_PROVIDER } from "./ucw/provider";
 
 // Built-in providers, one per namespace. Providers are added here.
-const BUILTIN_PROVIDERS: readonly GeneratedBlockProvider[] = [];
+const BUILTIN_PROVIDERS: readonly GeneratedBlockProvider[] = [UCW_PROVIDER];
 
 let providers: ReadonlyMap<string, GeneratedBlockProvider> =
   byNamespace(BUILTIN_PROVIDERS);

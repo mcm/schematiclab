@@ -89,6 +89,8 @@ export interface GeneratedBlockResolved {
   approximate: boolean;
   /** Namespaces of the mods the block was generated from, sorted. */
   sourceNamespaces: string[];
+  /** Problems resolving it (e.g. an unknown state shown as another). */
+  warnings?: string[];
 }
 
 /** A block the provider recognises but whose source mods aren't loaded. */
