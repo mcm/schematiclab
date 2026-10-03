@@ -12,6 +12,7 @@ Convert Minecraft schematics between formats and Minecraft versions in your brow
   - a preview of what version translation will change before you apply it
 - **Modded blocks:** search CurseForge and load a mod so its blocks render in the preview and appear in the block picker. Only the mod's client assets (blockstates, models, textures, names) are read, and no mod code is ever run. Loaded mods are cached in IndexedDB.
 - **Camo blocks:** FramedBlocks, Create and Copycats+ blocks render in their shape with their camo's textures, and their camo materials appear in the material list, where you can swap them. See [Camo blocks](#camo-blocks).
+- **Generated blocks:** Unlimited Chisel Works blocks, which the mod creates at runtime instead of shipping in its jar, render with their recoloured textures and get names, colours and Version Mapping support. See [Generated blocks](#generated-blocks).
 
 ## Camo blocks
 
@@ -31,6 +32,23 @@ Known limits:
 - No overlays: FramedBlocks overlays such as reinforcement, glowing or intangibility are not drawn.
 - No animation: animated camo textures (such as water, lava or magma) show their first frame.
 - FramedBlocks' fancy rail slopes render only their camo sleepers, not the rails, as on the flat fancy rails. The plain rail slopes render the vanilla rail on top.
+
+## Generated blocks
+
+Some mods create their blocks while the game runs, by combining other mods' blocks, so their jars contain no textures or models for them. Schematiclab supports these mods one at a time by porting each mod's generation logic. When the mods listed below are loaded in the Mods tab for the schematic's Minecraft version, generated blocks render in the 3D preview and Static Renders with their generated textures. They also get a name and colour in the material list, appear in the block picker and "Suggest a block", and are no longer reported as missing in Version Mapping. A generated block whose source mods aren't loaded is listed with the mods to load.
+
+| Mod                    | Minecraft version | Mods to load                                                                                                                 |
+| ---------------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Unlimited Chisel Works | 1.12.2            | Unlimited Chisel Works, Chisel, and the mod each block's material comes from (for example Natura or Environmental Materials) |
+
+Each new mod is added separately and supports the Minecraft versions chosen for it.
+
+Known limits:
+
+- Approximate variants: a block's id only records its material's numeric variant, and the variant order lives in the material mod's code. Unless it is known, Schematiclab guesses it from the mod's block files and marks the block "approximate" in the material list.
+- No connected textures (CTM): blocks render each texture on its own.
+- Only the rules bundled in the Unlimited Chisel Works jar are read, not custom rules from a modpack's `config/ucwdefs/` folder.
+- No tinting or custom block behaviour from Unlimited Chisel Works' `has_color` and `custom_*_class` options.
 
 ## Supported formats
 
@@ -84,6 +102,7 @@ The generated data files are checked in, so these are only needed when updating 
 - Block translation data: [PrismarineJS/minecraft-data](https://github.com/PrismarineJS/minecraft-data) and [misode/mcmeta](https://github.com/misode/mcmeta).
 - 3D rendering: [deepslate](https://github.com/misode/deepslate).
 - Camo shapes: generated from [FramedBlocks](https://github.com/XFactHD/FramedBlocks) by XFactHD (LGPL-3.0), [Copycats+](https://github.com/copycats-plus/copycats) (all rights reserved, used with its author's permission) and [Create](https://github.com/Creators-of-Create/Create) (MIT). See [public/camo-shapes/NOTICE.md](public/camo-shapes/NOTICE.md).
+- Generated block textures: ported from [Unlimited Chisel Works](https://github.com/asiekierka/UnlimitedChiselWorks) by asiekierka (LGPL-3.0).
 
 ## License
 
