@@ -14,6 +14,7 @@ import {
   Badge,
   Button,
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -120,100 +121,104 @@ export function ModProjectPicker(props: ModProjectPickerProps) {
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "var(--space-2)",
-          }}
-        >
-          <Label htmlFor={INPUT_ID} style={{ fontSize: "var(--text-xs)" }}>
-            Search CurseForge
-          </Label>
-          <Input
-            id={INPUT_ID}
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.currentTarget.value)}
-            autoComplete="off"
-            spellCheck={false}
-            aria-controls={LIST_ID}
-          />
-          <span
-            style={{
-              color: "var(--text-tertiary)",
-              fontSize: "var(--text-xs)",
-            }}
-          >
-            {gameVersion === null
-              ? "Showing mods for every Minecraft version"
-              : `Showing mods for Minecraft ${gameVersion}`}
-          </span>
-
+        <DialogBody>
           <div
             style={{
-              maxHeight: "50vh",
-              overflowY: "auto",
-              border: "1px solid var(--border-subtle)",
-              borderRadius: "var(--radius-md)",
-              background: "var(--bg-page)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "var(--space-2)",
             }}
           >
-            {view.status === "loading" ? (
-              <PickerStatus>Searching CurseForge…</PickerStatus>
-            ) : view.status === "not_configured" ? (
-              <PickerStatus>
-                CurseForge integration is not configured on this server
-              </PickerStatus>
-            ) : view.status === "error" ? (
-              <PickerStatus tone="error">{view.message}</PickerStatus>
-            ) : view.mods.length === 0 ? (
-              <PickerStatus>No mods found</PickerStatus>
-            ) : (
-              <>
-                <div
-                  id={LIST_ID}
-                  role="listbox"
-                  aria-label="CurseForge projects"
-                >
-                  {view.mods.map((mod) => (
-                    <ProjectOption
-                      key={mod.id}
-                      mod={mod}
-                      selected={selected?.id === mod.id}
-                      exact={exact?.id === mod.id}
-                      restricted={isRestrictedProject(mod)}
-                      onPick={() => setPickedId(mod.id)}
-                      onConfirm={() => confirm(mod)}
-                    />
-                  ))}
-                </div>
-                {view.loadMoreError ? (
-                  <PickerStatus tone="error">{view.loadMoreError}</PickerStatus>
-                ) : null}
-                {hasMoreResults(view.nextIndex, view.totalCount) ? (
+            <Label htmlFor={INPUT_ID} style={{ fontSize: "var(--text-xs)" }}>
+              Search CurseForge
+            </Label>
+            <Input
+              id={INPUT_ID}
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.currentTarget.value)}
+              autoComplete="off"
+              spellCheck={false}
+              aria-controls={LIST_ID}
+            />
+            <span
+              style={{
+                color: "var(--text-tertiary)",
+                fontSize: "var(--text-xs)",
+              }}
+            >
+              {gameVersion === null
+                ? "Showing mods for every Minecraft version"
+                : `Showing mods for Minecraft ${gameVersion}`}
+            </span>
+
+            <div
+              style={{
+                maxHeight: "50vh",
+                overflowY: "auto",
+                border: "1px solid var(--border-subtle)",
+                borderRadius: "var(--radius-md)",
+                background: "var(--bg-page)",
+              }}
+            >
+              {view.status === "loading" ? (
+                <PickerStatus>Searching CurseForge…</PickerStatus>
+              ) : view.status === "not_configured" ? (
+                <PickerStatus>
+                  CurseForge integration is not configured on this server
+                </PickerStatus>
+              ) : view.status === "error" ? (
+                <PickerStatus tone="error">{view.message}</PickerStatus>
+              ) : view.mods.length === 0 ? (
+                <PickerStatus>No mods found</PickerStatus>
+              ) : (
+                <>
                   <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "center",
-                      padding: "var(--space-2)",
-                    }}
+                    id={LIST_ID}
+                    role="listbox"
+                    aria-label="CurseForge projects"
                   >
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={loadMore}
-                      disabled={view.loadingMore}
-                    >
-                      {view.loadingMore ? "Loading…" : "Load more"}
-                    </Button>
+                    {view.mods.map((mod) => (
+                      <ProjectOption
+                        key={mod.id}
+                        mod={mod}
+                        selected={selected?.id === mod.id}
+                        exact={exact?.id === mod.id}
+                        restricted={isRestrictedProject(mod)}
+                        onPick={() => setPickedId(mod.id)}
+                        onConfirm={() => confirm(mod)}
+                      />
+                    ))}
                   </div>
-                ) : null}
-              </>
-            )}
+                  {view.loadMoreError ? (
+                    <PickerStatus tone="error">
+                      {view.loadMoreError}
+                    </PickerStatus>
+                  ) : null}
+                  {hasMoreResults(view.nextIndex, view.totalCount) ? (
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "center",
+                        padding: "var(--space-2)",
+                      }}
+                    >
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={loadMore}
+                        disabled={view.loadingMore}
+                      >
+                        {view.loadingMore ? "Loading…" : "Load more"}
+                      </Button>
+                    </div>
+                  ) : null}
+                </>
+              )}
+            </div>
           </div>
-        </div>
+        </DialogBody>
 
         <DialogFooter>
           <Button type="button" variant="ghost" onClick={onCancel}>
