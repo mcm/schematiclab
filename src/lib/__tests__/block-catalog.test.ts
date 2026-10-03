@@ -8,6 +8,7 @@ import {
   searchBlockCatalog,
 } from "../block-catalog";
 import * as registry from "../mods/registry";
+import { KNOWN_VERSIONS } from "../schemlib/schematic-formats/version-mapping";
 import * as store from "../mods/store";
 import type { LoadedModAssets, LoadedModMeta } from "../mods/types";
 
@@ -18,17 +19,21 @@ const EMPTY_ASSETS: LoadedModAssets = {
   textureMeta: {},
 };
 
-function createMod(blockPaths: string[]): LoadedModMeta {
+function createMod(
+  blockPaths: string[],
+  gameVersion = "1.20.1",
+  loadedAt = 0,
+): LoadedModMeta {
   return {
-    key: "328085:1.20.1",
+    key: `328085:${gameVersion}`,
     modId: 328085,
     modName: "Create",
     modSlug: "create",
     logoUrl: null,
     fileId: 4835191,
     fileDisplayName: "Create 0.5.1f",
-    gameVersion: "1.20.1",
-    gameVersions: ["1.20.1"],
+    gameVersion,
+    gameVersions: [gameVersion],
     loader: "forge",
     namespaces: ["create"],
     blocks: blockPaths.map((path) => ({
@@ -36,7 +41,7 @@ function createMod(blockPaths: string[]): LoadedModMeta {
       displayName: path,
       properties: {},
     })),
-    loadedAt: 0,
+    loadedAt,
   };
 }
 
@@ -185,5 +190,76 @@ describe("isCatalogedBlockId and registry changes", () => {
     await registry.removeLoadedMod(mod.key);
     expect(isCatalogedBlockId("create:cogwheel")).toBe(false);
     expect(searchBlockCatalog("cogwheel", 10)).toEqual([]);
+  });
+});
+
+describe("block-catalog scoped to a version", () => {
+  const scopeFor = (versionId: string) => ({
+    version: KNOWN_VERSIONS[versionId],
+    versionId,
+  });
+
+  beforeEach(async () => {
+    await store.__resetModStoreForTests();
+    registry.__resetLoadedModsForTests();
+    globalThis.indexedDB = new IDBFactory();
+  });
+
+  afterEach(() => {
+    registry.__resetLoadedModsForTests();
+  });
+
+  it("only lists vanilla blocks that exist in the version", () => {
+    expect(searchBlockCatalog("cherry_pl", 10)).toContain(
+      "minecraft:cherry_planks",
+    );
+    expect(searchBlockCatalog("cherry_pl", 10, scopeFor("1.18.2"))).toEqual([]);
+    expect(searchBlockCatalog("cherry_pl", 10, scopeFor("1.20.1"))).toEqual([
+      "minecraft:cherry_planks",
+    ]);
+    expect(searchBlockCatalog("pale_oak", 50, scopeFor("1.20.1"))).toEqual([]);
+  });
+
+  it("drops blocks renamed away before the version", () => {
+    // grass → short_grass in 1.20.3.
+    const old = searchBlockCatalog("grass", 50, scopeFor("1.20.1"));
+    expect(old).toContain("minecraft:grass");
+    expect(old).not.toContain("minecraft:short_grass");
+    const current = searchBlockCatalog("grass", 50, scopeFor("1.21.1"));
+    expect(current).toContain("minecraft:short_grass");
+    expect(current).not.toContain("minecraft:grass");
+  });
+
+  it("only lists blocks of the mod's file for the version", async () => {
+    await registry.addLoadedMod(
+      createMod(["cogwheel"], "1.20.1", 1),
+      EMPTY_ASSETS,
+    );
+    await registry.addLoadedMod(
+      createMod(["cogwheel", "new_gear"], "1.21.1", 2),
+      EMPTY_ASSETS,
+    );
+    expect(searchBlockCatalog("create:", 10, scopeFor("1.20.1"))).toEqual([
+      "create:cogwheel",
+    ]);
+    expect(searchBlockCatalog("create:", 10, scopeFor("1.21.1"))).toEqual([
+      "create:cogwheel",
+      "create:new_gear",
+    ]);
+    expect(isCatalogedBlockId("create:new_gear", scopeFor("1.20.1"))).toBe(
+      false,
+    );
+    expect(isCatalogedBlockId("create:new_gear", scopeFor("1.21.1"))).toBe(
+      true,
+    );
+  });
+
+  it("isCatalogedBlockId checks the version's vanilla blocks", () => {
+    expect(
+      isCatalogedBlockId("minecraft:cherry_planks", scopeFor("1.18.2")),
+    ).toBe(false);
+    expect(
+      isCatalogedBlockId("minecraft:cherry_planks", scopeFor("1.20.1")),
+    ).toBe(true);
   });
 });
