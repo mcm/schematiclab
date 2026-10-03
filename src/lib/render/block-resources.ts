@@ -5,9 +5,13 @@
 // Modded blocks that can't be rendered faithfully (no blockstate, missing or
 // cyclic model, custom `loader` model, no geometry, missing texture) fall back
 // to a full cube with the magenta/black "missing" texture so they never
-// silently disappear from the preview. So do `minecraft:` ids the vanilla
+// silently disappear from the preview; in a `variants` blockstate, only the
+// variants that can't be rendered do. So do `minecraft:` ids the vanilla
 // bundle doesn't know (blocks renamed or removed since the schematic's
 // version, typos in a swap target).
+//
+// Minecraft 1.12 mod blockstates (Forge `forge_marker` files) are rewritten
+// into ones deepslate reads first (`modernizeLegacyModAssets`).
 //
 // Generated blocks (Unlimited Chisel Works) come as provider-synthesized
 // blockstates and models (`mods/generated/render.ts`) and render like mod
@@ -32,6 +36,8 @@ import {
   qualifyId,
 } from "./atlas-layout";
 import { isCamoCapableBlockId } from "../camo/extract";
+import { modernizeLegacyModAssets } from "../mods/generated/legacy-blockstate";
+import { modernVanillaTextureId } from "../mods/generated/legacy-textures";
 import {
   CamoBlockDefinition,
   camoBlockFlags,
@@ -253,39 +259,61 @@ function resolvableModModels(
 }
 
 /**
- * True if every model the blockstate renders exists, has geometry, and only
- * references textures present in `uvMap`. Meshes each model once against a
- * recording atlas to see exactly which textures deepslate would request.
+ * True if the model exists, has geometry, and only references textures
+ * `hasTexture` knows. Meshes it against a recording atlas to see exactly
+ * which textures deepslate would request.
  */
-function isRenderableBlockstate(
-  blockstate: unknown,
-  getModel: (id: string) => BlockModel | null,
-  uvMap: Readonly<Record<string, UV>>,
+function isRenderableModel(
+  model: BlockModel | null,
+  hasTexture: (id: string) => boolean,
 ): boolean {
+  if (model === null) return false;
+  let missingTexture = false;
+  const recorder = {
+    getTextureAtlas(): ImageData {
+      throw new Error("not used during validation");
+    },
+    getTextureUV(id: Identifier): UV {
+      if (!hasTexture(id.toString())) missingTexture = true;
+      return [0, 0, 1, 1];
+    },
+  };
+  try {
+    const mesh = model.getMesh(recorder, {});
+    return !mesh.isEmpty() && !missingTexture;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The blockstate deepslate should draw: itself when every model it renders
+ * is renderable (`isRenderableModel`); for a `variants` blockstate with some
+ * renderable variants, a copy drawing the others as the placeholder cube;
+ * else null.
+ */
+function renderableBlockstate(
+  blockstate: unknown,
+  isRenderable: (modelId: string) => boolean,
+): unknown {
   const refs = blockstateModelRefs(blockstate);
-  if (refs === null || refs.length === 0) return false;
-  const noCull = {};
-  for (const ref of new Set(refs.map(qualifyId))) {
-    const model = getModel(ref);
-    if (model === null) return false;
-    let missingTexture = false;
-    const recorder = {
-      getTextureAtlas(): ImageData {
-        throw new Error("not used during validation");
-      },
-      getTextureUV(id: Identifier): UV {
-        if (!(id.toString() in uvMap)) missingTexture = true;
-        return [0, 0, 1, 1];
-      },
-    };
-    try {
-      const mesh = model.getMesh(recorder, noCull);
-      if (mesh.isEmpty() || missingTexture) return false;
-    } catch {
-      return false;
+  if (refs === null || refs.length === 0) return null;
+  const bad = new Set(refs.map(qualifyId).filter((ref) => !isRenderable(ref)));
+  if (bad.size === 0) return blockstate;
+  if (!isRecord(blockstate) || !isRecord(blockstate.variants)) return null;
+  const variants: Record<string, unknown> = {};
+  let good = 0;
+  for (const [key, variant] of Object.entries(blockstate.variants)) {
+    const first = Array.isArray(variant) ? (variant[0] as unknown) : variant;
+    const model = isRecord(first) ? first.model : undefined;
+    if (typeof model === "string" && !bad.has(qualifyId(model))) {
+      variants[key] = variant;
+      good += 1;
+    } else {
+      variants[key] = { model: MISSING_MODEL_ID };
     }
   }
-  return true;
+  return good === 0 ? null : { variants };
 }
 
 /**
@@ -297,7 +325,14 @@ export function assembleResources(
   input: AssembleResourcesInput,
 ): AssembledResources {
   const { vanilla, uvMap, atlasImage, camo = {} } = input;
-  const mods = [...input.mods, ...(input.generated ?? [])];
+  // 1.12 blockstates (Forge `forge_marker`, unprefixed model names) are
+  // rewritten into ones deepslate reads.
+  const mods = [
+    ...input.mods.map((mod) =>
+      modernizeLegacyModAssets(mod, (id) => vanilla.blockModels.has(id)),
+    ),
+    ...(input.generated ?? []),
+  ];
 
   const modModels = new Map<string, BlockModel>();
   for (const [id, json] of resolvableModModels(mods, vanilla.blockModels)) {
@@ -325,6 +360,20 @@ export function assembleResources(
     }
   }
 
+  // 1.12 vanilla texture names (`minecraft:blocks/planks_oak`) draw their
+  // 1.13+ texture.
+  const uvOf = (id: string): UV | undefined =>
+    uvMap[id] ?? uvMap[modernVanillaTextureId(id)];
+  const renderable = new Map<string, boolean>();
+  const isRenderable = (modelId: string): boolean => {
+    let ok = renderable.get(modelId);
+    if (ok === undefined) {
+      ok = isRenderableModel(getModel(modelId), (id) => uvOf(id) !== undefined);
+      renderable.set(modelId, ok);
+    }
+    return ok;
+  };
+
   const placeholder = BlockDefinition.fromJson(PLACEHOLDER_DEFINITION_JSON);
   const modDefinitions = new Map<string, BlockDefinition>();
   const placeholderBlocks: string[] = [];
@@ -333,8 +382,9 @@ export function assembleResources(
       const qualified = qualifyId(id);
       if (qualified.startsWith("minecraft:")) continue;
       if (isCamoCapableBlockId(qualified)) continue;
-      if (isRenderableBlockstate(blockstate, getModel, uvMap)) {
-        modDefinitions.set(qualified, BlockDefinition.fromJson(blockstate));
+      const drawn = renderableBlockstate(blockstate, isRenderable);
+      if (drawn !== null) {
+        modDefinitions.set(qualified, BlockDefinition.fromJson(drawn));
       } else {
         modDefinitions.set(qualified, placeholder);
         placeholderBlocks.push(qualified);
@@ -405,7 +455,7 @@ export function assembleResources(
     },
     getTextureUV(id: Identifier) {
       const key = id.toString();
-      const uv = uvMap[key];
+      const uv = uvOf(key);
       if (uv !== undefined) return uv;
       return isSupersededEntityTexture(key) ? transparentUv : missingUv;
     },

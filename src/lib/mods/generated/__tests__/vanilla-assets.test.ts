@@ -49,4 +49,11 @@ describe("vanillaAssetsFromBundle", () => {
     expect(assets.texture("mod:block/stone")).toBeNull();
     expect(decode).toHaveBeenCalledTimes(1);
   });
+
+  it("reads 1.12 texture names as their 1.13+ texture", () => {
+    expect(assets.texture("minecraft:blocks/stone")).toEqual(
+      assets.texture("minecraft:block/stone"),
+    );
+    expect(assets.texture("minecraft:blocks/stone")).not.toBeNull();
+  });
 });

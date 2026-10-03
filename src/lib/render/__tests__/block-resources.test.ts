@@ -212,6 +212,78 @@ describe("assembleResources", () => {
     expect(placeholderBlocks).toEqual([id]);
   });
 
+  it("renders a 1.12 Forge block with its variant textures", () => {
+    const id = "natura:nether_planks";
+    const { resources, placeholderBlocks } = assemble([
+      {
+        blockstates: {
+          [id]: {
+            forge_marker: 1,
+            defaults: { model: "cube_all", textures: { particle: "#all" } },
+            variants: {
+              inventory: [{}],
+              type: {
+                ghostwood: { textures: { all: "create:block/casing" } },
+                bloodwood: { textures: { all: "minecraft:blocks/stone" } },
+              },
+            },
+          },
+        },
+        models: {},
+      },
+    ]);
+    expect(placeholderBlocks).toEqual([]);
+    const name = Identifier.parse(id);
+    const rects = (type: string) => {
+      const mesh = resources
+        .getBlockDefinition(name)!
+        .getMesh(name, { type }, resources, resources, NO_CULL);
+      expect(mesh.quads).toHaveLength(6);
+      return new Set(mesh.quads.map((q) => JSON.stringify(q.v1.textureLimit)));
+    };
+    expect(rects("ghostwood")).toEqual(new Set([JSON.stringify(CASING_UV)]));
+    // 1.12 vanilla texture names draw their 1.13+ texture.
+    expect(rects("bloodwood")).toEqual(new Set([JSON.stringify(STONE_UV)]));
+  });
+
+  it("draws only a blockstate's unrenderable variants as the placeholder", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const id = "m:mixed";
+    const { resources, placeholderBlocks } = assemble([
+      {
+        blockstates: {
+          [id]: {
+            variants: {
+              "v=good": { model: "m:block/good" },
+              "v=bad": { model: "m:block/bad" },
+            },
+          },
+        },
+        models: {
+          "m:block/good": {
+            parent: "block/cube_all",
+            textures: { all: "create:block/casing" },
+          },
+          "m:block/bad": {
+            parent: "block/cube_all",
+            textures: { all: "m:block/unknown" },
+          },
+        },
+      },
+    ]);
+    expect(placeholderBlocks).toEqual([]);
+    const name = Identifier.parse(id);
+    const rect = (v: string) =>
+      JSON.stringify(
+        resources
+          .getBlockDefinition(name)!
+          .getMesh(name, { v }, resources, resources, NO_CULL).quads[0].v1
+          .textureLimit,
+      );
+    expect(rect("good")).toBe(JSON.stringify(CASING_UV));
+    expect(rect("bad")).toBe(JSON.stringify(MISSING_UV));
+  });
+
   it("does not mutate the stored mod model JSON", () => {
     const models = structuredClone(CASING_MOD.models);
     assemble([CASING_MOD]);
@@ -463,7 +535,7 @@ describe("assembleResources", () => {
       },
     ],
     [
-      "forge_marker blockstate",
+      "forge_marker blockstate without variants",
       {
         blockstates: {
           "m:old": { forge_marker: 1, defaults: { model: "m:block/x" } },

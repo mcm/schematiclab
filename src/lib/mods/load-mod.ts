@@ -24,7 +24,12 @@ import { providerDataGeneratesBlocks } from "./generated/jar-data";
 import { autoMapNamespaces } from "./mappings";
 import { parseModJarInWorker } from "./mod-jar-client";
 import { addLoadedMod, getUnloadGeneration } from "./registry";
-import { loadedModKey, toLoadedModAssets, type LoadedModMeta } from "./types";
+import {
+  isLegacyGameVersion,
+  loadedModKey,
+  toLoadedModAssets,
+  type LoadedModMeta,
+} from "./types";
 
 export interface ModLoadRequest {
   mod: {
@@ -294,6 +299,9 @@ export async function registerModJar(
     warnings: parsed.warnings,
     appearancesComputed: parsed.appearancesComputed === true,
     ...(providerDataRead.length > 0 ? { providerDataRead } : {}),
+    ...(isLegacyGameVersion(info.gameVersion)
+      ? { legacyAssetsRead: true as const }
+      : {}),
     loadedAt: deps.now(),
   };
   let added: boolean;

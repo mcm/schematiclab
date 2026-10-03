@@ -108,9 +108,22 @@ describe("startModLoad", () => {
       appearancesComputed: true,
       loadedAt: 1234,
     });
+    expect(meta).not.toHaveProperty("legacyAssetsRead");
     expect(assets.textures["create:block/casing"]).toBeInstanceOf(Blob);
     expect(deps.mapNamespaces).toHaveBeenCalledWith(["create"], meta, 1234);
     expect(getModLoads().size).toBe(0);
+  });
+
+  it("marks a 1.12 file as read with its 1.12 models and textures", async () => {
+    const deps = makeDeps({
+      fetchFiles: vi.fn(async () => [file({ gameVersions: ["1.12.2"] })]),
+    });
+    await startModLoad({ ...REQUEST, gameVersion: "1.12.2" }, deps);
+    const [meta] = vi.mocked(deps.add).mock.calls[0];
+    expect(meta).toMatchObject({
+      gameVersion: "1.12.2",
+      legacyAssetsRead: true,
+    });
   });
 
   it("drops the file when every mod is unloaded mid-load", async () => {

@@ -8,6 +8,7 @@
 // Worker-safe: uses `fetch` and decodes the atlas in JS.
 
 import { decodePng, type RgbaImage } from "../../render/block-appearance";
+import { modernVanillaTextureId } from "./legacy-textures";
 import type { GeneratedVanillaAssets } from "./types";
 
 const ASSETS_BASE = "/minecraft-assets";
@@ -57,7 +58,9 @@ export function vanillaAssetsFromBundle(
       modelId.startsWith("minecraft:block/")
         ? own(bundle.models, modelId.slice("minecraft:block/".length))
         : undefined,
-    texture(textureId) {
+    texture(id) {
+      // 1.12 names (`minecraft:blocks/planks_oak`) read their 1.13+ texture.
+      const textureId = modernVanillaTextureId(id);
       if (!textureId.startsWith("minecraft:")) return null;
       const cached = textures.get(textureId);
       if (cached !== undefined) return cached;
