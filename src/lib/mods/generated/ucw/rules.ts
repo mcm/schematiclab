@@ -317,6 +317,30 @@ export function parseUcwRules(
   return { formatVersion: UCW_RULES_FORMAT_VERSION, files };
 }
 
+// ---------------------------------------------------------------------------
+// Block ids (`UCWBlockRule` constructor). No imports in this file, so
+// `scripts/generate-ucw-fixture-functions.mts` can load it under node.
+
+/** `id.trim().replaceAll("[^A-Za-z0-9]", "_")`, as `UCWBlockRule` does. */
+export function sanitizeUcwId(id: string): string {
+  return id.trim().replace(/[^A-Za-z0-9]/g, "_");
+}
+
+/** The block of a state source (`UCWBlockRule.getBlock`: its first state). */
+export function ucwSourceBlock(source: UcwStateSource): string {
+  return source.kind === "block" ? source.block : source.states[0].block;
+}
+
+/** `UCWBlockRule.prefix`: `<through id>_<from id>_`, sanitized. */
+export function ucwIdPrefix(rule: UcwBlockRule): string {
+  return `${sanitizeUcwId(ucwSourceBlock(rule.through))}_${sanitizeUcwId(ucwSourceBlock(rule.from))}_`;
+}
+
+/** The id UCW registers for `rule`'s `from` state with metadata `fromMeta`. */
+export function ucwBlockId(rule: UcwBlockRule, fromMeta: number): string {
+  return `${UCW_NAMESPACE}:${ucwIdPrefix(rule)}${fromMeta}`;
+}
+
 /** `providerData.unlimitedchiselworks` as UCW data, or null if absent/stale. */
 export function asUcwProviderData(value: unknown): UcwProviderData | null {
   return isRecord(value) &&

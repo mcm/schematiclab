@@ -29,6 +29,16 @@ import {
   type UcwProviderData,
   type UcwRuleFile,
   type UcwStateSource,
+  ucwIdPrefix,
+  ucwSourceBlock,
+} from "./rules";
+
+// The naming port lives in rules.ts (import-free, so scripts can load it).
+export {
+  sanitizeUcwId,
+  ucwBlockId,
+  ucwIdPrefix,
+  ucwSourceBlock,
 } from "./rules";
 
 /** Block id → properties per metadata (see `meta-overrides.ts`). */
@@ -87,26 +97,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function namespaceOf(id: string): string {
   const colon = id.indexOf(":");
   return colon < 0 ? "minecraft" : id.slice(0, colon);
-}
-
-/** `id.trim().replaceAll("[^A-Za-z0-9]", "_")`, as `UCWBlockRule` does. */
-export function sanitizeUcwId(id: string): string {
-  return id.trim().replace(/[^A-Za-z0-9]/g, "_");
-}
-
-/** The block of a state source (`UCWBlockRule.getBlock`: its first state). */
-export function ucwSourceBlock(source: UcwStateSource): string {
-  return source.kind === "block" ? source.block : source.states[0].block;
-}
-
-/** `UCWBlockRule.prefix`: `<through id>_<from id>_`, sanitized. */
-export function ucwIdPrefix(rule: UcwBlockRule): string {
-  return `${sanitizeUcwId(ucwSourceBlock(rule.through))}_${sanitizeUcwId(ucwSourceBlock(rule.from))}_`;
-}
-
-/** The id UCW registers for `rule`'s `from` state with metadata `fromMeta`. */
-export function ucwBlockId(rule: UcwBlockRule, fromMeta: number): string {
-  return `${UCW_NAMESPACE}:${ucwIdPrefix(rule)}${fromMeta}`;
 }
 
 /** Split a UCW block id into its rule prefix and `from` metadata. */
