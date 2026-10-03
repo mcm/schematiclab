@@ -15,7 +15,11 @@ import {
   Label,
 } from "@iamthemcmaster/ui";
 import { knownVersionIdFor } from "@/lib/advanced/effective-mod-version";
-import { isCatalogedBlockId, searchBlockCatalog } from "@/lib/block-catalog";
+import {
+  isCatalogedBlockId,
+  searchBlockCatalog,
+  type CatalogScope,
+} from "@/lib/block-catalog";
 import { carryCamoBlockProperties } from "@/lib/camo/block-properties";
 import { defaultCamoSlots } from "@/lib/camo/extract";
 import type { CamoChoice } from "@/lib/camo/write";
@@ -75,7 +79,8 @@ interface BlockStatePickerProps {
   description?: string;
   confirmLabel?: string;
   // When opened from a problematic Version Mapping row: show "Suggest a
-  // block" candidates for the source above the identifier input.
+  // block" candidates for the source above the identifier input, and limit
+  // autocomplete to blocks in the version being mapped to.
   suggestionContext?: BlockSuggestionContext;
 }
 
@@ -159,10 +164,19 @@ export function BlockStatePicker({
     (parseStatus.status === "ready"
       ? knownVersionIdFor(parseStatus.schematic.minecraftVersion)
       : null);
+  const scopeVersion = suggestionContext?.version;
+  const scopeVersionId = suggestionContext?.versionId;
+  const catalogScope = React.useMemo<CatalogScope | undefined>(
+    () =>
+      scopeVersion && scopeVersionId
+        ? { version: scopeVersion, versionId: scopeVersionId }
+        : undefined,
+    [scopeVersion, scopeVersionId],
+  );
   const suggestions = React.useMemo(() => {
     void loadedMods;
-    return searchBlockCatalog(query, MAX_SUGGESTIONS);
-  }, [query, loadedMods]);
+    return searchBlockCatalog(query, MAX_SUGGESTIONS, catalogScope);
+  }, [query, loadedMods, catalogScope]);
   // The list can shrink underneath a stale highlight (e.g. a mod unloads
   // while the picker is open), so clamp during render rather than trusting
   // the stored index.
@@ -423,7 +437,10 @@ export function BlockStatePicker({
                     fontStyle: "italic",
                   }}
                 >
-                  No matches in the catalog — free-text input still accepted.
+                  {catalogScope
+                    ? `No matches in ${catalogScope.versionId}`
+                    : "No matches in the catalog"}{" "}
+                  — free-text input still accepted.
                 </li>
               ) : (
                 suggestions.map((id, i) => {
@@ -482,7 +499,8 @@ export function BlockStatePicker({
                 })
               )}
             </ul>
-            {parsedTarget && !isCatalogedBlockId(parsedTarget.blockId) ? (
+            {parsedTarget &&
+            !isCatalogedBlockId(parsedTarget.blockId, catalogScope) ? (
               <span
                 style={{
                   fontSize: "var(--text-xs)",
@@ -490,7 +508,9 @@ export function BlockStatePicker({
                 }}
               >
                 {targetValid
-                  ? `"${parsedTarget.blockId}" isn't in the catalog — it'll be used as-is.`
+                  ? catalogScope
+                    ? `"${parsedTarget.blockId}" isn't a known block in ${catalogScope.versionId} — it'll be used as-is.`
+                    : `"${parsedTarget.blockId}" isn't in the catalog — it'll be used as-is.`
                   : "Identifier must look like `namespace:path`."}
               </span>
             ) : null}
@@ -534,6 +554,7 @@ export function BlockStatePicker({
             {targetValid && camoSlots.length > 0 ? (
               <CamoInputs
                 slots={camoSlots}
+                scope={catalogScope}
                 values={camoText}
                 onChange={(slot, value) =>
                   setCamoText((prev) => ({ ...prev, [slot]: value }))
@@ -585,10 +606,12 @@ function camoSlotLabel(slot: string): string {
 // suggestions. An empty input leaves that slot without camo.
 function CamoInputs({
   slots,
+  scope,
   values,
   onChange,
 }: {
   slots: readonly string[];
+  scope: CatalogScope | undefined;
   values: Record<string, string>;
   onChange: (slot: string, value: string) => void;
 }) {
@@ -640,9 +663,11 @@ function CamoInputs({
               onChange={(e) => onChange(slot, e.currentTarget.value)}
             />
             <datalist id={`${id}-suggestions`}>
-              {searchBlockCatalog(value, MAX_CAMO_SUGGESTIONS).map((option) => (
-                <option key={option} value={option} />
-              ))}
+              {searchBlockCatalog(value, MAX_CAMO_SUGGESTIONS, scope).map(
+                (option) => (
+                  <option key={option} value={option} />
+                ),
+              )}
             </datalist>
             {parsed !== null && !isValidBlockId(parsed.blockId) ? (
               <span
