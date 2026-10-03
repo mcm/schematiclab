@@ -2,8 +2,9 @@
 // schemlib knows about across all anchor versions. Used by the Advanced
 // Editor's block-state picker for autocomplete. Blocks from loaded mods
 // (`./mods/registry`) are merged in at query time. A `CatalogScope` narrows
-// the catalog to one Minecraft version: its vanilla blocks, and per mod the
-// file loaded for that version (else the most recently loaded one).
+// the catalog to one Minecraft version: its vanilla blocks, and the blocks of
+// mod files loaded for exactly that version (a mod's file for another version
+// may list blocks the version doesn't have, so it is never a stand-in).
 //
 // Sources (in `block-translations.generated.ts`):
 //   - FLATTEN_TABLE         values are post-flatten block-state strings
@@ -21,7 +22,7 @@ import {
 } from "./schemlib/data/block-translations.generated";
 import {
   getLoadedModBlockIds,
-  getPreviewModFiles,
+  getSnapshot,
   type LoadedModsSnapshot,
 } from "./mods/registry";
 import { vanillaBlocksForVersion } from "./schemlib/data/vanilla-blocks";
@@ -97,10 +98,10 @@ function getModCache(): NonNullable<typeof modCache> {
 // Vanilla ids of one version, keyed by `vanillaBlocksForVersion`'s cached set.
 const scopedVanilla = new WeakMap<ReadonlySet<string>, readonly string[]>();
 
-// Mod ids of one version, keyed by `getPreviewModFiles`'s cached list.
+// Mod ids of one version, keyed by the registry snapshot, then version id.
 const scopedMods = new WeakMap<
   LoadedModsSnapshot,
-  { ids: readonly string[]; set: ReadonlySet<string> }
+  Map<string, { ids: readonly string[]; set: ReadonlySet<string> }>
 >();
 
 function getScopedVanilla(scope: CatalogScope): {
@@ -120,17 +121,23 @@ function getScopedMods(scope: CatalogScope): {
   ids: readonly string[];
   set: ReadonlySet<string>;
 } {
-  const files = getPreviewModFiles(scope.versionId);
-  let scoped = scopedMods.get(files);
+  const snapshot = getSnapshot();
+  let byVersion = scopedMods.get(snapshot);
+  if (byVersion === undefined) {
+    byVersion = new Map();
+    scopedMods.set(snapshot, byVersion);
+  }
+  let scoped = byVersion.get(scope.versionId);
   if (scoped === undefined) {
     const set = new Set<string>();
-    for (const file of files) {
+    for (const file of snapshot) {
+      if (file.gameVersion !== scope.versionId) continue;
       for (const block of file.blocks) {
         if (!CATALOG_SET.has(block.id)) set.add(block.id);
       }
     }
     scoped = { ids: [...set].sort(), set };
-    scopedMods.set(files, scoped);
+    byVersion.set(scope.versionId, scoped);
   }
   return scoped;
 }

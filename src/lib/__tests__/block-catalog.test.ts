@@ -254,6 +254,20 @@ describe("block-catalog scoped to a version", () => {
     );
   });
 
+  it("doesn't fall back to a mod's file for another version", async () => {
+    await registry.addLoadedMod(
+      createMod(["cogwheel", "old_gear"], "1.20.1", 1),
+      EMPTY_ASSETS,
+    );
+    expect(searchBlockCatalog("create:", 10, scopeFor("1.21.1"))).toEqual([]);
+    expect(isCatalogedBlockId("create:old_gear", scopeFor("1.21.1"))).toBe(
+      false,
+    );
+    expect(isCatalogedBlockId("create:old_gear", scopeFor("1.20.1"))).toBe(
+      true,
+    );
+  });
+
   it("isCatalogedBlockId checks the version's vanilla blocks", () => {
     expect(
       isCatalogedBlockId("minecraft:cherry_planks", scopeFor("1.18.2")),
