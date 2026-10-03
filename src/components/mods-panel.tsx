@@ -728,10 +728,13 @@ function LoadedModsSection({
 }
 
 // Unloads every loaded mod file after an inline confirmation. Disabled while a
-// modpack folder is loading, which would add its files straight back.
+// modpack folder is loading, which would add its files straight back. Focus
+// moves to the confirm button, and back to "Unload all" on Cancel or Escape.
 function UnloadAllButton({ fileCount }: { fileCount: number }) {
   const modpackLoad = useModpackLoad();
   const [confirming, setConfirming] = React.useState(false);
+  // The button to focus when it mounts after a confirm/cancel switch.
+  const focusOnMount = React.useRef<"confirm" | "trigger" | null>(null);
   const busy = isModpackLoadActive(modpackLoad);
   const buttonStyle: React.CSSProperties = {
     display: "inline-flex",
@@ -739,11 +742,29 @@ function UnloadAllButton({ fileCount }: { fileCount: number }) {
     gap: "var(--space-1)",
     flexShrink: 0,
   };
+  const focusRef =
+    (which: "confirm" | "trigger") => (el: HTMLButtonElement | null) => {
+      if (el !== null && focusOnMount.current === which) {
+        focusOnMount.current = null;
+        el.focus();
+      }
+    };
+  const cancel = () => {
+    focusOnMount.current = "trigger";
+    setConfirming(false);
+  };
+  const onKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      cancel();
+    }
+  };
 
   if (confirming && !busy) {
     return (
       <>
         <Button
+          ref={focusRef("confirm")}
           type="button"
           variant="destructive"
           size="sm"
@@ -751,6 +772,7 @@ function UnloadAllButton({ fileCount }: { fileCount: number }) {
             setConfirming(false);
             void removeAllLoadedMods();
           }}
+          onKeyDown={onKeyDown}
           style={buttonStyle}
         >
           <IconTrash size={14} aria-hidden="true" />
@@ -761,7 +783,8 @@ function UnloadAllButton({ fileCount }: { fileCount: number }) {
           type="button"
           variant="ghost"
           size="sm"
-          onClick={() => setConfirming(false)}
+          onClick={cancel}
+          onKeyDown={onKeyDown}
         >
           Cancel
         </Button>
@@ -771,11 +794,15 @@ function UnloadAllButton({ fileCount }: { fileCount: number }) {
 
   return (
     <Button
+      ref={focusRef("trigger")}
       type="button"
       variant="secondary"
       size="sm"
       disabled={busy}
-      onClick={() => setConfirming(true)}
+      onClick={() => {
+        focusOnMount.current = "confirm";
+        setConfirming(true);
+      }}
       title="Unload every loaded mod file. Namespace mappings are kept."
       style={buttonStyle}
     >

@@ -536,6 +536,26 @@ describe("loaded-mods registry", () => {
     expect(await store.listLoadedMods()).toEqual([]);
   });
 
+  it("drops a load that started before every mod was unloaded", async () => {
+    const generation = registry.getUnloadGeneration();
+    await registry.removeAllLoadedMods();
+
+    expect(
+      await registry.addLoadedMod(makeMeta(1, "1.20.1"), makeAssets("a"), {
+        generation,
+      }),
+    ).toBe(false);
+    expect(registry.getSnapshot()).toEqual([]);
+    expect(await store.listLoadedMods()).toEqual([]);
+
+    expect(
+      await registry.addLoadedMod(makeMeta(1, "1.20.1"), makeAssets("a"), {
+        generation: registry.getUnloadGeneration(),
+      }),
+    ).toBe(true);
+    expect(registry.getSnapshot().map((m) => m.key)).toEqual(["1:1.20.1"]);
+  });
+
   it("falls back to in-memory when IndexedDB is unavailable", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     // @ts-expect-error simulate an environment without IndexedDB

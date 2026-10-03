@@ -237,7 +237,7 @@ describe("auto-mapping on mod load", () => {
         templates: {},
         warnings: [],
       })),
-      add: vi.fn(async () => {}),
+      add: vi.fn(async () => true),
       mapNamespaces: mappings.autoMapNamespaces,
       now: () => 99,
     };

@@ -58,8 +58,8 @@ const listeners = new Set<() => void>();
 const assetCache = new Map<string, LoadedModAssets>();
 // Keys removed before hydration finished, so a slow hydrate can't resurrect them.
 const removedKeys = new Set<string>();
-// Bumped by `removeAllLoadedMods`, so a hydrate that started earlier drops
-// everything it read.
+// Bumped by `removeAllLoadedMods`, so a hydrate or a mod load that started
+// earlier drops everything it read.
 let clearGeneration = 0;
 
 let hydration: Promise<void> | null = null;
@@ -150,15 +150,32 @@ export function useLoadedMods(): LoadedModsSnapshot {
 }
 
 /**
+ * Changes whenever every mod is unloaded. A load snapshots it when it starts
+ * and passes it to `addLoadedMod(s)`, so a load that outlives "Unload all"
+ * doesn't bring its file back.
+ */
+export function getUnloadGeneration(): number {
+  return clearGeneration;
+}
+
+export interface AddLoadedModsOptions {
+  /** `getUnloadGeneration()` when the load started; stale → nothing is added. */
+  generation?: number;
+}
+
+/**
  * Register a loaded mod file and persist it. Replaces only a loaded file of
  * the same CurseForge mod for the same game version. Resolves once persisted
  * (or immediately when running in-memory only); persistence failures fall back to in-memory with a warning.
+ * Resolves to false, without adding anything, when every mod was unloaded
+ * since `options.generation`.
  */
 export function addLoadedMod(
   meta: LoadedModMeta,
   assets: LoadedModAssets,
-): Promise<void> {
-  return addLoadedMods([{ meta, assets }]);
+  options?: AddLoadedModsOptions,
+): Promise<boolean> {
+  return addLoadedMods([{ meta, assets }], options);
 }
 
 /**
@@ -169,8 +186,15 @@ export function addLoadedMod(
  */
 export async function addLoadedMods(
   entries: readonly { meta: LoadedModMeta; assets: LoadedModAssets }[],
-): Promise<void> {
-  if (entries.length === 0) return;
+  options: AddLoadedModsOptions = {},
+): Promise<boolean> {
+  if (
+    options.generation !== undefined &&
+    options.generation !== clearGeneration
+  ) {
+    return false;
+  }
+  if (entries.length === 0) return true;
   let next: LoadedModMeta[] = [...mods];
   for (const { meta, assets } of entries) {
     for (const mod of next) {
@@ -186,7 +210,7 @@ export async function addLoadedMods(
   emit(Object.freeze(next));
 
   for (const { meta, assets } of entries) {
-    if (persistenceDisabled) return;
+    if (persistenceDisabled) break;
     // Skip files a later entry (or a removal since) replaced.
     if (!mods.some((mod) => mod.key === meta.key)) continue;
     try {
@@ -195,6 +219,7 @@ export async function addLoadedMods(
       disablePersistence(error);
     }
   }
+  return true;
 }
 
 /**
