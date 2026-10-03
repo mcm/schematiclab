@@ -149,7 +149,7 @@ export function generatedTexture(
   let texture = textureCache.get(key);
   if (texture === undefined) {
     texture = generate(provider, recipe, files).catch((err: unknown) => {
-      console.warn(`Could not generate texture ${recipe.id}.`, err);
+      console.warn("Could not generate texture %s.", recipe.id, err);
       return null;
     });
     textureCache.set(key, texture);
