@@ -5,11 +5,14 @@
 // within the source's full-cube class (all candidates when none share it).
 // A source without an appearance (its mod isn't loaded) is ranked by name
 // instead: shared path tokens, then edit distance between the paths.
+// Generated blocks (Unlimited Chisel Works) take part with the appearance of
+// their generated textures, as sources and as candidates.
 //
 // Pure TS, no DOM, Worker-safe.
 
 import { isInvisibleBlockId } from "../invisible-blocks";
-import type { LoadedModMeta } from "../mods/types";
+import type { GeneratedBlockSet } from "../mods/generated/registry";
+import type { LoadedModMeta, ModBlock } from "../mods/types";
 import type { BlockAppearance } from "../render/block-appearance";
 
 export interface SuggestionCandidate {
@@ -162,12 +165,19 @@ export interface SuggestionCandidatesInput {
   modIds: ReadonlySet<number>;
   /** `KNOWN_VERSIONS` key: the target version, else the source version. */
   versionId: string;
+  /**
+   * Blocks generated from the files loaded for `versionId`
+   * (`loadGeneratedBlockSetsWithAppearances`); a set counts when its
+   * provider's file (e.g. Unlimited Chisel Works) is one of `modIds`.
+   */
+  generated?: readonly GeneratedBlockSet[];
 }
 
 /**
  * Blocks a suggestion may pick: the vanilla blocks of the version plus the
- * blocks of `modIds`' files for `versionId`. Invisible blocks are left out.
- * Sorted by id; a vanilla id wins over a mod block with the same id.
+ * blocks of `modIds`' files for `versionId` and the blocks generated from
+ * them. Invisible blocks are left out. Sorted by id; a vanilla id wins over
+ * a mod block with the same id, which wins over a generated one.
  */
 export function suggestionCandidates({
   vanillaBlocks,
@@ -175,6 +185,7 @@ export function suggestionCandidates({
   loadedMods,
   modIds,
   versionId,
+  generated = [],
 }: SuggestionCandidatesInput): SuggestionCandidate[] {
   const byBlockId = new Map<string, SuggestionCandidate>();
   for (const id of vanillaBlocks) {
@@ -187,17 +198,24 @@ export function suggestionCandidates({
       ...(appearance ? { appearance } : {}),
     });
   }
-  for (const file of loadedMods) {
-    if (file.gameVersion !== versionId || !modIds.has(file.modId)) continue;
-    for (const block of file.blocks) {
+  const addBlocks = (blocks: readonly ModBlock[], sourceLabel: string) => {
+    for (const block of blocks) {
       if (byBlockId.has(block.id)) continue;
       byBlockId.set(block.id, {
         id: block.id,
         displayName: block.displayName,
-        sourceLabel: file.modName,
+        sourceLabel,
         ...(block.appearance ? { appearance: block.appearance } : {}),
       });
     }
+  };
+  for (const file of loadedMods) {
+    if (file.gameVersion !== versionId || !modIds.has(file.modId)) continue;
+    addBlocks(file.blocks, file.modName);
+  }
+  for (const set of generated) {
+    if (set.file === null || !modIds.has(set.file.modId)) continue;
+    addBlocks(set.blocks, set.provider.modName);
   }
   return [...byBlockId.values()].sort(byId);
 }
@@ -205,13 +223,16 @@ export function suggestionCandidates({
 /**
  * The appearance of a source block: vanilla colours for `minecraft:` blocks,
  * otherwise the block in a loaded mod file, preferring the file for
- * `sourceVersionId`. Undefined when nothing loaded knows the block.
+ * `sourceVersionId`, else the `generated` block (a provider's resolution of
+ * it for `sourceVersionId`, e.g. from `loadGeneratedBlockRender`).
+ * Undefined when nothing loaded knows the block.
  */
 export function sourceAppearance(
   blockId: string,
   vanillaColors: Readonly<Record<string, BlockAppearance>> | null,
   loadedMods: readonly LoadedModMeta[],
   sourceVersionId: string,
+  generated?: ModBlock | null,
 ): BlockAppearance | undefined {
   if (blockId.startsWith("minecraft:")) return vanillaColors?.[blockId];
   const files = [...loadedMods].sort(
@@ -223,5 +244,5 @@ export function sourceAppearance(
     const block = file.blocks.find((b) => b.id === blockId);
     if (block?.appearance) return block.appearance;
   }
-  return undefined;
+  return generated?.id === blockId ? generated.appearance : undefined;
 }

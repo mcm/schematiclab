@@ -5,6 +5,9 @@
 // the catalog to one Minecraft version: its vanilla blocks, and the blocks of
 // mod files loaded for exactly that version (a mod's file for another version
 // may list blocks the version doesn't have, so it is never a stand-in).
+// Generated-block providers (`./mods/generated/registry`, e.g. Unlimited
+// Chisel Works) add the blocks they can generate from the files loaded for
+// a version, like a mod file for that version would.
 //
 // Sources (in `block-translations.generated.ts`):
 //   - FLATTEN_TABLE         values are post-flatten block-state strings
@@ -25,6 +28,10 @@ import {
   getSnapshot,
   type LoadedModsSnapshot,
 } from "./mods/registry";
+import {
+  enumerateGeneratedBlockSets,
+  type GeneratedBlockSet,
+} from "./mods/generated/registry";
 import { vanillaBlocksForVersion } from "./schemlib/data/vanilla-blocks";
 import type { MinecraftVersion } from "./schemlib/schematic-formats/version-mapping";
 
@@ -78,30 +85,68 @@ const CATALOG_SET: ReadonlySet<string> = new Set(CATALOG);
 // when the loaded-mod set changes).
 let modCache: {
   for: ReadonlySet<string>;
+  generated: readonly (readonly GeneratedBlockSet[])[];
   ids: readonly string[];
+  set: ReadonlySet<string>;
   all: readonly string[];
 } | null = null;
 
+// Generated blocks of every version with loaded files, per version.
+function generatedSetsOfLoadedVersions(): (readonly GeneratedBlockSet[])[] {
+  const versions = [...new Set(getSnapshot().map((m) => m.gameVersion))];
+  return versions.sort().map((v) => enumerateGeneratedBlockSets(v));
+}
+
+function sameItems<T>(a: readonly T[], b: readonly T[]): boolean {
+  return a.length === b.length && a.every((item, i) => item === b[i]);
+}
+
 function getModCache(): NonNullable<typeof modCache> {
-  const set = getLoadedModBlockIds();
-  if (modCache?.for !== set) {
-    const ids = [...set].filter((id) => !CATALOG_SET.has(id)).sort();
+  const blockIds = getLoadedModBlockIds();
+  const generated = generatedSetsOfLoadedVersions();
+  if (modCache?.for !== blockIds || !sameItems(modCache.generated, generated)) {
+    const set = new Set<string>();
+    for (const id of blockIds) if (!CATALOG_SET.has(id)) set.add(id);
+    for (const sets of generated) addGeneratedIds(set, sets);
+    const ids = [...set].sort();
     modCache = {
-      for: set,
+      for: blockIds,
+      generated,
       ids,
+      set,
       all: ids.length === 0 ? CATALOG : CATALOG.concat(ids).sort(),
     };
   }
   return modCache;
 }
 
+function addGeneratedIds(
+  into: Set<string>,
+  sets: readonly GeneratedBlockSet[],
+): void {
+  for (const { blocks } of sets) {
+    for (const block of blocks) {
+      if (!CATALOG_SET.has(block.id)) into.add(block.id);
+    }
+  }
+}
+
 // Vanilla ids of one version, keyed by `vanillaBlocksForVersion`'s cached set.
 const scopedVanilla = new WeakMap<ReadonlySet<string>, readonly string[]>();
 
+interface ScopedIds {
+  ids: readonly string[];
+  set: ReadonlySet<string>;
+}
+
 // Mod ids of one version, keyed by the registry snapshot, then version id.
-const scopedMods = new WeakMap<
-  LoadedModsSnapshot,
-  Map<string, { ids: readonly string[]; set: ReadonlySet<string> }>
+const scopedMods = new WeakMap<LoadedModsSnapshot, Map<string, ScopedIds>>();
+
+// Mod plus generated ids of one version, keyed by the version's generated
+// block sets (a new array whenever they change).
+const scopedGenerated = new WeakMap<
+  readonly GeneratedBlockSet[],
+  { base: ScopedIds; value: ScopedIds }
 >();
 
 function getScopedVanilla(scope: CatalogScope): {
@@ -117,10 +162,21 @@ function getScopedVanilla(scope: CatalogScope): {
   return { ids, set };
 }
 
-function getScopedMods(scope: CatalogScope): {
-  ids: readonly string[];
-  set: ReadonlySet<string>;
-} {
+function getScopedMods(scope: CatalogScope): ScopedIds {
+  const base = getScopedModFiles(scope);
+  const generated = enumerateGeneratedBlockSets(scope.versionId);
+  if (generated.length === 0) return base;
+  let merged = scopedGenerated.get(generated);
+  if (merged?.base !== base) {
+    const set = new Set(base.set);
+    addGeneratedIds(set, generated);
+    merged = { base, value: { ids: [...set].sort(), set } };
+    scopedGenerated.set(generated, merged);
+  }
+  return merged.value;
+}
+
+function getScopedModFiles(scope: CatalogScope): ScopedIds {
   const snapshot = getSnapshot();
   let byVersion = scopedMods.get(snapshot);
   if (byVersion === undefined) {
@@ -142,7 +198,10 @@ function getScopedMods(scope: CatalogScope): {
   return scoped;
 }
 
-/** Every known id (vanilla and loaded mods), sorted. */
+/**
+ * Every known id (vanilla, loaded mods, and the blocks generated from the
+ * files of each loaded version), sorted.
+ */
 export function getBlockCatalog(): readonly string[] {
   return getModCache().all;
 }
@@ -205,5 +264,5 @@ export function isCatalogedBlockId(id: string, scope?: CatalogScope): boolean {
       getScopedVanilla(scope).set.has(id) || getScopedMods(scope).set.has(id)
     );
   }
-  return CATALOG_SET.has(id) || getLoadedModBlockIds().has(id);
+  return CATALOG_SET.has(id) || getModCache().set.has(id);
 }

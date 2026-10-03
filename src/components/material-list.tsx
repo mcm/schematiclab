@@ -35,6 +35,19 @@ import {
   unmappedSelection,
   type NamespaceOption,
 } from "@/lib/material-list-filter";
+import {
+  generatedBlocksLoadedFor,
+  getGeneratedBlock,
+  getGeneratedBlocksRevision,
+  requestGeneratedBlocks,
+  subscribeGeneratedBlocks,
+} from "@/lib/mods/generated/block-store";
+import {
+  APPROXIMATE_GENERATED_BLOCK_HINT,
+  generatedBlockLabel,
+  type GeneratedBlockLabel,
+} from "@/lib/mods/generated/labels";
+import { isGeneratedBlockId } from "@/lib/mods/generated/render";
 import { useNamespaceMappings } from "@/lib/mods/mappings";
 import {
   getLoadedModBlock,
@@ -71,6 +84,17 @@ interface MaterialListProps {
 // Mod ownership of a palette row: provided by a loaded mod, from a modded
 // namespace that isn't loaded, or neither (vanilla / namespace loaded but the
 // block has no blockstates).
+// A generated block's label (`generatedBlockLabel`) and, once its generated
+// textures are in, a swatch of their colour.
+interface RowGeneratedInfo {
+  label: GeneratedBlockLabel;
+  swatch?: string;
+}
+
+function oklabCss([l, a, b]: readonly [number, number, number]): string {
+  return `oklab(${l} ${a} ${b})`;
+}
+
 type RowModInfo =
   | { kind: "loaded"; modName: string; displayName: string }
   | { kind: "not-loaded"; namespace: string }
@@ -143,6 +167,51 @@ export function MaterialList({
     [palette],
   );
 
+  // Generated blocks (Unlimited Chisel Works) are named from their sources
+  // and coloured from their generated textures, loaded in the background.
+  const generatedRevision = React.useSyncExternalStore(
+    subscribeGeneratedBlocks,
+    getGeneratedBlocksRevision,
+    getGeneratedBlocksRevision,
+  );
+  React.useEffect(() => {
+    if (versionId === null) return;
+    requestGeneratedBlocks(
+      visiblePalette.map((entry) => entry.blockId),
+      versionId,
+    );
+  }, [visiblePalette, versionId, loadedMods]);
+  const generatedByBlockState = React.useMemo(() => {
+    void generatedRevision;
+    const out = new Map<string, RowGeneratedInfo>();
+    // Until the block store has loaded the files, resolution would only see
+    // that nothing is loaded.
+    if (versionId === null || !generatedBlocksLoadedFor(versionId)) return out;
+    const modNameFor = (namespace: string) =>
+      mappings.get(namespace)?.modName ??
+      loadedMods.find((file) => file.namespaces.includes(namespace))?.modName ??
+      namespace;
+    for (const entry of visiblePalette) {
+      if (!isGeneratedBlockId(entry.blockId)) continue;
+      const appearance = getGeneratedBlock(
+        entry.blockId,
+        versionId,
+      )?.appearance;
+      const label = generatedBlockLabel(
+        entry.blockId,
+        entry.properties,
+        versionId,
+        modNameFor,
+      );
+      if (label === null) continue;
+      out.set(entry.blockState, {
+        label,
+        ...(appearance ? { swatch: oklabCss(appearance.oklab) } : {}),
+      });
+    }
+    return out;
+  }, [visiblePalette, versionId, generatedRevision, mappings, loadedMods]);
+
   const modInfoByBlockId = React.useMemo(() => {
     const out = new Map<string, RowModInfo>();
     for (const entry of visiblePalette) {
@@ -183,6 +252,14 @@ export function MaterialList({
         ) {
           return true;
         }
+        const generated = generatedByBlockState.get(entry.blockState);
+        if (
+          generated?.label.kind === "resolved" &&
+          (generated.label.displayName.toLowerCase().includes(needle) ||
+            generated.label.modName.toLowerCase().includes(needle))
+        ) {
+          return true;
+        }
         const info = modInfoByBlockId.get(entry.blockId);
         return (
           info?.kind === "loaded" &&
@@ -198,7 +275,14 @@ export function MaterialList({
     return [...base].sort(
       (a, b) => b.count - a.count || a.blockId.localeCompare(b.blockId),
     );
-  }, [visiblePalette, prunedNamespaces, modInfoByBlockId, search, sort]);
+  }, [
+    visiblePalette,
+    prunedNamespaces,
+    modInfoByBlockId,
+    generatedByBlockState,
+    search,
+    sort,
+  ]);
 
   // Placed blocks plus camo slots, per block state (see `materialTotals`).
   const totals = React.useMemo(
@@ -331,6 +415,7 @@ export function MaterialList({
               key={entry.blockState}
               entry={entry}
               modInfo={modInfoByBlockId.get(entry.blockId) ?? null}
+              generated={generatedByBlockState.get(entry.blockState) ?? null}
               total={totals.get(entry.blockState) ?? entry.count}
               onRequestSwap={onRequestSwap}
               onRequestCamoSwap={onRequestCamoSwap}
@@ -547,6 +632,7 @@ function NamespaceFilter({
 function PaletteRow({
   entry,
   modInfo,
+  generated,
   total,
   onRequestSwap,
   onRequestCamoSwap,
@@ -555,6 +641,7 @@ function PaletteRow({
 }: {
   entry: ParsedSchematicPaletteEntry;
   modInfo: RowModInfo;
+  generated: RowGeneratedInfo | null;
   // `entry.count` plus the camo slots holding this block state elsewhere.
   total: number;
   onRequestSwap?: (entry: ParsedSchematicPaletteEntry) => void;
@@ -564,7 +651,8 @@ function PaletteRow({
 }) {
   const propertyKeys = Object.keys(entry.properties);
   const propertiesLabel = formatProperties(entry.properties, propertyKeys);
-  const swatch = swatchColorFor(entry.blockState);
+  const swatch = generated?.swatch ?? swatchColorFor(entry.blockState);
+  const generatedLabel = generated?.label ?? null;
   const camoMaterials = entry.camoMaterials ?? [];
   const camoTotal = total - entry.count;
 
@@ -633,7 +721,52 @@ function PaletteRow({
                 {modInfo.modName}
               </Badge>
             ) : null}
+            {generatedLabel !== null ? (
+              <Badge
+                variant="info"
+                size="sm"
+                title={`Generated by ${generatedLabel.modName}`}
+                style={{ flexShrink: 0 }}
+              >
+                {generatedLabel.modName}
+              </Badge>
+            ) : null}
+            {generatedLabel?.kind === "resolved" &&
+            generatedLabel.approximate ? (
+              <Badge
+                variant="warning"
+                size="sm"
+                title={APPROXIMATE_GENERATED_BLOCK_HINT}
+                style={{ flexShrink: 0 }}
+              >
+                approximate
+              </Badge>
+            ) : null}
           </div>
+          {generatedLabel?.kind === "resolved" ? (
+            <span
+              style={{
+                color: "var(--text-secondary)",
+                fontSize: "var(--text-xs)",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+              title={generatedLabel.displayName}
+            >
+              {generatedLabel.displayName}
+            </span>
+          ) : null}
+          {generatedLabel?.kind === "needs-mods" ? (
+            <span
+              style={{
+                color: "var(--text-tertiary)",
+                fontSize: "var(--text-xs)",
+              }}
+            >
+              {generatedLabel.message}
+            </span>
+          ) : null}
           {modInfo?.kind === "loaded" ? (
             <span
               style={{
@@ -658,7 +791,7 @@ function PaletteRow({
                 fontSize: "var(--text-xs)",
               }}
             >
-              Mod not loaded
+              {generatedLabel === null ? "Mod not loaded" : null}
               {onSearchMod ? (
                 <Button
                   type="button"

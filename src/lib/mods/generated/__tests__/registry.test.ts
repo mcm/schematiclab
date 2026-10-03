@@ -22,11 +22,15 @@ import {
 import {
   __setGeneratedBlockProvidersForTests,
   __setGeneratedVanillaLoaderForTests,
+  enumerateGeneratedBlockSets,
   enumerateGeneratedBlocks,
+  getEnumeratedGeneratedBlock,
   getGeneratedBlockFiles,
+  getGeneratedBlockFilesRevision,
   getGeneratedBlockProvider,
   loadGeneratedBlockFiles,
   resolveGeneratedBlock,
+  subscribeGeneratedBlockFiles,
 } from "../registry";
 import type {
   GeneratedBlockFiles,
@@ -145,6 +149,7 @@ function assets(providerData?: LoadedModAssets["providerData"]) {
 }
 
 const GENERATOR = makeMeta(1, "1.12.2", "fakegen");
+const GENERATED = "fakegen:stonemod_stone";
 const GENERATOR_DATA = { fakegen: { sources: ["stonemod:stone"] } };
 const STONE_MOD = makeMeta(2, "1.12.2", "stonemod", [
   {
@@ -261,6 +266,41 @@ describe("generated block providers", () => {
     expect(
       resolveGeneratedBlock("fakegen:stonemod_stone", {}, "1.12.2").kind,
     ).toBe("resolved");
+  });
+
+  it("re-enumerates and notifies once persisted assets are read", async () => {
+    await modRegistry.addLoadedMods([
+      { meta: GENERATOR, assets: assets(GENERATOR_DATA) },
+      { meta: STONE_MOD, assets: assets() },
+    ]);
+    modRegistry.__resetLoadedModsForTests();
+    await modRegistry.hydrateLoadedMods();
+    expect(enumerateGeneratedBlockSets("1.12.2")).toEqual([]);
+    expect(getEnumeratedGeneratedBlock(GENERATED, "1.12.2")).toBeNull();
+
+    const listener = vi.fn();
+    const unsubscribe = subscribeGeneratedBlockFiles(listener);
+    const revision = getGeneratedBlockFilesRevision();
+    await loadGeneratedBlockFiles("1.12.2");
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(getGeneratedBlockFilesRevision()).not.toBe(revision);
+    const sets = enumerateGeneratedBlockSets("1.12.2");
+    expect(sets).toHaveLength(1);
+    expect(sets[0].provider).toBe(FAKE_PROVIDER);
+    expect(sets[0].file?.key).toBe(GENERATOR.key);
+    expect(sets[0].blocks.map((b) => b.id)).toEqual([GENERATED]);
+    // Cached until something changes.
+    expect(enumerateGeneratedBlockSets("1.12.2")).toBe(sets);
+    expect(getEnumeratedGeneratedBlock(GENERATED, "1.12.2")).toEqual({
+      provider: FAKE_PROVIDER,
+      block: sets[0].blocks[0],
+    });
+    expect(getEnumeratedGeneratedBlock(GENERATED, "1.20.1")).toBeNull();
+
+    // Nothing new to read: no notification.
+    await loadGeneratedBlockFiles("1.12.2");
+    expect(listener).toHaveBeenCalledTimes(1);
+    unsubscribe();
   });
 
   it("loads the vanilla assets once", async () => {
