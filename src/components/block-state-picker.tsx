@@ -5,6 +5,7 @@ import {
   Button,
   Checkbox,
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -309,243 +310,245 @@ export function BlockStatePicker({
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr auto 1fr",
-            gap: "var(--space-3)",
-            alignItems: "center",
-            padding: "var(--space-3) 0",
-          }}
-        >
-          <StateCard
-            label="Source"
-            blockId={source?.blockId ?? "—"}
-            display={
-              source
-                ? manyStates
-                  ? `${appliesTo.length} states`
-                  : source.blockState
-                : "—"
-            }
-          />
-          <span aria-hidden style={{ color: "var(--text-tertiary)" }}>
-            →
-          </span>
-          <StateCard
-            label="Target"
-            blockId={parsedTarget?.blockId ?? "—"}
-            display={targetDisplay}
-            tone={!targetValid ? "muted" : "normal"}
-          />
-        </div>
+        <DialogBody>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr auto 1fr",
+              gap: "var(--space-3)",
+              alignItems: "center",
+              paddingBottom: "var(--space-3)",
+            }}
+          >
+            <StateCard
+              label="Source"
+              blockId={source?.blockId ?? "—"}
+              display={
+                source
+                  ? manyStates
+                    ? `${appliesTo.length} states`
+                    : source.blockState
+                  : "—"
+              }
+            />
+            <span aria-hidden style={{ color: "var(--text-tertiary)" }}>
+              →
+            </span>
+            <StateCard
+              label="Target"
+              blockId={parsedTarget?.blockId ?? "—"}
+              display={targetDisplay}
+              tone={!targetValid ? "muted" : "normal"}
+            />
+          </div>
 
-        {suggestionContext && source ? (
+          {suggestionContext && source ? (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "var(--space-2)",
+                paddingBottom: "var(--space-3)",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: "var(--text-xs)",
+                  fontWeight: 500,
+                  color: "var(--text-secondary)",
+                }}
+              >
+                Suggested blocks in {suggestionContext.versionId}
+              </span>
+              <BlockSuggestions
+                sourceBlockId={source.blockId}
+                context={suggestionContext}
+                onChoose={(candidate) => selectSuggestion(candidate.id)}
+                chooseLabel="Select"
+              />
+            </div>
+          ) : null}
+
           <div
             style={{
               display: "flex",
               flexDirection: "column",
               gap: "var(--space-2)",
-              paddingBottom: "var(--space-3)",
             }}
           >
-            <span
-              style={{
-                fontSize: "var(--text-xs)",
-                fontWeight: 500,
-                color: "var(--text-secondary)",
+            <Label htmlFor={INPUT_ID} style={{ fontSize: "var(--text-xs)" }}>
+              Target block identifier
+            </Label>
+            <Input
+              id={INPUT_ID}
+              type="text"
+              value={query}
+              placeholder="minecraft:spruce_planks"
+              autoComplete="off"
+              spellCheck={false}
+              onChange={(e) => {
+                setQuery(e.currentTarget.value);
+                setHighlightIndex(0);
               }}
-            >
-              Suggested blocks in {suggestionContext.versionId}
-            </span>
-            <BlockSuggestions
-              sourceBlockId={source.blockId}
-              context={suggestionContext}
-              onChoose={(candidate) => selectSuggestion(candidate.id)}
-              chooseLabel="Select"
-            />
-          </div>
-        ) : null}
-
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "var(--space-2)",
-          }}
-        >
-          <Label htmlFor={INPUT_ID} style={{ fontSize: "var(--text-xs)" }}>
-            Target block identifier
-          </Label>
-          <Input
-            id={INPUT_ID}
-            type="text"
-            value={query}
-            placeholder="minecraft:spruce_planks"
-            autoComplete="off"
-            spellCheck={false}
-            onChange={(e) => {
-              setQuery(e.currentTarget.value);
-              setHighlightIndex(0);
-            }}
-            onKeyDown={handleKeyDown}
-            aria-autocomplete="list"
-            aria-controls="block-state-picker-suggestions"
-            aria-activedescendant={
-              suggestions.length > 0
-                ? `block-state-picker-option-${activeIndex}`
-                : undefined
-            }
-          />
-          <ul
-            id="block-state-picker-suggestions"
-            role="listbox"
-            aria-label="Block identifier suggestions"
-            style={{
-              listStyle: "none",
-              margin: 0,
-              padding: 0,
-              border: "1px solid var(--border-subtle)",
-              borderRadius: "var(--radius-md)",
-              maxHeight: 220,
-              overflowY: "auto",
-              background: "var(--bg-page)",
-            }}
-          >
-            {suggestions.length === 0 ? (
-              <li
-                style={{
-                  padding: "var(--space-2) var(--space-3)",
-                  color: "var(--text-tertiary)",
-                  fontSize: "var(--text-sm)",
-                  fontStyle: "italic",
-                }}
-              >
-                No matches in the catalog — free-text input still accepted.
-              </li>
-            ) : (
-              suggestions.map((id, i) => {
-                const isHighlighted = i === activeIndex;
-                const mod = getModForBlockId(id, modVersionId);
-                return (
-                  <li
-                    key={id}
-                    id={`block-state-picker-option-${i}`}
-                    role="option"
-                    aria-selected={isHighlighted}
-                    onMouseDown={(e) => {
-                      // Use mousedown so the input keeps focus through the
-                      // click — onClick would fire after the input blurs.
-                      e.preventDefault();
-                      selectSuggestion(id);
-                    }}
-                    onMouseEnter={() => setHighlightIndex(i)}
-                    style={{
-                      padding: "var(--space-1) var(--space-3)",
-                      fontSize: "var(--text-sm)",
-                      fontFamily: "var(--font-mono, ui-monospace, monospace)",
-                      cursor: "pointer",
-                      background: isHighlighted
-                        ? "var(--bg-elevated)"
-                        : "transparent",
-                      color: "var(--text-primary)",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: "var(--space-2)",
-                    }}
-                  >
-                    <span
-                      style={{
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {id}
-                    </span>
-                    {mod ? (
-                      <span
-                        style={{
-                          flexShrink: 0,
-                          fontFamily: "var(--font-sans, inherit)",
-                          fontSize: "var(--text-xs)",
-                          color: "var(--text-tertiary)",
-                        }}
-                      >
-                        {mod.modName}
-                      </span>
-                    ) : null}
-                  </li>
-                );
-              })
-            )}
-          </ul>
-          {parsedTarget && !isCatalogedBlockId(parsedTarget.blockId) ? (
-            <span
-              style={{
-                fontSize: "var(--text-xs)",
-                color: "var(--text-tertiary)",
-              }}
-            >
-              {targetValid
-                ? `"${parsedTarget.blockId}" isn't in the catalog — it'll be used as-is.`
-                : "Identifier must look like `namespace:path`."}
-            </span>
-          ) : null}
-          {targetValid && carriedNames.length > 0 ? (
-            <span
-              style={{
-                fontSize: "var(--text-xs)",
-                color: "var(--text-tertiary)",
-              }}
-            >
-              {appliesTo.length > 1
-                ? `Each of the ${appliesTo.length} states keeps its own`
-                : "Kept from the source:"}{" "}
-              {carriedNames.join(", ")}. Type <code>[name=value]</code> after
-              the identifier to set one for all.
-            </span>
-          ) : null}
-          {canWiden ? (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "var(--space-2)",
-              }}
-            >
-              <Checkbox
-                id={ALL_STATES_ID}
-                checked={applyToAllStates}
-                onCheckedChange={(checked) =>
-                  setApplyToAllStates(checked === true)
-                }
-              />
-              <Label
-                htmlFor={ALL_STATES_ID}
-                style={{ fontSize: "var(--text-xs)" }}
-              >
-                Replace all {allStates.length} states of {source?.blockId}
-              </Label>
-            </div>
-          ) : null}
-          {targetValid && camoSlots.length > 0 ? (
-            <CamoInputs
-              slots={camoSlots}
-              values={camoText}
-              onChange={(slot, value) =>
-                setCamoText((prev) => ({ ...prev, [slot]: value }))
+              onKeyDown={handleKeyDown}
+              aria-autocomplete="list"
+              aria-controls="block-state-picker-suggestions"
+              aria-activedescendant={
+                suggestions.length > 0
+                  ? `block-state-picker-option-${activeIndex}`
+                  : undefined
               }
             />
-          ) : null}
-          {targetModBlock ? (
-            <ModBlockHint
-              displayName={targetModBlock.displayName}
-              modName={targetMod?.modName ?? null}
-              properties={completeBlockProperties(targetModBlock.properties)}
-            />
-          ) : null}
-        </div>
+            <ul
+              id="block-state-picker-suggestions"
+              role="listbox"
+              aria-label="Block identifier suggestions"
+              style={{
+                listStyle: "none",
+                margin: 0,
+                padding: 0,
+                border: "1px solid var(--border-subtle)",
+                borderRadius: "var(--radius-md)",
+                maxHeight: 220,
+                overflowY: "auto",
+                background: "var(--bg-page)",
+              }}
+            >
+              {suggestions.length === 0 ? (
+                <li
+                  style={{
+                    padding: "var(--space-2) var(--space-3)",
+                    color: "var(--text-tertiary)",
+                    fontSize: "var(--text-sm)",
+                    fontStyle: "italic",
+                  }}
+                >
+                  No matches in the catalog — free-text input still accepted.
+                </li>
+              ) : (
+                suggestions.map((id, i) => {
+                  const isHighlighted = i === activeIndex;
+                  const mod = getModForBlockId(id, modVersionId);
+                  return (
+                    <li
+                      key={id}
+                      id={`block-state-picker-option-${i}`}
+                      role="option"
+                      aria-selected={isHighlighted}
+                      onMouseDown={(e) => {
+                        // Use mousedown so the input keeps focus through the
+                        // click — onClick would fire after the input blurs.
+                        e.preventDefault();
+                        selectSuggestion(id);
+                      }}
+                      onMouseEnter={() => setHighlightIndex(i)}
+                      style={{
+                        padding: "var(--space-1) var(--space-3)",
+                        fontSize: "var(--text-sm)",
+                        fontFamily: "var(--font-mono, ui-monospace, monospace)",
+                        cursor: "pointer",
+                        background: isHighlighted
+                          ? "var(--bg-elevated)"
+                          : "transparent",
+                        color: "var(--text-primary)",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: "var(--space-2)",
+                      }}
+                    >
+                      <span
+                        style={{
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {id}
+                      </span>
+                      {mod ? (
+                        <span
+                          style={{
+                            flexShrink: 0,
+                            fontFamily: "var(--font-sans, inherit)",
+                            fontSize: "var(--text-xs)",
+                            color: "var(--text-tertiary)",
+                          }}
+                        >
+                          {mod.modName}
+                        </span>
+                      ) : null}
+                    </li>
+                  );
+                })
+              )}
+            </ul>
+            {parsedTarget && !isCatalogedBlockId(parsedTarget.blockId) ? (
+              <span
+                style={{
+                  fontSize: "var(--text-xs)",
+                  color: "var(--text-tertiary)",
+                }}
+              >
+                {targetValid
+                  ? `"${parsedTarget.blockId}" isn't in the catalog — it'll be used as-is.`
+                  : "Identifier must look like `namespace:path`."}
+              </span>
+            ) : null}
+            {targetValid && carriedNames.length > 0 ? (
+              <span
+                style={{
+                  fontSize: "var(--text-xs)",
+                  color: "var(--text-tertiary)",
+                }}
+              >
+                {appliesTo.length > 1
+                  ? `Each of the ${appliesTo.length} states keeps its own`
+                  : "Kept from the source:"}{" "}
+                {carriedNames.join(", ")}. Type <code>[name=value]</code> after
+                the identifier to set one for all.
+              </span>
+            ) : null}
+            {canWiden ? (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "var(--space-2)",
+                }}
+              >
+                <Checkbox
+                  id={ALL_STATES_ID}
+                  checked={applyToAllStates}
+                  onCheckedChange={(checked) =>
+                    setApplyToAllStates(checked === true)
+                  }
+                />
+                <Label
+                  htmlFor={ALL_STATES_ID}
+                  style={{ fontSize: "var(--text-xs)" }}
+                >
+                  Replace all {allStates.length} states of {source?.blockId}
+                </Label>
+              </div>
+            ) : null}
+            {targetValid && camoSlots.length > 0 ? (
+              <CamoInputs
+                slots={camoSlots}
+                values={camoText}
+                onChange={(slot, value) =>
+                  setCamoText((prev) => ({ ...prev, [slot]: value }))
+                }
+              />
+            ) : null}
+            {targetModBlock ? (
+              <ModBlockHint
+                displayName={targetModBlock.displayName}
+                modName={targetMod?.modName ?? null}
+                properties={completeBlockProperties(targetModBlock.properties)}
+              />
+            ) : null}
+          </div>
+        </DialogBody>
 
         <DialogFooter>
           <Button type="button" variant="ghost" onClick={onCancel}>
