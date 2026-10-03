@@ -493,6 +493,49 @@ describe("loaded-mods registry", () => {
     expect(registry.getSnapshot().map((m) => m.key)).toEqual(["2:1.20.1"]);
   });
 
+  it("unloads every file and its blobs, keeping namespace mappings", async () => {
+    const mapping: NamespaceMapping = {
+      namespace: "mod1",
+      modId: 1,
+      modName: "Mod 1",
+      modSlug: "mod-1",
+      logoUrl: null,
+      mappedAt: 1,
+    };
+    await store.putNamespaceMapping(mapping);
+    await registry.addLoadedMod(makeMeta(1, "1.20.1"), makeAssets("a"));
+    await registry.addLoadedMod(makeMeta(1, "1.21"), makeAssets("a"));
+    await registry.addLoadedMod(makeMeta(2, "1.20.1"), makeAssets("b"));
+    const listener = vi.fn();
+    registry.subscribe(listener);
+
+    await registry.removeAllLoadedMods();
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(registry.getSnapshot()).toEqual([]);
+    expect(registry.getLoadedNamespaces()).toEqual(new Set());
+    expect(await registry.getLoadedModAssets("1:1.20.1")).toBeNull();
+    expect(await store.listLoadedMods()).toEqual([]);
+    expect(await store.getModAssets("2:1.20.1")).toBeNull();
+    expect(await store.__listBlobKeysForTests()).toEqual([]);
+    expect(await store.listNamespaceMappings()).toEqual([mapping]);
+
+    await registry.addLoadedMod(makeMeta(2, "1.20.1"), makeAssets("b"));
+    expect(registry.getSnapshot().map((m) => m.key)).toEqual(["2:1.20.1"]);
+  });
+
+  it("does not resurrect mods unloaded all at once while hydrating", async () => {
+    await store.putLoadedMod(makeMeta(1, "1.20.1"), makeAssets("a"));
+    await store.putLoadedMod(makeMeta(2, "1.20.1"), makeAssets("b"));
+
+    const hydrating = registry.hydrateLoadedMods();
+    await registry.removeAllLoadedMods();
+    await hydrating;
+
+    expect(registry.getSnapshot()).toEqual([]);
+    expect(await store.listLoadedMods()).toEqual([]);
+  });
+
   it("falls back to in-memory when IndexedDB is unavailable", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     // @ts-expect-error simulate an environment without IndexedDB

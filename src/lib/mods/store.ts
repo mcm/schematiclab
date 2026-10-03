@@ -389,6 +389,14 @@ export async function removeLoadedMod(key: string): Promise<void> {
   await tx.done;
 }
 
+/** Delete every mod file and all blobs. Namespace mappings are kept. */
+export async function removeAllLoadedMods(): Promise<void> {
+  const db = await getDb();
+  const tx = db.transaction([...WRITE_STORES], "readwrite");
+  await Promise.all(WRITE_STORES.map((name) => tx.objectStore(name).clear()));
+  await tx.done;
+}
+
 /** All persisted namespace → CurseForge project mappings. */
 export async function listNamespaceMappings(): Promise<NamespaceMapping[]> {
   const db = await getDb();
