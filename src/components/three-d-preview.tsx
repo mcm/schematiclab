@@ -19,6 +19,7 @@ import {
 } from "@/lib/mods/registry";
 import {
   ensureMinecraftResourcesLoading,
+  setMinecraftResourcesBlocks,
   setMinecraftResourcesVersion,
   getCachedMinecraftResources,
   getMinecraftResourcesError,
@@ -407,6 +408,13 @@ export function ThreeDPreview({
     error: resourcesError,
     rebuildPending,
   } = useMinecraftResources(versionId);
+  // Generated blocks (Unlimited Chisel Works) need render assets built for
+  // exactly the blocks on screen.
+  React.useEffect(() => {
+    setMinecraftResourcesBlocks(
+      projection.palette.map((entry) => entry.blockId),
+    );
+  }, [projection]);
 
   // What the mesh is built from. While the resources are being replaced (new
   // preview files, e.g. after a version change) the last input is kept, so

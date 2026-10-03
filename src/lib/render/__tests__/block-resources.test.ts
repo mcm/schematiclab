@@ -24,7 +24,12 @@ const CASING_UV: UV = [0, 0.5, 0.25, 0.75];
 const STONE_UV: UV = [0.25, 0, 0.5, 0.25];
 const GLASS_UV: UV = [0.75, 0, 1, 0.25];
 
+const GENERATED_UV: UV = [0.5, 0, 0.75, 0.25];
+const GENERATED_TEXTURE =
+  "ucw_generated:ucw_ucw_natura_nether_planks_0/chisel/blocks/planks-oak/clean";
+
 const UV_MAP: Record<string, UV> = {
+  [GENERATED_TEXTURE]: GENERATED_UV,
   [MISSING_TEXTURE_ID]: MISSING_UV,
   [TRANSPARENT_TEXTURE_ID]: TRANSPARENT_UV,
   "create:block/casing": CASING_UV,
@@ -149,6 +154,62 @@ describe("assembleResources", () => {
     expect(
       resources.getBlockModel(Identifier.parse("create:block/andesite_casing")),
     ).not.toBeNull();
+  });
+
+  it("renders a provider-generated block with its generated texture", () => {
+    const id = "unlimitedchiselworks:chisel_planks_oak_natura_nether_planks_0";
+    const model = `unlimitedchiselworks:block/ucw_generated/x/variation_0`;
+    const generated: ModBlockAssets = {
+      blockstates: { [id]: { variants: { "variation=0": { model } } } },
+      models: {
+        [model]: {
+          parent: "minecraft:block/cube_all",
+          textures: { all: GENERATED_TEXTURE },
+        },
+      },
+    };
+    const { resources, placeholderBlocks } = assembleResources({
+      vanilla,
+      mods: [CASING_MOD],
+      generated: [generated],
+      uvMap: UV_MAP,
+      atlasImage: ATLAS,
+    });
+    expect(placeholderBlocks).toEqual([]);
+    const name = Identifier.parse(id);
+    const mesh = resources
+      .getBlockDefinition(name)!
+      .getMesh(name, { variation: "0" }, resources, resources, NO_CULL);
+    expect(mesh.quads).toHaveLength(6);
+    expect(
+      new Set(mesh.quads.map((quad) => JSON.stringify(quad.v1.textureLimit))),
+    ).toEqual(new Set([JSON.stringify(GENERATED_UV)]));
+    expect(resources.getBlockFlags(name)).toEqual({ opaque: false });
+    // Mod blocks still render alongside.
+    expect(quadCount(resources, "create:andesite_casing")).toBe(6);
+  });
+
+  it("renders a generated block whose texture failed as the placeholder", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const id = "unlimitedchiselworks:broken_0";
+    const { placeholderBlocks } = assembleResources({
+      vanilla,
+      mods: [],
+      generated: [
+        {
+          blockstates: { [id]: { variants: { "": { model: "u:block/b" } } } },
+          models: {
+            "u:block/b": {
+              parent: "minecraft:block/cube_all",
+              textures: { all: "ucw_generated:never_generated" },
+            },
+          },
+        },
+      ],
+      uvMap: UV_MAP,
+      atlasImage: ATLAS,
+    });
+    expect(placeholderBlocks).toEqual([id]);
   });
 
   it("does not mutate the stored mod model JSON", () => {

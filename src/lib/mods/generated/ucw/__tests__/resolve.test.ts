@@ -313,13 +313,14 @@ describe("resolveUcwBlock", () => {
     expect(plain.approximate).toBe(true);
 
     const one = expectResolved(
-      resolveUcwBlock(id("stonebrick1", 5), { variation: "15" }, files),
+      // Chisel's stonebrick1 has 10 variations (`chisel.ts`).
+      resolveUcwBlock(id("stonebrick1", 5), { variation: "9" }, files),
     );
     expect(one.rule).toBe(ALABASTER_RULES.rules[1]);
     expect(one.from.properties).toEqual({ color: "lime" });
     expect(one.through).toEqual({
       block: "chisel:stonebrick1",
-      properties: { variation: "15" },
+      properties: { variation: "9" },
     });
   });
 
@@ -576,7 +577,8 @@ describe("UCW_PROVIDER", () => {
       block: {
         id: "unlimitedchiselworks:chisel_planks_oak_natura_nether_planks_1",
         displayName: "Nether Planks (Chisel chisel:planks-oak)",
-        properties: { variation: [...VARIATIONS].sort() },
+        // Chisel's oak planks have 15 variations (`chisel.ts`).
+        properties: { variation: VARIATIONS.slice(0, 15).sort() },
       },
       approximate: true,
       sourceNamespaces: ["chisel", "natura"],

@@ -1,6 +1,7 @@
 // The Unlimited Chisel Works generated-block provider: recognises
-// `unlimitedchiselworks:` blocks through the rules read from UCW's jar and
-// resolves them to their `from` / `through` states (`resolve.ts`).
+// `unlimitedchiselworks:` blocks through the rules read from UCW's jar,
+// resolves them to their `from` / `through` states (`resolve.ts`) and
+// synthesizes their recoloured models and texture recipes (`model.ts`).
 //
 // Worker-safe: no DOM access.
 
@@ -10,9 +11,11 @@ import type {
   GeneratedBlockProvider,
   GeneratedBlockResolution,
 } from "../types";
+import { synthesizeUcwModels, ucwRenderOutput } from "./model";
 import { generateUcwTexture } from "./recolour";
 import {
   resolveUcwBlock,
+  ucwBlockLoaded,
   ucwBlockId,
   ucwFromStates,
   ucwMissingNamespaces,
@@ -116,9 +119,10 @@ export const UCW_PROVIDER: GeneratedBlockProvider = {
       }
       const from = ucwSourceBlock(ref.rule.from);
       const through = ucwSourceBlock(ref.rule.through);
-      const throughLoaded =
-        namespaceOf(through) === "minecraft" ||
-        files.blocks(namespaceOf(through)).has(through);
+      const throughLoaded = ucwBlockLoaded(through, files);
+      const fallbackModels = throughLoaded
+        ? synthesizeUcwModels(id, ref.rule, files, (t) => t, "fallback")
+        : null;
       return {
         kind: "needs-mods",
         provider: UCW_NAMESPACE,
@@ -133,18 +137,30 @@ export const UCW_PROVIDER: GeneratedBlockProvider = {
               },
             }
           : {}),
+        ...(fallbackModels !== null
+          ? {
+              fallbackModels: {
+                blockstate: fallbackModels.blockstate,
+                models: fallbackModels.models,
+              },
+            }
+          : {}),
       };
     }
-    // The blockstate, models and texture recipes (run by `generateTexture`)
-    // are synthesised from the `through` block's in the preview story; until
-    // then the block resolves without render output.
+    const output = ucwRenderOutput(
+      id,
+      resolution.rule,
+      resolution.from,
+      resolution.fromMeta,
+      files,
+    );
     return {
       kind: "resolved",
       provider: UCW_NAMESPACE,
       block: ucwModBlock(id, resolution, resolution.from, files),
-      blockstate: null,
-      models: {},
-      textures: [],
+      blockstate: output?.blockstate ?? null,
+      models: output?.models ?? {},
+      textures: output?.textures ?? [],
       approximate: resolution.approximate,
       sourceNamespaces: sourceNamespaces(resolution),
       ...(resolution.warnings.length > 0

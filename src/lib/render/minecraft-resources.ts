@@ -11,7 +11,11 @@
 // Vanilla data is fetched and flattened once. Whenever the selected preview
 // files change (registry change or a new schematic version), resources are
 // rebuilt (new combined atlas, new model set) and subscribers are notified so
-// `ThreeDPreview` re-meshes. Camo shape packs are fetched only for loaded mod
+// `ThreeDPreview` re-meshes. Generated blocks (Unlimited Chisel Works) of the
+// schematic on screen (`setMinecraftResourcesBlocks`) add their synthesized
+// blockstates, models and generated textures (`mods/generated/render.ts`,
+// which caches the textures), so they rebuild too when that set changes.
+// Camo shape packs are fetched only for loaded mod
 // namespaces. Builds are serialized; changes during a build coalesce into one
 // follow-up. Layout and assembly are
 // pure (`atlas-layout.ts`, `block-resources.ts`); only pixel drawing lives here.
@@ -19,6 +23,11 @@
 import type { Resources } from "deepslate";
 import { unzipSync } from "fflate";
 
+import {
+  isGeneratedBlockId,
+  loadGeneratedBlockRender,
+  type GeneratedBlockRender,
+} from "../mods/generated/render";
 import * as modRegistry from "../mods/registry";
 import type { LoadedModsSnapshot } from "../mods/registry";
 import type { LoadedModAssets } from "../mods/types";
@@ -76,6 +85,8 @@ const listeners = new Set<() => void>();
 let previewVersionId: string | null = null;
 // Files of the last build; null until the registry has hydrated.
 let builtFiles: LoadedModsSnapshot | null = null;
+// Generated-block ids of the schematic on screen, sorted.
+let generatedBlockIds: readonly string[] = [];
 // True while a rebuild for a file set other than the cached resources' is in
 // flight (never during the initial build), so the preview can keep its last
 // mesh instead of re-meshing with resources about to be replaced.
@@ -108,6 +119,24 @@ export function setMinecraftResourcesVersion(versionId: string | null): void {
   rebuildIfFilesChanged();
 }
 
+/**
+ * Set the block ids of the schematic on screen. Rebuilds only if that
+ * changes which generated blocks (`isGeneratedBlockId`) it has.
+ */
+export function setMinecraftResourcesBlocks(blockIds: Iterable<string>): void {
+  const ids = [...new Set(blockIds)].filter(isGeneratedBlockId).sort();
+  if (
+    ids.length === generatedBlockIds.length &&
+    ids.every((id, i) => id === generatedBlockIds[i])
+  ) {
+    return;
+  }
+  generatedBlockIds = ids;
+  // Before the first build there is nothing to replace; it reads the ids.
+  if (builtFiles === null) return;
+  startRebuild();
+}
+
 /** Whether two preview file selections differ (by file record identity). */
 export function previewFilesChanged(
   previous: LoadedModsSnapshot,
@@ -124,6 +153,10 @@ function rebuildIfFilesChanged(): void {
   const files = modRegistry.getPreviewModFiles(previewVersionId);
   if (!previewFilesChanged(builtFiles, files)) return;
   builtFiles = files;
+  startRebuild();
+}
+
+function startRebuild(): void {
   if (!rebuildPending) {
     rebuildPending = true;
     notifyListeners();
@@ -255,10 +288,14 @@ function loadVanilla(): Promise<VanillaBundle> {
 
 async function buildResources(files: LoadedModsSnapshot): Promise<Resources> {
   const loadedNamespaces = modRegistry.getLoadedNamespaces();
-  const [vanilla, modAssets, shapePacks] = await Promise.all([
+  const versionId = previewVersionId;
+  const [vanilla, modAssets, shapePacks, generated] = await Promise.all([
     loadVanilla(),
     Promise.all(files.map((mod) => modRegistry.getLoadedModAssets(mod.key))),
     loadShapePacks(loadedNamespaces),
+    versionId === null || generatedBlockIds.length === 0
+      ? null
+      : loadGeneratedBlockRender(generatedBlockIds, versionId),
   ]);
   const mods = modAssets.filter((a): a is LoadedModAssets => a !== null);
   // A loaded FramedBlocks jar's own templates win over the pack's.
@@ -270,6 +307,11 @@ async function buildResources(files: LoadedModsSnapshot): Promise<Resources> {
     { textures: vanilla.entityTextures },
     ...mods,
   ]);
+  if (generated !== null) {
+    for (const [id, bitmap] of await generatedTextureBitmaps(generated)) {
+      bitmaps.set(id, bitmap);
+    }
+  }
   const plan = planAtlas({
     baseWidth: vanilla.atlasImage.width,
     baseHeight: vanilla.atlasImage.height,
@@ -287,6 +329,10 @@ async function buildResources(files: LoadedModsSnapshot): Promise<Resources> {
   return assembleResources({
     vanilla: vanilla.blocks,
     mods,
+    generated:
+      generated === null
+        ? []
+        : [{ blockstates: generated.blockstates, models: generated.models }],
     uvMap: plan.uvMap,
     atlasImage,
     camo: {
@@ -337,6 +383,27 @@ export async function decodeModTextures(
         }
       }
       console.warn(`Could not decode mod texture ${id}`);
+    }),
+  );
+  return bitmaps;
+}
+
+async function generatedTextureBitmaps(
+  generated: GeneratedBlockRender,
+): Promise<Map<string, ImageBitmap>> {
+  const bitmaps = new Map<string, ImageBitmap>();
+  await Promise.all(
+    [...generated.textures].map(async ([id, { image }]) => {
+      try {
+        const pixels = new ImageData(
+          new Uint8ClampedArray(image.data),
+          image.width,
+          image.height,
+        );
+        bitmaps.set(id, await createImageBitmap(pixels));
+      } catch {
+        console.warn(`Could not draw generated texture ${id}`);
+      }
     }),
   );
   return bitmaps;

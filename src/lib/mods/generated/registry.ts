@@ -22,14 +22,21 @@ import type {
   GeneratedBlockProperties,
   GeneratedBlockProvider,
   GeneratedBlockResolution,
+  GeneratedVanillaAssets,
 } from "./types";
 import { UCW_PROVIDER } from "./ucw/provider";
+import { loadGeneratedVanillaAssets } from "./vanilla-assets";
 
 // Built-in providers, one per namespace. Providers are added here.
 const BUILTIN_PROVIDERS: readonly GeneratedBlockProvider[] = [UCW_PROVIDER];
 
 let providers: ReadonlyMap<string, GeneratedBlockProvider> =
   byNamespace(BUILTIN_PROVIDERS);
+
+// Vanilla assets once `loadGeneratedBlockFiles` has read them.
+let vanillaAssets: GeneratedVanillaAssets | null = null;
+let loadVanilla: () => Promise<GeneratedVanillaAssets | null> = () =>
+  loadGeneratedVanillaAssets();
 
 let filesCache: {
   for: LoadedModsSnapshot;
@@ -83,6 +90,9 @@ function buildFiles(
       if (file === null) return undefined;
       return peekLoadedModAssets(file.key)?.providerData?.[providerNamespace];
     },
+    get vanilla() {
+      return vanillaAssets;
+    },
   };
 }
 
@@ -106,14 +116,18 @@ export function getGeneratedBlockFiles(
 }
 
 /**
- * `getGeneratedBlockFiles` after reading every file's assets into memory
- * (files whose assets can't be read stay without them).
+ * `getGeneratedBlockFiles` after reading every file's assets and the vanilla
+ * assets into memory (files whose assets can't be read stay without them).
  */
 export async function loadGeneratedBlockFiles(
   gameVersion: string,
 ): Promise<GeneratedBlockFiles> {
   const files = getGeneratedBlockFiles(gameVersion);
-  await Promise.all(files.files.map((file) => getLoadedModAssets(file.key)));
+  const [vanilla] = await Promise.all([
+    vanillaAssets ?? loadVanilla(),
+    ...files.files.map((file) => getLoadedModAssets(file.key)),
+  ]);
+  vanillaAssets = vanilla;
   return getGeneratedBlockFiles(gameVersion);
 }
 
@@ -146,4 +160,13 @@ export function __setGeneratedBlockProvidersForTests(
 ): void {
   providers = byNamespace(list ?? BUILTIN_PROVIDERS);
   filesCache = null;
+}
+
+// Test-only: replace the vanilla asset loader (null restores the bundle's)
+// and forget loaded vanilla assets.
+export function __setGeneratedVanillaLoaderForTests(
+  loader: (() => Promise<GeneratedVanillaAssets | null>) | null,
+): void {
+  loadVanilla = loader ?? (() => loadGeneratedVanillaAssets());
+  vanillaAssets = null;
 }

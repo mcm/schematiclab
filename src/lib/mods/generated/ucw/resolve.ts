@@ -18,6 +18,7 @@
 
 import { FORGE_1_12_FLATTEN } from "../../../schemlib/data/forge-1.12-flatten.generated";
 import type { GeneratedBlockFiles, GeneratedBlockProperties } from "../types";
+import { CHISEL_NAMESPACE, chiselBlock } from "./chisel";
 import { UCW_META_OVERRIDES } from "./meta-overrides";
 import {
   asUcwProviderData,
@@ -255,6 +256,37 @@ function moddedPropertyOrder(
 }
 
 /**
+ * States per metadata of a Chisel block in `chisel.ts`'s table
+ * (`variation=0`, `variation=1`, …), when Chisel is loaded. Else null.
+ */
+function chiselMetaStates(
+  blockId: string,
+  files: GeneratedBlockFiles,
+): Record<string, string>[] | null {
+  if (files.fileForNamespace(CHISEL_NAMESPACE) === null) return null;
+  const block = chiselBlock(blockId);
+  return (
+    block?.variants.map((_, meta) => ({ variation: String(meta) })) ?? null
+  );
+}
+
+/**
+ * True when `blockId` exists in the files loaded for the version (vanilla
+ * blocks always do).
+ */
+export function ucwBlockLoaded(
+  blockId: string,
+  files: GeneratedBlockFiles,
+): boolean {
+  const namespace = namespaceOf(blockId);
+  return (
+    namespace === "minecraft" ||
+    chiselMetaStates(blockId, files) !== null ||
+    files.blocks(namespace).has(blockId)
+  );
+}
+
+/**
  * Guessed states per metadata: every combination of the `iterate` properties
  * (all properties when none of them is known), the first property outermost.
  */
@@ -282,7 +314,8 @@ function heuristicStates(
 
 /**
  * A block's states per metadata: from `overrides`, the Forge 1.12 table for
- * `minecraft:` blocks, else guessed from its blockstate JSON. Null when the
+ * `minecraft:` blocks, `chisel.ts` for Chisel blocks, else guessed from its
+ * blockstate JSON. Null when the
  * block is unknown (its mod isn't loaded or doesn't have it).
  */
 export function ucwMetaStates(
@@ -308,6 +341,8 @@ export function ucwMetaStates(
     const states = vanillaStates(blockId);
     return states === null ? null : { states, approximate: false };
   }
+  const chisel = chiselMetaStates(blockId, files);
+  if (chisel !== null) return { states: chisel, approximate: false };
   const order = moddedPropertyOrder(blockId, files);
   if (order === null) return null;
   return { states: heuristicStates(order, iterate), approximate: true };
@@ -394,6 +429,10 @@ export function ucwThroughProperties(
   files: GeneratedBlockFiles,
 ): Map<string, string[]> | null {
   const block = ucwSourceBlock(rule.through);
+  const chisel = chiselMetaStates(block, files);
+  if (chisel !== null) {
+    return new Map([["variation", chisel.map((state) => state.variation)]]);
+  }
   if (namespaceOf(block) !== "minecraft") {
     return moddedPropertyOrder(block, files);
   }

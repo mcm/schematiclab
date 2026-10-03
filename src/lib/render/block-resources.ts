@@ -9,6 +9,10 @@
 // bundle doesn't know (blocks renamed or removed since the schematic's
 // version, typos in a swap target).
 //
+// Generated blocks (Unlimited Chisel Works) come as provider-synthesized
+// blockstates and models (`mods/generated/render.ts`) and render like mod
+// blocks, with the same placeholder fallback.
+//
 // Camo-capable blocks (FramedBlocks, copycats) whose mod is loaded get a
 // `CamoBlockDefinition` that renders their shape with their camo textures;
 // without the mod they're the missing cube too.
@@ -85,6 +89,11 @@ export interface ModBlockAssets {
 export interface AssembleResourcesInput {
   vanilla: VanillaBlockData;
   mods: readonly ModBlockAssets[];
+  /**
+   * Generated-block providers' synthesized blockstates and models; their
+   * textures must be in `uvMap`. Take precedence over `mods` on id clashes.
+   */
+  generated?: readonly ModBlockAssets[];
   /**
    * Texture id → normalized UV; must contain `MISSING_TEXTURE_ID`. Without
    * `TRANSPARENT_TEXTURE_ID`, superseded entity textures render as missing.
@@ -287,7 +296,8 @@ function isRenderableBlockstate(
 export function assembleResources(
   input: AssembleResourcesInput,
 ): AssembledResources {
-  const { vanilla, mods, uvMap, atlasImage, camo = {} } = input;
+  const { vanilla, uvMap, atlasImage, camo = {} } = input;
+  const mods = [...input.mods, ...(input.generated ?? [])];
 
   const modModels = new Map<string, BlockModel>();
   for (const [id, json] of resolvableModModels(mods, vanilla.blockModels)) {
@@ -344,7 +354,7 @@ export function assembleResources(
   const loadedNamespaces =
     camo.loadedNamespaces ??
     new Set(
-      mods.flatMap((mod) =>
+      input.mods.flatMap((mod) =>
         Object.keys(mod.blockstates).map((id) => qualifyId(id).split(":")[0]),
       ),
     );
