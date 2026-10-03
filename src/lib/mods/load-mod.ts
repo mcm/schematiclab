@@ -5,7 +5,8 @@
 // second Add for the same mod and version is ignored while one is running,
 // and a mod's source-version and target-version files load concurrently.
 //
-// Nothing is persisted until parsing succeeds with at least one block.
+// Nothing is persisted until parsing succeeds with at least one block (or,
+// for generated-block mods, rules that generate one).
 // `registerModJar` (parse + register) is shared with modpack loads
 // (`load-modpack.ts`). Once a file is registered, its namespaces that have no
 // project mapping yet are mapped to its mod (existing mappings are never
@@ -19,6 +20,7 @@ import {
   pickDownloadableFile,
 } from "../curseforge/client";
 import type { ModLoader } from "../curseforge/types";
+import { providerDataGeneratesBlocks } from "./generated/jar-data";
 import { autoMapNamespaces } from "./mappings";
 import { parseModJarInWorker } from "./mod-jar-client";
 import { addLoadedMod, getUnloadGeneration } from "./registry";
@@ -233,6 +235,7 @@ export type ModFileInfo = Omit<
   | "blocks"
   | "warnings"
   | "appearancesComputed"
+  | "providerDataRead"
   | "loadedAt"
 >;
 
@@ -271,7 +274,10 @@ export async function registerModJar(
       "parse",
     );
   }
-  if (parsed.blocks.length === 0) {
+  if (
+    parsed.blocks.length === 0 &&
+    !providerDataGeneratesBlocks(parsed.providerData)
+  ) {
     throw new ModJarError(
       "This mod file doesn't contain any blocks.",
       "no_blocks",
@@ -279,6 +285,7 @@ export async function registerModJar(
   }
 
   onSaving?.();
+  const providerDataRead = Object.keys(parsed.providerData ?? {}).sort();
   const meta: LoadedModMeta = {
     ...info,
     key: loadedModKey(info.modId, info.gameVersion),
@@ -286,6 +293,7 @@ export async function registerModJar(
     blocks: parsed.blocks,
     warnings: parsed.warnings,
     appearancesComputed: parsed.appearancesComputed === true,
+    ...(providerDataRead.length > 0 ? { providerDataRead } : {}),
     loadedAt: deps.now(),
   };
   let added: boolean;

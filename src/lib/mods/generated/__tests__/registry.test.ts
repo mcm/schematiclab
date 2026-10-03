@@ -4,7 +4,7 @@
 // same Minecraft version.
 
 import "fake-indexeddb/auto";
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
 import { IDBFactory } from "fake-indexeddb";
@@ -328,19 +328,32 @@ describe("provider data", () => {
 
 describe("worker safety", () => {
   const DIR = path.resolve(__dirname, "..");
-  const ALLOWED_RENDER = new Set(["../../render/block-appearance"]);
+  const ALLOWED_RENDER = path.resolve(DIR, "../../render/block-appearance");
+
+  /** Non-test `.ts` files under `dir`, recursively. */
+  function sourcesIn(dir: string): string[] {
+    return readdirSync(dir).flatMap((name) => {
+      const full = path.join(dir, name);
+      if (statSync(full).isDirectory()) {
+        return name === "__tests__" ? [] : sourcesIn(full);
+      }
+      return name.endsWith(".ts") ? [full] : [];
+    });
+  }
 
   it("imports nothing from src/lib/render/ but pure helpers", () => {
-    const sources = readdirSync(DIR).filter((f) => f.endsWith(".ts"));
+    const sources = sourcesIn(DIR);
     expect(sources.length).toBeGreaterThan(0);
-    for (const file of sources) {
-      const source = readFileSync(path.join(DIR, file), "utf8");
+    for (const full of sources) {
+      const file = path.relative(DIR, full);
+      const source = readFileSync(full, "utf8");
       const specs = ts
         .preProcessFile(source, true, true)
         .importedFiles.map((ref) => ref.fileName);
       for (const spec of specs) {
         if (spec.includes("render/")) {
-          expect(ALLOWED_RENDER.has(spec), `${file}: ${spec}`).toBe(true);
+          const target = path.resolve(path.dirname(full), spec);
+          expect(target, `${file}: ${spec}`).toBe(ALLOWED_RENDER);
         }
       }
       expect(source, file).not.toMatch(/\b(document|window)\./);

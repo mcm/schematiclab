@@ -2,18 +2,24 @@
 //
 // Inflates only the client assets needed to catalog and render a mod's blocks
 // (blockstates, block models, textures, English lang file, FramedBlocks
-// geometry templates) and turns them into plain data. Never touches class
+// geometry templates) plus the rule data generated-block providers read
+// (`generated/jar-data.ts`), and turns them into plain data. Never touches class
 // files — no mod code is ever loaded.
 
 import { strFromU8, unzipSync, type UnzipFileInfo } from "fflate";
 
 import type { AppearanceSources } from "../render/block-appearance";
+import {
+  providerDataGeneratesBlocks,
+  providerJarEntry,
+  type ProviderJarReader,
+} from "./generated/jar-data";
 import { computeModAppearances } from "./mod-appearance";
 import {
   parseFramedTemplate,
   type TemplateCube,
 } from "../render/camo/shape-pack";
-import type { ModBlock, ParsedModAssets } from "./types";
+import type { ModBlock, ParsedModAssets, ProviderData } from "./types";
 
 const ASSET_PATH_RE =
   /^assets\/([^/]+)\/(blockstates\/.+\.json|models\/.+\.json|textures\/.+\.png(?:\.mcmeta)?|lang\/en_us\.json)$/;
@@ -39,6 +45,7 @@ export const NO_BLOCKS_WARNING = "No blocks found in this mod";
 /** True if a zip entry should be inflated by `parseModJar`. */
 export function isModAssetEntry(name: string): boolean {
   if (TEMPLATE_PATH_RE.test(name)) return true;
+  if (providerJarEntry(name) !== null) return true;
   const match = ASSET_PATH_RE.exec(name);
   return match !== null && match[1] !== "minecraft";
 }
@@ -82,9 +89,22 @@ export function parseModJar(
   const allTextureMeta: Record<string, unknown> = {};
   const lang: Record<string, string> = {};
   const templates: Record<string, TemplateCube[]> = {};
+  const providerEntries = new Map<ProviderJarReader, Map<string, unknown>>();
 
   const names = Object.keys(entries).sort();
   for (const name of names) {
+    const providerEntry = providerJarEntry(name);
+    if (providerEntry !== null) {
+      const { reader, key } = providerEntry;
+      let readerEntries = providerEntries.get(reader);
+      if (readerEntries === undefined) {
+        readerEntries = new Map();
+        providerEntries.set(reader, readerEntries);
+      }
+      readerEntries.set(key, parseJson(name, entries[name], warnings));
+      namespaces.add(reader.namespace);
+      continue;
+    }
     const template = TEMPLATE_PATH_RE.exec(name);
     if (template !== null) {
       const json = parseJson(name, entries[name], warnings);
@@ -145,7 +165,14 @@ export function parseModJar(
       properties: extractProperties(blockstates[id]),
     }));
 
-  if (blocks.length === 0) warnings.push(NO_BLOCKS_WARNING);
+  const providerData: ProviderData = {};
+  for (const [reader, readerEntries] of providerEntries) {
+    providerData[reader.namespace] = reader.read(readerEntries, warnings);
+  }
+
+  if (blocks.length === 0 && !providerDataGeneratesBlocks(providerData)) {
+    warnings.push(NO_BLOCKS_WARNING);
+  }
 
   // Keep only models reachable from a blockstate, and only textures those
   // models (or their in-mod parents) reference.
@@ -205,6 +232,7 @@ export function parseModJar(
     textures,
     textureMeta,
     templates,
+    ...(providerEntries.size > 0 ? { providerData } : {}),
     warnings,
     appearancesComputed: vanilla !== null,
   };
