@@ -16,7 +16,7 @@ import {
   peekLoadedModAssets,
   type LoadedModsSnapshot,
 } from "../registry";
-import type { ModBlock } from "../types";
+import type { LoadedModMeta, ModBlock } from "../types";
 import type {
   GeneratedBlockFiles,
   GeneratedBlockProperties,
@@ -37,6 +37,13 @@ let providers: ReadonlyMap<string, GeneratedBlockProvider> =
 let vanillaAssets: GeneratedVanillaAssets | null = null;
 let loadVanilla: () => Promise<GeneratedVanillaAssets | null> = () =>
   loadGeneratedVanillaAssets();
+
+// Bumped when `loadGeneratedBlockFiles` brings assets into memory that
+// weren't there before, so UI reading sync results (catalog, enumeration)
+// can re-render.
+let filesRevision = 0;
+const loadedSignatures = new Map<string, string>();
+const filesListeners = new Set<() => void>();
 
 let filesCache: {
   for: LoadedModsSnapshot;
@@ -128,7 +135,38 @@ export async function loadGeneratedBlockFiles(
     ...files.files.map((file) => getLoadedModAssets(file.key)),
   ]);
   vanillaAssets = vanilla;
-  return getGeneratedBlockFiles(gameVersion);
+  const loaded = getGeneratedBlockFiles(gameVersion);
+  const signature = generatedAssetsSignature(loaded);
+  if (signature !== loadedSignatures.get(gameVersion)) {
+    loadedSignatures.set(gameVersion, signature);
+    filesRevision++;
+    for (const listener of filesListeners) listener();
+  }
+  return loaded;
+}
+
+/**
+ * Which of `files`' assets are in memory: changes whenever results computed
+ * from `files` may change (e.g. a file's rule data was read since).
+ */
+export function generatedAssetsSignature(files: GeneratedBlockFiles): string {
+  const loaded = files.files
+    .filter((file) => files.assets(file) !== null)
+    .map((file) => file.key);
+  return `${files.vanilla ? "vanilla" : "-"}|${loaded.join("|")}`;
+}
+
+/** Notified when `loadGeneratedBlockFiles` read new assets. */
+export function subscribeGeneratedBlockFiles(listener: () => void): () => void {
+  filesListeners.add(listener);
+  return () => {
+    filesListeners.delete(listener);
+  };
+}
+
+/** Changes whenever `subscribeGeneratedBlockFiles` listeners are notified. */
+export function getGeneratedBlockFilesRevision(): number {
+  return filesRevision;
 }
 
 /**
@@ -146,12 +184,65 @@ export function resolveGeneratedBlock(
   return provider.resolve(id, properties, getGeneratedBlockFiles(gameVersion));
 }
 
+/** The blocks one provider can generate from the files of a version. */
+export interface GeneratedBlockSet {
+  provider: GeneratedBlockProvider;
+  /** The loaded file providing the provider's namespace, or null. */
+  file: LoadedModMeta | null;
+  /** Sorted by id. */
+  blocks: readonly ModBlock[];
+}
+
+// Enumerations per files view, redone when its in-memory assets change.
+const enumerations = new WeakMap<
+  GeneratedBlockFiles,
+  { signature: string; value: readonly GeneratedBlockSet[] }
+>();
+
+/**
+ * Per provider, every block it can generate from the files for
+ * `gameVersion` (with the assets in memory; `loadGeneratedBlockFiles`
+ * first). Providers that generate nothing are left out. Cached until the
+ * files or their in-memory assets change.
+ */
+export function enumerateGeneratedBlockSets(
+  gameVersion: string,
+): readonly GeneratedBlockSet[] {
+  const files = getGeneratedBlockFiles(gameVersion);
+  const signature = generatedAssetsSignature(files);
+  const cached = enumerations.get(files);
+  if (cached?.signature === signature) return cached.value;
+  const value = [...providers.values()]
+    .map((provider) => ({
+      provider,
+      file: files.fileForNamespace(provider.namespace),
+      blocks: provider.enumerate(files),
+    }))
+    .filter((set) => set.blocks.length > 0);
+  enumerations.set(files, { signature, value });
+  return value;
+}
+
+/**
+ * The enumerated generated block `id` for `gameVersion` and its provider, or
+ * null.
+ */
+export function getEnumeratedGeneratedBlock(
+  id: string,
+  gameVersion: string,
+): { provider: GeneratedBlockProvider; block: ModBlock } | null {
+  const provider = getGeneratedBlockProvider(namespaceOf(id));
+  if (provider === null) return null;
+  const set = enumerateGeneratedBlockSets(gameVersion).find(
+    (s) => s.provider === provider,
+  );
+  const block = set?.blocks.find((b) => b.id === id);
+  return block === undefined ? null : { provider, block };
+}
+
 /** Every block the providers can generate from the files for `gameVersion`. */
 export function enumerateGeneratedBlocks(gameVersion: string): ModBlock[] {
-  const files = getGeneratedBlockFiles(gameVersion);
-  return [...providers.values()].flatMap((provider) =>
-    provider.enumerate(files),
-  );
+  return enumerateGeneratedBlockSets(gameVersion).flatMap((set) => set.blocks);
 }
 
 // Test-only: replace the registered providers (null restores the built-ins).
@@ -169,4 +260,5 @@ export function __setGeneratedVanillaLoaderForTests(
 ): void {
   loadVanilla = loader ?? (() => loadGeneratedVanillaAssets());
   vanillaAssets = null;
+  loadedSignatures.clear();
 }

@@ -8,6 +8,15 @@ import {
   searchBlockCatalog,
 } from "../block-catalog";
 import * as registry from "../mods/registry";
+import { __setGeneratedVanillaLoaderForTests } from "../mods/generated/registry";
+import {
+  CHISEL as UCW_CHISEL,
+  ID as UCW_ID,
+  NATURA as UCW_NATURA,
+  NATURA_ASSETS as UCW_NATURA_ASSETS,
+  VANILLA as UCW_VANILLA,
+  loadAll as loadUcwFiles,
+} from "../mods/generated/__tests__/ucw-test-files";
 import { KNOWN_VERSIONS } from "../schemlib/schematic-formats/version-mapping";
 import * as store from "../mods/store";
 import type { LoadedModAssets, LoadedModMeta } from "../mods/types";
@@ -275,5 +284,58 @@ describe("block-catalog scoped to a version", () => {
     expect(
       isCatalogedBlockId("minecraft:cherry_planks", scopeFor("1.20.1")),
     ).toBe(true);
+  });
+});
+
+describe("block-catalog with generated blocks", () => {
+  const scopeFor = (versionId: string) => ({
+    version: KNOWN_VERSIONS[versionId],
+    versionId,
+  });
+
+  beforeEach(async () => {
+    await store.__resetModStoreForTests();
+    registry.__resetLoadedModsForTests();
+    globalThis.indexedDB = new IDBFactory();
+    __setGeneratedVanillaLoaderForTests(async () => UCW_VANILLA);
+  });
+
+  afterEach(() => {
+    registry.__resetLoadedModsForTests();
+    __setGeneratedVanillaLoaderForTests(null);
+  });
+
+  it("lists a version's generated blocks when UCW, Chisel and the rule's mods are loaded", async () => {
+    await loadUcwFiles();
+    const scope = scopeFor("1.12.2");
+    expect(searchBlockCatalog("unlimitedchiselworks:", 10, scope)).toEqual([
+      UCW_ID,
+    ]);
+    expect(searchBlockCatalog("natura_nether", 10, scope)).toEqual([UCW_ID]);
+    expect(isCatalogedBlockId(UCW_ID, scope)).toBe(true);
+    // Unscoped, like other mod blocks.
+    expect(isCatalogedBlockId(UCW_ID)).toBe(true);
+    expect(getBlockCatalog()).toContain(UCW_ID);
+  });
+
+  it("leaves them out of any other version", async () => {
+    await loadUcwFiles();
+    const scope = scopeFor("1.20.1");
+    expect(searchBlockCatalog("unlimitedchiselworks:", 10, scope)).toEqual([]);
+    expect(isCatalogedBlockId(UCW_ID, scope)).toBe(false);
+  });
+
+  it("leaves them out until the rule's mods are loaded", async () => {
+    await loadUcwFiles(false);
+    const scope = scopeFor("1.12.2");
+    expect(isCatalogedBlockId(UCW_ID, scope)).toBe(false);
+    expect(isCatalogedBlockId(UCW_ID)).toBe(false);
+
+    await registry.addLoadedMod(UCW_NATURA, UCW_NATURA_ASSETS);
+    expect(isCatalogedBlockId(UCW_ID, scope)).toBe(true);
+    expect(isCatalogedBlockId(UCW_ID)).toBe(true);
+
+    await registry.removeLoadedMod(UCW_CHISEL.key);
+    expect(isCatalogedBlockId(UCW_ID, scope)).toBe(false);
   });
 });

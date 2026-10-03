@@ -10,6 +10,18 @@ import {
 } from "@/lib/advanced/suggest-blocks";
 import { useVanillaBlockColors } from "@/lib/advanced/vanilla-block-colors";
 import { ensureModAppearances } from "@/lib/mods/appearance-backfill";
+import {
+  getGeneratedBlockProvider,
+  getGeneratedBlockFilesRevision,
+  subscribeGeneratedBlockFiles,
+  type GeneratedBlockSet,
+} from "@/lib/mods/generated/registry";
+import {
+  isGeneratedBlockId,
+  loadGeneratedBlockRender,
+  loadGeneratedBlockSetsWithAppearances,
+} from "@/lib/mods/generated/render";
+import type { ModBlock } from "@/lib/mods/types";
 import { useLoadedMods } from "@/lib/mods/registry";
 import { vanillaBlocksForVersion } from "@/lib/schemlib/data/vanilla-blocks";
 import type { MinecraftVersion } from "@/lib/schemlib/schematic-formats/version-mapping";
@@ -54,6 +66,82 @@ export function BlockSuggestions({
     }
   }, [loadedMods, versionId, modIds, sourceNamespace]);
 
+  // Blocks generated from the candidate mods' files (Unlimited Chisel
+  // Works), with appearances from their generated textures, loaded in the
+  // background.
+  const generatedFilesRevision = React.useSyncExternalStore(
+    subscribeGeneratedBlockFiles,
+    getGeneratedBlockFilesRevision,
+    getGeneratedBlockFilesRevision,
+  );
+  const generatesCandidates = loadedMods.some(
+    (file) =>
+      file.gameVersion === versionId &&
+      modIds.has(file.modId) &&
+      file.namespaces.some((ns) => getGeneratedBlockProvider(ns) !== null),
+  );
+  const [generated, setGenerated] = React.useState<{
+    for: string;
+    mods: typeof loadedMods;
+    sets: readonly GeneratedBlockSet[];
+  } | null>(null);
+  const generatedFor = generatesCandidates
+    ? `${versionId}\n${generatedFilesRevision}`
+    : null;
+  React.useEffect(() => {
+    if (generatedFor === null) return;
+    let cancelled = false;
+    void loadGeneratedBlockSetsWithAppearances(versionId)
+      .then((sets) => {
+        if (!cancelled) {
+          setGenerated({ for: generatedFor, mods: loadedMods, sets });
+        }
+      })
+      .catch((err: unknown) => {
+        console.warn("Could not load generated blocks.", err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [generatedFor, versionId, loadedMods]);
+  const generatedSets =
+    generatedFor !== null &&
+    generated?.for === generatedFor &&
+    generated.mods === loadedMods
+      ? generated.sets
+      : undefined;
+
+  // A generated source block's appearance, from its generated textures.
+  const [generatedSource, setGeneratedSource] = React.useState<{
+    for: string;
+    block: ModBlock | null;
+  } | null>(null);
+  const generatedSourceFor = isGeneratedBlockId(sourceBlockId)
+    ? `${sourceVersionId}\n${sourceBlockId}\n${generatedFilesRevision}`
+    : null;
+  React.useEffect(() => {
+    if (generatedSourceFor === null) return;
+    let cancelled = false;
+    void loadGeneratedBlockRender([sourceBlockId], sourceVersionId)
+      .then(({ blocks }) => {
+        if (cancelled) return;
+        setGeneratedSource({
+          for: generatedSourceFor,
+          block: blocks.get(sourceBlockId) ?? null,
+        });
+      })
+      .catch((err: unknown) => {
+        console.warn(`Could not load ${sourceBlockId}.`, err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [generatedSourceFor, sourceBlockId, sourceVersionId]);
+  const generatedSourceBlock =
+    generatedSource !== null && generatedSource.for === generatedSourceFor
+      ? generatedSource.block
+      : null;
+
   const candidates = React.useMemo(
     () =>
       suggestionCandidates({
@@ -62,8 +150,9 @@ export function BlockSuggestions({
         loadedMods,
         modIds,
         versionId,
+        generated: generatedSets,
       }),
-    [version, versionId, vanillaColors, loadedMods, modIds],
+    [version, versionId, vanillaColors, loadedMods, modIds, generatedSets],
   );
 
   const suggestions = React.useMemo(
@@ -76,11 +165,19 @@ export function BlockSuggestions({
             vanillaColors,
             loadedMods,
             sourceVersionId,
+            generatedSourceBlock,
           ),
         },
         candidates,
       }),
-    [sourceBlockId, vanillaColors, loadedMods, sourceVersionId, candidates],
+    [
+      sourceBlockId,
+      vanillaColors,
+      loadedMods,
+      sourceVersionId,
+      generatedSourceBlock,
+      candidates,
+    ],
   );
 
   if (vanillaColors === null) {

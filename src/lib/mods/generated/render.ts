@@ -19,7 +19,12 @@ import {
 import { canonicalJson } from "../store";
 import type { LoadedModMeta, ModBlock } from "../types";
 import { generatedModelLookup } from "./model-lookup";
-import { getGeneratedBlockProvider, loadGeneratedBlockFiles } from "./registry";
+import {
+  enumerateGeneratedBlockSets,
+  getGeneratedBlockProvider,
+  loadGeneratedBlockFiles,
+  type GeneratedBlockSet,
+} from "./registry";
 import type {
   GeneratedBlockFiles,
   GeneratedBlockProvider,
@@ -285,6 +290,40 @@ export async function loadGeneratedBlockRender(
     blocks.set(id, appearance === undefined ? block : { ...block, appearance });
   }
   return { blockstates, models, textures, blocks };
+}
+
+// Enumerations with appearances, per enumeration (a new array whenever the
+// generated block sets change).
+const setsWithAppearances = new WeakMap<
+  readonly GeneratedBlockSet[],
+  Promise<readonly GeneratedBlockSet[]>
+>();
+
+/**
+ * Every block the providers can generate from the files loaded for
+ * `gameVersion` (`enumerateGeneratedBlockSets` after loading the files),
+ * with `appearance` from their generated textures where it resolves. For
+ * "Suggest a block", which ranks candidates by colour.
+ */
+export async function loadGeneratedBlockSetsWithAppearances(
+  gameVersion: string,
+): Promise<readonly GeneratedBlockSet[]> {
+  await loadGeneratedBlockFiles(gameVersion);
+  const sets = enumerateGeneratedBlockSets(gameVersion);
+  let loaded = setsWithAppearances.get(sets);
+  if (loaded === undefined) {
+    loaded = loadGeneratedBlockRender(
+      sets.flatMap((set) => set.blocks.map((block) => block.id)),
+      gameVersion,
+    ).then(({ blocks }) =>
+      sets.map((set) => ({
+        ...set,
+        blocks: set.blocks.map((block) => blocks.get(block.id) ?? block),
+      })),
+    );
+    setsWithAppearances.set(sets, loaded);
+  }
+  return loaded;
 }
 
 // Test-only: forget generated textures.

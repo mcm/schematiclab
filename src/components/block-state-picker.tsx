@@ -24,6 +24,13 @@ import { carryCamoBlockProperties } from "@/lib/camo/block-properties";
 import { defaultCamoSlots } from "@/lib/camo/extract";
 import type { CamoChoice } from "@/lib/camo/write";
 import { useEditorState } from "@/lib/editor-state";
+import {
+  getEnumeratedGeneratedBlock,
+  getGeneratedBlockFilesRevision,
+  getGeneratedBlockProvider,
+  loadGeneratedBlockFiles,
+  subscribeGeneratedBlockFiles,
+} from "@/lib/mods/generated/registry";
 import { completeBlockProperties } from "@/lib/mods/property-domains";
 import {
   getLoadedModBlock,
@@ -173,10 +180,24 @@ export function BlockStatePicker({
         : undefined,
     [scopeVersion, scopeVersionId],
   );
+  // Blocks generated from the files of the version (Unlimited Chisel Works)
+  // are listed once those files' rule data is in memory.
+  const generatedFilesRevision = React.useSyncExternalStore(
+    subscribeGeneratedBlockFiles,
+    getGeneratedBlockFilesRevision,
+    getGeneratedBlockFilesRevision,
+  );
+  React.useEffect(() => {
+    if (modVersionId === null) return;
+    void loadGeneratedBlockFiles(modVersionId).catch((err: unknown) => {
+      console.warn("Could not load generated blocks.", err);
+    });
+  }, [modVersionId, loadedMods]);
   const suggestions = React.useMemo(() => {
     void loadedMods;
+    void generatedFilesRevision;
     return searchBlockCatalog(query, MAX_SUGGESTIONS, catalogScope);
-  }, [query, loadedMods, catalogScope]);
+  }, [query, loadedMods, generatedFilesRevision, catalogScope]);
   // The list can shrink underneath a stale highlight (e.g. a mod unloads
   // while the picker is open), so clamp during render rather than trusting
   // the stored index.
@@ -249,11 +270,19 @@ export function BlockStatePicker({
           )
         : formatStateDisplay(parsedTarget.blockId, parsedTarget.properties)
       : "—";
+  const targetGenerated =
+    parsedTarget && modVersionId !== null
+      ? getEnumeratedGeneratedBlock(parsedTarget.blockId, modVersionId)
+      : null;
   const targetModBlock = parsedTarget
-    ? getLoadedModBlock(parsedTarget.blockId, modVersionId)
+    ? (getLoadedModBlock(parsedTarget.blockId, modVersionId) ??
+      targetGenerated?.block ??
+      null)
     : null;
-  const targetMod = parsedTarget
-    ? getModForBlockId(parsedTarget.blockId, modVersionId)
+  const targetModName = parsedTarget
+    ? (getModForBlockId(parsedTarget.blockId, modVersionId)?.modName ??
+      targetGenerated?.provider.modName ??
+      null)
     : null;
 
   function selectSuggestion(id: string) {
@@ -445,7 +474,10 @@ export function BlockStatePicker({
               ) : (
                 suggestions.map((id, i) => {
                   const isHighlighted = i === activeIndex;
-                  const mod = getModForBlockId(id, modVersionId);
+                  const modName =
+                    getModForBlockId(id, modVersionId)?.modName ??
+                    getGeneratedBlockProvider(id.slice(0, id.indexOf(":")))
+                      ?.modName;
                   return (
                     <li
                       key={id}
@@ -482,7 +514,7 @@ export function BlockStatePicker({
                       >
                         {id}
                       </span>
-                      {mod ? (
+                      {modName ? (
                         <span
                           style={{
                             flexShrink: 0,
@@ -491,7 +523,7 @@ export function BlockStatePicker({
                             color: "var(--text-tertiary)",
                           }}
                         >
-                          {mod.modName}
+                          {modName}
                         </span>
                       ) : null}
                     </li>
@@ -564,7 +596,7 @@ export function BlockStatePicker({
             {targetModBlock ? (
               <ModBlockHint
                 displayName={targetModBlock.displayName}
-                modName={targetMod?.modName ?? null}
+                modName={targetModName}
                 properties={completeBlockProperties(targetModBlock.properties)}
               />
             ) : null}

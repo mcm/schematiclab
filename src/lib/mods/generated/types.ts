@@ -131,7 +131,10 @@ export interface GeneratedBlockNeedsMods {
   provider: string;
   /** Namespaces to load for the resolution's Minecraft version, sorted. */
   namespaces: string[];
-  /** Block ids it is generated from, when known (for messages). */
+  /**
+   * Block ids it is generated from, when known (for messages): the block
+   * whose material it takes (UCW's `from`) first.
+   */
   sourceBlocks: string[];
   /**
    * A loaded block state to render instead (e.g. the un-recoloured Chisel

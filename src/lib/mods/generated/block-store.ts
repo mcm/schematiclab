@@ -64,6 +64,14 @@ export function getGeneratedBlock(
   return current.blocks.get(blockId);
 }
 
+/**
+ * True once a load for `gameVersion` finished, so its files' assets are in
+ * memory and resolving against them sees the loaded rules.
+ */
+export function generatedBlocksLoadedFor(gameVersion: string): boolean {
+  return current !== null && current.key.startsWith(`${gameVersion}\n`);
+}
+
 export function subscribeGeneratedBlocks(listener: () => void): () => void {
   listeners.add(listener);
   return () => {
