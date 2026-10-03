@@ -903,6 +903,7 @@ function ModpackLoadStatus() {
 
   const running = modpackLoad.status === "running";
   const busy = running || modpackLoad.status === "saving";
+  const counts = describeModpackCounts(modpackLoad);
   return (
     <div style={box}>
       <div
@@ -966,9 +967,9 @@ function ModpackLoadStatus() {
           style={{ width: "100%", height: 6 }}
         />
       ) : null}
-      <span style={{ color: "var(--text-tertiary)" }}>
-        {describeModpackCounts(modpackLoad)}
-      </span>
+      {counts === null ? null : (
+        <span style={{ color: "var(--text-tertiary)" }}>{counts}</span>
+      )}
       {modpackLoad.failures.length > 0 ? (
         <details>
           <summary style={{ cursor: "pointer", color: "var(--color-error)" }}>
@@ -1013,7 +1014,7 @@ function DismissModpackButton() {
 
 type ModpackProgressState = Extract<
   ModpackLoadState,
-  { status: "running" | "saving" | "done" | "cancelled" }
+  { status: "running" | "saving" | "done" | "cancelled" | "unloaded" }
 >;
 
 function describeModpackHeadline(load: ModpackProgressState): string {
@@ -1034,10 +1035,13 @@ function describeModpackHeadline(load: ModpackProgressState): string {
       return `Loaded ${load.packName}`;
     case "cancelled":
       return `Stopped loading ${load.packName} (${load.processed} / ${load.total})`;
+    case "unloaded":
+      return `Stopped loading ${load.packName}: all mods were unloaded`;
   }
 }
 
-function describeModpackCounts(load: ModpackProgressState): string {
+function describeModpackCounts(load: ModpackProgressState): string | null {
+  if (load.status === "unloaded") return null;
   const plural = (n: number, one: string, many: string) =>
     `${n.toLocaleString()} ${n === 1 ? one : many}`;
   return [

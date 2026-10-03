@@ -9,10 +9,10 @@
 // it keeps at most one jar in memory), then registered together in one
 // `addLoadedMods` batch, so the registry, and the 3D preview's atlas rebuild,
 // update once per pack instead of once per mod. A cancelled load still
-// registers what it parsed. Mods without blocks are skipped quietly; files
-// already loaded are skipped without re-parsing. One modpack load runs at a
-// time; its progress lives in a module-level store subscribed via
-// `useSyncExternalStore`.
+// registers what it parsed; "Unload all" during a load stops it and registers
+// nothing. Mods without blocks are skipped quietly; files already loaded are
+// skipped without re-parsing. One modpack load runs at a time; its progress
+// lives in a module-level store subscribed via `useSyncExternalStore`.
 
 import * as React from "react";
 
@@ -36,6 +36,7 @@ import {
   getSnapshot,
   getUnloadGeneration,
   hydrateLoadedMods,
+  onUnloadAll,
 } from "./registry";
 import {
   loadedModKey,
@@ -76,7 +77,8 @@ export interface ModpackLoadProgress {
 export type ModpackLoadState =
   | { status: "reading" }
   | ({
-      status: "running" | "saving" | "done" | "cancelled";
+      /** `unloaded`: "Unload all" ran mid-load, so nothing was added. */
+      status: "running" | "saving" | "done" | "cancelled" | "unloaded";
     } & ModpackLoadProgress)
   | { status: "error"; message: string };
 
@@ -190,9 +192,27 @@ export async function startModpackLoad(
   const abort = new AbortController();
   controller = abort;
   setState({ status: "reading" });
-  // "Unload all" while this load runs drops its files.
+  // "Unload all" while this load runs stops it (aborting any download) and
+  // drops its files.
   const generation = getUnloadGeneration();
+  const unloaded = () => getUnloadGeneration() !== generation;
+  const unsubscribe = onUnloadAll(() => {
+    abort.abort();
+  });
+  try {
+    await loadModpack(files, deps, abort, generation, unloaded);
+  } finally {
+    unsubscribe();
+  }
+}
 
+async function loadModpack(
+  files: readonly ModpackFile[],
+  deps: ModpackLoadDeps,
+  abort: AbortController,
+  generation: number,
+  unloaded: () => boolean,
+): Promise<void> {
   const located = locateModpackFiles(files);
   const fail = (message: string) => {
     if (controller === abort) controller = null;
@@ -319,7 +339,13 @@ export async function startModpackLoad(
   }
 
   progress = { ...progress, current: null, download: null };
-  let unloaded = false;
+  if (unloaded()) {
+    // Everything this load found, already loaded or not, is gone.
+    if (controller === abort) controller = null;
+    setState({ status: "unloaded", ...progress, loaded: 0, alreadyLoaded: 0 });
+    return;
+  }
+  let dropped = false;
   if (parsed.length > 0) {
     setState({ status: "saving", ...progress });
     try {
@@ -329,8 +355,7 @@ export async function startModpackLoad(
           deps,
         );
       } else {
-        unloaded = true;
-        progress = { ...progress, loaded: 0 };
+        dropped = true;
       }
     } catch (err) {
       const message = errorMessage(err, "Could not save the mods.");
@@ -346,10 +371,11 @@ export async function startModpackLoad(
   }
 
   if (controller === abort) controller = null;
-  setState({
-    status: abort.signal.aborted || unloaded ? "cancelled" : "done",
-    ...progress,
-  });
+  setState(
+    dropped
+      ? { status: "unloaded", ...progress, loaded: 0, alreadyLoaded: 0 }
+      : { status: abort.signal.aborted ? "cancelled" : "done", ...progress },
+  );
 }
 
 // Test-only: reset module state between tests.
