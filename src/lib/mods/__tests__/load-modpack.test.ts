@@ -10,6 +10,7 @@ import {
   type ModpackFile,
   type ModpackLoadDeps,
 } from "../load-modpack";
+import { __resetLoadedModsForTests, removeAllLoadedMods } from "../registry";
 import type { ParsedModAssets } from "../types";
 
 function parsed(blocks = 1): ParsedModAssets {
@@ -266,7 +267,64 @@ describe("startModpackLoad", () => {
       generation: expect.any(Number),
     });
     expect(deps.mapNamespaces).not.toHaveBeenCalled();
-    expect(getModpackLoad()).toMatchObject({ status: "cancelled", loaded: 0 });
+    expect(getModpackLoad()).toMatchObject({ status: "unloaded", loaded: 0 });
+  });
+
+  it("stops at once when every mod is unloaded mid-load", async () => {
+    __resetLoadedModsForTests();
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const deps = makeDeps({
+      loadedFiles: async () => new Map([["3:1.21.1", 30]]),
+      parse: vi.fn(async () => {
+        await removeAllLoadedMods();
+        return parsed();
+      }),
+    });
+    await startModpackLoad(
+      [
+        manifest([addon(1, 10, "a"), addon(2, 20, "b"), addon(3, 30, "c")]),
+        jar("a"),
+      ],
+      deps,
+    );
+
+    // "b" (not on disk) is never downloaded; nothing is registered.
+    expect(deps.parse).toHaveBeenCalledTimes(1);
+    expect(deps.download).not.toHaveBeenCalled();
+    expect(deps.addMany).not.toHaveBeenCalled();
+    expect(deps.mapNamespaces).not.toHaveBeenCalled();
+    expect(getModpackLoad()).toMatchObject({
+      status: "unloaded",
+      processed: 1,
+      loaded: 0,
+      alreadyLoaded: 0,
+    });
+    __resetLoadedModsForTests();
+  });
+
+  it("aborts an in-flight download when every mod is unloaded", async () => {
+    __resetLoadedModsForTests();
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const deps = makeDeps({
+      download: vi.fn(
+        (_modId, _fileId, _onProgress, signal?: AbortSignal) =>
+          new Promise<Uint8Array>((_resolve, reject) => {
+            signal?.addEventListener("abort", () => {
+              reject(new DOMException("Aborted", "AbortError"));
+            });
+            void removeAllLoadedMods();
+          }),
+      ),
+    });
+    await startModpackLoad([manifest([addon(1, 10, "a")])], deps);
+
+    expect(deps.parse).not.toHaveBeenCalled();
+    expect(deps.addMany).not.toHaveBeenCalled();
+    expect(getModpackLoad()).toMatchObject({
+      status: "unloaded",
+      failures: [],
+    });
+    __resetLoadedModsForTests();
   });
 
   it("shows a saving state, then reports a failed batch save per mod", async () => {

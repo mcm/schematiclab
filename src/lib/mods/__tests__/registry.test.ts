@@ -556,6 +556,17 @@ describe("loaded-mods registry", () => {
     expect(registry.getSnapshot().map((m) => m.key)).toEqual(["1:1.20.1"]);
   });
 
+  it("notifies unload-all listeners even when nothing was loaded", async () => {
+    const listener = vi.fn();
+    const unsubscribe = registry.onUnloadAll(listener);
+    await registry.removeAllLoadedMods();
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    unsubscribe();
+    await registry.removeAllLoadedMods();
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
   it("falls back to in-memory when IndexedDB is unavailable", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     // @ts-expect-error simulate an environment without IndexedDB

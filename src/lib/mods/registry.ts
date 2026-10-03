@@ -61,6 +61,7 @@ const removedKeys = new Set<string>();
 // Bumped by `removeAllLoadedMods`, so a hydrate or a mod load that started
 // earlier drops everything it read.
 let clearGeneration = 0;
+const unloadAllListeners = new Set<() => void>();
 
 let hydration: Promise<void> | null = null;
 let persistenceDisabled = false;
@@ -158,6 +159,14 @@ export function getUnloadGeneration(): number {
   return clearGeneration;
 }
 
+/** Call `listener` each time every mod is unloaded (even when none were). */
+export function onUnloadAll(listener: () => void): () => void {
+  unloadAllListeners.add(listener);
+  return () => {
+    unloadAllListeners.delete(listener);
+  };
+}
+
 export interface AddLoadedModsOptions {
   /** `getUnloadGeneration()` when the load started; stale → nothing is added. */
   generation?: number;
@@ -250,6 +259,9 @@ export async function removeAllLoadedMods(): Promise<void> {
   for (const mod of mods) removedKeys.add(mod.key);
   assetCache.clear();
   emit(EMPTY);
+  unloadAllListeners.forEach((listener) => {
+    listener();
+  });
 
   if (persistenceDisabled) return;
   try {
@@ -467,6 +479,7 @@ export function __resetLoadedModsForTests(): void {
   versionBlocks = null;
   versionBlockLookups = null;
   listeners.clear();
+  unloadAllListeners.clear();
   assetCache.clear();
   removedKeys.clear();
   clearGeneration = 0;
