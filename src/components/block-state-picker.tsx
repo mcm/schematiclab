@@ -187,12 +187,17 @@ export function BlockStatePicker({
     getGeneratedBlockFilesRevision,
     getGeneratedBlockFilesRevision,
   );
+  const generatesBlocks = loadedMods.some(
+    (file) =>
+      file.gameVersion === modVersionId &&
+      file.namespaces.some((ns) => getGeneratedBlockProvider(ns) !== null),
+  );
   React.useEffect(() => {
-    if (modVersionId === null) return;
+    if (modVersionId === null || !generatesBlocks) return;
     void loadGeneratedBlockFiles(modVersionId).catch((err: unknown) => {
       console.warn("Could not load generated blocks.", err);
     });
-  }, [modVersionId, loadedMods]);
+  }, [modVersionId, generatesBlocks, loadedMods]);
   const suggestions = React.useMemo(() => {
     void loadedMods;
     void generatedFilesRevision;

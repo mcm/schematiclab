@@ -114,6 +114,7 @@ export function BlockSuggestions({
   // A generated source block's appearance, from its generated textures.
   const [generatedSource, setGeneratedSource] = React.useState<{
     for: string;
+    mods: typeof loadedMods;
     block: ModBlock | null;
   } | null>(null);
   const generatedSourceFor = isGeneratedBlockId(sourceBlockId)
@@ -127,6 +128,7 @@ export function BlockSuggestions({
         if (cancelled) return;
         setGeneratedSource({
           for: generatedSourceFor,
+          mods: loadedMods,
           block: blocks.get(sourceBlockId) ?? null,
         });
       })
@@ -136,9 +138,11 @@ export function BlockSuggestions({
     return () => {
       cancelled = true;
     };
-  }, [generatedSourceFor, sourceBlockId, sourceVersionId]);
+  }, [generatedSourceFor, sourceBlockId, sourceVersionId, loadedMods]);
   const generatedSourceBlock =
-    generatedSource !== null && generatedSource.for === generatedSourceFor
+    generatedSource !== null &&
+    generatedSource.for === generatedSourceFor &&
+    generatedSource.mods === loadedMods
       ? generatedSource.block
       : null;
 

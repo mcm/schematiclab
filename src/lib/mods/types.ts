@@ -147,7 +147,6 @@ export function loadedModKey(modId: number, gameVersion: string): string {
   return `${modId}:${gameVersion}`;
 }
 
-/** Convert worker parse output into the persisted asset shape. */
 /** True for Minecraft versions before 1.13 (1.12 blockstate and model formats). */
 export function isLegacyGameVersion(gameVersion: string): boolean {
   const match = /^1\.(\d+)(?:\.|$)/.exec(gameVersion);
@@ -175,6 +174,7 @@ export function withLegacyAssetsWarning(meta: LoadedModMeta): LoadedModMeta {
   };
 }
 
+/** Convert worker parse output into the persisted asset shape. */
 export function toLoadedModAssets(parsed: ParsedModAssets): LoadedModAssets {
   const textures: Record<string, Blob> = {};
   for (const [key, bytes] of Object.entries(parsed.textures)) {

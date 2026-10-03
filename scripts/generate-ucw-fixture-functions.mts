@@ -76,6 +76,7 @@ function gitHead(checkout: string): string {
       .toString()
       .trim();
   } catch {
+    console.warn(`Couldn't read git HEAD in ${checkout}; recording "unknown"`);
     return "unknown";
   }
 }

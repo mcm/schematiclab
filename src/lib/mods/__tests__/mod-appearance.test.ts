@@ -180,7 +180,10 @@ describe("parseModJar appearances", () => {
     expect(Object.keys(result.models)).toEqual(["a:block/plain"]);
     const appearance = (id: string) =>
       result.blocks.find((block) => block.id === id)?.appearance;
-    expect(appearance("a:planks")?.fullCube).toBe(true);
+    expect(appearance("a:planks")).toEqual({
+      oklab: RED_OKLAB,
+      fullCube: true,
+    });
     expect(appearance("a:plain")?.oklab).toEqual(
       srgbToOklab(0, 0, 255).map((v) => Math.round(v * 1000) / 1000),
     );
