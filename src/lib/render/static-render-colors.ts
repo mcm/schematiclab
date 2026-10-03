@@ -23,8 +23,9 @@ export interface StaticRenderColors {
   ) => string | undefined;
 }
 
-/** The channel-wise average of `#rrggbb` colours. */
-export function averageHex(colors: readonly string[]): string {
+/** The channel-wise average of `#rrggbb` colours, undefined when empty. */
+export function averageHex(colors: readonly string[]): string | undefined {
+  if (colors.length === 0) return undefined;
   if (colors.length === 1) return colors[0];
   const sum = [0, 0, 0];
   for (const color of colors) {
@@ -92,7 +93,7 @@ export function staticRenderColors(
       const camos = slots.flatMap((slot) =>
         slot.state === null ? [] : [colorOfId(slot.state.name)],
       );
-      return camos.length === 0 ? undefined : averageHex(camos);
+      return averageHex(camos);
     },
   };
 }
