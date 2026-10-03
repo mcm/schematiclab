@@ -310,6 +310,33 @@ describe("buildModMappingContext", () => {
     });
   });
 
+  it("adds generated blocks, pending while they're resolved", () => {
+    const rows = describeModNamespaces(
+      input({ loadedMods: [file(1, "1.21", ["create:a"])] }),
+    );
+    const generated = {
+      "create:gen_0": { kind: "resolved" as const, properties: {} },
+    };
+    expect(
+      buildModMappingContext(rows, "1.21", {
+        blocks: { create: generated, other: {} },
+        loading: [],
+      }),
+    ).toEqual({
+      create: {
+        kind: "target",
+        blocks: { "create:a": { facing: ["north", "south"] } },
+        generated,
+      },
+    });
+    expect(
+      buildModMappingContext(rows, "1.21", {
+        blocks: {},
+        loading: ["create"],
+      }),
+    ).toEqual({ create: { kind: "pending" } });
+  });
+
   it("adds the mapped mod's file for the schematic's version as evidence", () => {
     const sourceFile = file(1, "1.20.1", ["create:old", "other:c"]);
     const [row] = describeModNamespaces(input({ loadedMods: [sourceFile] }));
