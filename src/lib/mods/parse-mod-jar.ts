@@ -9,6 +9,7 @@
 import { strFromU8, unzipSync, type UnzipFileInfo } from "fflate";
 
 import type { AppearanceSources } from "../render/block-appearance";
+import { legacyBlockstateRefs } from "./generated/legacy-blockstate";
 import {
   providerDataGeneratesBlocks,
   providerJarEntry,
@@ -197,6 +198,11 @@ export function parseModJar(
     for (const modelId of blockstateModelRefs(blockstates[id])) {
       visit(modelId, 0);
     }
+    // 1.12 blockstates name models without `block/` and set Forge variant
+    // textures themselves.
+    const legacy = legacyBlockstateRefs(blockstates[id]);
+    for (const modelId of legacy.models) visit(modelId, 0);
+    for (const texture of legacy.textures) textureRefs.add(texture);
   }
 
   const textures: Record<string, Uint8Array> = {};

@@ -5,10 +5,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as registry from "../registry";
 import * as store from "../store";
-import type {
-  LoadedModAssets,
-  LoadedModMeta,
-  NamespaceMapping,
+import {
+  isLegacyGameVersion,
+  LEGACY_ASSETS_RELOAD_WARNING,
+  type LoadedModAssets,
+  type LoadedModMeta,
+  type NamespaceMapping,
 } from "../types";
 
 function makeMeta(
@@ -242,6 +244,38 @@ describe("loaded-mods registry", () => {
     expect(registry.getLoadedNamespaces()).toEqual(new Set(["mod1"]));
     const assets = await registry.getLoadedModAssets("1:1.20.1");
     expect(assets?.models).toEqual(makeAssets("a").models);
+  });
+
+  it("warns on a 1.12 file stored before 1.12 models were read", async () => {
+    await store.putLoadedMod(
+      makeMeta(1, "1.12.2", { warnings: ["other"] }),
+      makeAssets("a"),
+    );
+    await store.putLoadedMod(
+      makeMeta(2, "1.12.2", { legacyAssetsRead: true }),
+      makeAssets("b"),
+    );
+    await store.putLoadedMod(makeMeta(3, "1.20.1"), makeAssets("c"));
+    await store.__resetModStoreForTests();
+    await registry.hydrateLoadedMods();
+
+    const warnings = Object.fromEntries(
+      registry.getSnapshot().map((m) => [m.key, m.warnings]),
+    );
+    expect(warnings).toEqual({
+      "1:1.12.2": [LEGACY_ASSETS_RELOAD_WARNING, "other"],
+      "2:1.12.2": undefined,
+      "3:1.20.1": undefined,
+    });
+  });
+
+  it("knows which game versions use 1.12 assets", () => {
+    expect(isLegacyGameVersion("1.12.2")).toBe(true);
+    expect(isLegacyGameVersion("1.7.10")).toBe(true);
+    expect(isLegacyGameVersion("1.12")).toBe(true);
+    expect(isLegacyGameVersion("1.13")).toBe(false);
+    expect(isLegacyGameVersion("1.20.1")).toBe(false);
+    expect(isLegacyGameVersion("26.1.2")).toBe(false);
   });
 
   it("persists added mods across a reload", async () => {

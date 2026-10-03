@@ -148,6 +148,44 @@ describe("parseModJar appearances", () => {
     });
   });
 
+  it("reads 1.12 Forge blockstates and 1.12 vanilla texture names", () => {
+    const result = parseModJar(
+      jar({
+        "assets/a/blockstates/planks.json": {
+          forge_marker: 1,
+          defaults: { model: "cube_all" },
+          variants: {
+            type: {
+              red: { textures: { all: "a:blocks/red" } },
+              stone: { textures: { all: "blocks/stone" } },
+            },
+          },
+        },
+        "assets/a/blockstates/plain.json": {
+          forge_marker: 1,
+          variants: { normal: [{ model: "a:plain" }] },
+        },
+        "assets/a/models/block/plain.json": {
+          parent: "block/cube_all",
+          textures: { all: "minecraft:blocks/stone" },
+        },
+        "assets/a/textures/blocks/red.png": solidPng([255, 0, 0, 255]),
+        "assets/a/textures/blocks/unused.png": solidPng([0, 255, 0, 255]),
+      }),
+      VANILLA,
+    );
+    // The jar keeps what 1.12 blockstates use, though no `variants` entry
+    // names a model.
+    expect(Object.keys(result.textures)).toEqual(["a:blocks/red"]);
+    expect(Object.keys(result.models)).toEqual(["a:block/plain"]);
+    const appearance = (id: string) =>
+      result.blocks.find((block) => block.id === id)?.appearance;
+    expect(appearance("a:planks")?.fullCube).toBe(true);
+    expect(appearance("a:plain")?.oklab).toEqual(
+      srgbToOklab(0, 0, 255).map((v) => Math.round(v * 1000) / 1000),
+    );
+  });
+
   it("leaves appearance absent when textures can't be resolved", () => {
     const result = parseModJar(bytes());
     expect(result.appearancesComputed).toBe(false);

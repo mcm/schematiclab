@@ -15,7 +15,12 @@ import * as React from "react";
 
 import { withProviderDataWarnings } from "./generated/jar-data";
 import * as store from "./store";
-import type { LoadedModAssets, LoadedModMeta, ModBlock } from "./types";
+import {
+  withLegacyAssetsWarning,
+  type LoadedModAssets,
+  type LoadedModMeta,
+  type ModBlock,
+} from "./types";
 
 export type LoadedModsSnapshot = readonly LoadedModMeta[];
 
@@ -125,7 +130,11 @@ export function hydrateLoadedMods(): Promise<void> {
             !removedKeys.has(file.key) &&
             !mods.some((mod) => sameFileSlot(mod, file)),
         )
-        .map(withProviderDataWarnings);
+        // One reload fixes both, so one warning is enough.
+        .map((file) => {
+          const warned = withProviderDataWarnings(file);
+          return warned !== file ? warned : withLegacyAssetsWarning(file);
+        });
       if (restored.length > 0) emit(Object.freeze([...restored, ...mods]));
     })();
   }

@@ -95,6 +95,12 @@ export interface LoadedModMeta {
    * loaded before provider data existed.
    */
   providerDataRead?: string[];
+  /**
+   * True on files for Minecraft before 1.13 (`isLegacyGameVersion`) loaded
+   * since their 1.12 models and textures are read. Older such files were
+   * stored without them.
+   */
+  legacyAssetsRead?: true;
   /** `Date.now()` when the mod was loaded. */
   loadedAt: number;
 }
@@ -142,6 +148,33 @@ export function loadedModKey(modId: number, gameVersion: string): string {
 }
 
 /** Convert worker parse output into the persisted asset shape. */
+/** True for Minecraft versions before 1.13 (1.12 blockstate and model formats). */
+export function isLegacyGameVersion(gameVersion: string): boolean {
+  const match = /^1\.(\d+)(?:\.|$)/.exec(gameVersion);
+  return match !== null && Number(match[1]) < 13;
+}
+
+export const LEGACY_ASSETS_RELOAD_WARNING =
+  "Reload this mod to read its Minecraft 1.12 models and textures. Until then its blocks show as missing in the 3D preview.";
+
+/**
+ * `meta` plus `LEGACY_ASSETS_RELOAD_WARNING` when it's a pre-1.13 file stored
+ * before 1.12 models and textures were read; `meta` itself otherwise.
+ */
+export function withLegacyAssetsWarning(meta: LoadedModMeta): LoadedModMeta {
+  if (
+    meta.legacyAssetsRead === true ||
+    !isLegacyGameVersion(meta.gameVersion) ||
+    (meta.warnings ?? []).includes(LEGACY_ASSETS_RELOAD_WARNING)
+  ) {
+    return meta;
+  }
+  return {
+    ...meta,
+    warnings: [LEGACY_ASSETS_RELOAD_WARNING, ...(meta.warnings ?? [])],
+  };
+}
+
 export function toLoadedModAssets(parsed: ParsedModAssets): LoadedModAssets {
   const textures: Record<string, Blob> = {};
   for (const [key, bytes] of Object.entries(parsed.textures)) {

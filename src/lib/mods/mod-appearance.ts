@@ -15,6 +15,8 @@ import {
   type BlockAppearance,
   type TextureColor,
 } from "../render/block-appearance";
+import { modernizeLegacyModAssets } from "./generated/legacy-blockstate";
+import { modernVanillaTextureId } from "./generated/legacy-textures";
 
 export interface ModAppearanceInput {
   blockIds: readonly string[];
@@ -38,14 +40,17 @@ export function computeModAppearances(
   vanilla: AppearanceSources | null = null,
 ): Record<string, BlockAppearance> {
   const textureColors = new Map<string, TextureColor | null>();
+  // 1.12 blockstates are read the way the 3D preview draws them.
+  const { blockstates, models } = modernizeLegacyModAssets(
+    { blockstates: input.blockstates, models: input.models },
+    (id) => vanilla?.getModel(id) !== undefined,
+  );
   const sources: AppearanceSources = {
     getModel: (id) =>
-      Object.hasOwn(input.models, id)
-        ? input.models[id]
-        : vanilla?.getModel(id),
+      Object.hasOwn(models, id) ? models[id] : vanilla?.getModel(id),
     getTextureColor: (id) => {
       if (!Object.hasOwn(input.textures, id)) {
-        return vanilla?.getTextureColor(id) ?? null;
+        return vanilla?.getTextureColor(modernVanillaTextureId(id)) ?? null;
       }
       let color = textureColors.get(id);
       if (color === undefined) {
@@ -69,8 +74,8 @@ export function computeModAppearances(
 
   const out: Record<string, BlockAppearance> = {};
   for (const id of input.blockIds) {
-    if (!Object.hasOwn(input.blockstates, id)) continue;
-    const appearance = blockAppearance(id, input.blockstates[id], sources);
+    if (!Object.hasOwn(blockstates, id)) continue;
+    const appearance = blockAppearance(id, blockstates[id], sources);
     if (appearance !== undefined) out[id] = appearance;
   }
   return out;
