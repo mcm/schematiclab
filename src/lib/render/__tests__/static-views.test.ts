@@ -378,6 +378,7 @@ describe("colours", () => {
   );
 
   it("averages hex colours", () => {
+    expect(averageHex([])).toBeUndefined();
     expect(averageHex(["#102030"])).toBe("#102030");
     expect(averageHex(["#000000", "#ff8040"])).toBe("#804020");
   });
