@@ -16,4 +16,25 @@
 
 export const UCW_META_OVERRIDES: Readonly<
   Record<string, readonly (string | null)[]>
-> = {};
+> = {
+  // Dye metadata order, as saved in-game in ucw_1_12_2.nbt (Environmental
+  // Materials 1.0.20.1, GENERATED_FIXTURES.md).
+  "environmentalmaterials:alabaster_bricks": [
+    "color=white",
+    "color=orange",
+    "color=magenta",
+    "color=light_blue",
+    "color=yellow",
+    "color=lime",
+    "color=pink",
+    "color=gray",
+    "color=silver",
+    "color=cyan",
+    "color=purple",
+    "color=blue",
+    "color=brown",
+    "color=green",
+    "color=red",
+    "color=black",
+  ],
+};
