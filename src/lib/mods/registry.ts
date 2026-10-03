@@ -306,6 +306,15 @@ export async function getLoadedModAssets(
   }
 }
 
+/**
+ * Render assets for a loaded mod file if they're already in memory (added
+ * this session or read by `getLoadedModAssets`), else null.
+ */
+export function peekLoadedModAssets(key: string): LoadedModAssets | null {
+  if (!mods.some((mod) => mod.key === key)) return null;
+  return assetCache.get(key) ?? null;
+}
+
 function indexBlocks(
   mod: LoadedModMeta,
   blockToMod: Map<string, ModForBlock>,
