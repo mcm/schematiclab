@@ -131,7 +131,7 @@ export function BlockSuggestions({
         });
       })
       .catch((err: unknown) => {
-        console.warn(`Could not load ${sourceBlockId}.`, err);
+        console.warn("Could not load %s.", sourceBlockId, err);
       });
     return () => {
       cancelled = true;
