@@ -254,9 +254,14 @@ export function MaterialList({
         }
         const generated = generatedByBlockState.get(entry.blockState);
         if (
-          generated?.label.kind === "resolved" &&
-          (generated.label.displayName.toLowerCase().includes(needle) ||
-            generated.label.modName.toLowerCase().includes(needle))
+          generated !== undefined &&
+          (generated.label.modName.toLowerCase().includes(needle) ||
+            (generated.label.kind === "resolved"
+              ? generated.label.displayName
+              : generated.label.message
+            )
+              .toLowerCase()
+              .includes(needle))
         ) {
           return true;
         }

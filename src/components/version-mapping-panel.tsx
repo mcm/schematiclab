@@ -226,15 +226,19 @@ export function VersionMappingPanel({
   // Generated blocks (Unlimited Chisel Works) aren't in their mod's file;
   // their providers resolve them against the target version's files, read
   // in the background. Until then their namespaces stay pending.
-  const generatedIdsSignature = [
-    ...new Set(
-      schematic.palette
-        .map((entry) => entry.blockId)
-        .filter(hasGeneratedBlockProvider),
-    ),
-  ]
-    .sort()
-    .join("\n");
+  const generatedIdsSignature = React.useMemo(
+    () =>
+      [
+        ...new Set(
+          schematic.palette
+            .map((entry) => entry.blockId)
+            .filter(hasGeneratedBlockProvider),
+        ),
+      ]
+        .sort()
+        .join("\n"),
+    [schematic],
+  );
   const generatedFilesRevision = React.useSyncExternalStore(
     subscribeGeneratedBlockFiles,
     getGeneratedBlockFilesRevision,

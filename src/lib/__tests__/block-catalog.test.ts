@@ -8,7 +8,10 @@ import {
   searchBlockCatalog,
 } from "../block-catalog";
 import * as registry from "../mods/registry";
-import { __setGeneratedVanillaLoaderForTests } from "../mods/generated/registry";
+import {
+  __setGeneratedVanillaLoaderForTests,
+  loadGeneratedBlockFiles,
+} from "../mods/generated/registry";
 import {
   CHISEL as UCW_CHISEL,
   ID as UCW_ID,
@@ -307,6 +310,7 @@ describe("block-catalog with generated blocks", () => {
 
   it("lists a version's generated blocks when UCW, Chisel and the rule's mods are loaded", async () => {
     await loadUcwFiles();
+    await loadGeneratedBlockFiles("1.12.2");
     const scope = scopeFor("1.12.2");
     expect(searchBlockCatalog("unlimitedchiselworks:", 10, scope)).toEqual([
       UCW_ID,
@@ -320,6 +324,7 @@ describe("block-catalog with generated blocks", () => {
 
   it("leaves them out of any other version", async () => {
     await loadUcwFiles();
+    await loadGeneratedBlockFiles("1.12.2");
     const scope = scopeFor("1.20.1");
     expect(searchBlockCatalog("unlimitedchiselworks:", 10, scope)).toEqual([]);
     expect(isCatalogedBlockId(UCW_ID, scope)).toBe(false);
@@ -327,6 +332,7 @@ describe("block-catalog with generated blocks", () => {
 
   it("leaves them out until the rule's mods are loaded", async () => {
     await loadUcwFiles(false);
+    await loadGeneratedBlockFiles("1.12.2");
     const scope = scopeFor("1.12.2");
     expect(isCatalogedBlockId(UCW_ID, scope)).toBe(false);
     expect(isCatalogedBlockId(UCW_ID)).toBe(false);

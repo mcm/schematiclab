@@ -241,6 +241,7 @@ export type ModFileInfo = Omit<
   | "warnings"
   | "appearancesComputed"
   | "providerDataRead"
+  | "legacyAssetsRead"
   | "loadedAt"
 >;
 
@@ -258,7 +259,8 @@ export class ModJarError extends Error {
 /**
  * Parse a mod jar in the worker, then register + persist it. Shared by
  * CurseForge adds and modpack loads. Rejects with `ModJarError`; nothing is
- * registered unless the jar has at least one block, or (code `unloaded`) when
+ * registered unless the jar has at least one block or provider rule data that
+ * generates blocks (`providerDataGeneratesBlocks`), or (code `unloaded`) when
  * every mod was unloaded since `generation` (`getUnloadGeneration()`).
  * Resolves to the registered file's metadata. `bytes` may be detached
  * (transferred to the worker).

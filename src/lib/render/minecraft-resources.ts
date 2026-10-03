@@ -111,11 +111,18 @@ export function ensureMinecraftResourcesLoading(): void {
 
 /**
  * Set the schematic version whose mod files the preview renders. Rebuilds
- * only if that changes which files are selected.
+ * only if that changes which files are selected, or if the schematic has
+ * generated blocks (they are resolved against that version's files).
  */
 export function setMinecraftResourcesVersion(versionId: string | null): void {
   if (versionId === previewVersionId) return;
   previewVersionId = versionId;
+  if (builtFiles === null) return;
+  if (generatedBlockIds.length > 0) {
+    builtFiles = modRegistry.getPreviewModFiles(previewVersionId);
+    startRebuild();
+    return;
+  }
   rebuildIfFilesChanged();
 }
 
@@ -233,12 +240,16 @@ export function isMinecraftResourcesRebuildPending(): boolean {
 /**
  * Whether the cached resources are being, or are about to be, replaced for
  * `versionId`: a rebuild is in flight, or that version selects other preview
- * files than the last build (before `setMinecraftResourcesVersion` runs).
+ * files than the last build or the generated blocks were built for another
+ * version (before `setMinecraftResourcesVersion` runs).
  * Reads only; safe to call during render.
  */
 export function minecraftResourcesStaleFor(versionId: string | null): boolean {
   if (rebuildPending) return true;
   if (builtFiles === null) return false;
+  if (generatedBlockIds.length > 0 && versionId !== previewVersionId) {
+    return true;
+  }
   return previewFilesChanged(
     builtFiles,
     modRegistry.getPreviewModFiles(versionId),
