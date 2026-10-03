@@ -10,6 +10,7 @@ import {
   isoView,
   planSlice,
   shadeHex,
+  type Elevation,
   type IsoCorner,
   type IsoView,
   type OrthoGrid,
@@ -101,6 +102,48 @@ const ISO_TITLES: Record<IsoCorner, string> = {
   "south-west": "ISO 4",
 };
 
+// Views that depend only on the model (the four iso views and the
+// elevations), kept per model so changing the plan levels only recomputes
+// the plan slices and the cutaway.
+const modelViews = new WeakMap<
+  VoxelModel,
+  { iso: Map<IsoCorner, IsoView>; elevations: Map<Elevation, OrthoGrid> }
+>();
+
+function viewsOf(model: VoxelModel) {
+  let views = modelViews.get(model);
+  if (views === undefined) {
+    views = { iso: new Map(), elevations: new Map() };
+    modelViews.set(model, views);
+  }
+  return views;
+}
+
+function cachedIsoView(
+  model: VoxelModel,
+  corner: IsoCorner,
+  maxY: number | undefined,
+): IsoView {
+  if (maxY !== undefined) return isoView(model, corner, { maxY });
+  const { iso } = viewsOf(model);
+  let view = iso.get(corner);
+  if (view === undefined) {
+    view = isoView(model, corner);
+    iso.set(corner, view);
+  }
+  return view;
+}
+
+function cachedElevation(model: VoxelModel, view: Elevation): OrthoGrid {
+  const { elevations } = viewsOf(model);
+  let grid = elevations.get(view);
+  if (grid === undefined) {
+    grid = elevation(model, view);
+    elevations.set(view, grid);
+  }
+  return grid;
+}
+
 function columns(count: number): number {
   return (SHEET_WIDTH - 2 * MARGIN - (count - 1) * GAP) / count;
 }
@@ -164,7 +207,7 @@ export function contactSheetLayout(
     {
       title: "FRONT",
       subtitle: "from south, looking north",
-      grid: elevation(model, "front"),
+      grid: cachedElevation(model, "front"),
       xAxis: xRight,
       yAxis,
       depthShading: "light" as const,
@@ -172,7 +215,7 @@ export function contactSheetLayout(
     {
       title: "RIGHT SIDE",
       subtitle: "from east, looking west",
-      grid: elevation(model, "side"),
+      grid: cachedElevation(model, "side"),
       xAxis: { name: "z", start: sz - 1, step: -1 } as Axis,
       yAxis,
       depthShading: "light" as const,
@@ -180,7 +223,7 @@ export function contactSheetLayout(
     {
       title: "TOP",
       subtitle: "north up; brighter = higher",
-      grid: elevation(model, "top"),
+      grid: cachedElevation(model, "top"),
       xAxis: xRight,
       yAxis: zDown,
       depthShading: "strong" as const,
@@ -323,7 +366,7 @@ export function drawContactSheet(
       drawIso(
         ctx,
         model,
-        isoView(model, panel.corner, { maxY: panel.maxY }),
+        cachedIsoView(model, panel.corner, panel.maxY),
         content,
       );
     } else {

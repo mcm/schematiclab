@@ -8,7 +8,8 @@ import {
   drawContactSheet,
   tickStep,
 } from "../contact-sheet";
-import { staticRenderColors } from "../static-render-colors";
+import { isCamoCapableBlockId, placedCamoSlots } from "../../camo/extract";
+import { averageHex, staticRenderColors } from "../static-render-colors";
 import {
   buildVoxelModel,
   defaultPlanLevels,
@@ -76,6 +77,30 @@ const colorName = (m: VoxelModel, index: number) =>
   Object.keys(BLOCK_COLORS).find((id) => BLOCK_COLORS[id] === m.colors[index]);
 
 describe("buildVoxelModel", () => {
+  it("lets a later region's block, even air, replace an earlier one", () => {
+    const p = projection([
+      ["minecraft:stone", [0, 0, 0]],
+      ["minecraft:stone", [5, 0, 0]],
+      ["minecraft:oak_planks", [1, 0, 0]],
+      ["minecraft:air", [5, 0, 0]],
+    ]);
+    const [region] = p.regions;
+    p.regions = [
+      { ...region, blocks: region.blocks.slice(0, 2) },
+      { ...region, blocks: region.blocks.slice(2) },
+    ];
+    const m = buildVoxelModel(
+      p,
+      (i) => BLOCK_COLORS[p.palette[i].blockId] ?? "#000000",
+    );
+    // The air at x=5 clears the stone there, so the bounds shrink too.
+    expect(m.size).toEqual([2, 1, 1]);
+    expect(m.voxels.map((v) => [v.x, colorName(m, v.color)])).toEqual([
+      [0, "minecraft:stone"],
+      [1, "minecraft:oak_planks"],
+    ]);
+  });
+
   it("normalizes positions to the model's minimum and skips air", () => {
     const m = model([
       ["minecraft:stone", [10, 64, -5]],
@@ -304,35 +329,57 @@ describe("colours", () => {
     expect(fadeHex("#000000", 0.5)).toBe("#808080");
   });
 
-  it("colours camo blocks by their camo", () => {
+  function camoFixture(name: string) {
     const bytes = new Uint8Array(
-      readFileSync(
-        path.resolve(
-          __dirname,
-          "../../__tests__/fixtures/framed_blocks_minimal_nbt.nbt",
-        ),
-      ),
+      readFileSync(path.resolve(__dirname, "../../__tests__/fixtures", name)),
     );
     const parsed = parseSchematic(bytes);
     if (!parsed.ok) throw new Error(parsed.error);
-    const appearances = new Set<string>();
-    const colors = staticRenderColors(parsed.schematic, (id) => {
-      appearances.add(id);
-      return undefined;
-    });
-    const region = parsed.schematic.regions[0];
-    const framed = region.blocks.find(
-      (b) =>
-        parsed.schematic.palette[b.paletteIndex].blockId.startsWith(
-          "framedblocks:",
-        ) && region.blockEntities.some((be) => be.pos.join() === b.pos.join()),
+    return parsed.schematic;
+  }
+
+  // Each placement's filled camo slots, from its block entity.
+  function filledCamos(schematic: ParsedSchematicProjection) {
+    return schematic.regions.flatMap((region, regionIndex) =>
+      region.blocks.flatMap(({ pos, paletteIndex }) => {
+        const entry = schematic.palette[paletteIndex];
+        if (!isCamoCapableBlockId(entry.blockId)) return [];
+        const nbt = region.blockEntities.find(
+          (be) => be.pos.join() === pos.join(),
+        )?.nbt;
+        const camos = placedCamoSlots(entry.blockId, entry.properties, nbt)
+          .map((slot) => slot.state?.name)
+          .filter((id): id is string => id !== undefined);
+        return camos.length === 0
+          ? []
+          : [{ regionIndex, pos, paletteIndex, camos }];
+      }),
     );
-    expect(framed).toBeDefined();
-    const camoColor = colors.colorAt(0, framed!.pos, framed!.paletteIndex);
-    expect(camoColor).toMatch(/^#[0-9a-f]{6}$/);
-    expect([...appearances].some((id) => !id.startsWith("framedblocks:"))).toBe(
-      true,
-    );
+  }
+
+  it.each(["framed_blocks_minimal_nbt.nbt", "framed_covered_1.nbt"])(
+    "colours camo blocks by their camo, blending a double block's two (%s)",
+    (fixture) => {
+      const schematic = camoFixture(fixture);
+      const colors = staticRenderColors(schematic, () => undefined);
+      const placed = filledCamos(schematic);
+      expect(placed.length).toBeGreaterThan(0);
+      if (fixture === "framed_covered_1.nbt") {
+        expect(placed.some(({ camos }) => new Set(camos).size === 2)).toBe(
+          true,
+        );
+      }
+      for (const { regionIndex, pos, paletteIndex, camos } of placed) {
+        expect(colors.colorAt(regionIndex, pos, paletteIndex)).toBe(
+          averageHex(camos.map(fallbackBlockColor)),
+        );
+      }
+    },
+  );
+
+  it("averages hex colours", () => {
+    expect(averageHex(["#102030"])).toBe("#102030");
+    expect(averageHex(["#000000", "#ff8040"])).toBe("#804020");
   });
 });
 
