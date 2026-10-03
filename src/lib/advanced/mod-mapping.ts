@@ -19,14 +19,27 @@ import {
 /** Property name → allowed values, first value is the fallback. */
 export type ModBlockProperties = Record<string, string[]>;
 
+/**
+ * A block a generated-block provider (`mods/generated/`) knows in the target
+ * version: resolved from the loaded files (with the generated block's
+ * properties), or recognised but missing source mods (`message` says which
+ * to load).
+ */
+export type GeneratedMappingBlock =
+  | { kind: "resolved"; properties: ModBlockProperties }
+  | { kind: "sources-missing"; message: string };
+
 export type ModNamespaceMapping =
   | { kind: "unmapped" }
   // The mod's file for the target version. `sourceBlocks` holds the mapped
-  // mod's file for the schematic's version, when loaded.
+  // mod's file for the schematic's version, when loaded. `generated` holds
+  // the namespace's generated blocks (e.g. Unlimited Chisel Works), which
+  // the file itself doesn't list, by block id.
   | {
       kind: "target";
       blocks: Record<string, ModBlockProperties>;
       sourceBlocks?: Record<string, ModBlockProperties>;
+      generated?: Record<string, GeneratedMappingBlock>;
     }
   // A replacement mod: `oldns:path` is rewritten to `newNamespace:path`.
   | {
@@ -47,7 +60,8 @@ export type ModdedProblemReason =
   | "missing-block"
   | "invalid-state"
   | "mod-unmapped"
-  | "mod-not-available";
+  | "mod-not-available"
+  | "generated-sources-missing";
 
 export type ModdedResolution =
   | { status: "vanilla" }
@@ -130,20 +144,38 @@ function validateAgainst(
   sourceBlockId: string,
   sourceProperties: Record<string, string>,
   missingMessage: string,
+  generated?: Record<string, GeneratedMappingBlock>,
 ): ModdedResolution {
-  if (!Object.hasOwn(blocks, blockId)) {
+  // A generated block isn't in the mod's file; its provider knows it.
+  const generatedBlock =
+    generated !== undefined && Object.hasOwn(generated, blockId)
+      ? generated[blockId]
+      : undefined;
+  let known: ModBlockProperties;
+  if (Object.hasOwn(blocks, blockId)) {
+    known = blocks[blockId];
+  } else if (generatedBlock?.kind === "resolved") {
+    known = generatedBlock.properties;
+  } else {
+    const problem =
+      generatedBlock?.kind === "sources-missing"
+        ? {
+            reason: "generated-sources-missing" as const,
+            warnings: [generatedBlock.message],
+          }
+        : { reason: "missing-block" as const, warnings: [missingMessage] };
     return {
       status: "resolved",
       blockId: sourceBlockId,
       properties: { ...sourceProperties },
-      problem: { reason: "missing-block", warnings: [missingMessage] },
+      problem,
     };
   }
   const source =
     sourceBlocks !== undefined && Object.hasOwn(sourceBlocks, sourceBlockId)
       ? sourceBlocks[sourceBlockId]
       : null;
-  const fitted = fitProperties(blockId, properties, blocks[blockId], source);
+  const fitted = fitProperties(blockId, properties, known, source);
   return {
     status: "resolved",
     blockId,
@@ -194,6 +226,7 @@ export function resolveModdedState(
         blockId,
         properties,
         `${blockId} doesn't exist in the target version of the mod.`,
+        mapping.generated,
       );
     case "replace": {
       const rewritten = `${mapping.newNamespace}:${path}`;

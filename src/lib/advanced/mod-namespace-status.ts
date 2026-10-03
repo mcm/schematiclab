@@ -17,6 +17,7 @@ import {
   type LoadedModMeta,
   type NamespaceMapping,
 } from "../mods/types";
+import type { GeneratedMappingBlocks } from "./generated-mapping";
 import type { ModBlockProperties, ModMappingContext } from "./mod-mapping";
 
 export type ModProject = ModLoadRequest["mod"];
@@ -229,10 +230,18 @@ export function describeModNamespaces(
  * The context the preview and apply pass run with. With no target version,
  * only replaced namespaces are listed (everything else stays untouched).
  * Mods that can't carry over are kept as-is until the user decides.
+ *
+ * `generated.blocks` (`generatedMappingBlocks` for the target version) adds
+ * a target file's generated blocks; namespaces in `generated.loading` stay
+ * pending while their generated blocks are still being resolved.
  */
 export function buildModMappingContext(
   rows: readonly ModNamespaceRow[],
   targetVersionId: string | null,
+  generated: {
+    blocks: GeneratedMappingBlocks;
+    loading: readonly string[];
+  } = { blocks: {}, loading: [] },
 ): ModMappingContext {
   const context: ModMappingContext = {};
   for (const row of rows) {
@@ -262,10 +271,18 @@ export function buildModMappingContext(
     } else if (row.mapping === null || target === null) {
       context[namespace] = { kind: "unmapped" };
     } else if (target.status === "loaded") {
+      if (generated.loading.includes(namespace)) {
+        context[namespace] = { kind: "pending" };
+        continue;
+      }
+      const generatedBlocks = generated.blocks[namespace];
       context[namespace] = {
         kind: "target",
         blocks: blocksIn(target.file, namespace),
         ...source,
+        ...(generatedBlocks !== undefined
+          ? { generated: generatedBlocks }
+          : {}),
       };
     } else if (target.status === "resolving" || target.status === "loading") {
       context[namespace] = { kind: "pending" };

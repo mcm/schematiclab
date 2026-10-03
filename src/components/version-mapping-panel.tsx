@@ -32,6 +32,15 @@ import type { VersionMappingOverrides } from "@/lib/advanced/edit";
 import { carryCamoBlockProperties } from "@/lib/camo/block-properties";
 import type { CamoChoice } from "@/lib/camo/write";
 import type { ModMappingContext } from "@/lib/advanced/mod-mapping";
+import {
+  generatedMappingBlocks,
+  hasGeneratedBlockProvider,
+} from "@/lib/advanced/generated-mapping";
+import {
+  getGeneratedBlockFilesRevision,
+  loadGeneratedBlockFiles,
+  subscribeGeneratedBlockFiles,
+} from "@/lib/mods/generated/registry";
 import { useAdvancedTargetVersion } from "@/lib/advanced/target-version-state";
 import { useEditorState } from "@/lib/editor-state";
 import { useLoadedMods } from "@/lib/mods/registry";
@@ -43,7 +52,7 @@ import {
   useModLoads,
 } from "@/lib/mods/load-mod";
 import { detectSchematicNamespaces } from "@/lib/mods/namespaces";
-import { loadedModKey } from "@/lib/mods/types";
+import { loadedModKey, type LoadedModMeta } from "@/lib/mods/types";
 import {
   preferredLoaderFor,
   resolveModFileForVersion,
@@ -137,6 +146,7 @@ interface PickerRequest {
 }
 
 const EMPTY_CHOICES: Readonly<Record<string, ModChoice>> = {};
+const NO_GENERATED_BLOCKS = { blocks: {}, loading: [] };
 
 export function VersionMappingPanel({
   schematic,
@@ -213,11 +223,74 @@ export function VersionMappingPanel({
       sourceVersionId,
     ],
   );
+  // Generated blocks (Unlimited Chisel Works) aren't in their mod's file;
+  // their providers resolve them against the target version's files, read
+  // in the background. Until then their namespaces stay pending.
+  const generatedIdsSignature = [
+    ...new Set(
+      schematic.palette
+        .map((entry) => entry.blockId)
+        .filter(hasGeneratedBlockProvider),
+    ),
+  ]
+    .sort()
+    .join("\n");
+  const generatedFilesRevision = React.useSyncExternalStore(
+    subscribeGeneratedBlockFiles,
+    getGeneratedBlockFilesRevision,
+    getGeneratedBlockFilesRevision,
+  );
+  const [generatedLoaded, setGeneratedLoaded] = React.useState<{
+    versionId: string;
+    mods: readonly LoadedModMeta[];
+  } | null>(null);
+  React.useEffect(() => {
+    if (targetVersionId === null || generatedIdsSignature === "") return;
+    let cancelled = false;
+    const done = () => {
+      if (!cancelled) {
+        setGeneratedLoaded({ versionId: targetVersionId, mods: loadedMods });
+      }
+    };
+    loadGeneratedBlockFiles(targetVersionId).then(done, done);
+    return () => {
+      cancelled = true;
+    };
+  }, [targetVersionId, loadedMods, generatedIdsSignature]);
+  const generatedMapping = React.useMemo(() => {
+    void generatedFilesRevision;
+    if (targetVersionId === null || generatedIdsSignature === "") {
+      return NO_GENERATED_BLOCKS;
+    }
+    const ids = generatedIdsSignature.split("\n");
+    if (
+      generatedLoaded?.versionId !== targetVersionId ||
+      generatedLoaded.mods !== loadedMods
+    ) {
+      const loading = new Set(ids.map((id) => id.slice(0, id.indexOf(":"))));
+      return { blocks: {}, loading: [...loading] };
+    }
+    const modNameFor = (namespace: string) =>
+      mappings.get(namespace)?.modName ??
+      loadedMods.find((file) => file.namespaces.includes(namespace))?.modName ??
+      namespace;
+    return {
+      blocks: generatedMappingBlocks(ids, targetVersionId, modNameFor),
+      loading: [],
+    };
+  }, [
+    generatedFilesRevision,
+    targetVersionId,
+    generatedIdsSignature,
+    generatedLoaded,
+    loadedMods,
+    mappings,
+  ]);
   // Identity changes only when a row's mapping outcome does, which re-runs
   // the preview.
   const modContext = React.useMemo(
-    () => buildModMappingContext(modRows, targetVersionId),
-    [modRows, targetVersionId],
+    () => buildModMappingContext(modRows, targetVersionId, generatedMapping),
+    [modRows, targetVersionId, generatedMapping],
   );
   const hasReplacement = Object.values(choices).some(
     (choice) => choice.kind === "replace",
@@ -1039,6 +1112,10 @@ const REASON_LABELS: Record<
   "invalid-state": { label: "Blockstate adjusted", variant: "info" },
   "mod-unmapped": { label: "Unmapped mod", variant: "warning" },
   "mod-not-available": { label: "Mod not available", variant: "warning" },
+  "generated-sources-missing": {
+    label: "Source mods missing",
+    variant: "warning",
+  },
 };
 
 function ProblematicRow({
