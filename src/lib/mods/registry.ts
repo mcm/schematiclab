@@ -13,6 +13,7 @@
 
 import * as React from "react";
 
+import { withProviderDataWarnings } from "./generated/jar-data";
 import * as store from "./store";
 import type { LoadedModAssets, LoadedModMeta, ModBlock } from "./types";
 
@@ -118,11 +119,13 @@ export function hydrateLoadedMods(): Promise<void> {
       }
       if (generation !== clearGeneration) return;
       // Files added during hydration win over stored files in the same slot.
-      const restored = stored.filter(
-        (file) =>
-          !removedKeys.has(file.key) &&
-          !mods.some((mod) => sameFileSlot(mod, file)),
-      );
+      const restored = stored
+        .filter(
+          (file) =>
+            !removedKeys.has(file.key) &&
+            !mods.some((mod) => sameFileSlot(mod, file)),
+        )
+        .map(withProviderDataWarnings);
       if (restored.length > 0) emit(Object.freeze([...restored, ...mods]));
     })();
   }

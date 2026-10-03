@@ -89,6 +89,12 @@ export interface LoadedModMeta {
    * bundle). Absent on files loaded before appearances existed.
    */
   appearancesComputed?: boolean;
+  /**
+   * Generated-block provider namespaces whose jar data was read when the file
+   * was loaded (see `mods/generated/jar-data.ts`), sorted. Absent on files
+   * loaded before provider data existed.
+   */
+  providerDataRead?: string[];
   /** `Date.now()` when the mod was loaded. */
   loadedAt: number;
 }
