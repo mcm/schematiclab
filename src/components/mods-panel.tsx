@@ -53,7 +53,11 @@ import {
   type SchematicNamespace,
 } from "@/lib/mods/namespaces";
 import { isRestrictedProject } from "@/lib/mods/project-picker";
-import { removeLoadedMod, useLoadedMods } from "@/lib/mods/registry";
+import {
+  removeAllLoadedMods,
+  removeLoadedMod,
+  useLoadedMods,
+} from "@/lib/mods/registry";
 import type { LoadedModMeta } from "@/lib/mods/types";
 
 const SEARCH_INPUT_ID = "mods-panel-search";
@@ -668,7 +672,20 @@ function LoadedModsSection({
         }}
       >
         <SectionHeading>Loaded mods</SectionHeading>
-        <ModpackFolderButton />
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "var(--space-1)",
+            flexWrap: "wrap",
+            justifyContent: "flex-end",
+          }}
+        >
+          {loadedMods.length > 0 ? (
+            <UnloadAllButton fileCount={loadedMods.length} />
+          ) : null}
+          <ModpackFolderButton />
+        </div>
       </div>
       <ModpackLoadStatus />
       {empty ? (
@@ -707,6 +724,64 @@ function LoadedModsSection({
         </div>
       )}
     </section>
+  );
+}
+
+// Unloads every loaded mod file after an inline confirmation. Disabled while a
+// modpack folder is loading, which would add its files straight back.
+function UnloadAllButton({ fileCount }: { fileCount: number }) {
+  const modpackLoad = useModpackLoad();
+  const [confirming, setConfirming] = React.useState(false);
+  const busy = isModpackLoadActive(modpackLoad);
+  const buttonStyle: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "var(--space-1)",
+    flexShrink: 0,
+  };
+
+  if (confirming && !busy) {
+    return (
+      <>
+        <Button
+          type="button"
+          variant="destructive"
+          size="sm"
+          onClick={() => {
+            setConfirming(false);
+            void removeAllLoadedMods();
+          }}
+          style={buttonStyle}
+        >
+          <IconTrash size={14} aria-hidden="true" />
+          Unload {fileCount.toLocaleString()}{" "}
+          {fileCount === 1 ? "file" : "files"}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setConfirming(false)}
+        >
+          Cancel
+        </Button>
+      </>
+    );
+  }
+
+  return (
+    <Button
+      type="button"
+      variant="secondary"
+      size="sm"
+      disabled={busy}
+      onClick={() => setConfirming(true)}
+      title="Unload every loaded mod file. Namespace mappings are kept."
+      style={buttonStyle}
+    >
+      <IconTrash size={14} aria-hidden="true" />
+      Unload all
+    </Button>
   );
 }
 

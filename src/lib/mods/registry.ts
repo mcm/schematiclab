@@ -58,6 +58,9 @@ const listeners = new Set<() => void>();
 const assetCache = new Map<string, LoadedModAssets>();
 // Keys removed before hydration finished, so a slow hydrate can't resurrect them.
 const removedKeys = new Set<string>();
+// Bumped by `removeAllLoadedMods`, so a hydrate that started earlier drops
+// everything it read.
+let clearGeneration = 0;
 
 let hydration: Promise<void> | null = null;
 let persistenceDisabled = false;
@@ -104,6 +107,7 @@ function autoHydrate(): void {
 export function hydrateLoadedMods(): Promise<void> {
   if (hydration === null) {
     hydration = (async () => {
+      const generation = clearGeneration;
       let stored: LoadedModMeta[];
       try {
         stored = await store.listLoadedMods();
@@ -111,6 +115,7 @@ export function hydrateLoadedMods(): Promise<void> {
         disablePersistence(error);
         return;
       }
+      if (generation !== clearGeneration) return;
       // Files added during hydration win over stored files in the same slot.
       const restored = stored.filter(
         (file) =>
@@ -206,6 +211,24 @@ export async function removeLoadedMod(key: string): Promise<void> {
   if (persistenceDisabled) return;
   try {
     await store.removeLoadedMod(key);
+  } catch (error) {
+    disablePersistence(error);
+  }
+}
+
+/**
+ * Unload every mod file and delete them all from persistent storage.
+ * Namespace mappings are kept.
+ */
+export async function removeAllLoadedMods(): Promise<void> {
+  clearGeneration++;
+  for (const mod of mods) removedKeys.add(mod.key);
+  assetCache.clear();
+  emit(EMPTY);
+
+  if (persistenceDisabled) return;
+  try {
+    await store.removeAllLoadedMods();
   } catch (error) {
     disablePersistence(error);
   }
@@ -421,6 +444,7 @@ export function __resetLoadedModsForTests(): void {
   listeners.clear();
   assetCache.clear();
   removedKeys.clear();
+  clearGeneration = 0;
   hydration = null;
   persistenceDisabled = false;
 }
