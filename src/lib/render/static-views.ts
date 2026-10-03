@@ -72,18 +72,28 @@ export function buildVoxelModel(
     paletteIndex: number,
   ) => string | undefined,
 ): VoxelModel {
-  const min = [Infinity, Infinity, Infinity];
-  const max = [-Infinity, -Infinity, -Infinity];
   const visible = projection.palette.map(
     (entry) => !isInvisibleBlockId(entry.blockId),
   );
-  for (const region of projection.regions) {
+  // The last placement per cell wins, even an invisible one (it clears the
+  // cell); only then are invisible blocks dropped.
+  const placements = new Map<
+    string,
+    { regionIndex: number; pos: [number, number, number]; paletteIndex: number }
+  >();
+  projection.regions.forEach((region, regionIndex) => {
     for (const { pos, paletteIndex } of region.blocks) {
-      if (!visible[paletteIndex]) continue;
-      for (let axis = 0; axis < 3; axis++) {
-        min[axis] = Math.min(min[axis], pos[axis]);
-        max[axis] = Math.max(max[axis], pos[axis]);
-      }
+      placements.set(pos.join(","), { regionIndex, pos, paletteIndex });
+    }
+  });
+  const shown = [...placements.values()].filter((p) => visible[p.paletteIndex]);
+
+  const min = [Infinity, Infinity, Infinity];
+  const max = [-Infinity, -Infinity, -Infinity];
+  for (const { pos } of shown) {
+    for (let axis = 0; axis < 3; axis++) {
+      min[axis] = Math.min(min[axis], pos[axis]);
+      max[axis] = Math.max(max[axis], pos[axis]);
     }
   }
   if (min[0] === Infinity) {
@@ -112,31 +122,25 @@ export function buildVoxelModel(
     return i;
   };
   const paletteColors = new Map<number, number>();
-  const byCell = new Map<string, Voxel>();
-  projection.regions.forEach((region, regionIndex) => {
-    for (const { pos, paletteIndex } of region.blocks) {
-      if (!visible[paletteIndex]) continue;
-      let color: number | undefined;
-      const override = colorAt?.(regionIndex, pos, paletteIndex);
-      if (override !== undefined) {
-        color = intern(override);
-      } else {
-        color = paletteColors.get(paletteIndex);
-        if (color === undefined) {
-          color = intern(colorFor(paletteIndex));
-          paletteColors.set(paletteIndex, color);
-        }
+  const voxels = shown.map(({ regionIndex, pos, paletteIndex }): Voxel => {
+    let color: number | undefined;
+    const override = colorAt?.(regionIndex, pos, paletteIndex);
+    if (override !== undefined) {
+      color = intern(override);
+    } else {
+      color = paletteColors.get(paletteIndex);
+      if (color === undefined) {
+        color = intern(colorFor(paletteIndex));
+        paletteColors.set(paletteIndex, color);
       }
-      const voxel = {
-        x: pos[0] - min[0],
-        y: pos[1] - min[1],
-        z: pos[2] - min[2],
-        color,
-      };
-      byCell.set(`${voxel.x},${voxel.y},${voxel.z}`, voxel);
     }
+    return {
+      x: pos[0] - min[0],
+      y: pos[1] - min[1],
+      z: pos[2] - min[2],
+      color,
+    };
   });
-  const voxels = [...byCell.values()];
   return { size, voxels, colors, cells: voxelLookup(size, voxels) };
 }
 

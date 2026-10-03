@@ -1,7 +1,8 @@
 // Block colours for the static renders (`static-views.ts`): the average
 // texture colour of each block (vanilla from `block-colors.json`, mods from
-// `ModBlock.appearance`), a camo block's camo colour, and a stable made-up
-// colour for blocks with no colour data.
+// `ModBlock.appearance`), a camo block's camo colour (the average of its
+// filled slots, so a double block with two camos gets a blend), and a stable
+// made-up colour for blocks with no colour data.
 
 import type {
   ParsedSchematicBlockEntity,
@@ -20,6 +21,24 @@ export interface StaticRenderColors {
     pos: [number, number, number],
     paletteIndex: number,
   ) => string | undefined;
+}
+
+/** The channel-wise average of `#rrggbb` colours. */
+export function averageHex(colors: readonly string[]): string {
+  if (colors.length === 1) return colors[0];
+  const sum = [0, 0, 0];
+  for (const color of colors) {
+    for (let i = 0; i < 3; i++) {
+      sum[i] += Number.parseInt(color.slice(1 + 2 * i, 3 + 2 * i), 16);
+    }
+  }
+  return `#${sum
+    .map((c) =>
+      Math.round(c / colors.length)
+        .toString(16)
+        .padStart(2, "0"),
+    )
+    .join("")}`;
 }
 
 /** Colour callbacks for `buildVoxelModel`. */
@@ -70,8 +89,10 @@ export function staticRenderColors(
         entry.properties,
         entityAt(regionIndex, pos)?.nbt,
       );
-      const camo = slots.find((slot) => slot.state !== null)?.state;
-      return camo ? colorOfId(camo.name) : undefined;
+      const camos = slots.flatMap((slot) =>
+        slot.state === null ? [] : [colorOfId(slot.state.name)],
+      );
+      return camos.length === 0 ? undefined : averageHex(camos);
     },
   };
 }
