@@ -31,7 +31,9 @@ import { type McpDeps, defineTool, jsonResult } from "./types";
 export const INSPECT_PALETTE_LIMIT = 30;
 export const MAX_WARNINGS = 50;
 
-const OUTPUT_FORMATS = SUPPORTED_FORMATS.filter(
+// Every writable format; the JSON intermediate format is never an output
+// (FORMATS.md).
+export const OUTPUT_FORMATS = SUPPORTED_FORMATS.filter(
   (id): id is Exclude<SchematicFormatId, "JSON"> => id !== "JSON",
 );
 
