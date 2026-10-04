@@ -61,5 +61,14 @@ export function createFakeBlob(
       calls.push({ method: "del", args: [pathnames] });
       for (const p of pathnames) objects.delete(p);
     },
+    async get(pathname, opts) {
+      calls.push({ method: "get", args: [pathname, opts] });
+      const object = objects.get(pathname);
+      if (!object) return null;
+      return {
+        stream: new Blob([new Uint8Array(object.body)]).stream(),
+        size: object.body.byteLength,
+      };
+    },
   };
 }

@@ -2,9 +2,19 @@
 
 import type { CallToolResult, McpServer } from "@modelcontextprotocol/server";
 import { listVersionsTool } from "./list-versions";
+import {
+  convertSchematicTool,
+  inspectSchematicTool,
+  renderSchematicTool,
+} from "./schematic-tools";
 import { type McpDeps, type McpTool, toolError } from "./types";
 
-export const TOOLS: readonly McpTool[] = [listVersionsTool];
+export const TOOLS: readonly McpTool[] = [
+  listVersionsTool,
+  inspectSchematicTool,
+  convertSchematicTool,
+  renderSchematicTool,
+];
 
 export function registerTools(server: McpServer, deps: McpDeps): void {
   for (const tool of TOOLS) {

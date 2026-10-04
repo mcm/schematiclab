@@ -5,6 +5,7 @@
 
 import {
   del,
+  get,
   issueSignedToken,
   list,
   presignUrl,
@@ -48,6 +49,11 @@ export interface BlobClient {
     cursor?: string;
   }): Promise<{ blobs: BlobListEntry[]; cursor?: string; hasMore: boolean }>;
   del(pathnames: string[]): Promise<void>;
+  // Reads a private blob by pathname; null when it does not exist.
+  get(
+    pathname: string,
+    options: { access: "private" },
+  ): Promise<{ stream: ReadableStream<Uint8Array>; size: number } | null>;
 }
 
 // Whether the environment names a Blob store the SDK can authenticate to:
@@ -73,6 +79,14 @@ export const vercelBlobClient: BlobClient = {
   presignUrl: (token, options) => presignUrl(token, options),
   list: (options) => list(options),
   del: (pathnames) => del(pathnames),
+  get: async (pathname, options) => {
+    const result = await get(pathname, options);
+    if (result === null) return null;
+    if (result.statusCode !== 200) {
+      throw new Error(`Unexpected Blob response ${result.statusCode}`);
+    }
+    return { stream: result.stream, size: result.blob.size };
+  },
 };
 
 // The SDK client when credentials are configured, else null (tools that
