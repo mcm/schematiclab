@@ -15,6 +15,7 @@
     "gen:camo-fixture-datapacks": "node --experimental-strip-types scripts/generate-camo-fixture-datapacks.mts",
     "gen:camo-block-states": "node --experimental-strip-types scripts/generate-camo-block-states.mts",
     "gen:ucw-fixture-functions": "node --experimental-strip-types scripts/generate-ucw-fixture-functions.mts",
+    "gen:everycomp": "node --experimental-strip-types scripts/generate-everycomp.mts",
     "lint": "eslint",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

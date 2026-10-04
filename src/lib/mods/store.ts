@@ -53,6 +53,8 @@ interface StoredModAssets {
   templates?: Record<string, TemplateCube[]>;
   /** Generated-block provider data, kept inline like `textureMeta`. */
   providerData?: ProviderData;
+  /** Item ids, kept inline like `textureMeta`. */
+  items?: string[];
 }
 
 interface ModsDB extends DBSchema {
@@ -246,6 +248,7 @@ async function hashAssets(assets: LoadedModAssets): Promise<HashedAssets> {
       textureMeta: assets.textureMeta,
       ...(assets.templates ? { templates: assets.templates } : {}),
       ...(assets.providerData ? { providerData: assets.providerData } : {}),
+      ...(assets.items ? { items: assets.items } : {}),
     },
     blobs,
   };
@@ -352,6 +355,7 @@ export async function getModAssets(
     textureMeta: record.textureMeta,
     ...(record.templates ? { templates: record.templates } : {}),
     ...(record.providerData ? { providerData: record.providerData } : {}),
+    ...(record.items ? { items: record.items } : {}),
   };
 }
 

@@ -47,6 +47,11 @@ export interface ParsedModAssets {
    * Absent or empty for jars no provider reads.
    */
   providerData?: ProviderData;
+  /**
+   * Item ids the jar has item models for (`assets/<ns>/models/item/*.json`),
+   * sorted: the app's stand-in for the item registry.
+   */
+  items?: string[];
   /** Non-fatal problems encountered while parsing (malformed JSON, …). */
   warnings: string[];
   /**
@@ -125,6 +130,10 @@ export interface LoadedModAssets {
    * Absent on older records and on jars no provider reads.
    */
   providerData?: ProviderData;
+  /**
+   * Item ids the jar has item models for, sorted. Absent on older records.
+   */
+  items?: string[];
 }
 
 /**
@@ -193,5 +202,6 @@ export function toLoadedModAssets(parsed: ParsedModAssets): LoadedModAssets {
     ...(parsed.providerData && Object.keys(parsed.providerData).length > 0
       ? { providerData: parsed.providerData }
       : {}),
+    ...(parsed.items && parsed.items.length > 0 ? { items: parsed.items } : {}),
   };
 }

@@ -11,6 +11,7 @@ import { strFromU8, unzipSync, type UnzipFileInfo } from "fflate";
 import type { AppearanceSources } from "../render/block-appearance";
 import { legacyBlockstateRefs } from "./generated/legacy-blockstate";
 import {
+  PROVIDER_JAR_READERS,
   providerDataGeneratesBlocks,
   providerJarEntry,
   type ProviderJarReader,
@@ -166,6 +167,11 @@ export function parseModJar(
       properties: extractProperties(blockstates[id]),
     }));
 
+  const items = Object.keys(allModels)
+    .filter((id) => id.slice(id.indexOf(":") + 1).startsWith("item/"))
+    .map((id) => id.replace(":item/", ":"))
+    .sort();
+
   const providerData: ProviderData = {};
   for (const [reader, readerEntries] of providerEntries) {
     providerData[reader.namespace] = reader.read(readerEntries, warnings);
@@ -205,6 +211,12 @@ export function parseModJar(
     for (const texture of legacy.textures) textureRefs.add(texture);
   }
 
+  // Readers may keep textures no blockstate reaches (Every Compat's masks).
+  for (const id of Object.keys(allTextures)) {
+    if (PROVIDER_JAR_READERS.some((reader) => reader.keepTexture?.(id))) {
+      textureRefs.add(id);
+    }
+  }
   const textures: Record<string, Uint8Array> = {};
   const textureMeta: Record<string, unknown> = {};
   for (const ref of textureRefs) {
@@ -239,6 +251,7 @@ export function parseModJar(
     textureMeta,
     templates,
     ...(providerEntries.size > 0 ? { providerData } : {}),
+    ...(items.length > 0 ? { items } : {}),
     warnings,
     appearancesComputed: vanilla !== null,
   };

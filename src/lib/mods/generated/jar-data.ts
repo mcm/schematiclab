@@ -33,6 +33,11 @@ export interface ProviderJarReader {
   readonly curseForgeSlugs: readonly string[];
   /** Warning on a stored file of the mod loaded before the reader existed. */
   readonly reloadWarning: string;
+  /**
+   * Textures (`ns:path`) of a jar to keep although no blockstate reaches
+   * them (masks a provider reads). Applies to every jar.
+   */
+  keepTexture?(id: string): boolean;
 }
 
 const UCW_READER: ProviderJarReader = {
@@ -47,7 +52,52 @@ const UCW_READER: ProviderJarReader = {
   reloadWarning: UCW_RELOAD_WARNING,
 };
 
-export const PROVIDER_JAR_READERS: readonly ProviderJarReader[] = [UCW_READER];
+/**
+ * An Every Compat family addon (Every Compat, Stone Zone, Gems Realm): its
+ * jar holds no rules (those are generated from the mod's sources into
+ * `everycomp/tables/`), but the masks, overlays and hand-made textures its
+ * modules use, and the `block_type.*` names of its generated blocks.
+ */
+function everyCompatReader(
+  namespace: string,
+  modName: string,
+  curseForgeSlugs: readonly string[],
+): ProviderJarReader {
+  const langPath = `assets/${namespace}/lang/en_us.json`;
+  return {
+    namespace,
+    entryKey: (name) => (name === langPath ? "lang" : null),
+    read(entries) {
+      const json = entries.get("lang");
+      const lang: Record<string, string> = {};
+      if (typeof json === "object" && json !== null) {
+        for (const [key, value] of Object.entries(json)) {
+          if (key.startsWith("block_type.") && typeof value === "string") {
+            lang[key] = value;
+          }
+        }
+      }
+      return { lang };
+    },
+    generatesBlocks: () => true,
+    curseForgeSlugs,
+    reloadWarning: `Reload ${modName}: it was loaded before its masks and textures were read, so its generated blocks can't be drawn`,
+    keepTexture: (id) => id.startsWith(`${namespace}:`),
+  };
+}
+
+export const PROVIDER_JAR_READERS: readonly ProviderJarReader[] = [
+  UCW_READER,
+  everyCompatReader("everycomp", "Every Compat", ["every-compat"]),
+  everyCompatReader("stonezone", "Stone Zone", [
+    "stone-zone",
+    "every-compat-stone-zone",
+  ]),
+  everyCompatReader("gemsrealm", "Gems Realm", [
+    "gems-realm",
+    "every-compat-gems-realm",
+  ]),
+];
 
 /** The reader wanting jar entry `name` and the entry's key, or null. */
 export function providerJarEntry(

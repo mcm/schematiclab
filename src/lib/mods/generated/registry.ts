@@ -24,11 +24,21 @@ import type {
   GeneratedBlockResolution,
   GeneratedVanillaAssets,
 } from "./types";
+import {
+  EVERYCOMP_PROVIDER,
+  GEMSREALM_PROVIDER,
+  STONEZONE_PROVIDER,
+} from "./everycomp/provider";
 import { UCW_PROVIDER } from "./ucw/provider";
 import { loadGeneratedVanillaAssets } from "./vanilla-assets";
 
 // Built-in providers, one per namespace. Providers are added here.
-const BUILTIN_PROVIDERS: readonly GeneratedBlockProvider[] = [UCW_PROVIDER];
+const BUILTIN_PROVIDERS: readonly GeneratedBlockProvider[] = [
+  UCW_PROVIDER,
+  EVERYCOMP_PROVIDER,
+  STONEZONE_PROVIDER,
+  GEMSREALM_PROVIDER,
+];
 
 let providers: ReadonlyMap<string, GeneratedBlockProvider> =
   byNamespace(BUILTIN_PROVIDERS);
