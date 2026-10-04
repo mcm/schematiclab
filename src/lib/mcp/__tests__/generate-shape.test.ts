@@ -289,6 +289,7 @@ describe("generate_shape", () => {
       { ...glassEllipsoid, material: "minecraft:not_a_block", render: true },
       makeDeps({ blob: null }),
     );
+    expect(result.isError).toBe(true);
     expect(text(result)).toBe(BLOB_NOT_CONFIGURED_MESSAGE);
   });
 
