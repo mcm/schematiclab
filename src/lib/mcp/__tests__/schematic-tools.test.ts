@@ -514,6 +514,7 @@ describe("convert_schematic", () => {
       { url: "https://pastebin.com/AbC123", output_format: "Litematic" },
       makeDeps({ blob: null, fetch: fetchImpl }),
     );
+    expect(result.isError).toBe(true);
     expect(text(result)).toBe(BLOB_NOT_CONFIGURED_MESSAGE);
     expect(fetchImpl).not.toHaveBeenCalled();
   });
