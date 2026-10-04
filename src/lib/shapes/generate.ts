@@ -12,7 +12,12 @@ import {
   getVersion,
   type MinecraftVersion,
 } from "../schemlib/schematic-formats/version-mapping";
-import { buildShapeGrid, voxelIndex, type ShapeOptions } from "./shapes";
+import {
+  buildShapeGrid,
+  voxelIndex,
+  type ShapeOptions,
+  type VoxelGrid,
+} from "./shapes";
 
 /** Most blocks one generated schematic may hold. */
 export const MAX_SHAPE_BLOCKS = 2_000_000;
@@ -146,8 +151,29 @@ export type ShapeProjectionResult =
   | { ok: true; projection: ParsedSchematicProjection }
   | { ok: false; error: string };
 
-/** The schematic for `spec`, or why it can't be built. */
-export function buildShapeProjection(spec: ShapeSpec): ShapeProjectionResult {
+/**
+ * The preview of a shape: its size and block count, plus the schematic when
+ * it has at most the preview's block limit.
+ */
+export type ShapePreviewResult =
+  | {
+      ok: true;
+      totalBlocks: number;
+      size: [number, number, number];
+      projection: ParsedSchematicProjection | null;
+    }
+  | { ok: false; error: string };
+
+interface PreparedShape {
+  version: MinecraftVersion;
+  state: BlockState;
+  grid: VoxelGrid;
+}
+
+// Validates `spec` and builds its occupancy grid.
+function prepareShape(
+  spec: ShapeSpec,
+): ({ ok: true } & PreparedShape) | { ok: false; error: string } {
   const parsed = parseMaterial(spec.material);
   if (!parsed.ok) return parsed;
   const material = parsed.material;
@@ -162,8 +188,6 @@ export function buildShapeProjection(spec: ShapeSpec): ShapeProjectionResult {
   if (materialError !== null) return { ok: false, error: materialError };
   const written = materialForVersion(material, spec.versionId);
   if (!written.ok) return written;
-  const properties: Record<string, string> = {};
-  for (const [k, v] of written.state.Properties) properties[k] = v;
 
   let grid;
   try {
@@ -180,6 +204,15 @@ export function buildShapeProjection(spec: ShapeSpec): ShapeProjectionResult {
       error: `This shape has ${grid.count.toLocaleString("en-US")} blocks, more than the ${MAX_SHAPE_BLOCKS.toLocaleString("en-US")} allowed. Make it smaller or hollow.`,
     };
   }
+  return { ok: true, version, state: written.state, grid };
+}
+
+function projectionOf(
+  spec: ShapeSpec,
+  { version, state, grid }: PreparedShape,
+): ParsedSchematicProjection {
+  const properties: Record<string, string> = {};
+  for (const [k, v] of state.Properties) properties[k] = v;
 
   const [w, h, d] = grid.size;
   const blocks: ParsedSchematicProjection["regions"][number]["blocks"] =
@@ -196,31 +229,54 @@ export function buildShapeProjection(spec: ShapeSpec): ShapeProjectionResult {
   }
 
   return {
+    name: spec.name?.trim() || defaultShapeName(spec),
+    // A generated shape was never read from a file. The projection still
+    // needs a format; export ignores it.
+    inputFormat: "Litematic",
+    minecraftVersion: version,
+    totalBlocks: grid.count,
+    palette: [
+      {
+        blockState: state.toString(),
+        blockId: state.Name,
+        properties,
+        count: grid.count,
+      },
+    ],
+    regions: [
+      {
+        origin: [0, 0, 0],
+        size: [w, h, d],
+        blocks,
+        blockEntities: [],
+      },
+    ],
+  };
+}
+
+/** The schematic for `spec`, or why it can't be built. */
+export function buildShapeProjection(spec: ShapeSpec): ShapeProjectionResult {
+  const prepared = prepareShape(spec);
+  if (!prepared.ok) return prepared;
+  return { ok: true, projection: projectionOf(spec, prepared) };
+}
+
+/**
+ * The preview of `spec`. Shapes over `maxBlocks` blocks get no schematic, so
+ * the worker doesn't send their placements to the main thread.
+ */
+export function buildShapePreview(
+  spec: ShapeSpec,
+  maxBlocks: number,
+): ShapePreviewResult {
+  const prepared = prepareShape(spec);
+  if (!prepared.ok) return prepared;
+  const { grid } = prepared;
+  return {
     ok: true,
-    projection: {
-      name: spec.name?.trim() || defaultShapeName(spec),
-      // A generated shape was never read from a file. The projection still
-      // needs a format; export ignores it.
-      inputFormat: "Litematic",
-      minecraftVersion: version,
-      totalBlocks: grid.count,
-      palette: [
-        {
-          blockState: written.state.toString(),
-          blockId: written.state.Name,
-          properties,
-          count: grid.count,
-        },
-      ],
-      regions: [
-        {
-          origin: [0, 0, 0],
-          size: [w, h, d],
-          blocks,
-          blockEntities: [],
-        },
-      ],
-    },
+    totalBlocks: grid.count,
+    size: grid.size,
+    projection: grid.count <= maxBlocks ? projectionOf(spec, prepared) : null,
   };
 }
 

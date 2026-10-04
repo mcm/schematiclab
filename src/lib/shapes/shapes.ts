@@ -39,6 +39,12 @@ export interface VoxelGrid {
 
 export const MAX_DIMENSION = 256;
 
+/**
+ * Thickest hollow wall. A wall half the longest side thick already leaves the
+ * shape solid.
+ */
+export const MAX_THICKNESS = MAX_DIMENSION / 2;
+
 export function voxelIndex(
   size: readonly [number, number, number],
   x: number,
@@ -143,8 +149,11 @@ function shell(
 ): Uint8Array {
   const [w, h, d] = size;
   let core = solid;
-  for (let step = 0; step < thickness; step++) {
+  // Once the core is empty, further steps change nothing.
+  let coreCount = 1;
+  for (let step = 0; step < thickness && coreCount > 0; step++) {
     const next = new Uint8Array(core.length);
+    coreCount = 0;
     for (let y = 0; y < h; y++) {
       for (let z = 0; z < d; z++) {
         for (let x = 0; x < w; x++) {
@@ -163,7 +172,10 @@ function shell(
             core[i + w] &&
             core[i - w * d] &&
             core[i + w * d];
-          if (interior) next[i] = 1;
+          if (interior) {
+            next[i] = 1;
+            coreCount++;
+          }
         }
       }
     }
@@ -197,9 +209,13 @@ export function buildShapeGrid(options: ShapeOptions): VoxelGrid {
   let filled = solidGrid(options);
   if (options.hollow) {
     const thickness = options.thickness ?? 1;
-    if (!Number.isInteger(thickness) || thickness < 1) {
+    if (
+      !Number.isInteger(thickness) ||
+      thickness < 1 ||
+      thickness > MAX_THICKNESS
+    ) {
       throw new Error(
-        `Wall thickness must be a whole number of at least 1, got ${thickness}`,
+        `Wall thickness must be a whole number from 1 to ${MAX_THICKNESS}, got ${thickness}`,
       );
     }
     filled = shell(size, filled, thickness);
