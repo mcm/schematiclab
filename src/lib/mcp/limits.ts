@@ -70,9 +70,9 @@ export function assertProjectionBlocks(
 }
 
 export class ToolTimeoutError extends Error {
-  constructor(toolName: string, timeoutMs: number) {
+  constructor(toolName: string, timeoutMs: number, hint = "Try again.") {
     super(
-      `${toolName} took longer than ${timeoutMs / 1000} seconds and was stopped. Try a smaller schematic or shape.`,
+      `${toolName} took longer than ${timeoutMs / 1000} seconds and was stopped. ${hint}`,
     );
     this.name = "ToolTimeoutError";
   }
@@ -88,11 +88,12 @@ export async function withToolTimeout<T>(
   toolName: string,
   timeoutMs: number,
   work: Promise<T>,
+  hint?: string,
 ): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<never>((_, reject) => {
     timer = setTimeout(
-      () => reject(new ToolTimeoutError(toolName, timeoutMs)),
+      () => reject(new ToolTimeoutError(toolName, timeoutMs, hint)),
       timeoutMs,
     );
   });

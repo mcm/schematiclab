@@ -7,6 +7,7 @@ import { decodePng, type RgbaImage } from "../../render/block-appearance";
 import { fallbackBlockColor, oklabToHex } from "../../render/static-views";
 import {
   MAX_RENDER_EDGE,
+  MAX_RENDER_FACE_CELLS,
   renderProjectionPng,
   vanillaBlockColors,
 } from "../render";
@@ -125,5 +126,32 @@ describe("renderProjectionPng", () => {
     expect(distinctColors(decode(png))).toContain(
       hexToInt(fallbackBlockColor(id)),
     );
+  });
+
+  it("rejects a few blocks spread too far apart to render", () => {
+    const far = singleBlock("minecraft:stone");
+    far.totalBlocks = 2;
+    far.palette[0].count = 2;
+    far.regions.push({
+      origin: [30_000_000, 0, 30_000_000],
+      size: [1, 1, 1],
+      blocks: [{ pos: [0, 0, 0], paletteIndex: 0 }],
+      blockEntities: [],
+    });
+    expect(() => renderProjectionPng(far)).toThrow(/too far apart to render/);
+  });
+
+  it("renders a span at the face limit", () => {
+    const side = Math.sqrt(MAX_RENDER_FACE_CELLS);
+    const wide = singleBlock("minecraft:stone");
+    wide.totalBlocks = 2;
+    wide.palette[0].count = 2;
+    wide.regions.push({
+      origin: [side - 1, 0, side - 1],
+      size: [1, 1, 1],
+      blocks: [{ pos: [0, 0, 0], paletteIndex: 0 }],
+      blockEntities: [],
+    });
+    expect(renderProjectionPng(wide).png.length).toBeGreaterThan(0);
   });
 });

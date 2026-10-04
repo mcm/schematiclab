@@ -63,6 +63,8 @@ export interface ConvertSchematicOptions {
   inputFilename: string;
   outputFormat: SchematicFormatId;
   targetVersion?: MinecraftVersion | string;
+  /** The same limits as `parseSchematic`'s options. */
+  loadOptions?: SchematicLoadOptions;
 }
 
 export type ConvertResult =
@@ -255,6 +257,34 @@ function errorMessage(err: unknown): string {
   return "Unknown error";
 }
 
+/**
+ * With `options.maxDecompressedBytes`, gunzips gzipped `bytes` once, up to
+ * that many bytes, so detection and loading reuse the result and never
+ * inflate uncapped (fflate's `gunzipSync` allocates whatever size the gzip
+ * trailer claims). Gzip that fails to inflate is an error, not a fallback.
+ */
+function inflateCapped(
+  bytes: Uint8Array,
+  options: SchematicLoadOptions | undefined,
+):
+  | { ok: true; bytes: Uint8Array }
+  | { ok: false; error: string; cause: unknown } {
+  const max = options?.maxDecompressedBytes;
+  if (max === undefined || !nbt.isGzip(bytes)) return { ok: true, bytes };
+  try {
+    return { ok: true, bytes: nbt.gunzipCapped(bytes, max) };
+  } catch (cause) {
+    if (cause instanceof nbt.DecompressedTooLargeError) {
+      return { ok: false, error: cause.message, cause };
+    }
+    return {
+      ok: false,
+      error: `Could not decompress the schematic: ${errorMessage(cause)}`,
+      cause,
+    };
+  }
+}
+
 // ── Public API ────────────────────────────────────────────────────────────
 
 /**
@@ -266,7 +296,7 @@ function errorMessage(err: unknown): string {
 export function convertSchematic(
   options: ConvertSchematicOptions,
 ): ConvertResult {
-  const { bytes, inputFilename, outputFormat, targetVersion } = options;
+  const { inputFilename, outputFormat, targetVersion, loadOptions } = options;
 
   const outputEntry = FORMAT_REGISTRY[outputFormat];
   if (!outputEntry) {
@@ -275,6 +305,10 @@ export function convertSchematic(
       error: `Unsupported output format: ${String(outputFormat)}`,
     };
   }
+
+  const inflated = inflateCapped(options.bytes, loadOptions);
+  if (!inflated.ok) return inflated;
+  const { bytes } = inflated;
 
   let detectedId: string;
   try {
@@ -298,8 +332,11 @@ export function convertSchematic(
 
   let loaded: AbstractSchematic;
   try {
-    loaded = inputEntry.cls.schematicLoad(bytes);
+    loaded = inputEntry.cls.schematicLoad(bytes, loadOptions);
   } catch (cause) {
+    if (cause instanceof SchematicTooLargeError) {
+      return { ok: false, error: cause.message, cause };
+    }
     return {
       ok: false,
       error: `Failed to parse ${detectedId} input: ${errorMessage(cause)}`,
@@ -361,23 +398,16 @@ export function convertSchematic(
  *
  * With `options.maxDecompressedBytes`, gzipped input is inflated once, up to
  * that many bytes, and the result is reused for detection and loading; past
- * the cap it fails the same way with a `DecompressedTooLargeError`.
+ * the cap it fails the same way with a `DecompressedTooLargeError`, and gzip
+ * that doesn't inflate fails too.
  */
 export function parseSchematic(
   bytes: Uint8Array,
   options?: SchematicLoadOptions,
 ): ParseResult {
-  const maxDecompressed = options?.maxDecompressedBytes;
-  if (maxDecompressed !== undefined && nbt.isGzip(bytes)) {
-    try {
-      bytes = nbt.gunzipCapped(bytes, maxDecompressed);
-    } catch (cause) {
-      if (cause instanceof nbt.DecompressedTooLargeError) {
-        return { ok: false, error: cause.message, cause };
-      }
-      // Not valid gzip: leave the bytes for detection to reject as before.
-    }
-  }
+  const inflated = inflateCapped(bytes, options);
+  if (!inflated.ok) return inflated;
+  bytes = inflated.bytes;
 
   let detectedId: string;
   try {

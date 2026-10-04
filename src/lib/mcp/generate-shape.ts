@@ -83,6 +83,7 @@ export const generateShapeTool = defineTool({
     block_state: z.string(),
   }),
   annotations: { readOnlyHint: false, openWorldHint: true },
+  timeoutHint: "Try a smaller shape.",
   handler: async (args, deps): Promise<CallToolResult> => {
     const versionId = args.version.trim();
     if (!Object.hasOwn(KNOWN_VERSIONS, versionId)) {
@@ -121,6 +122,11 @@ export const generateShapeTool = defineTool({
     });
     if (!serialized.ok) throw new Error(serialized.error);
 
+    // Rendered before the upload, so a render failure leaves no file behind.
+    const png = args.render
+      ? renderProjectionPng(projection, { name: projection.name }).png
+      : undefined;
+
     const file = await publishFile(
       serialized.bytes,
       serialized.filename,
@@ -138,9 +144,7 @@ export const generateShapeTool = defineTool({
       block_count: projection.totalBlocks,
       block_state: projection.palette[0].blockState,
     });
-    if (!args.render) return result;
-
-    const { png } = renderProjectionPng(projection, { name: projection.name });
+    if (!png) return result;
     return {
       ...result,
       content: [

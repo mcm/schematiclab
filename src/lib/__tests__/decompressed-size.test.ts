@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { parseSchematic } from "../convert";
+import { convertSchematic, parseSchematic } from "../convert";
 import { MAX_DECOMPRESSED_BYTES } from "../mcp/limits";
 import {
   DecompressedTooLargeError,
@@ -141,10 +141,47 @@ describe("parseSchematic with maxDecompressedBytes", () => {
     );
   });
 
-  it("leaves invalid gzip for detection to reject as before", () => {
+  it("fails on invalid gzip without inflating it again uncapped", () => {
     const broken = new Uint8Array([0x1f, 0x8b, 1, 2, 3, 4, 5]);
-    expect(
-      parseSchematic(broken, { maxDecompressedBytes: MAX_DECOMPRESSED_BYTES }),
-    ).toEqual(parseSchematic(broken));
+    const result = parseSchematic(broken, {
+      maxDecompressedBytes: MAX_DECOMPRESSED_BYTES,
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toMatch(/^Could not decompress the schematic: /);
+    expect(inflations.sync).toBe(0);
+  });
+});
+
+describe("convertSchematic with loadOptions", () => {
+  it("fails on a gzip bomb with the cap's error", () => {
+    const result = convertSchematic({
+      bytes: bomb,
+      inputFilename: "bomb.nbt",
+      outputFormat: "Sponge[v2]",
+      loadOptions: { maxDecompressedBytes: MAX_DECOMPRESSED_BYTES },
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.cause).toBeInstanceOf(DecompressedTooLargeError);
+    expect(inflations).toEqual({ sync: 0, streams: 1 });
+  });
+
+  it("inflates the input once, capped, and converts it as before", () => {
+    const options = {
+      bytes: fixture("one_stone_block.litematic"),
+      inputFilename: "one_stone_block.litematic",
+      outputFormat: "Sponge[v2]",
+    } as const;
+    const uncapped = convertSchematic(options);
+    inflations.sync = 0;
+    inflations.streams = 0;
+    const capped = convertSchematic({
+      ...options,
+      loadOptions: { maxDecompressedBytes: MAX_DECOMPRESSED_BYTES },
+    });
+    // The output is gzipped, not inflated.
+    expect(inflations).toEqual({ sync: 0, streams: 1 });
+    expect(capped).toEqual(uncapped);
   });
 });

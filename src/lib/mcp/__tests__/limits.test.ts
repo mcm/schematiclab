@@ -80,8 +80,22 @@ describe("request size", () => {
     expect(response.status).toBe(413);
   });
 
-  it("leaves room for a 5 MB schematic sent as base64", () => {
-    expect(MAX_REQUEST_BYTES).toBeGreaterThan((MAX_INPUT_BYTES * 4) / 3);
+  it("leaves room for a tools/call carrying a 5 MB schematic as base64", () => {
+    const call = JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "tools/call",
+      params: {
+        name: "convert_schematic",
+        arguments: {
+          base64: Buffer.alloc(MAX_INPUT_BYTES).toString("base64"),
+          filename: "x".repeat(255),
+          output_format: "Sponge[v3]",
+          target_version: "1.21.4",
+        },
+      },
+    });
+    expect(Buffer.byteLength(call)).toBeLessThanOrEqual(MAX_REQUEST_BYTES);
   });
 });
 
@@ -285,7 +299,7 @@ describe("per-tool timeout", () => {
     const result = await pending;
     expect(result.isError).toBe(true);
     expect(text(result)).toBe(
-      "hang took longer than 45 seconds and was stopped. Try a smaller schematic or shape.",
+      "hang took longer than 45 seconds and was stopped. Try again.",
     );
   });
 
@@ -298,7 +312,9 @@ describe("per-tool timeout", () => {
     );
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     expect(result.isError).toBe(true);
-    expect(text(result)).toContain("inspect_schematic took longer than");
+    expect(text(result)).toMatch(
+      /^inspect_schematic took longer than .* Try a smaller schematic\.$/,
+    );
   });
 
   it("keeps a handler that finishes late from storing its file", async () => {

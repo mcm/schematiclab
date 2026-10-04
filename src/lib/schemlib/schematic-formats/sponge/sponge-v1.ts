@@ -21,7 +21,7 @@ import {
   checkDeclaredVolume,
 } from "../abstract";
 import { MinecraftVersion, getVersion, posKey } from "../version-mapping";
-import { decodeVarintArray, encodeVarintArray } from "./varint";
+import { decodeBlockData, encodeVarintArray } from "./varint";
 import { flattenRegions, placeTileEntity } from "../single-region";
 
 // ── BlockEntity shape translation ──────────────────────────────────────────
@@ -264,13 +264,12 @@ export class SpongeSchematicV1
     if (!(blockDataTag instanceof nbt.ByteArray)) {
       throw new TypeError("Sponge v1: BlockData must be ByteArray");
     }
-    const blockData = decodeVarintArray(blockDataTag.toObject() as number[]);
     const expectedBlocks = widthTag.value * heightTag.value * lengthTag.value;
-    if (blockData.length !== expectedBlocks) {
-      throw new Error(
-        `Sponge v1: BlockData decoded to ${blockData.length} entries, expected ${expectedBlocks}`,
-      );
-    }
+    const blockData = decodeBlockData(
+      blockDataTag,
+      expectedBlocks,
+      "Sponge v1: BlockData",
+    );
 
     const tileEntities: Entity[] = [];
     const tileEntitiesTag = compound.get("TileEntities");

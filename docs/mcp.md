@@ -49,7 +49,7 @@ Any MCP client with streamable HTTP support works. Send JSON-RPC as `POST /api/m
 
 Every tool that takes a Minecraft version accepts the ids `list_versions` returns (for example `1.12.2`, `1.20.1`, `1.21.4`), and every tool that writes a file accepts the format ids it returns. Errors (an unknown version, a block missing from a version, a file over a limit…) are returned as tool errors (`isError: true`) with a message saying what to change.
 
-Tools that return data return it twice: as `structuredContent` (matching the tool's output schema) and as JSON in a text content block, for clients that only read text.
+Tools that return data return it twice: as `structuredContent` (matching the tool's output schema) and as JSON in a text content block, for clients that only read text. `render_schematic` is the exception: it returns only a PNG image and a plain-text summary.
 
 ### Schematic inputs
 

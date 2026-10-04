@@ -10,6 +10,8 @@ import {
   StructureSchematic,
   detectSchematicType,
 } from "../schemlib/schematic-formats";
+import { SpongeSchematicV2 } from "../schemlib/schematic-formats/sponge";
+import { StructurizeBlueprint } from "../schemlib/schematic-formats/structurize";
 import {
   BuildingGadgetsV0Schematic,
   BuildingGadgetsV1Schematic,
@@ -71,6 +73,8 @@ describe("parseSchematic with maxBlocks", () => {
         expect(detectSchematicType(file.bytes)).toBe(file.format);
       });
 
+      // Lazy formats decode in `getBlockMatrix`; formats that read their
+      // block data while loading are covered by `uncappedError` below.
       it("stops on the declared size without decoding blocks", () => {
         const decode = vi.spyOn(file.region.prototype, "getBlockMatrix");
         const result = parseSchematic(file.bytes, { maxBlocks: 2_000_000 });
@@ -89,7 +93,7 @@ describe("parseSchematic with maxBlocks", () => {
 
       if (file.uncappedError !== undefined) {
         const uncappedError = file.uncappedError;
-        it("decodes its block data while loading when there is no cap", () => {
+        it("reads its block data while loading when there is no cap", () => {
           const result = parseSchematic(file.bytes);
           expect(result.ok).toBe(false);
           if (result.ok) return;
@@ -249,6 +253,76 @@ describe("malformed declared sizes", () => {
     expect(() =>
       BuildingGadgetsV1Schematic.schematicLoad(bytes, options),
     ).toThrow("invalid size");
+  });
+
+  it("Structurize: rejects a missing size", () => {
+    const bytes = gzip(
+      new nbt.Compound({
+        version: new nbt.Byte(1),
+        size_x: new nbt.Short(1),
+        size_y: new nbt.Short(1),
+        palette: new nbt.NbtList([]),
+        blocks: new nbt.IntArray([]),
+      }),
+    );
+    expect(() => StructurizeBlueprint.schematicLoad(bytes, options)).toThrow(
+      "missing `size_z`",
+    );
+  });
+
+  it("Building Gadgets v1: rejects more positions than its box holds", () => {
+    const body = gzip(
+      new nbt.Compound({
+        data: new nbt.NbtList([]),
+        pos: new nbt.NbtList([new nbt.Long(0n), new nbt.Long(1n)]),
+      }),
+    );
+    const bytes = new TextEncoder().encode(
+      JSON.stringify({
+        header: {
+          bounding_box: {
+            min_x: 0,
+            min_y: 0,
+            min_z: 0,
+            max_x: 0,
+            max_y: 0,
+            max_z: 0,
+          },
+        },
+        body: Buffer.from(body).toString("base64"),
+      }),
+    );
+    expect(() =>
+      BuildingGadgetsV1Schematic.schematicLoad(bytes, options),
+    ).toThrow("2 block positions, more than the 1");
+  });
+
+  it("Sponge: rejects block data too long for its declared size", () => {
+    const sponge = (blockData: number[]) =>
+      new nbt.Named({
+        Schematic: new nbt.Compound({
+          Version: new nbt.Int(2),
+          DataVersion: new nbt.Int(3465),
+          Width: new nbt.Short(2),
+          Height: new nbt.Short(1),
+          Length: new nbt.Short(1),
+          PaletteMax: new nbt.Int(1),
+          Palette: new nbt.Compound({ "minecraft:stone": new nbt.Int(0) }),
+          BlockData: new nbt.ByteArray(blockData),
+        }),
+      }).toBytes({ compress: true });
+    // Eleven bytes can't be two varints of at most five bytes each.
+    expect(() =>
+      SpongeSchematicV2.schematicLoad(sponge(new Array(11).fill(0)), options),
+    ).toThrow("11 bytes, which can't hold 2 entries");
+    // Three one-byte varints: decoding stops at the third.
+    expect(() =>
+      SpongeSchematicV2.schematicLoad(sponge([0, 0, 0]), options),
+    ).toThrow("more than 2 entries");
+    expect(
+      SpongeSchematicV2.schematicLoad(sponge([0, 0]), options).getBlockMatrix()
+        .size,
+    ).toBe(2);
   });
 
   it("JSON: checks each region's declared size before reading its blocks", () => {

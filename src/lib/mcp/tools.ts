@@ -55,6 +55,7 @@ export async function runTool(
       Promise.resolve().then(() =>
         tool.handler(args, { ...deps, signal: controller.signal }),
       ),
+      tool.timeoutHint,
     );
   } catch (err) {
     controller.abort(err);

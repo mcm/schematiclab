@@ -212,9 +212,15 @@ export class StructurizeBlueprint extends AbstractRegion {
   ): StructurizeBlueprint {
     const bytes = typeof obj === "string" ? new TextEncoder().encode(obj) : obj;
     const root = nbt.loadNbtFromBytes(bytes, options);
-    const sizeX = readInt(root.get("size_x"));
-    const sizeY = readInt(root.get("size_y"));
-    const sizeZ = readInt(root.get("size_z"));
+    const [sizeX, sizeY, sizeZ] = (["size_x", "size_y", "size_z"] as const).map(
+      (name) => {
+        const tag = root.get(name);
+        if (tag === undefined) {
+          throw new Error(`StructurizeBlueprint missing \`${name}\``);
+        }
+        return readInt(tag);
+      },
+    );
     checkDeclaredVolume([[sizeX, sizeY, sizeZ]], options);
 
     const blocksTag = root.get("blocks");

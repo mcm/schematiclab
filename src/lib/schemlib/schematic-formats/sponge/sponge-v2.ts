@@ -28,7 +28,7 @@ import {
 } from "../version-mapping";
 import { flattenRegions, placeTileEntity } from "../single-region";
 import { SpongeSchematicMetadata } from "./sponge-v1";
-import { decodeVarintArray, encodeVarintArray } from "./varint";
+import { decodeBlockData, encodeVarintArray } from "./varint";
 
 // ── BlockEntity shape translation ──────────────────────────────────────────
 //
@@ -224,13 +224,12 @@ export class SpongeSchematicV2
     if (!(blockDataTag instanceof nbt.ByteArray)) {
       throw new TypeError("Sponge v2: BlockData must be ByteArray");
     }
-    const blockData = decodeVarintArray(blockDataTag.toObject() as number[]);
     const expectedBlocks = widthTag.value * heightTag.value * lengthTag.value;
-    if (blockData.length !== expectedBlocks) {
-      throw new Error(
-        `Sponge v2: BlockData decoded to ${blockData.length} entries, expected ${expectedBlocks}`,
-      );
-    }
+    const blockData = decodeBlockData(
+      blockDataTag,
+      expectedBlocks,
+      "Sponge v2: BlockData",
+    );
 
     const blockEntities: Entity[] = [];
     const blockEntitiesTag = compound.get("BlockEntities");

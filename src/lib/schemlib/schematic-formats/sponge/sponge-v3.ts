@@ -50,7 +50,7 @@ import {
 } from "../version-mapping";
 import { flattenRegions } from "../single-region";
 import { SpongeSchematicMetadata } from "./sponge-v1";
-import { decodeVarintArray, encodeVarintArray } from "./varint";
+import { decodeBlockData, encodeVarintArray } from "./varint";
 
 // ── BlockEntity shape translation ──────────────────────────────────────────
 //
@@ -256,13 +256,12 @@ export class SpongeSchematicV3
     if (!(dataTag instanceof nbt.ByteArray)) {
       throw new TypeError("Sponge v3: Blocks.Data must be ByteArray");
     }
-    const indices = decodeVarintArray(dataTag.toObject() as number[]);
     const expected = width * height * length;
-    if (indices.length !== expected) {
-      throw new Error(
-        `Sponge v3: Blocks.Data decoded to ${indices.length} entries, expected ${expected}`,
-      );
-    }
+    const indices = decodeBlockData(
+      dataTag,
+      expected,
+      "Sponge v3: Blocks.Data",
+    );
 
     const blockEntities: nbt.Compound[] = [];
     const beTag = blocksTag.get("BlockEntities");
