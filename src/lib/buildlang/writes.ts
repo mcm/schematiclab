@@ -144,17 +144,33 @@ function resolveCell(writes: readonly Write[]): {
   return { winner: current, applied };
 }
 
-/** Blocks set into walls on purpose: a door in a wall isn't a collision. */
+/** Kinds always set into a wall: a door in a wall isn't a collision. */
 const WALL_MOUNTED_KINDS: ReadonlySet<BlockKind> = new Set([
   "door",
   "trapdoor",
   "wall_torch",
-  "button",
-  "pressure_plate",
-  "lever",
-  "sign",
-  "banner",
 ]);
+
+// Wall variants of signs and banners (`oak_wall_sign`, `red_wall_banner`…).
+const WALL_SIGN_OR_BANNER = /_wall_(hanging_)?sign$|_wall_banner$/;
+
+/**
+ * Whether `block` is mounted on a wall face: doors, trapdoors and wall
+ * torches, buttons and levers with `face=wall`, and wall signs and banners.
+ * Pressure plates and standing or ceiling variants are not.
+ */
+function isWallMounted(registry: BlockRegistry, block: PlacedBlock): boolean {
+  const kind = registry.kind(block.id);
+  if (WALL_MOUNTED_KINDS.has(kind)) return true;
+  if (kind === "button" || kind === "lever") {
+    const face = block.states.face ?? registry.defaults(block.id)?.face;
+    return face === "wall";
+  }
+  if (kind === "sign" || kind === "banner") {
+    return WALL_SIGN_OR_BANNER.test(block.id);
+  }
+  return false;
+}
 
 /** Kinds of the full, opaque blocks walls are built from. */
 const WALL_KINDS: ReadonlySet<BlockKind> = new Set(["block", "log", "pillar"]);
@@ -234,9 +250,9 @@ export class WriteLog {
    * Warnings for hand-placed blocks sharing a cell with another operation's
    * block (only writes that took effect: an `only_empty` or `replace` write
    * the cell rejected doesn't count), which is almost always a mistake (a bed inside a chimney). Painting
-   * over on purpose (walls, then windows) isn't checked; neither is a door,
-   * trapdoor, wall torch, button, lever, sign or banner set into solid wall
-   * blocks. One warning per (point path, other path, outcome).
+   * over on purpose (walls, then windows) isn't checked; neither is a
+   * wall-mounted block (`isWallMounted`) set into solid wall blocks. One
+   * warning per (point path, other path, outcome).
    */
   collisions(registry: BlockRegistry): ProgramError[] {
     const out: ProgramError[] = [];
@@ -252,7 +268,7 @@ export class WriteLog {
         );
         if (others.length === 0) continue;
         if (
-          WALL_MOUNTED_KINDS.has(registry.kind(block.id)) &&
+          isWallMounted(registry, block) &&
           others.every((w) => WALL_KINDS.has(registry.kind(w.block!.id)))
         ) {
           continue;

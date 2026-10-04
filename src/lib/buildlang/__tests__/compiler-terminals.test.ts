@@ -313,6 +313,35 @@ describe("block", () => {
     ]);
   });
 
+  it("exempts only blocks actually mounted on a wall", () => {
+    const into = (material: string, states = {}) =>
+      run(
+        [
+          { fill: "stone" },
+          { block: { at: [0, 0, 0], material, state: states } },
+        ],
+        [1, 1, 1],
+      ).warnings;
+    for (const mounted of ["oak_wall_sign", "oak_wall_hanging_sign"]) {
+      expect(into(mounted), mounted).toEqual([]);
+    }
+    expect(into("stone_button", { face: "wall" })).toEqual([]);
+    expect(into("lever", { face: "wall" })).toEqual([]);
+    for (const [material, states] of [
+      ["stone_pressure_plate", {}],
+      ["oak_sign", {}],
+      ["oak_hanging_sign", {}],
+      ["stone_button", { face: "floor" }],
+      ["lever", { face: "ceiling" }],
+    ] as const) {
+      expect(messages(into(material, states)), material).toEqual([
+        expect.stringMatching(
+          new RegExp(`^build\\[1\\]\\.block: ${material}.*stone`),
+        ),
+      ]);
+    }
+  });
+
   it("ignores writes the cell rejected (only_empty, replace)", () => {
     // a later fill that skips the lantern's cell doesn't collide with it
     let b = run(
