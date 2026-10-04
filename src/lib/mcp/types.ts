@@ -33,6 +33,8 @@ export interface McpTool<I extends z.ZodObject = z.ZodObject> {
   inputSchema: I;
   outputSchema?: z.ZodObject;
   annotations?: ToolAnnotations;
+  /** What to try when the tool times out; "Try again." when unset. */
+  timeoutHint?: string;
   handler: (
     args: z.infer<I>,
     deps: McpDeps,

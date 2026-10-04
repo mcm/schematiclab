@@ -16,6 +16,7 @@ import {
   MAX_SEARCH_LIMIT,
   oklabToHex,
   parseHexColor,
+  rankPalette,
   searchBlockIds,
   searchBlocksTool,
   suggestPaletteTool,
@@ -230,6 +231,13 @@ describe("search_blocks", () => {
     expect(data.note).toMatch(/flattened/);
   });
 
+  it("keeps air in 1.12.2", async () => {
+    const data = await search({ query: "air", version: "1.12.2" });
+    const ids = data.results.map((r) => r.id);
+    expect(ids).toContain("minecraft:air");
+    expect(ids).not.toContain("minecraft:cave_air");
+  });
+
   it("leaves blocks added in 1.13 out of 1.12.2", async () => {
     const legacy = await search({ query: "turtle", version: "1.12.2" });
     expect(legacy.results).toEqual([]);
@@ -320,6 +328,26 @@ describe("suggest_palette", () => {
     expect(ids.some((id) => id.startsWith("minecraft:infested_"))).toBe(false);
     const hexes = data.blocks.map((b) => b.hex);
     expect(new Set(hexes).size).toBe(hexes.length);
+  });
+
+  it("lists colours that round to the same hex once", () => {
+    // Two OKLab triples that differ past the hex's precision.
+    const grey = srgbToOklab(122, 122, 122);
+    const nudged: typeof grey = [grey[0] + 1e-9, grey[1], grey[2]];
+    expect(nudged).not.toEqual(grey);
+    expect(oklabToHex(nudged)).toBe(oklabToHex(grey));
+    const colors = new Map([
+      ["minecraft:a", { oklab: grey, fullCube: true }],
+      ["minecraft:b", { oklab: nudged, fullCube: true }],
+      ["minecraft:c", { oklab: srgbToOklab(0, 0, 0), fullCube: true }],
+    ]);
+    const registry = { kind: () => "block" } as never;
+    const ids = (exclude?: string) =>
+      rankPalette(grey, colors as never, registry, { n: 3, exclude }).map(
+        (b) => b.id,
+      );
+    expect(ids()).toEqual(["minecraft:a", "minecraft:c"]);
+    expect(ids("minecraft:a")).toEqual(["minecraft:c"]);
   });
 
   it("keeps to full cubes with full_cube_only and returns at most n", async () => {

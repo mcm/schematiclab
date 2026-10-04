@@ -36,6 +36,7 @@ import { publishFile } from "./output";
 import { renderProjectionPng } from "./render";
 import { type McpDeps, defineTool, jsonResult } from "./types";
 
+const SCHEMATIC_TIMEOUT_HINT = "Try a smaller schematic.";
 export const INSPECT_PALETTE_LIMIT = 30;
 export const MAX_WARNINGS = 50;
 
@@ -209,6 +210,7 @@ export const inspectSchematicTool = defineTool({
   inputSchema: z.object(schematicInputShape),
   outputSchema: inspectOutputSchema,
   annotations: { readOnlyHint: true, openWorldHint: true },
+  timeoutHint: SCHEMATIC_TIMEOUT_HINT,
   handler: async (args, deps) => {
     const { projection } = await loadSchematic(args, deps);
     return jsonResult({ ...inspectProjection(projection) });
@@ -242,6 +244,7 @@ export const convertSchematicTool = defineTool({
     warnings: z.array(z.string()),
   }),
   annotations: { readOnlyHint: false, openWorldHint: true },
+  timeoutHint: SCHEMATIC_TIMEOUT_HINT,
   handler: async (args, deps) => {
     const outputFormat = args.output_format as SchematicFormatId;
     const targetVersion = args.target_version?.trim() || undefined;
@@ -254,11 +257,17 @@ export const convertSchematicTool = defineTool({
       );
     }
     const { input, projection } = await loadSchematic(args, deps);
+    const limits = resolveLimits(deps.limits);
+    // The same limits again: conversion inflates and loads the input anew.
     const converted = convertSchematic({
       bytes: input.bytes,
       inputFilename: input.filename,
       outputFormat,
       targetVersion,
+      loadOptions: {
+        maxBlocks: limits.maxProjectionBlocks,
+        maxDecompressedBytes: limits.maxDecompressedBytes,
+      },
     });
     if (!converted.ok) throw new Error(converted.error);
 
@@ -297,6 +306,7 @@ export const renderSchematicTool = defineTool({
     "Render a schematic as a PNG contact sheet: four isometric views, front/side/top elevations, two plan slices and a cutaway, with flat-coloured blocks. Use it to see what a build looks like.",
   inputSchema: z.object(schematicInputShape),
   annotations: { readOnlyHint: true, openWorldHint: true },
+  timeoutHint: SCHEMATIC_TIMEOUT_HINT,
   handler: async (args, deps) => {
     const { input, projection } = await loadSchematic(args, deps);
     const name = projection.name.trim() || input.filename;

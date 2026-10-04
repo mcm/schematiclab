@@ -124,6 +124,7 @@ function blockStateFromCompound(c: nbt.Compound): BlockState {
 
 function decodeBody(
   value: unknown,
+  maxPositions: number,
   options?: SchematicLoadOptions,
 ): BuildingGadgetsV1Body {
   if (typeof value !== "string") {
@@ -131,10 +132,17 @@ function decodeBody(
   }
   const bytes = new Uint8Array(Buffer.from(value, "base64"));
   const named = nbt.loadNbtFromBytes(bytes, options);
-  return bodyFromCompound(named);
+  return bodyFromCompound(named, maxPositions);
 }
 
-function bodyFromCompound(c: nbt.Compound): BuildingGadgetsV1Body {
+/**
+ * `maxPositions` is the header's declared volume: a body with more block
+ * positions than its box has cells is rejected before they are read.
+ */
+function bodyFromCompound(
+  c: nbt.Compound,
+  maxPositions: number,
+): BuildingGadgetsV1Body {
   // data: List of Compound{ data, state, serializer }
   const data: BlockData[] = [];
   const dataTag = c.get("data");
@@ -162,6 +170,11 @@ function bodyFromCompound(c: nbt.Compound): BuildingGadgetsV1Body {
   const pos: bigint[] = [];
   const posTag = c.get("pos");
   if (posTag instanceof nbt.NbtList) {
+    if (posTag.items.length > maxPositions) {
+      throw new Error(
+        `BG v1: body has ${posTag.items.length} block positions, more than the ${maxPositions} its bounding box holds`,
+      );
+    }
     for (const item of posTag.items) {
       if (item instanceof nbt.Long) pos.push(item.value);
     }
@@ -341,17 +354,14 @@ export class BuildingGadgetsV1Schematic
     const obj2 = parsed as Record<string, unknown>;
     const header = headerFromJson(obj2.header);
     const bb = header.bounding_box;
-    checkDeclaredVolume(
-      [
-        [
-          bb.max_x - bb.min_x + 1,
-          bb.max_y - bb.min_y + 1,
-          bb.max_z - bb.min_z + 1,
-        ],
-      ],
-      options,
-    );
-    const body = decodeBody(obj2.body, options);
+    const size: [number, number, number] = [
+      bb.max_x - bb.min_x + 1,
+      bb.max_y - bb.min_y + 1,
+      bb.max_z - bb.min_z + 1,
+    ];
+    checkDeclaredVolume([size], options);
+    const volume = size.reduce((product, n) => product * Math.abs(n), 1);
+    const body = decodeBody(obj2.body, volume, options);
     return new BuildingGadgetsV1Schematic({ header, body });
   }
 

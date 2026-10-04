@@ -127,17 +127,6 @@ export class BuildingGadgetsV2Schematic
       );
     }
 
-    // blockstatemap: List<Compound>
-    const blockstatemap: BlockState[] = [];
-    const bsmTag = spalTag.get("blockstatemap");
-    if (bsmTag instanceof nbt.NbtList) {
-      for (const item of bsmTag.items) {
-        if (item instanceof nbt.Compound) {
-          blockstatemap.push(blockStateFromCompound(item));
-        }
-      }
-    }
-
     const startpos = readRequiredUppercasePos(
       spalTag.get("startpos"),
       "BG v2 startpos",
@@ -151,6 +140,17 @@ export class BuildingGadgetsV2Schematic
       [[Math.abs(span.x) + 1, Math.abs(span.y) + 1, Math.abs(span.z) + 1]],
       options,
     );
+
+    // blockstatemap: List<Compound>
+    const blockstatemap: BlockState[] = [];
+    const bsmTag = spalTag.get("blockstatemap");
+    if (bsmTag instanceof nbt.NbtList) {
+      for (const item of bsmTag.items) {
+        if (item instanceof nbt.Compound) {
+          blockstatemap.push(blockStateFromCompound(item));
+        }
+      }
+    }
 
     const statelist: number[] = [];
     const stateListTag = spalTag.get("statelist");

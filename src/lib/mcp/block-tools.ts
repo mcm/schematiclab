@@ -70,8 +70,8 @@ const legacyCache = new WeakMap<
 /**
  * `data` with only the blocks a schematic for `versionId` can hold. 1.12.2's
  * data is 1.13.2's flattened ids, so blocks added in 1.13 (stripped logs,
- * coral, ...) are dropped: those the Shape Generator can't write as a Forge
- * 1.12 state.
+ * coral, cave air, ...) are dropped: those the Shape Generator can't write as
+ * a Forge 1.12 state.
  */
 export function blocksOfVersion(data: BlockData, versionId: string): BlockData {
   if (!data.translateOnExport) return data;
@@ -79,6 +79,11 @@ export function blocksOfVersion(data: BlockData, versionId: string): BlockData {
   if (!blocks) {
     blocks = new Map();
     for (const [id, info] of data.blocks) {
+      // Air is written as itself, but isn't a shape material.
+      if (id === "minecraft:air") {
+        blocks.set(id, info);
+        continue;
+      }
       const written = materialForVersion(
         { blockId: id, properties: info.defaults },
         versionId,
@@ -287,11 +292,9 @@ export interface RankPaletteOptions {
   exclude?: string;
 }
 
-const colorKey = (oklab: Oklab) => oklab.join(",");
-
 /**
  * The `n` coloured, visible blocks closest to `target`, nearest first. Each
- * colour is listed once, so a material's stairs, slabs and walls (which share
+ * colour (as hex) is listed once, so a material's stairs, slabs and walls (which share
  * its colour) don't crowd out other materials; on a tie full cubes come
  * first, then shorter ids. Infested blocks look exactly like their base block
  * and are left out.
@@ -317,17 +320,18 @@ export function rankPalette(
       a.id.localeCompare(b.id),
   );
   const excluded = exclude === undefined ? undefined : colors.get(exclude);
-  const seen = new Set(excluded ? [colorKey(excluded.oklab)] : []);
+  // Keyed by the hex returned: distinct OKLab triples can round to one hex.
+  const seen = new Set(excluded ? [oklabToHex(excluded.oklab)] : []);
   const out: PaletteEntry[] = [];
   for (const { id, appearance, d } of ranked) {
     if (out.length >= n) break;
-    const key = colorKey(appearance.oklab);
-    if (seen.has(key)) continue;
-    seen.add(key);
+    const hex = oklabToHex(appearance.oklab);
+    if (seen.has(hex)) continue;
+    seen.add(hex);
     out.push({
       id,
       kind: registry.kind(id),
-      hex: oklabToHex(appearance.oklab),
+      hex,
       distance: Math.round(d * 1000) / 1000,
       full_cube: appearance.fullCube,
     });

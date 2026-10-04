@@ -23,6 +23,14 @@ import { buildVoxelModel } from "../render/static-views";
 /** Longest edge of a rendered PNG (the largest image Claude takes unscaled). */
 export const MAX_RENDER_EDGE = 1568;
 
+/**
+ * Most cells in one face of the box enclosing the visible blocks (2048 ×
+ * 2048). Elevations and plan slices allocate a grid per face, so a few blocks
+ * spread far apart (regions with distant origins) would otherwise need
+ * gigabytes.
+ */
+export const MAX_RENDER_FACE_CELLS = 2048 * 2048;
+
 const FONT_FAMILY = "Geist";
 const FONT_DIR = path.join(process.cwd(), "src", "lib", "mcp", "fonts");
 const FONT_FILES = ["Geist-Regular.ttf", "Geist-SemiBold.ttf"];
@@ -81,6 +89,12 @@ export function renderProjectionPng(
     Object.hasOwn(colorsById, blockId) ? colorsById[blockId] : undefined,
   );
   const model = buildVoxelModel(display, colors.colorFor, colors.colorAt);
+  const [sx, sy, sz] = model.size;
+  if (Math.max(sx * sy, sy * sz, sx * sz) > MAX_RENDER_FACE_CELLS) {
+    throw new Error(
+      `This schematic spans ${model.size.join(" × ")} blocks, too far apart to render (at most ${MAX_RENDER_FACE_CELLS.toLocaleString("en-US")} blocks on a face of its bounding box).`,
+    );
+  }
   const layout = contactSheetLayout(model, {
     name: options.name ?? (projection.name.trim() || "schematic"),
     planLevels: options.planLevels,

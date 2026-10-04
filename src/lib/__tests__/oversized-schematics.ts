@@ -27,8 +27,10 @@ export interface OversizedSchematic {
   /** The class whose `getBlockMatrix` decodes the block data. */
   region: { prototype: AbstractRegion };
   /**
-   * The error the load gives without a cap, for formats that decode their
-   * block data while loading (the crafted data doesn't match the size).
+   * The error the load gives without a cap, for formats that read their
+   * block data while loading (the crafted data doesn't match the size). It
+   * comes from the block data's decoder, so a capped load that fails with
+   * `SchematicTooLargeError` instead shows the size was checked first.
    */
   uncappedError?: string;
 }
@@ -102,7 +104,7 @@ function sponge(version: 1 | 2): OversizedSchematic {
     bytes: gzipNbt(root, "Schematic"),
     declaredBlocks: 1_000_000_000,
     region: version === 1 ? SpongeSchematicV1 : SpongeSchematicV2,
-    uncappedError: `BlockData decoded to 0 entries, expected 1000000000`,
+    uncappedError: "BlockData has 0 bytes, which can't hold 1000000000 entries",
   };
 }
 
@@ -124,7 +126,7 @@ function spongeV3(): OversizedSchematic {
     bytes: gzipNbt(new nbt.Compound({ Schematic: inner })),
     declaredBlocks: 65_535_000,
     region: SpongeSchematicV3,
-    uncappedError: "expected 65535000",
+    uncappedError: "Blocks.Data has 0 bytes, which can't hold 65535000 entries",
   };
 }
 
@@ -201,7 +203,7 @@ function buildingGadgetsV1(): OversizedSchematic {
         max_z: 999,
       },
     },
-    // Not gzipped NBT: decoding the body throws.
+    // Not NBT: decoding the body throws.
     body: "AAAA",
   };
   return {
@@ -209,7 +211,7 @@ function buildingGadgetsV1(): OversizedSchematic {
     bytes: encoder.encode(JSON.stringify(json)),
     declaredBlocks: 1_000_000_000,
     region: BuildingGadgetsV1Schematic,
-    uncappedError: "BuildingGadgets[1.14.4-1.19.3]",
+    uncappedError: "Expected root Compound (10) but got 0",
   };
 }
 
