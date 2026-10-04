@@ -36,14 +36,20 @@ const TRIGGER_ID = "output-format-trigger";
 interface FormatSelectorProps {
   value: SchematicFormatId | null;
   onChange: (value: SchematicFormatId) => void;
+  /** Formats not to offer. */
+  exclude?: readonly SchematicFormatId[];
 }
 
-export function FormatSelector({ value, onChange }: FormatSelectorProps) {
+export function FormatSelector({
+  value,
+  onChange,
+  exclude = [],
+}: FormatSelectorProps) {
   const isDev = process.env.NODE_ENV === "development";
 
   const options = FORMAT_OPTIONS.filter((option) => {
     if (option.id === "JSON" && !isDev) return false;
-    return true;
+    return !exclude.includes(option.id);
   });
 
   return (

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Schematiclab is a Next.js 16 / React 19 app (pnpm) that converts Minecraft schematics between formats and Minecraft versions, entirely client-side. It has two modes: Simple Mode (`src/app/page.tsx`: drop a file, pick an output format and version, download) and the Advanced Editor (`src/app/advanced/page.tsx`: 3D preview, material list, block swaps, version-mapping preview, and CurseForge mod loading so modded blocks render).
+Schematiclab is a Next.js 16 / React 19 app (pnpm) that converts Minecraft schematics between formats and Minecraft versions, entirely client-side. It has three modes: Simple Mode (`src/app/page.tsx`: drop a file, pick an output format and version, download), the Advanced Editor (`src/app/advanced/page.tsx`: 3D preview, material list, block swaps, version-mapping preview, and CurseForge mod loading so modded blocks render) and the Shape Generator (`src/app/shapes/page.tsx`: pick a shape, dimensions, material and version, preview it, download it in any writable format or open it in the Advanced Editor).
 
 ## Commands
 
@@ -54,6 +54,10 @@ The Advanced Editor's Version Mapping tab layers modded mapping on top (`src/lib
 ### Worker boundary
 
 `src/lib/convert.ts` is the only orchestration API the UI uses. It must stay worker-safe (no DOM). In production it runs inside `convert.worker.ts`, and the main thread calls it through `convert-client.ts` (`detectInWorker`, `convertInWorker`, `parseInWorker`, `cancel`). Schematic class instances can't be structured-cloned, so the worker returns a plain `ParsedSchematicProjection`: palette with counts, plus per-region placements that index into the palette, with air excluded. Editor edits such as block swaps (`swap-projection.ts`) operate on that projection, and export re-serializes it via `serializeSchematic`. Mod jars use the same pattern with `mods/mod-jar.worker.ts` and `mod-jar-client.ts`.
+
+### Shape Generator (`src/lib/shapes/`)
+
+`shapes.ts` turns a shape (cuboid, ellipsoid, dome, cylinder with an axis, cone, pyramid), its width/height/depth (X/Y/Z, 1–256) and an optional hollow wall thickness into a voxel grid sampled at voxel centres (tapering shapes keep their middle block so they reach full height). `generate.ts` parses the typed material (`minecraft:` is the default namespace, `[prop=value]` allowed), rejects vanilla ids the version lacks (mod ids are written as typed), and builds a one-region `ParsedSchematicProjection` (capped at `MAX_SHAPE_BLOCKS`). Materials are typed as flattened ids; for 1.12.2 they are written as their Forge 1.12 state (`minecraft:granite` → `minecraft:stone[variant=granite]`). The page builds it in the worker (`generateShapeInWorker`) for the 3D preview and Static Renders, and writes it with `exportInWorker`. Building Gadgets isn't offered: its `fromSchematic` is still a stub.
 
 ### Client state
 
