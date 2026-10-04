@@ -18,9 +18,19 @@ export class BlobNotConfiguredError extends Error {
   }
 }
 
+class ToolCallAbortedError extends Error {
+  constructor() {
+    super("The tool call was stopped before its file was stored.");
+    this.name = "ToolCallAbortedError";
+  }
+}
+
 export interface OutputDeps {
   blob: BlobClient | null;
   now: () => Date;
+  // Aborted once the tool call has given up (timed out): nothing is
+  // uploaded, and an upload already under way is deleted when it lands.
+  signal?: AbortSignal;
 }
 
 export interface PublishedFile {
@@ -34,15 +44,23 @@ export interface PublishedFile {
 // example `BLOB_STORE_ID` set but no OIDC token outside Vercel).
 const CREDENTIAL_ERRORS = ["No blob credentials found", "No read-write token"];
 
+const MAX_FILENAME_LENGTH = 100;
+const MAX_EXTENSION_LENGTH = 16;
+
 // Keeps the last path segment and only filename-safe characters, so a tool's
-// filename can never leave `mcp/`.
+// filename can never leave `mcp/`. Long names lose the end of their stem,
+// never their extension.
 export function safeOutputFilename(filename: string): string {
   const base = filename.split(/[\\/]/).pop() ?? "";
-  const cleaned = base
-    .replace(/[^A-Za-z0-9._-]+/g, "_")
-    .replace(/^[._]+/, "")
-    .slice(0, 100);
-  return cleaned === "" ? "file" : cleaned;
+  const cleaned = base.replace(/[^A-Za-z0-9._-]+/g, "_").replace(/^[._]+/, "");
+  if (cleaned === "") return "file";
+  if (cleaned.length <= MAX_FILENAME_LENGTH) return cleaned;
+  const dot = cleaned.lastIndexOf(".");
+  const ext = dot > 0 ? cleaned.slice(dot) : "";
+  if (ext.length > MAX_EXTENSION_LENGTH) {
+    return cleaned.slice(0, MAX_FILENAME_LENGTH);
+  }
+  return cleaned.slice(0, MAX_FILENAME_LENGTH - ext.length) + ext;
 }
 
 export async function publishFile(
@@ -54,12 +72,17 @@ export async function publishFile(
   const { blob } = deps;
   if (!blob) throw new BlobNotConfiguredError();
   const name = safeOutputFilename(filename);
+  deps.signal?.throwIfAborted();
   try {
     const uploaded = await blob.put(`${OUTPUT_PREFIX}${name}`, bytes, {
       access: "private",
       addRandomSuffix: true,
       contentType: mimeType,
     });
+    if (deps.signal?.aborted) {
+      await blob.del([uploaded.pathname]).catch(() => {});
+      throw new ToolCallAbortedError();
+    }
     const validUntil = deps.now().getTime() + OUTPUT_TTL_MS;
     const token = await blob.issueSignedToken({
       pathname: uploaded.pathname,
@@ -79,6 +102,7 @@ export async function publishFile(
       expiresAt: new Date(validUntil).toISOString(),
     };
   } catch (err) {
+    if (err instanceof ToolCallAbortedError) throw err;
     const message = err instanceof Error ? err.message : String(err);
     if (CREDENTIAL_ERRORS.some((prefix) => message.includes(prefix))) {
       throw new BlobNotConfiguredError();

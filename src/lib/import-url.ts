@@ -8,6 +8,9 @@
 // id, never taken from the input.
 
 export const MAX_IMPORT_BYTES = 5 * 1024 * 1024;
+// The gist API's JSON lists every file of the gist (each up to ~1 MB of
+// escaped content), so it gets more room than one file.
+export const MAX_GIST_API_BYTES = 2 * MAX_IMPORT_BYTES;
 const FETCH_TIMEOUT_MS = 10_000;
 
 export type ImportSource = "pastebin" | "gist";
@@ -82,10 +85,44 @@ export function normalizeImportUrl(input: string): NormalizedImportUrl {
   );
 }
 
-function tooLarge(what: string): Error {
+function tooLarge(what: string, limit = MAX_IMPORT_BYTES): Error {
   return new Error(
-    `${what} is larger than the ${MAX_IMPORT_BYTES / (1024 * 1024)} MB limit.`,
+    `${what} is larger than the ${limit / (1024 * 1024)} MB limit.`,
   );
+}
+
+// Reads a response body, giving up as soon as it passes `limit` bytes, so an
+// oversized response is never buffered whole.
+async function readCappedBody(
+  res: Response,
+  limit: number,
+  what: string,
+): Promise<Uint8Array> {
+  if (Number(res.headers.get("content-length")) > limit) {
+    res.body?.cancel().catch(() => {});
+    throw tooLarge(what, limit);
+  }
+  if (!res.body) return new Uint8Array();
+  const reader = res.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > limit) {
+      reader.cancel().catch(() => {});
+      throw tooLarge(what, limit);
+    }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return bytes;
 }
 
 async function fetchPastebin(
@@ -100,9 +137,8 @@ async function fetchPastebin(
   if (!res.ok) {
     throw new Error(`Pastebin returned HTTP ${res.status}.`);
   }
-  const buf = await res.arrayBuffer();
-  if (buf.byteLength > MAX_IMPORT_BYTES) throw tooLarge("Paste");
-  return { bytes: new Uint8Array(buf), filename: `pastebin-${id}.txt` };
+  const bytes = await readCappedBody(res, MAX_IMPORT_BYTES, "Paste");
+  return { bytes, filename: `pastebin-${id}.txt` };
 }
 
 interface GistFile {
@@ -127,7 +163,14 @@ async function fetchGist(
   if (!res.ok) {
     throw new Error(`Gist API returned HTTP ${res.status}.`);
   }
-  const json = (await res.json()) as { files?: Record<string, GistFile> };
+  const body = await readCappedBody(
+    res,
+    MAX_GIST_API_BYTES,
+    "Gist API response",
+  );
+  const json = JSON.parse(new TextDecoder().decode(body)) as {
+    files?: Record<string, GistFile>;
+  };
   const files = json.files ? Object.values(json.files) : [];
   if (files.length === 0) {
     throw new Error("Gist has no files.");
@@ -156,9 +199,8 @@ async function fetchGist(
     if (!rawRes.ok) {
       throw new Error(`Gist raw fetch returned HTTP ${rawRes.status}.`);
     }
-    const buf = await rawRes.arrayBuffer();
-    if (buf.byteLength > MAX_IMPORT_BYTES) throw tooLarge("File");
-    return { bytes: new Uint8Array(buf), filename: file.filename };
+    const bytes = await readCappedBody(rawRes, MAX_IMPORT_BYTES, "File");
+    return { bytes, filename: file.filename };
   }
 
   const bytes = new TextEncoder().encode(file.content);

@@ -32,6 +32,66 @@ function layer(grid: VoxelGrid, y: number): string[] {
   return rows;
 }
 
+// The shell as defined: peel the solid one 6-connected layer at a time.
+function peeledShell(solid: VoxelGrid, thickness: number): Uint8Array {
+  const [w, h, d] = solid.size;
+  const flat = Math.max(w, h, d) > 1;
+  const openX = flat && w === 1;
+  const openY = flat && h === 1;
+  const openZ = flat && d === 1;
+  let core = solid.filled;
+  for (let step = 0; step < thickness; step++) {
+    const next = new Uint8Array(core.length);
+    for (let y = 0; y < h; y++) {
+      for (let z = 0; z < d; z++) {
+        for (let x = 0; x < w; x++) {
+          const i = voxelIndex(solid.size, x, y, z);
+          if (!core[i]) continue;
+          const interior =
+            (openX || (x > 0 && x < w - 1 && core[i - 1] && core[i + 1])) &&
+            (openY ||
+              (y > 0 && y < h - 1 && core[i - w * d] && core[i + w * d])) &&
+            (openZ || (z > 0 && z < d - 1 && core[i - w] && core[i + w]));
+          if (interior) next[i] = 1;
+        }
+      }
+    }
+    core = next;
+  }
+  return solid.filled.map((v, i) => (v && !core[i] ? 1 : 0));
+}
+
+describe("hollow shells", () => {
+  it("match peeling the shape one layer per step", () => {
+    const sizes: [number, number, number][] = [
+      [1, 1, 1],
+      [7, 1, 1],
+      [1, 9, 6],
+      [8, 5, 1],
+      [9, 9, 9],
+      [12, 7, 10],
+      [16, 16, 4],
+    ];
+    for (const shape of SHAPE_KINDS) {
+      for (const [width, height, depth] of sizes) {
+        const options: ShapeOptions = { shape, width, height, depth };
+        const solid = buildShapeGrid(options);
+        for (const thickness of [1, 2, 3, 5, 128]) {
+          const hollow = buildShapeGrid({
+            ...options,
+            hollow: true,
+            thickness,
+          });
+          expect(
+            [...hollow.filled],
+            `${shape} ${width}x${height}x${depth} t${thickness}`,
+          ).toEqual([...peeledShell(solid, thickness)]);
+        }
+      }
+    }
+  });
+});
+
 describe("buildShapeGrid", () => {
   it("fills a cuboid", () => {
     const grid = buildShapeGrid({

@@ -5,6 +5,10 @@ import { timingSafeEqual } from "node:crypto";
 import type { BlobClient } from "./blob";
 import { OUTPUT_PREFIX, OUTPUT_TTL_MS } from "./output";
 
+// A signed URL's 24 hours start when the upload finishes, a little after the
+// blob's `uploadedAt`; the grace keeps the file for the URL's whole life.
+export const CLEANUP_GRACE_MS = 60 * 60 * 1000;
+
 // The SDK's `del` accepts many pathnames per call; keep batches modest.
 const DELETE_BATCH = 100;
 
@@ -17,7 +21,7 @@ export async function cleanupExpiredOutputs(deps: {
   blob: BlobClient;
   now: () => Date;
 }): Promise<CleanupResult> {
-  const cutoff = deps.now().getTime() - OUTPUT_TTL_MS;
+  const cutoff = deps.now().getTime() - OUTPUT_TTL_MS - CLEANUP_GRACE_MS;
   const expired: string[] = [];
   let kept = 0;
   let cursor: string | undefined;

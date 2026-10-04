@@ -45,6 +45,26 @@ export function readUppercasePos(tag: nbt.NbtTag | undefined): BlockPos {
 }
 
 /**
+ * `readUppercasePos` for a schematic's bounds, which must be present: a
+ * missing or partial position would read as the origin and make the declared
+ * size look tiny.
+ */
+export function readRequiredUppercasePos(
+  tag: nbt.NbtTag | undefined,
+  what: string,
+): BlockPos {
+  const complete =
+    tag instanceof nbt.Compound &&
+    ["x", "y", "z"].every((key) => {
+      const coord = tag.get(key) ?? tag.get(key.toUpperCase());
+      const value = (coord as { value?: unknown } | undefined)?.value;
+      return typeof value === "number" || typeof value === "bigint";
+    });
+  if (!complete) throw new Error(`${what} is missing or incomplete`);
+  return readUppercasePos(tag);
+}
+
+/**
  * Serialize a BlockPos to a Compound with uppercase keys, matching
  * Python `BGBlockPos.model_dump_nbt`.
  */

@@ -75,7 +75,7 @@ Tools that write a file upload it to a private Vercel Blob store and return a si
 | `format`            | The format id written.                                    |
 | `minecraft_version` | The Minecraft version written.                            |
 
-The URL can be passed back to the other tools as `url`. A daily cron (`/api/cron/mcp-blob-cleanup`) deletes output files older than 24 hours.
+The URL can be passed back to the other tools as `url`. A daily cron (`/api/cron/mcp-blob-cleanup`) deletes output files once their URLs have expired (24 hours plus an hour of grace). An expired URL is rejected as an input even before then.
 
 ### `list_versions`
 
@@ -147,7 +147,7 @@ Every limit is in `src/lib/mcp/limits.ts`, and `src/lib/mcp/__tests__/limits.tes
 | Blocks per projection  | 2,000,000 (`MAX_PROJECTION_BLOCKS`) | Tool error naming the block count. Applies to parsed schematics and generated shapes (the Shape Generator's own cap). A schematic is checked twice: against its regions' declared sizes (air included) before any block data is decoded, then against its parsed blocks.                                                                                                     |
 | Per-tool timeout       | 45 seconds (`TOOL_TIMEOUT_MS`)      | Tool error "… took longer than 45 seconds and was stopped." It stays under the route's `maxDuration` of 60 seconds.                                                                                                                                                                                                                                                          |
 
-The timeout ends a tool while it is waiting on the network or Blob storage. Parsing, writing and rendering run synchronously, so their time is bounded by the decompressed size and block limits instead (a 2,000,000-block shape takes about 20 seconds to write and render), and by the function's `maxDuration` as a last resort.
+The timeout ends a tool while it is waiting on the network or Blob storage. Parsing, writing and rendering run synchronously, so their time is bounded by the decompressed size and block limits instead (a 2,000,000-block shape takes about 20 seconds to write and render), and by the function's `maxDuration` as a last resort. A tool that times out stores no output file: a handler still running when the timeout fires uploads nothing, and an upload already under way is deleted when it lands.
 
 Tool inputs have their own ranges too: `search_blocks` returns at most 50 results, `suggest_palette` at most 16 blocks, `generate_shape` sizes are 1 to 256 per axis, and fetches of block data and pastebin/gist files time out after 10 seconds.
 

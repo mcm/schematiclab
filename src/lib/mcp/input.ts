@@ -8,7 +8,7 @@
 import { z } from "zod";
 import { fetchImportUrl, normalizeImportUrl } from "../import-url";
 import { MAX_INPUT_BYTES, formatMegabytes } from "./limits";
-import { OUTPUT_PREFIX } from "./output";
+import { OUTPUT_PREFIX, OUTPUT_TTL_MS } from "./output";
 import type { McpDeps } from "./types";
 
 // pastebin/gist downloads are capped by `MAX_IMPORT_BYTES` in
@@ -63,7 +63,7 @@ export function privateBlobHost(storeId: string): string {
 
 export async function resolveSchematicInput(
   args: SchematicInputArgs,
-  deps: Pick<McpDeps, "fetch" | "blob" | "blobStoreId">,
+  deps: Pick<McpDeps, "fetch" | "blob" | "blobStoreId" | "now">,
 ): Promise<SchematicInput> {
   const hasUrl = args.url !== undefined && args.url !== "";
   const hasBase64 = args.base64 !== undefined && args.base64 !== "";
@@ -102,7 +102,7 @@ function decodeBase64Input(
 
 async function readUrlInput(
   input: string,
-  deps: Pick<McpDeps, "fetch" | "blob" | "blobStoreId">,
+  deps: Pick<McpDeps, "fetch" | "blob" | "blobStoreId" | "now">,
 ): Promise<SchematicInput> {
   let parsed: URL;
   try {
@@ -128,7 +128,7 @@ async function readUrlInput(
 
 async function readOwnBlob(
   pathname: string,
-  deps: Pick<McpDeps, "blob">,
+  deps: Pick<McpDeps, "blob" | "now">,
 ): Promise<SchematicInput> {
   if (!OUTPUT_PATHNAME.test(pathname)) {
     throw new Error(
@@ -148,6 +148,14 @@ async function readOwnBlob(
   if (found === null) {
     throw new Error(
       "That file no longer exists (output files are deleted after 24 hours).",
+    );
+  }
+  // The object is read with the store's own credentials, so the signed URL's
+  // expiry is enforced here: its 24 hours run from the upload.
+  if (deps.now().getTime() - found.uploadedAt.getTime() > OUTPUT_TTL_MS) {
+    await found.stream.cancel();
+    throw new Error(
+      "That file's URL has expired (output files are kept for 24 hours).",
     );
   }
   if (found.size > MAX_INPUT_BYTES) {

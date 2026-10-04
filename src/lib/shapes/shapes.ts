@@ -144,6 +144,10 @@ function solidGrid(options: ShapeOptions): Uint8Array {
 // grid's boundary counts as outside, so every face of the shape is closed,
 // except along an axis one block long: a flat shape is hollowed within its
 // plane (a ring, not a disc), and a line keeps only its ends.
+//
+// Peeling the shape one layer at a time would scan the whole grid once per
+// step. Instead a two-pass city-block distance transform gives each solid
+// voxel its step count to the outside in two scans, whatever the thickness.
 function shell(
   size: [number, number, number],
   solid: Uint8Array,
@@ -152,37 +156,44 @@ function shell(
   const [w, h, d] = size;
   // A 1×1×1 shape has no longer axis to hollow along, so it stays whole.
   const flat = Math.max(w, h, d) > 1;
-  const openX = flat && w === 1;
-  const openY = flat && h === 1;
-  const openZ = flat && d === 1;
-  let core = solid;
-  // Once the core is empty, further steps change nothing.
-  let coreCount = 1;
-  for (let step = 0; step < thickness && coreCount > 0; step++) {
-    const next = new Uint8Array(core.length);
-    coreCount = 0;
-    for (let y = 0; y < h; y++) {
-      for (let z = 0; z < d; z++) {
-        for (let x = 0; x < w; x++) {
-          const i = voxelIndex(size, x, y, z);
-          if (!core[i]) continue;
-          const interior =
-            (openX || (x > 0 && x < w - 1 && core[i - 1] && core[i + 1])) &&
-            (openY ||
-              (y > 0 && y < h - 1 && core[i - w * d] && core[i + w * d])) &&
-            (openZ || (z > 0 && z < d - 1 && core[i - w] && core[i + w]));
-          if (interior) {
-            next[i] = 1;
-            coreCount++;
-          }
-        }
+  const stepX = !(flat && w === 1);
+  const stepY = !(flat && h === 1);
+  const stepZ = !(flat && d === 1);
+  const dy = w * d;
+  // Steps to the nearest empty cell or the boundary, saturating at 255
+  // (more than MAX_THICKNESS, so a saturated voxel is always in the core).
+  const dist = new Uint8Array(solid.length);
+  for (let y = 0; y < h; y++) {
+    for (let z = 0; z < d; z++) {
+      for (let x = 0; x < w; x++) {
+        const i = voxelIndex(size, x, y, z);
+        if (!solid[i]) continue;
+        const edge =
+          (stepX && (x === 0 || x === w - 1)) ||
+          (stepY && (y === 0 || y === h - 1)) ||
+          (stepZ && (z === 0 || z === d - 1));
+        let best = edge ? 1 : 255;
+        if (stepX && x > 0) best = Math.min(best, dist[i - 1] + 1);
+        if (stepZ && z > 0) best = Math.min(best, dist[i - w] + 1);
+        if (stepY && y > 0) best = Math.min(best, dist[i - dy] + 1);
+        dist[i] = best;
       }
     }
-    core = next;
   }
   const result = new Uint8Array(solid.length);
-  for (let i = 0; i < solid.length; i++) {
-    if (solid[i] && !core[i]) result[i] = 1;
+  for (let y = h - 1; y >= 0; y--) {
+    for (let z = d - 1; z >= 0; z--) {
+      for (let x = w - 1; x >= 0; x--) {
+        const i = voxelIndex(size, x, y, z);
+        if (!solid[i]) continue;
+        let best = dist[i];
+        if (stepX && x < w - 1) best = Math.min(best, dist[i + 1] + 1);
+        if (stepZ && z < d - 1) best = Math.min(best, dist[i + w] + 1);
+        if (stepY && y < h - 1) best = Math.min(best, dist[i + dy] + 1);
+        dist[i] = best;
+        if (best <= thickness) result[i] = 1;
+      }
+    }
   }
   return result;
 }

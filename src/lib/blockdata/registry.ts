@@ -350,8 +350,14 @@ export function createBlockRegistry(
   const has = (path: string) => known.has(path);
   const full = (path: string) => NAMESPACE + path;
 
+  // `similarity` is at most 2·min/(a + b), so a name more than 7/3 times the
+  // longest path can't reach 0.6; skip scoring it (its cost grows with the
+  // name's length times every path's).
+  const longestPath = Math.max(0, ...paths.map((path) => path.length));
+
   function suggest(name: string, n = 3): string[] {
     const target = normalizeBlockName(name);
+    if (target.length * 3 > longestPath * 7) return [];
     return paths
       .map((path) => ({ path, score: similarity(target, path) }))
       .filter((c) => c.score >= 0.6)

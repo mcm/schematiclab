@@ -21,6 +21,9 @@ export interface McpDeps {
   blobStoreId?: string | null;
   // Overrides of `DEFAULT_LIMITS` (`limits.ts`), for tests.
   limits?: Partial<McpLimits>;
+  // Set by `runTool`, aborted when the call times out, so a handler still
+  // running doesn't leave an output file nobody will get a URL for.
+  signal?: AbortSignal;
 }
 
 export interface McpTool<I extends z.ZodObject = z.ZodObject> {

@@ -221,7 +221,12 @@ export class StructureSchematic extends AbstractRegion {
   ): StructureSchematic {
     const bytes = typeof obj === "string" ? new TextEncoder().encode(obj) : obj;
     const root = nbt.loadNbtFromBytes(bytes, options);
-    const [sx, sy, sz] = readPosTriple(root.get("size"));
+    const sizeTag = root.get("size");
+    // A missing or short size would read as zeros and slip past the cap.
+    if (!(sizeTag instanceof nbt.NbtList) || sizeTag.items.length !== 3) {
+      throw new Error("Structure file has no valid size");
+    }
+    const [sx, sy, sz] = readPosTriple(sizeTag);
     checkDeclaredVolume([[sx, sy, sz]], options);
 
     const dataVersion = readInt(root.get("DataVersion"));

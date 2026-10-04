@@ -18,11 +18,12 @@ import {
   privateBlobHost,
   resolveSchematicInput,
 } from "../input";
-import { BLOB_NOT_CONFIGURED_MESSAGE } from "../output";
+import { BLOB_NOT_CONFIGURED_MESSAGE, OUTPUT_TTL_MS } from "../output";
 import {
   INSPECT_PALETTE_LIMIT,
   convertSchematicTool,
   inspectSchematicTool,
+  overallSize,
   renderSchematicTool,
   translationWarnings,
 } from "../schematic-tools";
@@ -191,6 +192,20 @@ describe("resolveSchematicInput", () => {
     ).rejects.toThrow("no longer exists");
   });
 
+  it("rejects files whose 24-hour URL has expired", async () => {
+    const deps = makeDeps();
+    deps.blob.objects.set("mcp/old-rnd1.nbt", {
+      body: fixture("one_stone_block.nbt"),
+      uploadedAt: new Date(NOW.getTime() - OUTPUT_TTL_MS - 1),
+    });
+    await expect(
+      resolveSchematicInput(
+        { url: `https://${privateBlobHost(STORE_ID)}/mcp/old-rnd1.nbt` },
+        deps,
+      ),
+    ).rejects.toThrow("URL has expired");
+  });
+
   it("caps Blob reads at 5 MB", async () => {
     const deps = makeDeps();
     deps.blob.objects.set("mcp/big.nbt", {
@@ -210,6 +225,28 @@ describe("resolveSchematicInput", () => {
       "abc.private.blob.vercel-storage.com",
     );
     expect(privateBlobHost("AbC")).toBe("abc.private.blob.vercel-storage.com");
+  });
+});
+
+describe("overallSize", () => {
+  const region = (
+    origin: [number, number, number],
+    size: [number, number, number],
+  ) => ({ origin, size, blocks: [], blockEntities: [] });
+  const sizeOf = (...regions: ReturnType<typeof region>[]) =>
+    overallSize({ regions } as unknown as Parameters<typeof overallSize>[0]);
+
+  it("spans every region, negative sizes included", () => {
+    expect(
+      sizeOf(region([0, 0, 0], [2, 3, 4]), region([5, 0, 0], [-2, 1, 1])),
+    ).toEqual([6, 3, 4]);
+  });
+
+  it("leaves out regions that are empty along an axis", () => {
+    expect(sizeOf(region([10, 10, 10], [0, 5, 5]))).toEqual([0, 0, 0]);
+    expect(
+      sizeOf(region([0, 0, 0], [2, 2, 2]), region([50, 0, 0], [3, 0, 3])),
+    ).toEqual([2, 2, 2]);
   });
 });
 

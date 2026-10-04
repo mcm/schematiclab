@@ -356,6 +356,12 @@ describe("repair", () => {
     expect(r1214.repair("zzzzzzzz")).toEqual({ id: null, suggestions: [] });
   });
 
+  it("doesn't score names too long to match anything", () => {
+    // Scoring 8 MB against every path would take minutes (and time out).
+    expect(r1214.suggest("spruce_stairs".repeat(600_000))).toEqual([]);
+    expect(r1214.suggest("spruse stares")).toContain("minecraft:spruce_stairs");
+  });
+
   it("ignores inherited object keys", () => {
     expect(r1214.repair("__proto__").id).toBeNull();
     expect(r1214.repair("constructor").id).toBeNull();
