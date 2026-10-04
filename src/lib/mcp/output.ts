@@ -63,6 +63,14 @@ export function safeOutputFilename(filename: string): string {
   return cleaned.slice(0, MAX_FILENAME_LENGTH - ext.length) + ext;
 }
 
+/**
+ * Throws `BlobNotConfiguredError` without a Blob store, so a tool that
+ * writes a file fails before doing work `publishFile` would throw away.
+ */
+export function assertBlobConfigured(deps: Pick<OutputDeps, "blob">): void {
+  if (!deps.blob) throw new BlobNotConfiguredError();
+}
+
 export async function publishFile(
   bytes: Uint8Array,
   filename: string,

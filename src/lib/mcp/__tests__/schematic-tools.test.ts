@@ -506,6 +506,17 @@ describe("convert_schematic", () => {
     expect(result.isError).toBe(true);
     expect(text(result)).toBe(BLOB_NOT_CONFIGURED_MESSAGE);
   });
+
+  it("fails without a Blob store before downloading its input", async () => {
+    const fetchImpl = noNetwork();
+    const result = await runTool(
+      convertSchematicTool,
+      { url: "https://pastebin.com/AbC123", output_format: "Litematic" },
+      makeDeps({ blob: null, fetch: fetchImpl }),
+    );
+    expect(text(result)).toBe(BLOB_NOT_CONFIGURED_MESSAGE);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
 });
 
 describe("translationWarnings", () => {

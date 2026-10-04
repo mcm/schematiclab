@@ -28,7 +28,10 @@ import {
 } from "../schemlib/schematic-formats/intermediate";
 import { LitematicSchematic } from "../schemlib/schematic-formats/litematic";
 import { StructureSchematic } from "../schemlib/schematic-formats/structure";
-import { decodeVarintArray } from "../schemlib/schematic-formats/sponge/varint";
+import {
+  decodeVarintArray,
+  encodeVarintArray,
+} from "../schemlib/schematic-formats/sponge/varint";
 import {
   SpongeSchematicMetadata,
   SpongeSchematicV1,
@@ -256,6 +259,20 @@ describe("Sponge v1 BlockData", () => {
 
   it("rejects a truncated final varint", () => {
     expect(() => decodeVarintArray([1, 0x80 - 256])).toThrow(/Truncated/);
+  });
+
+  it("reads 32-bit varints and rejects longer ones", () => {
+    const max = 0xffffffff;
+    expect(decodeVarintArray(encodeVarintArray([max]))).toEqual([max]);
+    const c = 0x80 - 256; // 0x80 as a signed NBT byte
+    // A sixth byte.
+    expect(() => decodeVarintArray([c, c, c, c, c, 1])).toThrow(
+      "longer than 32 bits",
+    );
+    // A fifth byte with bits past 31.
+    expect(() => decodeVarintArray([c, c, c, c, 0x10])).toThrow(
+      "longer than 32 bits",
+    );
   });
 });
 
