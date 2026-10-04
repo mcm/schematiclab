@@ -179,7 +179,7 @@ export function ExportPanel({
             style={{ width: "100%" }}
             disabled={isExporting}
           >
-            <SelectValue placeholder="Choose a schematic type to output" />
+            <SelectValue placeholder="Choose a schematic type" />
           </SelectTrigger>
           <SelectContent>
             {visibleFormatOptions.map((option) => (
