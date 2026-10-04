@@ -21,8 +21,9 @@ import {
   getVersionFromDataVersion,
   posKey,
 } from "../version-mapping";
+import { flattenRegions, placeTileEntity } from "../single-region";
 import { SpongeSchematicMetadata } from "./sponge-v1";
-import { decodeVarintArray, encodeVarintArray } from "./sponge-v3";
+import { decodeVarintArray, encodeVarintArray } from "./varint";
 
 // ── BlockEntity shape translation ──────────────────────────────────────────
 //
@@ -377,16 +378,19 @@ export class SpongeSchematicV2
     // translation, so we can key by x/y/z directly. The previous version went
     // through Entity.blockPos, which assumes Pos: NbtList<Double> (entity
     // format), so every TE collapsed to (0,0,0) and only one survived the map.
+    //
+    // `Pos` is in BlockData's index space, so shift it by the same Offset
+    // (and axis order) getBlockMatrix applies to blocks.
     const out = new Map<string, Entity>();
     for (const e of this.BlockEntities) {
       const c = e.toCompound();
       const xt = c.get("x");
       const yt = c.get("y");
       const zt = c.get("z");
-      const x = xt instanceof nbt.Int ? xt.value : 0;
-      const y = yt instanceof nbt.Int ? yt.value : 0;
-      const z = zt instanceof nbt.Int ? zt.value : 0;
-      out.set(`${x},${y},${z}`, e);
+      const x = (xt instanceof nbt.Int ? xt.value : 0) - this.Offset[0];
+      const y = (yt instanceof nbt.Int ? yt.value : 0) - this.Offset[2];
+      const z = (zt instanceof nbt.Int ? zt.value : 0) - this.Offset[1];
+      out.set(`${x},${y},${z}`, placeTileEntity(e, new BlockPos(x, y, z)));
     }
     return out;
   }
@@ -443,36 +447,15 @@ export class SpongeSchematicV2
     schematic: AbstractSchematic,
     targetVersion: MinecraftVersion | null,
   ): SpongeSchematicV2 {
-    if (schematic.getRegions().length > 1) {
-      throw new Error(
-        `Too many regions in source schematic (${schematic.getRegions().length})`,
-      );
-    }
-
-    const region = schematic.getRegion(0);
-
-    let sourcePalette: BlockState[];
-    let sourceBlocks: Block[];
-    let sourceTileEntities: Entity[];
-    let outputDataVersion: number;
-    if (targetVersion) {
-      outputDataVersion = targetVersion.dataVersion;
-      sourcePalette = region.getTranslatedPalette(targetVersion);
-      sourceBlocks = region.getTranslatedBlocks(targetVersion);
-      sourceTileEntities = region.getTranslatedTileEntities(targetVersion);
-    } else {
-      // Use the source's raw DataVersion (not getMinecraftVersion().dataVersion,
-      // which collapses unknown versions to the KNOWN_VERSIONS fallback —
-      // that's how 1.21.x DataVersions used to get stamped as 1.13.1 on the
-      // way out).
-      outputDataVersion = schematic.getDataVersion();
-      sourcePalette = region.getPalette();
-      sourceBlocks = region.getBlocks();
-      sourceTileEntities = region.getTileEntities();
-    }
-
-    const [width, height, length] = region.getSize();
-    const [pos1] = region.getBoundingBox();
+    const {
+      dataVersion: outputDataVersion,
+      palette: flatPalette,
+      blocks: sourceBlocks,
+      tileEntityMatrix,
+      size: [width, height, length],
+    } = flattenRegions(schematic, targetVersion);
+    let sourcePalette = flatPalette;
+    const sourceTileEntities = [...tileEntityMatrix.values()];
 
     const requiredMods: string[] = [];
 
@@ -540,7 +523,7 @@ export class SpongeSchematicV2
       Width: width,
       Height: height,
       Length: length,
-      Offset: [pos1.x, pos1.y, pos1.z],
+      Offset: [0, 0, 0],
       DataVersion: outputDataVersion,
       PaletteMax: sourcePalette.length,
       Palette: palette,

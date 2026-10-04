@@ -20,8 +20,8 @@ import {
   getVersion,
   getVersionFromDataVersion,
   posKey,
-  versionsEqual,
 } from "./version-mapping";
+import { flattenRegions } from "./single-region";
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -250,37 +250,14 @@ export class StructureSchematic extends AbstractRegion {
     schematic: AbstractSchematic,
     targetVersion: MinecraftVersion | null,
   ): StructureSchematic {
-    const regions = schematic.getRegions();
-    if (regions.length > 1) {
-      throw new Error(
-        `Too many regions in source schematic (${regions.length})`,
-      );
-    }
-    const region = schematic.getRegion(0);
-
-    let dataVersion: number;
-    let sourcePalette: BlockState[];
-    let sourceBlocks: Block[];
-    let sourceEntities: Entity[];
-    let sourceTileEntityMatrix: Map<string, Entity>;
-
-    if (
-      targetVersion !== null &&
-      !versionsEqual(targetVersion, region.getMinecraftVersion())
-    ) {
-      dataVersion = targetVersion.dataVersion;
-      sourcePalette = region.getTranslatedPalette(targetVersion);
-      sourceBlocks = region.getTranslatedBlocks(targetVersion);
-      sourceEntities = region.getTranslatedEntities(targetVersion);
-      sourceTileEntityMatrix =
-        region.getTranslatedTileEntityMatrix(targetVersion);
-    } else {
-      dataVersion = targetVersion?.dataVersion ?? schematic.getDataVersion();
-      sourcePalette = region.getPalette();
-      sourceBlocks = region.getBlocks();
-      sourceEntities = region.getEntities();
-      sourceTileEntityMatrix = region.getTileEntityMatrix();
-    }
+    const {
+      dataVersion,
+      palette: sourcePalette,
+      blocks: sourceBlocks,
+      entities: sourceEntities,
+      tileEntityMatrix: sourceTileEntityMatrix,
+      size: [sx, sy, sz],
+    } = flattenRegions(schematic, targetVersion);
 
     const indexOfState = (state: BlockState): number => {
       for (let i = 0; i < sourcePalette.length; i++) {
@@ -305,8 +282,6 @@ export class StructureSchematic extends AbstractRegion {
       pos: e.pos,
       nbt: e,
     }));
-
-    const [sx, sy, sz] = region.getSize();
 
     return new StructureSchematic({
       dataVersion,

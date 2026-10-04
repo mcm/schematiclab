@@ -2,7 +2,9 @@
 //
 // SpongeSchematicV1 is the original Sponge schematic format. The on-disk
 // representation is a gzipped NBT root named "Schematic" containing a
-// flat-byte BlockData array indexed by a String->Int Palette compound.
+// varint BlockData array indexed by a String->Int Palette compound. (The
+// Python original read and wrote one byte per block, which scrambles any
+// palette past 127 entries.)
 //
 // The Python implementation uses pydantic; here we parse the loaded NBT
 // Compound by hand and store the typed fields directly. A SpongeSchematicV1
@@ -14,6 +16,8 @@ import { Block, BlockPos, BlockState } from "../../blocks";
 import { Entity } from "../../entities";
 import { AbstractRegion, AbstractSchematic } from "../abstract";
 import { MinecraftVersion, getVersion, posKey } from "../version-mapping";
+import { decodeVarintArray, encodeVarintArray } from "./varint";
+import { flattenRegions, placeTileEntity } from "../single-region";
 
 // ── BlockEntity shape translation ──────────────────────────────────────────
 //
@@ -139,7 +143,8 @@ export interface SpongeSchematicV1Init {
   Offset: [number, number, number];
   PaletteMax: number;
   Palette: Map<string, number>;
-  BlockData: Uint8Array;
+  /** Palette indices in linear order (varint-decoded on read). */
+  BlockData: number[];
   TileEntities?: Entity[];
 }
 
@@ -155,7 +160,7 @@ export class SpongeSchematicV1
   Offset: [number, number, number];
   PaletteMax: number;
   Palette: Map<string, number>;
-  BlockData: Uint8Array;
+  BlockData: number[];
   TileEntities: Entity[];
 
   constructor(init: SpongeSchematicV1Init) {
@@ -244,13 +249,12 @@ export class SpongeSchematicV1
     if (!(blockDataTag instanceof nbt.ByteArray)) {
       throw new TypeError("Sponge v1: BlockData must be ByteArray");
     }
-    // Expose as a Uint8Array view. ByteArray.toObject() returns signed bytes;
-    // we want the raw unsigned-byte view since `block & 0xFF` is what indexes
-    // the palette.
-    const blockDataNumbers = blockDataTag.toObject() as number[];
-    const blockData = new Uint8Array(blockDataNumbers.length);
-    for (let i = 0; i < blockDataNumbers.length; i++) {
-      blockData[i] = blockDataNumbers[i] & 0xff;
+    const blockData = decodeVarintArray(blockDataTag.toObject() as number[]);
+    const expectedBlocks = widthTag.value * heightTag.value * lengthTag.value;
+    if (blockData.length !== expectedBlocks) {
+      throw new Error(
+        `Sponge v1: BlockData decoded to ${blockData.length} entries, expected ${expectedBlocks}`,
+      );
     }
 
     const tileEntities: Entity[] = [];
@@ -305,13 +309,10 @@ export class SpongeSchematicV1
     }
     entries.set("Palette", new nbt.Compound(paletteEntries));
 
-    // BlockData stored as signed bytes per Sponge spec.
-    const blockBytes: number[] = new Array(this.BlockData.length);
-    for (let i = 0; i < this.BlockData.length; i++) {
-      const b = this.BlockData[i];
-      blockBytes[i] = b > 127 ? b - 256 : b;
-    }
-    entries.set("BlockData", new nbt.ByteArray(blockBytes));
+    entries.set(
+      "BlockData",
+      new nbt.ByteArray(encodeVarintArray(this.BlockData)),
+    );
 
     // TileEntities are stored in chunk-shape internally; translate back to v1
     // wire shape on the way out. Always emit the tag (even when empty) since
@@ -346,7 +347,7 @@ export class SpongeSchematicV1
     const blocks = new Map<string, Block>();
 
     for (let i = 0; i < this.BlockData.length; i++) {
-      const raw = this.BlockData[i];
+      const stateIdx = this.BlockData[i];
       // Replicates Python: x = (i % Width) - Offset[0]; i //= Width; z = (i %
       // Length) - Offset[1]; y = (i // Length) - Offset[2].
       let idx = i;
@@ -355,9 +356,9 @@ export class SpongeSchematicV1
       const z = (idx % this.Length) - this.Offset[1];
       const y = (idx - (idx % this.Length)) / this.Length - this.Offset[2];
 
-      const stateIdx = raw & 0xff;
       const state = palette.get(stateIdx);
       if (!state) continue;
+      if (state.Name === "minecraft:air") continue;
 
       const pos = new BlockPos(x, y, z);
       blocks.set(posKey(pos), new Block(pos, state));
@@ -373,16 +374,19 @@ export class SpongeSchematicV1
     // TileEntities are stored in chunk-shape internally; key by x/y/z. The
     // previous version went through Entity.blockPos, which assumes Pos:
     // NbtList<Double> (entity format), so every TE collapsed to (0,0,0).
+    //
+    // `Pos` is in BlockData's index space, so shift it by the same Offset
+    // (and axis order) getBlockMatrix applies to blocks.
     const out = new Map<string, Entity>();
     for (const e of this.TileEntities) {
       const c = e.toCompound();
       const xt = c.get("x");
       const yt = c.get("y");
       const zt = c.get("z");
-      const x = xt instanceof nbt.Int ? xt.value : 0;
-      const y = yt instanceof nbt.Int ? yt.value : 0;
-      const z = zt instanceof nbt.Int ? zt.value : 0;
-      out.set(`${x},${y},${z}`, e);
+      const x = (xt instanceof nbt.Int ? xt.value : 0) - this.Offset[0];
+      const y = (yt instanceof nbt.Int ? yt.value : 0) - this.Offset[2];
+      const z = (zt instanceof nbt.Int ? zt.value : 0) - this.Offset[1];
+      out.set(`${x},${y},${z}`, placeTileEntity(e, new BlockPos(x, y, z)));
     }
     return out;
   }
@@ -437,29 +441,14 @@ export class SpongeSchematicV1
     schematic: AbstractSchematic,
     targetVersion: MinecraftVersion | null,
   ): SpongeSchematicV1 {
-    if (schematic.getRegions().length > 1) {
-      throw new Error(
-        `Too many regions in source schematic (${schematic.getRegions().length})`,
-      );
-    }
-
-    const region = schematic.getRegion(0);
-
-    let sourcePalette: BlockState[];
-    let sourceBlocks: Block[];
-    let sourceTileEntities: Entity[];
-    if (targetVersion) {
-      sourcePalette = region.getTranslatedPalette(targetVersion);
-      sourceBlocks = region.getTranslatedBlocks(targetVersion);
-      sourceTileEntities = region.getTranslatedTileEntities(targetVersion);
-    } else {
-      sourcePalette = region.getPalette();
-      sourceBlocks = region.getBlocks();
-      sourceTileEntities = region.getTileEntities();
-    }
-
-    const [width, height, length] = region.getSize();
-    const [pos1] = region.getBoundingBox();
+    const {
+      palette: flatPalette,
+      blocks: sourceBlocks,
+      tileEntityMatrix,
+      size: [width, height, length],
+    } = flattenRegions(schematic, targetVersion);
+    let sourcePalette = flatPalette;
+    const sourceTileEntities = [...tileEntityMatrix.values()];
 
     const requiredMods: string[] = [];
 
@@ -505,9 +494,9 @@ export class SpongeSchematicV1
     if (requiredMods.length > 0) meta.RequiredMods = requiredMods;
 
     const total = width * height * length;
-    const blockData = new Uint8Array(total);
+    const blockData = new Array<number>(total);
     for (let i = 0; i < total; i++) {
-      blockData[i] = (blocks.has(i) ? blocks.get(i)! : airBlock) & 0xff;
+      blockData[i] = blocks.has(i) ? blocks.get(i)! : airBlock;
     }
 
     const palette = new Map<string, number>();
@@ -531,7 +520,7 @@ export class SpongeSchematicV1
       Width: width,
       Height: height,
       Length: length,
-      Offset: [pos1.x, pos1.y, pos1.z],
+      Offset: [0, 0, 0],
       PaletteMax: sourcePalette.length,
       Palette: palette,
       BlockData: blockData,

@@ -47,6 +47,27 @@ export function versionsEqual(
   );
 }
 
+/** The `KNOWN_VERSIONS` key for `v` ("1.21", not "1.21.0"). */
+export function versionName(v: MinecraftVersion): string {
+  for (const [name, known] of Object.entries(KNOWN_VERSIONS)) {
+    if (versionsEqual(known, v)) return name;
+  }
+  const [major, minor, patch] = v.versionNumber;
+  return patch === 0 ? `${major}.${minor}` : `${major}.${minor}.${patch}`;
+}
+
+/** Negative, zero or positive as `a` is older than, equal to or newer than `b`. */
+export function compareVersions(
+  a: MinecraftVersion,
+  b: MinecraftVersion,
+): number {
+  for (let i = 0; i < 3; i++) {
+    const d = a.versionNumber[i] - b.versionNumber[i];
+    if (d !== 0) return d;
+  }
+  return 0;
+}
+
 export function getVersionFromDataVersion(
   dataVersion: number,
 ): MinecraftVersion {

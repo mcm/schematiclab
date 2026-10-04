@@ -14,7 +14,13 @@ import { Entity } from "../../entities";
 import { fromSnbt, toSnbt } from "../../snbt";
 import { AbstractRegion, AbstractSchematic } from "../abstract";
 import { MinecraftVersion, getVersion, posKey } from "../version-mapping";
-import { posToUppercaseCompound, readUppercasePos } from "./common";
+import { flattenRegions } from "../single-region";
+import {
+  type VersionRange,
+  posToUppercaseCompound,
+  readUppercasePos,
+  templateVersion,
+} from "./common";
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -59,6 +65,11 @@ export class BuildingGadgetsV2Schematic
   static readonly MAX_HEIGHT = 500;
   static readonly MAX_LENGTH = 500;
   static readonly MAX_TOTAL_VOLUME = 100000;
+  static readonly VERSION_RANGE: VersionRange = {
+    label: "Building Gadgets 2",
+    min: [1, 20, 0],
+    max: null,
+  };
 
   readonly name: string;
   readonly statePosArrayList: BuildingGadgetsV2StatePosArrayList;
@@ -186,7 +197,7 @@ export class BuildingGadgetsV2Schematic
           const stateIdx = this.statePosArrayList.statelist[i];
           if (stateIdx === undefined) continue;
           const state = palette[stateIdx];
-          if (!state) continue;
+          if (!state || state.Name === "minecraft:air") continue;
           const pos = new BlockPos(x, y, z);
           blocks.set(posKey(pos), new Block(pos, state));
         }
@@ -269,9 +280,62 @@ export class BuildingGadgetsV2Schematic
   }
 
   static fromSchematic(
-    _schematic: AbstractSchematic,
-    _targetVersion: MinecraftVersion | null,
+    schematic: AbstractSchematic,
+    targetVersion: MinecraftVersion | null,
   ): BuildingGadgetsV2Schematic {
-    throw new Error("not implemented");
+    const version = templateVersion(
+      BuildingGadgetsV2Schematic.VERSION_RANGE,
+      schematic.getMinecraftVersion(),
+      targetVersion,
+    );
+    const { blockMatrix, size } = flattenRegions(schematic, version);
+    BuildingGadgetsV2Schematic.checkSize(...size);
+    const [width, height, length] = size;
+
+    // `statelist` covers the whole box, x fastest, then y, then z (the order
+    // getBlockMatrix reads), with air in the gaps.
+    const blockstatemap: BlockState[] = [BlockState.AIR_BLOCK];
+    const indexByState = new Map<string, number>([
+      [BlockState.AIR_BLOCK.toString(), 0],
+    ]);
+    const statelist: number[] = [];
+    const requiredItems: Record<string, number> = {};
+    for (let z = 0; z < length; z++) {
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const block = blockMatrix.get(`${x},${y},${z}`);
+          if (block === undefined || block.state.Name === "minecraft:air") {
+            statelist.push(0);
+            continue;
+          }
+          const key = block.state.toString();
+          let idx = indexByState.get(key);
+          if (idx === undefined) {
+            idx = blockstatemap.length;
+            indexByState.set(key, idx);
+            blockstatemap.push(block.state);
+          }
+          statelist.push(idx);
+          // Python parity: the block id stands in for its item.
+          requiredItems[block.state.Name] =
+            (requiredItems[block.state.Name] ?? 0) + 1;
+        }
+      }
+    }
+
+    return new BuildingGadgetsV2Schematic({
+      name: schematic.getName(),
+      statePosArrayList: {
+        blockstatemap,
+        startpos: BlockPos.ORIGIN,
+        endpos: new BlockPos(
+          Math.max(width - 1, 0),
+          Math.max(height - 1, 0),
+          Math.max(length - 1, 0),
+        ),
+        statelist,
+      },
+      requiredItems,
+    });
   }
 }

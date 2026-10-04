@@ -16,7 +16,14 @@ import * as nbt from "../../nbt";
 import { Block, BlockPos, BlockState } from "../../blocks";
 import { Entity } from "../../entities";
 import { AbstractRegion, AbstractSchematic } from "../abstract";
-import { MinecraftVersion, getVersion, posKey } from "../version-mapping";
+import {
+  MinecraftVersion,
+  getVersion,
+  posKey,
+  versionName,
+} from "../version-mapping";
+import { flattenRegions } from "../single-region";
+import { type VersionRange, templateVersion } from "./common";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -282,6 +289,11 @@ export class BuildingGadgetsV1Schematic
   static readonly MAX_WIDTH = 65535;
   static readonly MAX_HEIGHT = 255;
   static readonly MAX_LENGTH = 65535;
+  static readonly VERSION_RANGE: VersionRange = {
+    label: "Building Gadgets 1.14.4–1.19.3",
+    min: [1, 14, 4],
+    max: [1, 19, 3],
+  };
 
   readonly header: BuildingGadgetsV1Header;
   readonly body: BuildingGadgetsV1Body;
@@ -458,9 +470,84 @@ export class BuildingGadgetsV1Schematic
   }
 
   static fromSchematic(
-    _schematic: AbstractSchematic,
-    _targetVersion: MinecraftVersion | null,
+    schematic: AbstractSchematic,
+    targetVersion: MinecraftVersion | null,
   ): BuildingGadgetsV1Schematic {
-    throw new Error("not implemented");
+    const version = templateVersion(
+      BuildingGadgetsV1Schematic.VERSION_RANGE,
+      schematic.getMinecraftVersion(),
+      targetVersion,
+    );
+    const { blocks, size } = flattenRegions(schematic, version);
+    BuildingGadgetsV1Schematic.checkSize(...size);
+
+    const metadata = schematic.getMetadata();
+    const author =
+      typeof metadata.author === "string"
+        ? metadata.author
+        : typeof metadata.Author === "string"
+          ? metadata.Author
+          : "";
+    const serializers = Array.isArray(metadata.serializers)
+      ? (metadata.serializers as unknown[]).filter(
+          (v): v is string => typeof v === "string",
+        )
+      : [];
+    if (serializers.length === 0) {
+      serializers.push("buildinggadgets:dummy_serializer");
+    }
+
+    // Positions are relative to the bounding box's minimum (0,0,0 after
+    // flattenRegions). Every palette entry uses serializer 0 with empty data:
+    // block entity data isn't carried over.
+    const indexByState = new Map<string, number>();
+    const data: BlockData[] = [];
+    const pos: bigint[] = [];
+    for (const block of blocks) {
+      if (block.state.Name === "minecraft:air") continue;
+      const key = block.state.toString();
+      let idx = indexByState.get(key);
+      if (idx === undefined) {
+        idx = data.length;
+        indexByState.set(key, idx);
+        data.push({
+          data: new nbt.Compound(),
+          state: block.state,
+          serializer: 0,
+        });
+      }
+      pos.push(unparseBlockPos(block.pos, idx));
+    }
+
+    const [maxX, maxY, maxZ] = size.map((n) => Math.max(n - 1, 0));
+    const name = schematic.getName();
+    const mcVersion = versionName(version);
+    return new BuildingGadgetsV1Schematic({
+      header: {
+        version: mcVersion,
+        mc_version: mcVersion,
+        name,
+        author,
+        bounding_box: {
+          min_x: 0,
+          min_y: 0,
+          min_z: 0,
+          max_x: maxX,
+          max_y: maxY,
+          max_z: maxZ,
+        },
+        material_list: { root_type: "buildinggadgets:entries", root_entry: [] },
+      },
+      body: {
+        data,
+        pos,
+        header: {
+          author,
+          bounds: { minX: 0, minY: 0, minZ: 0, maxX, maxY, maxZ },
+          name,
+        },
+        serializer: serializers,
+      },
+    });
   }
 }

@@ -16,6 +16,7 @@ import {
   posKey,
   versionsEqual,
 } from "./version-mapping";
+import { shiftEntity } from "./single-region";
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -136,8 +137,17 @@ export class LitematicRegion extends AbstractRegion {
     return this.minecraftVersion;
   }
 
+  // The region's minimum corner within the schematic. `Position` is the
+  // selection's first corner; a negative `Size` axis extends from it toward
+  // negative coordinates.
   getOrigin(): BlockPos {
-    return BlockPos.ORIGIN;
+    const corner = (pos: number, size: number): number =>
+      size < 0 ? pos + size + 1 : pos;
+    return new BlockPos(
+      corner(this.position.x, this.size.x),
+      corner(this.position.y, this.size.y),
+      corner(this.position.z, this.size.z),
+    );
   }
 
   getBlockMatrix(): Map<string, Block> {
@@ -414,32 +424,26 @@ export class LitematicSchematic extends AbstractSchematic {
     const regions = new Map<string, LitematicRegion>();
     let totalBlocks = 0;
 
-    let outerP1: [number, number, number] = [0, 0, 0];
-    let outerP2: [number, number, number] = [0, 0, 0];
+    const outerP1: [number, number, number] = [Infinity, Infinity, Infinity];
+    const outerP2: [number, number, number] = [-Infinity, -Infinity, -Infinity];
 
     schematic.getRegions().forEach((region, idx) => {
-      let [pos1, pos2] = region.getBoundingBox();
-
-      let offset: BlockPos = BlockPos.ORIGIN;
-      if (!pos1.equals(BlockPos.ORIGIN)) {
-        offset = new BlockPos(pos1.x, pos1.y, pos1.z);
-        pos2 = pos2.sub(offset);
-        pos1 = BlockPos.ORIGIN;
-      }
-
-      outerP1 = [
-        Math.min(outerP1[0], pos1.x, pos2.x),
-        Math.min(outerP1[1], pos1.y, pos2.y),
-        Math.min(outerP1[2], pos1.z, pos2.z),
-      ];
-      outerP2 = [
-        Math.max(outerP2[0], pos1.x, pos2.x),
-        Math.max(outerP2[1], pos1.y, pos2.y),
-        Math.max(outerP2[2], pos1.z, pos2.z),
-      ];
+      const [pos1] = region.getBoundingBox();
+      const offset = new BlockPos(pos1.x, pos1.y, pos1.z);
 
       const [width, height, length] = region.getSize();
       const origin = region.getOrigin();
+
+      // The enclosing box spans every region at its position.
+      const regionMin = origin.add(offset).astuple();
+      const regionSize = [width, height, length];
+      for (let axis = 0; axis < 3; axis++) {
+        outerP1[axis] = Math.min(outerP1[axis], regionMin[axis]);
+        outerP2[axis] = Math.max(
+          outerP2[axis],
+          regionMin[axis] + Math.max(regionSize[axis], 1) - 1,
+        );
+      }
 
       let blocks: Block[];
       let entities: Entity[];
@@ -508,7 +512,7 @@ export class LitematicSchematic extends AbstractSchematic {
       // them at [0..size]; tile entities must follow the same shift or they
       // land outside the region.
       const entityCompounds: nbt.Compound[] = entities.map((e) =>
-        e.toCompound(),
+        shiftEntity(e, offset).toCompound(),
       );
       const tileEntityCompounds: nbt.Compound[] = tileEntities.map((e) => {
         const c = e.toCompound();
@@ -534,7 +538,9 @@ export class LitematicSchematic extends AbstractSchematic {
           size: new BlockPos(width, height, length),
           blockStatePalette: paletteCopy,
           blockStates,
-          position: new BlockPos(origin.x, origin.y, origin.z),
+          // Blocks were rebased by `offset`, so the region starts that much
+          // further along.
+          position: origin.add(offset),
           entities: entityCompounds,
           tileEntities: tileEntityCompounds,
           minecraftVersion: targetVersion ?? schematic.getMinecraftVersion(),
@@ -544,9 +550,11 @@ export class LitematicSchematic extends AbstractSchematic {
       totalBlocks += regionBlocks.size;
     });
 
-    const outerWidth = Math.abs(outerP2[0] - outerP1[0]) + 1;
-    const outerHeight = Math.abs(outerP2[1] - outerP1[1]) + 1;
-    const outerLength = Math.abs(outerP2[2] - outerP1[2]) + 1;
+    const outerExtent = (axis: number): number =>
+      regions.size === 0 ? 1 : outerP2[axis] - outerP1[axis] + 1;
+    const outerWidth = outerExtent(0);
+    const outerHeight = outerExtent(1);
+    const outerLength = outerExtent(2);
 
     const now = BigInt(Date.now());
     const sourceAuthor =
