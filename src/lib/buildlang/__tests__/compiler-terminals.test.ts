@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from "vitest";
 import { buildShapeGrid } from "../../shapes/shapes";
-import { compileProgram } from "../compiler";
+import { compileWithRegistry } from "../compiler";
 import type { Operations, Program } from "../program";
 import {
   type Built,
@@ -571,7 +571,7 @@ describe("roof", () => {
 
 describe("unvalidated terminal arguments", () => {
   it("reports them at their paths", () => {
-    const b = compileProgram(
+    const b = compileWithRegistry(
       {
         size: [3, 3, 3],
         build: [

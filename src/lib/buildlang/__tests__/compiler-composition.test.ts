@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { compileProgram } from "../compiler";
+import { compileWithRegistry } from "../compiler";
 import type { Operations, Program, Vec3 } from "../program";
 import { MAX_TEMPLATE_DEPTH, substituteParams } from "../templates";
 import { compile, messages, registry, run } from "./compile-harness";
 
 /** Compiles without the static check (as a template's substituted body would arrive). */
 function raw(program: Record<string, unknown>) {
-  return compileProgram(program as unknown as Program, registry);
+  return compileWithRegistry(program as unknown as Program, registry);
 }
 
 describe("use", () => {

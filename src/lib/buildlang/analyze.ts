@@ -489,6 +489,24 @@ function list(lines: string[], problems: ProgramError[], limit = Infinity) {
 }
 
 /**
+ * The report of a program that failed validation and was never compiled: its
+ * errors only.
+ */
+export function formatInvalidReport(
+  name: string,
+  errors: ProgramError[],
+): string {
+  const lines = [
+    `# Build report: ${name}`,
+    "The program is invalid and was not compiled.",
+    "",
+    "## Errors (fix these first)",
+  ];
+  list(lines, errors);
+  return lines.join("\n") + "\n";
+}
+
+/**
  * The report as markdown: Errors, Warnings, Notes, Geometry, Features and
  * Materials, in the layout of Cairn's sample reports.
  */
