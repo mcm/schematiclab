@@ -6,17 +6,16 @@
 // other URL is rejected before any request is made.
 
 import { z } from "zod";
-import {
-  MAX_IMPORT_BYTES,
-  fetchImportUrl,
-  normalizeImportUrl,
-} from "../import-url";
+import { fetchImportUrl, normalizeImportUrl } from "../import-url";
+import { MAX_INPUT_BYTES, formatMegabytes } from "./limits";
 import { OUTPUT_PREFIX } from "./output";
 import type { McpDeps } from "./types";
 
-export const MAX_INPUT_BYTES = MAX_IMPORT_BYTES;
+// pastebin/gist downloads are capped by `MAX_IMPORT_BYTES` in
+// `lib/import-url.ts`, which is the same 5 MB (tested in limits.test.ts).
+export { MAX_INPUT_BYTES };
 
-const MAX_INPUT_MB = MAX_INPUT_BYTES / (1024 * 1024);
+const MAX_INPUT_MB = formatMegabytes(MAX_INPUT_BYTES);
 
 export const schematicInputShape = {
   url: z
@@ -29,7 +28,7 @@ export const schematicInputShape = {
     .string()
     .optional()
     .describe(
-      `The schematic file's bytes in base64 (at most ${MAX_INPUT_MB} MB decoded). Give either url or base64.`,
+      `The schematic file's bytes in base64 (at most ${MAX_INPUT_MB} decoded). Give either url or base64.`,
     ),
   filename: z
     .string()
@@ -91,11 +90,11 @@ function decodeBase64Input(
     throw new Error("base64 is not valid base64.");
   }
   if (Math.floor((cleaned.length * 3) / 4) > MAX_INPUT_BYTES + 2) {
-    throw new Error(`The file is larger than the ${MAX_INPUT_MB} MB limit.`);
+    throw new Error(`The file is larger than the ${MAX_INPUT_MB} limit.`);
   }
   const bytes = new Uint8Array(Buffer.from(cleaned, "base64"));
   if (bytes.byteLength > MAX_INPUT_BYTES) {
-    throw new Error(`The file is larger than the ${MAX_INPUT_MB} MB limit.`);
+    throw new Error(`The file is larger than the ${MAX_INPUT_MB} limit.`);
   }
   if (bytes.byteLength === 0) throw new Error("base64 is empty.");
   return { bytes, filename: filename.trim() };
@@ -153,7 +152,7 @@ async function readOwnBlob(
   }
   if (found.size > MAX_INPUT_BYTES) {
     await found.stream.cancel();
-    throw new Error(`The file is larger than the ${MAX_INPUT_MB} MB limit.`);
+    throw new Error(`The file is larger than the ${MAX_INPUT_MB} limit.`);
   }
   const bytes = await readCapped(found.stream, MAX_INPUT_BYTES);
   return { bytes, filename: pathname.slice(OUTPUT_PREFIX.length) };
@@ -172,7 +171,7 @@ async function readCapped(
     total += value.byteLength;
     if (total > limit) {
       await reader.cancel();
-      throw new Error(`The file is larger than the ${MAX_INPUT_MB} MB limit.`);
+      throw new Error(`The file is larger than the ${MAX_INPUT_MB} limit.`);
     }
     chunks.push(value);
   }
