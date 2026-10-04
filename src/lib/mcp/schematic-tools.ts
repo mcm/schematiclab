@@ -24,6 +24,7 @@ import {
   type SchematicInput,
   type SchematicInputArgs,
 } from "./input";
+import { assertProjectionBlocks, resolveLimits } from "./limits";
 import { publishFile } from "./output";
 import { renderProjectionPng } from "./render";
 import { type McpDeps, defineTool, jsonResult } from "./types";
@@ -43,7 +44,8 @@ interface LoadedSchematic {
 }
 
 // Resolves the input and parses it; a parse failure throws the
-// `ParseResult` error text, which `runTool` returns as a tool error.
+// `ParseResult` error text, which `runTool` returns as a tool error, and so
+// does a schematic over `MAX_PROJECTION_BLOCKS`.
 async function loadSchematic(
   args: SchematicInputArgs,
   deps: McpDeps,
@@ -51,6 +53,10 @@ async function loadSchematic(
   const input = await resolveSchematicInput(args, deps);
   const parsed = parseSchematic(input.bytes);
   if (!parsed.ok) throw new Error(parsed.error);
+  assertProjectionBlocks(
+    parsed.schematic,
+    resolveLimits(deps.limits).maxProjectionBlocks,
+  );
   return { input, projection: parsed.schematic };
 }
 

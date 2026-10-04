@@ -3,6 +3,7 @@
 import type { CallToolResult, McpServer } from "@modelcontextprotocol/server";
 import { searchBlocksTool, suggestPaletteTool } from "./block-tools";
 import { generateShapeTool } from "./generate-shape";
+import { resolveLimits, withToolTimeout } from "./limits";
 import { listVersionsTool } from "./list-versions";
 import {
   convertSchematicTool,
@@ -37,14 +38,20 @@ export function registerTools(server: McpServer, deps: McpDeps): void {
   }
 }
 
-// Runs a tool's handler, turning a thrown error into a tool error.
+// Runs a tool's handler, turning a thrown error or a timeout
+// (`TOOL_TIMEOUT_MS`) into a tool error.
 export async function runTool(
   tool: McpTool,
   args: Record<string, unknown>,
   deps: McpDeps,
 ): Promise<CallToolResult> {
   try {
-    return await tool.handler(args, deps);
+    const { toolTimeoutMs } = resolveLimits(deps.limits);
+    return await withToolTimeout(
+      tool.name,
+      toolTimeoutMs,
+      Promise.resolve().then(() => tool.handler(args, deps)),
+    );
   } catch (err) {
     return toolError(err instanceof Error ? err.message : String(err));
   }

@@ -14,6 +14,7 @@ import {
 import { MAX_DIMENSION, MAX_THICKNESS, SHAPE_KINDS } from "../shapes/shapes";
 import { KNOWN_VERSIONS } from "../schemlib/schematic-formats/known-versions";
 import { versionName } from "../schemlib/schematic-formats/version-mapping";
+import { assertProjectionBlocks, resolveLimits } from "./limits";
 import { publishFile } from "./output";
 import { renderProjectionPng } from "./render";
 import { OUTPUT_FORMATS } from "./schematic-tools";
@@ -105,6 +106,12 @@ export const generateShapeTool = defineTool({
     const built = buildShapeProjection(spec);
     if (!built.ok) throw new Error(built.error);
     const { projection } = built;
+    // The Shape Generator already stops at MAX_SHAPE_BLOCKS; this applies a
+    // lower server limit if one is set.
+    assertProjectionBlocks(
+      projection,
+      resolveLimits(deps.limits).maxProjectionBlocks,
+    );
 
     const serialized = serializeSchematic({
       schematic: projection,

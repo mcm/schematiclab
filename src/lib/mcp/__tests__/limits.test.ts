@@ -1,0 +1,206 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import type { CallToolResult } from "@modelcontextprotocol/server";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
+import * as route from "@/app/api/mcp/[transport]/route";
+import { MAX_IMPORT_BYTES } from "../../import-url";
+import { MAX_SHAPE_BLOCKS } from "../../shapes/generate";
+import { generateShapeTool } from "../generate-shape";
+import { resolveSchematicInput } from "../input";
+import {
+  MAX_INPUT_BYTES,
+  MAX_PROJECTION_BLOCKS,
+  MAX_REQUEST_BYTES,
+  TOOL_TIMEOUT_MS,
+  assertProjectionBlocks,
+} from "../limits";
+import { inspectSchematicTool } from "../schematic-tools";
+import { createMcpRequestHandler } from "../server";
+import { runTool } from "../tools";
+import { type McpDeps, defineTool, jsonResult } from "../types";
+import { createFakeBlob, type FakeBlob } from "./fake-blob";
+
+const FIXTURES = path.join(__dirname, "../../__tests__/fixtures");
+const NOW = new Date("2026-10-04T12:00:00Z");
+const STORE_ID = "store_store";
+
+function makeDeps(
+  overrides: Partial<McpDeps> = {},
+): McpDeps & { blob: FakeBlob } {
+  return {
+    fetch: vi.fn(() => Promise.reject(new Error("no network"))) as never,
+    now: () => NOW,
+    blob: createFakeBlob(() => NOW),
+    blobStoreId: STORE_ID,
+    ...overrides,
+  } as McpDeps & { blob: FakeBlob };
+}
+
+function text(result: CallToolResult): string {
+  const first = result.content[0];
+  if (first?.type !== "text") throw new Error("expected text content");
+  return first.text;
+}
+
+function stoneBlockArgs(): { base64: string; filename: string } {
+  const bytes = readFileSync(path.join(FIXTURES, "one_stone_block.nbt"));
+  return { base64: bytes.toString("base64"), filename: "stone.nbt" };
+}
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+describe("request size", () => {
+  it("answers 413 for a body one byte over MAX_REQUEST_BYTES", async () => {
+    const handler = createMcpRequestHandler(makeDeps());
+    const response = await handler(
+      new Request("http://localhost/api/mcp/mcp", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          accept: "application/json, text/event-stream",
+        },
+        body: "x".repeat(MAX_REQUEST_BYTES + 1),
+      }),
+    );
+    expect(response.status).toBe(413);
+  });
+
+  it("leaves room for a 5 MB schematic sent as base64", () => {
+    expect(MAX_REQUEST_BYTES).toBeGreaterThan((MAX_INPUT_BYTES * 4) / 3);
+  });
+});
+
+describe("decoded schematic size", () => {
+  it("is 5 MB, the same as pastebin and gist downloads", () => {
+    expect(MAX_INPUT_BYTES).toBe(5 * 1024 * 1024);
+    expect(MAX_IMPORT_BYTES).toBe(MAX_INPUT_BYTES);
+  });
+
+  it("rejects base64 that decodes to one byte over 5 MB", async () => {
+    const base64 = Buffer.alloc(MAX_INPUT_BYTES + 1).toString("base64");
+    await expect(
+      resolveSchematicInput({ base64, filename: "big.nbt" }, makeDeps()),
+    ).rejects.toThrow("The file is larger than the 5 MB limit.");
+  });
+
+  it("accepts base64 that decodes to exactly 5 MB", async () => {
+    const base64 = Buffer.alloc(MAX_INPUT_BYTES, 1).toString("base64");
+    const input = await resolveSchematicInput(
+      { base64, filename: "big.nbt" },
+      makeDeps(),
+    );
+    expect(input.bytes.byteLength).toBe(MAX_INPUT_BYTES);
+  });
+
+  it("rejects a pastebin download over 5 MB", async () => {
+    const fetchImpl = vi.fn(
+      async () => new Response(new Uint8Array(MAX_INPUT_BYTES + 1)),
+    );
+    await expect(
+      resolveSchematicInput(
+        { url: "https://pastebin.com/AbC123" },
+        makeDeps({ fetch: fetchImpl as never }),
+      ),
+    ).rejects.toThrow("larger than the 5 MB limit");
+  });
+});
+
+describe("blocks per projection", () => {
+  it("allows MAX_PROJECTION_BLOCKS and rejects one more", () => {
+    expect(() =>
+      assertProjectionBlocks({ totalBlocks: MAX_PROJECTION_BLOCKS }),
+    ).not.toThrow();
+    expect(() =>
+      assertProjectionBlocks({ totalBlocks: MAX_PROJECTION_BLOCKS + 1 }),
+    ).toThrow(
+      "This schematic has 2,000,001 blocks, more than the 2,000,000 this server handles.",
+    );
+  });
+
+  it("covers every shape the Shape Generator allows", () => {
+    expect(MAX_PROJECTION_BLOCKS).toBeGreaterThanOrEqual(MAX_SHAPE_BLOCKS);
+  });
+
+  it("stops a schematic tool when the parsed schematic is over the limit", async () => {
+    const deps = makeDeps({ limits: { maxProjectionBlocks: 0 } });
+    const result = await runTool(inspectSchematicTool, stoneBlockArgs(), deps);
+    expect(result.isError).toBe(true);
+    expect(text(result)).toBe(
+      "This schematic has 1 blocks, more than the 0 this server handles.",
+    );
+  });
+
+  it("stops generate_shape before writing a shape over the limit", async () => {
+    const deps = makeDeps({ limits: { maxProjectionBlocks: 26 } });
+    const result = await runTool(
+      generateShapeTool,
+      {
+        shape: "cuboid",
+        width: 3,
+        height: 3,
+        depth: 3,
+        material: "stone",
+        version: "1.20.1",
+        output_format: "Sponge[v2]",
+      },
+      deps,
+    );
+    expect(result.isError).toBe(true);
+    expect(text(result)).toContain("27 blocks, more than the 26");
+    expect(deps.blob.objects.size).toBe(0);
+  });
+});
+
+describe("per-tool timeout", () => {
+  const hangingTool = defineTool({
+    name: "hang",
+    title: "Hang",
+    description: "Never finishes.",
+    inputSchema: z.object({}),
+    handler: () => new Promise<never>(() => {}),
+  });
+
+  it("answers a tool error once TOOL_TIMEOUT_MS has passed", async () => {
+    vi.useFakeTimers();
+    const pending = runTool(hangingTool, {}, makeDeps());
+    let settled = false;
+    void pending.then(() => (settled = true));
+    await vi.advanceTimersByTimeAsync(TOOL_TIMEOUT_MS - 1);
+    expect(settled).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    const result = await pending;
+    expect(result.isError).toBe(true);
+    expect(text(result)).toBe(
+      "hang took longer than 45 seconds and was stopped. Try a smaller schematic or shape.",
+    );
+  });
+
+  it("stops a tool waiting on a slow download", async () => {
+    const fetchImpl = vi.fn(() => new Promise<Response>(() => {}));
+    const result = await runTool(
+      inspectSchematicTool,
+      { url: "https://pastebin.com/AbC123" },
+      makeDeps({ fetch: fetchImpl as never, limits: { toolTimeoutMs: 20 } }),
+    );
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(result.isError).toBe(true);
+    expect(text(result)).toContain("inspect_schematic took longer than");
+  });
+
+  it("returns results that finish in time", async () => {
+    const quick = defineTool({
+      ...hangingTool,
+      name: "quick",
+      handler: () => jsonResult({ ok: true }),
+    });
+    const result = await runTool(quick, {}, makeDeps());
+    expect(result.structuredContent).toEqual({ ok: true });
+  });
+
+  it("ends before the route's maxDuration", () => {
+    expect(TOOL_TIMEOUT_MS).toBeLessThan(route.maxDuration * 1000);
+  });
+});

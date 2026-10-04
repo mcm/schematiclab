@@ -12,6 +12,7 @@ Convert Minecraft schematics between formats and Minecraft versions in your brow
   - a preview of what version translation will change before you apply it
 - **Modded blocks:** search CurseForge and load a mod so its blocks render in the preview and appear in the block picker. Only the mod's client assets (blockstates, models, textures, names) are read, and no mod code is ever run. Loaded mods are cached in IndexedDB.
 - **Camo blocks:** FramedBlocks, Create and Copycats+ blocks render in their shape with their camo's textures, and their camo materials appear in the material list, where you can swap them. See [Camo blocks](#camo-blocks).
+- **MCP server:** AI agents can inspect, convert, render and generate schematics and look up block ids through a hosted MCP endpoint at `/api/mcp`. See [docs/mcp.md](docs/mcp.md) for the tools, limits and how to connect from Claude Code and Claude Desktop.
 - **Generated blocks:** Unlimited Chisel Works blocks, which the mod creates at runtime instead of shipping in its jar, render with their recoloured textures and get names, colours and Version Mapping support. See [Generated blocks](#generated-blocks).
 
 ## Camo blocks
@@ -88,6 +89,8 @@ Copy `.env.example` to `.env.local`. The CurseForge settings are only needed for
 
 - `CURSEFORGE_API_KEY`: a key from [console.curseforge.com](https://console.curseforge.com). It is used only on the server and never sent to the browser. Escape each `$` in the key as `\$`. Without a key, the Mods tab is unavailable.
 - `CURSEFORGE_MAX_JAR_BYTES`: the largest mod jar the download proxy will fetch (default 64 MiB).
+
+The MCP server's settings (`BLOB_STORE_ID`, `CRON_SECRET`) are described in [docs/mcp.md](docs/mcp.md#configuration).
 
 ### Regenerating data
 

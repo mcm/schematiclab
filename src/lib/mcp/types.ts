@@ -8,6 +8,7 @@ import type {
 } from "@modelcontextprotocol/server";
 import type { z } from "zod";
 import type { BlobClient } from "./blob";
+import type { McpLimits } from "./limits";
 
 export interface McpDeps {
   fetch: typeof fetch;
@@ -18,6 +19,8 @@ export interface McpDeps {
   // `BLOB_STORE_ID`: signed URLs on this store's host are accepted as tool
   // inputs and read back through `blob.get`.
   blobStoreId?: string | null;
+  // Overrides of `DEFAULT_LIMITS` (`limits.ts`), for tests.
+  limits?: Partial<McpLimits>;
 }
 
 export interface McpTool<I extends z.ZodObject = z.ZodObject> {
