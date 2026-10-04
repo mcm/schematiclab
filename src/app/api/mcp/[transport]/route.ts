@@ -1,6 +1,7 @@
 // Hosted MCP endpoint (streamable HTTP, stateless). `/api/mcp` is rewritten
 // here as `/api/mcp/mcp` (next.config.ts); tool logic is in `src/lib/mcp/`.
 
+import { blobClientFromEnv } from "@/lib/mcp/blob";
 import { createMcpRequestHandler } from "@/lib/mcp/server";
 
 export const runtime = "nodejs";
@@ -10,6 +11,7 @@ export const maxDuration = 60;
 const handleMcp = createMcpRequestHandler({
   fetch: (input, init) => fetch(input, init),
   now: () => new Date(),
+  blob: blobClientFromEnv(),
 });
 
 async function handler(

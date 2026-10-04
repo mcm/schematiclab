@@ -7,10 +7,14 @@ import type {
   ToolAnnotations,
 } from "@modelcontextprotocol/server";
 import type { z } from "zod";
+import type { BlobClient } from "./blob";
 
 export interface McpDeps {
   fetch: typeof fetch;
   now: () => Date;
+  // Null when no Blob store is configured; `publishFile` then throws a clear
+  // error, which the tool returns as a tool error.
+  blob: BlobClient | null;
 }
 
 export interface McpTool<I extends z.ZodObject = z.ZodObject> {
