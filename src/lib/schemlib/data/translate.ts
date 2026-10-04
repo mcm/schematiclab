@@ -118,26 +118,54 @@ function applyFlatten(
   return state;
 }
 
-let reverseFlattenByName: Map<string, [BlockState, string][]> | null = null;
+interface ReverseFlattenCandidates {
+  states: [BlockState, string][];
+  /**
+   * Properties whose value differs between the block's table states, so the
+   * legacy metadata encodes them. The rest have one value in the table but
+   * are computed at runtime in-game (stairs `shape`, fence connections).
+   */
+  discriminating: Set<string>;
+}
+
+let reverseFlattenByName: Map<string, ReverseFlattenCandidates> | null = null;
 
 function reverseFlattenSubsetMatch(state: BlockState): string | undefined {
   if (reverseFlattenByName === null) {
     reverseFlattenByName = new Map();
     for (const [key, idMeta] of Object.entries(REVERSE_FLATTEN_TABLE)) {
       const tableState = BlockState.fromString(key);
-      const list = reverseFlattenByName.get(tableState.Name) ?? [];
-      list.push([tableState, idMeta]);
-      reverseFlattenByName.set(tableState.Name, list);
+      const entry = reverseFlattenByName.get(tableState.Name) ?? {
+        states: [],
+        discriminating: new Set<string>(),
+      };
+      entry.states.push([tableState, idMeta]);
+      reverseFlattenByName.set(tableState.Name, entry);
+    }
+    for (const entry of reverseFlattenByName.values()) {
+      const [first] = entry.states[0];
+      for (const [tableState] of entry.states) {
+        for (const [k, v] of tableState.Properties) {
+          if (first.Properties.get(k) !== v) entry.discriminating.add(k);
+        }
+        for (const k of first.Properties.keys()) {
+          if (!tableState.Properties.has(k)) entry.discriminating.add(k);
+        }
+      }
     }
   }
+  const entry = reverseFlattenByName.get(state.Name);
+  if (entry === undefined) return undefined;
   let best: string | undefined;
   let bestMatches = -1;
-  for (const [tableState, idMeta] of reverseFlattenByName.get(state.Name) ??
-    []) {
+  for (const [tableState, idMeta] of entry.states) {
     let matches = 0;
     let fits = true;
     for (const [k, v] of tableState.Properties) {
-      if (state.Properties.get(k) !== v) {
+      if (!entry.discriminating.has(k)) continue;
+      const actual = state.Properties.get(k);
+      if (actual === undefined) continue;
+      if (actual !== v) {
         fits = false;
         break;
       }
@@ -166,9 +194,11 @@ function applyReverseFlatten(
   if (bare !== undefined) {
     return new BlockState({ Name: `minecraft:#${bare}` });
   }
-  // Fallback: the table state of this block whose properties all match the
-  // state's, preferring the most matches. Covers properties the table doesn't
-  // list (a chest's `waterlogged`, which 1.12 has no equivalent for).
+  // Fallback: the table state of this block that agrees with the state on
+  // every property the metadata encodes, preferring the most matches. Covers
+  // properties the table doesn't list (a chest's `waterlogged`, which 1.12
+  // has no equivalent for) and runtime-computed ones it lists with a single
+  // value (stairs `shape`).
   const subset = reverseFlattenSubsetMatch(state);
   if (subset !== undefined) {
     return new BlockState({ Name: `minecraft:#${subset}` });

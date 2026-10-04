@@ -81,6 +81,19 @@ describe("translateBlockState", () => {
     expect(out.Name).toBe("minecraft:#54:2");
   });
 
+  it("reverse-flattens a runtime property the table lists with one value", () => {
+    // The table only has oak_stairs with shape=outer_right; 1.12 computes
+    // `shape` in-game, so any shape maps to the facing/half metadata.
+    const out = translateBlockState(
+      BlockState.fromString(
+        "minecraft:oak_stairs[facing=south,half=top,shape=straight,waterlogged=false]",
+      ),
+      V("1.13.1"),
+      V("1.12.2"),
+    );
+    expect(out.Name).toBe("minecraft:#53:6");
+  });
+
   it("falls back to air when no flatten mapping exists", () => {
     const warnings: string[] = [];
     const out = translateBlockState(

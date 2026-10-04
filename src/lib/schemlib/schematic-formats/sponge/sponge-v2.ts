@@ -452,6 +452,7 @@ export class SpongeSchematicV2
       palette: flatPalette,
       blocks: sourceBlocks,
       tileEntityMatrix,
+      entities,
       size: [width, height, length],
     } = flattenRegions(schematic, targetVersion);
     let sourcePalette = flatPalette;
@@ -529,6 +530,7 @@ export class SpongeSchematicV2
       Palette: palette,
       BlockData: blockData,
       BlockEntities: blockEntities,
+      Entities: entities,
     });
   }
 }
