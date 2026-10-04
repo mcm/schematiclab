@@ -1,7 +1,9 @@
 // Stateless streamable-HTTP MCP handler. Every request gets a fresh server
-// built from `TOOLS`; nothing is kept between requests.
+// built from `TOOLS` plus the build language resource and prompt; nothing is
+// kept between requests.
 
 import { McpServer, createMcpHandler } from "@modelcontextprotocol/server";
+import { registerBuildlangResources } from "./build-tools";
 import { MAX_REQUEST_BYTES } from "./limits";
 import { registerTools } from "./tools";
 import type { McpDeps } from "./types";
@@ -16,9 +18,10 @@ export function createMcpRequestHandler(
   const handler = createMcpHandler(
     () => {
       const server = new McpServer(SERVER_INFO, {
-        capabilities: { tools: {} },
+        capabilities: { tools: {}, resources: {}, prompts: {} },
       });
       registerTools(server, deps);
+      registerBuildlangResources(server);
       return server;
     },
     {
