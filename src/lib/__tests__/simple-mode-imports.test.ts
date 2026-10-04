@@ -20,6 +20,8 @@ const FORBIDDEN = [
   "lib/advanced/mod-namespace-status.ts",
   "components/version-mapping-mods-section.tsx",
   "lib/mods/generated/registry.ts",
+  "lib/mcp/tools.ts",
+  "lib/mcp/server.ts",
 ];
 
 // Module specifiers in `source`: static imports, re-exports and literal

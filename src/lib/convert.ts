@@ -215,6 +215,11 @@ const FORMAT_REGISTRY: Record<SchematicFormatId, FormatEntry> = {
   },
 };
 
+// Canonical file extension (no dot) for a format id, per FORMATS.md.
+export function formatExtension(format: SchematicFormatId): string {
+  return FORMAT_REGISTRY[format].extension;
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────
 
 function stripExtension(filename: string): string {

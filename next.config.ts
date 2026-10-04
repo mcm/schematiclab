@@ -18,6 +18,10 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["3000--main--schematiclab-v2--steve.dev.smcm.xyz"],
   output: "standalone",
+  // The MCP route lives at `api/mcp/[transport]`; serve it at `/api/mcp`.
+  async rewrites() {
+    return [{ source: "/api/mcp", destination: "/api/mcp/mcp" }];
+  },
   async headers() {
     return [
       {
