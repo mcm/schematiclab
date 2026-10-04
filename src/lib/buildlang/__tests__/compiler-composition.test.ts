@@ -170,6 +170,21 @@ describe("use", () => {
     expect(b.cells).toEqual([]);
   });
 
+  it("keeps a substituted __proto__ key, so it is checked like any key", () => {
+    const templates = { t: [{ faces: { $face: [{ fill: "stone" }] } }] };
+    const b = compile(
+      [{ use: { name: "t", with: { face: "__proto__" } } }],
+      [2, 2, 2],
+      {},
+      { templates },
+    );
+    expect(messages(b.errors)).toEqual([
+      expect.stringMatching(
+        /^templates\.t\[0\]\.faces\.__proto__: unknown face '__proto__'/,
+      ),
+    ]);
+  });
+
   it("reports problems inside a template at its path, once per use site", () => {
     const b = compile(
       [

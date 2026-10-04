@@ -46,6 +46,7 @@ describe("parseLength", () => {
     expect(parseError("-10%", "size")).toMatch(/must not be negative/);
     expect(parseError("1e2%", "size")).toMatch(/invalid size/);
     expect(parseError("%", "size")).toMatch(/invalid size/);
+    expect(parseError(`${"9".repeat(400)}%`, "size")).toMatch(/is too big/);
   });
 
   it("parses the rest of the parent", () => {
@@ -58,6 +59,7 @@ describe("parseLength", () => {
   it("parses weighted rests in split parts only", () => {
     expect(parse("~2", "part")).toEqual({ kind: "rest", weight: 2 });
     expect(parse("~0.5", "part")).toEqual({ kind: "rest", weight: 0.5 });
+    expect(parseError(`~${"9".repeat(400)}`, "part")).toMatch(/is too big/);
     expect(parseError("~2", "size")).toMatch(/only allowed for split parts/);
     expect(parseError("~0", "part")).toMatch(/must be positive/);
     expect(parseError("~x", "part")).toMatch(/invalid size/);

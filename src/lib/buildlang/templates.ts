@@ -78,7 +78,7 @@ export function substituteParams(
     const out: Record<string, unknown> = {};
     for (const [k, value] of Object.entries(v)) {
       if (k.startsWith("#")) {
-        out[k] = value;
+        setKey(out, k, value);
         continue;
       }
       const keyPath = pathKey(at, k);
@@ -94,10 +94,21 @@ export function substituteParams(
           });
         }
       }
-      out[key] = walk(value, keyPath);
+      setKey(out, key, walk(value, keyPath));
     }
     return out;
   };
 
   return { body: walk(body, path), errors, used };
+}
+
+// Sets an own property, even for `__proto__` (which plain assignment would
+// turn into a prototype change), so validation sees every key.
+function setKey(obj: Record<string, unknown>, key: string, value: unknown) {
+  Object.defineProperty(obj, key, {
+    value,
+    enumerable: true,
+    writable: true,
+    configurable: true,
+  });
 }

@@ -67,6 +67,10 @@ export function parseLength(
     ok: false,
     error: `${context === "part" ? "part size" : "size"} ${describe(spec)} must not be negative`,
   });
+  const tooBig = (): LengthParseResult => ({
+    ok: false,
+    error: `${describe(spec)} is too big`,
+  });
 
   if (typeof spec === "number") {
     if (!Number.isInteger(spec)) {
@@ -84,6 +88,7 @@ export function parseLength(
   const percent = PERCENT.exec(s);
   if (percent) {
     const value = Number(percent[1]);
+    if (!Number.isFinite(value)) return tooBig();
     if (value < 0 && context !== "position") return negative();
     return { ok: true, length: { kind: "percent", value } };
   }
@@ -103,6 +108,7 @@ export function parseLength(
       };
     }
     const value = Number(weight[1]);
+    if (!Number.isFinite(value)) return tooBig();
     if (value <= 0) {
       return {
         ok: false,

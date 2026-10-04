@@ -27,6 +27,7 @@ import {
   compileWithRegistry,
 } from "./compiler";
 import { type ProgramError, validateProgram } from "./program";
+import type { Pos } from "./writes";
 
 export interface BuildResult {
   errors: ProgramError[];
@@ -82,8 +83,14 @@ export function compileForRegistry(
   }
 
   const result = compileWithRegistry(validation.program, registry, options);
-  const { projection, errors } = toProjection(result, versionId, registry);
+  const { projection, errors, dropped } = toProjection(
+    result,
+    versionId,
+    registry,
+  );
   result.errors.push(...errors);
+  // The report describes the blocks the projection holds.
+  for (const pos of dropped) result.blocks.delete(pos);
   const analysis = analyze(result, registry);
   return {
     errors: result.errors,
@@ -98,20 +105,28 @@ export function compileForRegistry(
 interface PaletteSlot {
   /** Index into the projection's palette, or -1 for a dropped block. */
   index: number;
+  /** For a dropped block: why, and its first write in program order. */
+  dropped?: { error: string; seq: number; path: string };
 }
 
 /**
  * The compiled blocks as a one-region projection the size of the program.
  * Block states are written in full (the block's defaults overlaid with what
- * the build set). 1.12.2 blocks with no Forge 1.12 state are dropped, with an
- * error at the operation that placed the first of them.
+ * the build set). 1.12.2 blocks with no Forge 1.12 state are dropped (listed
+ * in `dropped`), with an error at the operation that placed the first of them
+ * in program order.
  */
 export function toProjection(
   result: CompileResult,
   versionId: string,
   registry: BlockRegistry,
-): { projection: ParsedSchematicProjection; errors: ProgramError[] } {
+): {
+  projection: ParsedSchematicProjection;
+  errors: ProgramError[];
+  dropped: Pos[];
+} {
   const errors: ProgramError[] = [];
+  const dropped: Pos[] = [];
   const palette: ParsedSchematicPaletteEntry[] = [];
   const slots = new Map<string, PaletteSlot>();
   const blocks: ParsedSchematicProjection["regions"][number]["blocks"] = [];
@@ -135,17 +150,29 @@ export function toProjection(
         });
         slot = { index: palette.length - 1 };
       } else {
-        errors.push({
-          path: result.log.pathAt(pos) ?? "",
-          message: `${written.error} Use another block.`,
-        });
-        slot = { index: -1 };
+        slot = {
+          index: -1,
+          dropped: { error: written.error, seq: Infinity, path: "" },
+        };
       }
       slots.set(key, slot);
     }
-    if (slot.index < 0) continue;
+    if (slot.dropped) {
+      dropped.push(pos);
+      const write = result.log.winnerAt(pos);
+      if (write && write.seq < slot.dropped.seq) {
+        slot.dropped.seq = write.seq;
+        slot.dropped.path = write.path;
+      }
+      continue;
+    }
     palette[slot.index].count++;
     blocks.push({ pos: [pos[0], pos[1], pos[2]], paletteIndex: slot.index });
+  }
+
+  for (const { dropped: d } of slots.values()) {
+    if (d)
+      errors.push({ path: d.path, message: `${d.error} Use another block.` });
   }
 
   // Same-state Forge 1.12 entries (two flattened states can share one legacy
@@ -171,6 +198,7 @@ export function toProjection(
       ],
     },
     errors,
+    dropped,
   };
 }
 

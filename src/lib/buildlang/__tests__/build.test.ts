@@ -196,9 +196,12 @@ describe("export", () => {
       expect(built.errors).toEqual([]);
       const parsed = exportAndParse(built.projection!, format, version);
       // Building Gadgets 1.12 templates keep block ids only.
-      const ids = (p: ParsedSchematicProjection) =>
-        blockSet(p).map((b) => b.replace(/\[.*\]$/, ""));
-      expect(ids(parsed)).toEqual(ids(built.projection!));
+      const blocks =
+        format === "BuildingGadgets[1.12]"
+          ? (p: ParsedSchematicProjection) =>
+              blockSet(p).map((b) => b.replace(/\[.*\]$/, ""))
+          : blockSet;
+      expect(blocks(parsed)).toEqual(blocks(built.projection!));
     },
   );
 
@@ -249,6 +252,32 @@ describe("export", () => {
       "0,0,0 minecraft:stone[variant=stone]",
     ]);
     expect(built.report).toContain("- build[1].block: ");
+  });
+});
+
+describe("dropped 1.12.2 blocks", () => {
+  it("are left out of the analysis and reported at their first operation", async () => {
+    const built = await compileProgram(
+      {
+        name: "eggs",
+        size: [3, 1, 1],
+        build: [
+          { fill: "turtle_egg" },
+          { block: { at: [0, 0, 0], material: "turtle_egg" } },
+          { block: { at: [2, 0, 0], material: "stone" } },
+        ],
+      },
+      "1.12.2",
+      deps,
+    );
+    // build[1] wins cell [0, 0, 0], but build[0] placed turtle eggs first
+    expect(built.errors.map((e) => e.path)).toEqual(["build[0].fill"]);
+    expect(built.analysis?.materials).toEqual([["stone", 1]]);
+    expect(built.analysis?.bbox).toEqual({
+      min: [2, 0, 0],
+      max: [2, 0, 0],
+      dims: [1, 1, 1],
+    });
   });
 });
 

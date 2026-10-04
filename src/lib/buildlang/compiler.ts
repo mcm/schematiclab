@@ -574,13 +574,13 @@ export class Compiler {
     ) as unknown as InsetArgs & Json;
     const by: unknown = arg.by;
     const amount = { left: 0, right: 0, front: 0, back: 0, top: 0, bottom: 0 };
-    if (Number.isInteger(by)) {
-      const n = by as number;
+    if (typeof by === "number") {
+      const n = integer(by, `${path}.by`, 0, 0);
       Object.assign(amount, { left: n, right: n, front: n, back: n });
     } else if (isObject(by)) {
       for (const [side, raw] of Object.entries(by)) {
         if (side.startsWith("#")) continue;
-        const n = integer(raw, `${path}.by.${side}`, 0);
+        const n = integer(raw, `${path}.by.${side}`, 0, 0);
         if (side === "x") Object.assign(amount, { left: n, right: n });
         else if (side === "y") Object.assign(amount, { top: n, bottom: n });
         else if (side === "z") Object.assign(amount, { front: n, back: n });

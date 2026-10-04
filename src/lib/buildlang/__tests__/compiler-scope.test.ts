@@ -879,6 +879,7 @@ describe("unvalidated input (template substitution can produce it)", () => {
         { inset: { by: "1" } },
         { inset: { by: { up: 1 } } },
         { inset: { by: { x: 0.5 } } },
+        { inset: { by: -1 } },
         { faces: [] },
         { faces: { thickness: 0 } },
         { fill: { state: {} } },
@@ -897,11 +898,12 @@ describe("unvalidated input (template substitution can produce it)", () => {
       "build[9].repeat.every: must be an integer of at least 1, got 0",
       'build[10].inset.by: must be an integer or an object of sides, got "1"',
       "build[11].inset.by: unknown side 'up'",
-      "build[12].inset.by.x: must be an integer, got 0.5",
-      "build[13].faces: expected an object of face → operations, got []",
-      "build[14].faces.thickness: must be an integer of at least 1, got 0",
-      "build[15].fill: missing 'material'",
-      "build[16].fill: expected a material or an object with 'material', got 3",
+      "build[12].inset.by.x: must be an integer of at least 0, got 0.5",
+      "build[13].inset.by: must be an integer of at least 0, got -1",
+      "build[14].faces: expected an object of face → operations, got []",
+      "build[15].faces.thickness: must be an integer of at least 1, got 0",
+      "build[16].fill: missing 'material'",
+      "build[17].fill: expected a material or an object with 'material', got 3",
     ]);
   });
 

@@ -107,9 +107,20 @@ export function composeCell(writes: readonly Write[]): PlacedBlock | null {
 
 // The write whose block a cell ends up with, or null for air.
 function winningWrite(writes: readonly Write[]): Write | null {
+  return resolveCell(writes).winner;
+}
+
+// Composes a cell: the winning write (null for air) and every block write that
+// took effect at some point. Writes that `onlyEmpty` or `replace` rejected
+// never took part in the cell.
+function resolveCell(writes: readonly Write[]): {
+  winner: Write | null;
+  applied: Set<Write>;
+} {
   const ordered = [...writes].sort(
     (a, b) => a.priority - b.priority || a.seq - b.seq,
   );
+  const applied = new Set<Write>();
   let current: Write | null = null;
   for (const w of ordered) {
     if (w.onlyEmpty && current !== null) continue;
@@ -128,8 +139,9 @@ function winningWrite(writes: readonly Write[]): Write | null {
       continue;
     }
     current = w;
+    applied.add(w);
   }
-  return current;
+  return { winner: current, applied };
 }
 
 /** Blocks set into walls on purpose: a door in a wall isn't a collision. */
@@ -193,9 +205,14 @@ export class WriteLog {
     return composeCell(this.writesAt(pos));
   }
 
+  /** The write `pos` composes to, or null for air. */
+  winnerAt(pos: Pos): Write | null {
+    return winningWrite(this.writesAt(pos));
+  }
+
   /** The program path of the write `pos` composes to, or null for air. */
   pathAt(pos: Pos): string | null {
-    return winningWrite(this.writesAt(pos))?.path ?? null;
+    return this.winnerAt(pos)?.path ?? null;
   }
 
   /** Every non-air cell's final block. */
@@ -215,7 +232,8 @@ export class WriteLog {
 
   /**
    * Warnings for hand-placed blocks sharing a cell with another operation's
-   * block, which is almost always a mistake (a bed inside a chimney). Painting
+   * block (only writes that took effect: an `only_empty` or `replace` write
+   * the cell rejected doesn't count), which is almost always a mistake (a bed inside a chimney). Painting
    * over on purpose (walls, then windows) isn't checked; neither is a door,
    * trapdoor, wall torch, button, lever, sign or banner set into solid wall
    * blocks. One warning per (point path, other path, outcome).
@@ -224,12 +242,14 @@ export class WriteLog {
     const out: ProgramError[] = [];
     const seen = new Set<string>();
     for (const [index, writes] of this.cells) {
-      const points = writes.filter((w) => w.point && w.block);
+      const { winner, applied } = resolveCell(writes);
+      const points = writes.filter((w) => w.point && applied.has(w));
       if (points.length === 0) continue;
-      const winner = winningWrite(writes);
       for (const point of points) {
         const block = point.block as PlacedBlock;
-        const others = writes.filter((w) => w.block && w.path !== point.path);
+        const others = writes.filter(
+          (w) => applied.has(w) && w.path !== point.path,
+        );
         if (others.length === 0) continue;
         if (
           WALL_MOUNTED_KINDS.has(registry.kind(block.id)) &&
@@ -289,6 +309,12 @@ export class BlockGrid {
   set(pos: Pos, block: PlacedBlock): void {
     const index = cellIndex(this.size, pos);
     if (index !== null) this.cells.set(index, block);
+  }
+
+  /** Clears a cell to air. */
+  delete(pos: Pos): void {
+    const index = cellIndex(this.size, pos);
+    if (index !== null) this.cells.delete(index);
   }
 
   *entries(): Generator<[Pos, PlacedBlock]> {

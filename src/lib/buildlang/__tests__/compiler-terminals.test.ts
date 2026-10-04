@@ -312,6 +312,30 @@ describe("block", () => {
       expect.stringMatching(/^build\[1\]\.block: .*glass_pane/),
     ]);
   });
+
+  it("ignores writes the cell rejected (only_empty, replace)", () => {
+    // a later fill that skips the lantern's cell doesn't collide with it
+    let b = run(
+      [
+        { block: { at: [0, 0, 0], material: "lantern" } },
+        { fill: { material: "stone", only_empty: true } },
+        { fill: { material: "cobblestone", replace: "stone" } },
+      ],
+      [1, 1, 1],
+    );
+    expect(b.warnings).toEqual([]);
+    expect(b.at(0, 0, 0)).toBe("lantern");
+    // nor does a hand-placed block that only fills empty cells
+    b = run(
+      [
+        { fill: "stone" },
+        { block: { at: [0, 0, 0], material: "lantern", only_empty: true } },
+      ],
+      [1, 1, 1],
+    );
+    expect(b.warnings).toEqual([]);
+    expect(b.at(0, 0, 0)).toBe("stone");
+  });
 });
 
 describe("door", () => {
