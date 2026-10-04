@@ -1,6 +1,7 @@
 // The one list of MCP tools the server registers.
 
 import type { CallToolResult, McpServer } from "@modelcontextprotocol/server";
+import { generateShapeTool } from "./generate-shape";
 import { listVersionsTool } from "./list-versions";
 import {
   convertSchematicTool,
@@ -14,6 +15,7 @@ export const TOOLS: readonly McpTool[] = [
   inspectSchematicTool,
   convertSchematicTool,
   renderSchematicTool,
+  generateShapeTool,
 ];
 
 export function registerTools(server: McpServer, deps: McpDeps): void {
