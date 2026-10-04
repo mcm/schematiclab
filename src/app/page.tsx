@@ -2,8 +2,10 @@
 
 import * as React from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Card, CardContent } from "@iamthemcmaster/ui";
+import { Button, Card, CardContent } from "@iamthemcmaster/ui";
+import { IconCube } from "@tabler/icons-react";
 import schematiclabLogo from "../../public/schematiclab.png";
 import { FileDropzone } from "@/components/file-dropzone";
 import { UrlImport } from "@/components/url-import";
@@ -248,6 +250,20 @@ export default function HomePage() {
             />
           </CardContent>
         </Card>
+
+        <Button asChild variant="ghost" size="md">
+          <Link
+            href="/shapes"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "var(--space-2)",
+            }}
+          >
+            <IconCube size={16} aria-hidden="true" />
+            No schematic? Generate a shape
+          </Link>
+        </Button>
       </div>
     </main>
   );

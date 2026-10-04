@@ -17,6 +17,11 @@ import {
 } from "./convert";
 import type { ModMappingContext } from "./advanced/mod-mapping";
 import {
+  buildShapeProjection,
+  type ShapeProjectionResult,
+  type ShapeSpec,
+} from "./shapes/generate";
+import {
   previewVersionMapping,
   type VersionMappingPreview,
 } from "./advanced/version-mapping-preview";
@@ -53,6 +58,10 @@ export interface ExportPayload {
   inputFilename: string;
 }
 
+export interface GenerateShapePayload {
+  spec: ShapeSpec;
+}
+
 export type WorkerRequest =
   | { id: number; type: "detect"; payload: DetectPayload }
   | { id: number; type: "convert"; payload: ConvertPayload }
@@ -62,7 +71,8 @@ export type WorkerRequest =
       type: "translatePreview";
       payload: TranslatePreviewPayload;
     }
-  | { id: number; type: "export"; payload: ExportPayload };
+  | { id: number; type: "export"; payload: ExportPayload }
+  | { id: number; type: "generateShape"; payload: GenerateShapePayload };
 
 export type WorkerResponse =
   | { id: number; ok: true; type: "detect"; result: string }
@@ -75,6 +85,12 @@ export type WorkerResponse =
       result: VersionMappingPreview;
     }
   | { id: number; ok: true; type: "export"; result: ConvertResult }
+  | {
+      id: number;
+      ok: true;
+      type: "generateShape";
+      result: ShapeProjectionResult;
+    }
   | { id: number; ok: false; error: string };
 
 // ── Worker scope shim ─────────────────────────────────────────────────────
@@ -152,6 +168,12 @@ ctx.addEventListener("message", (event) => {
           ? [result.bytes.buffer]
           : [];
       ctx.postMessage({ id, ok: true, type: "export", result }, transfer);
+      return;
+    }
+
+    if (type === "generateShape") {
+      const result = buildShapeProjection(request.payload.spec);
+      ctx.postMessage({ id, ok: true, type: "generateShape", result });
       return;
     }
 

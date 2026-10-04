@@ -14,6 +14,7 @@ import type {
 } from "./convert";
 import type { ModMappingContext } from "./advanced/mod-mapping";
 import type { VersionMappingPreview } from "./advanced/version-mapping-preview";
+import type { ShapeProjectionResult, ShapeSpec } from "./shapes/generate";
 import type { WorkerRequest, WorkerResponse } from "./convert.worker";
 
 type Pending = {
@@ -186,6 +187,19 @@ export function exportInWorker(
       type: "export",
       payload: { schematic, outputFormat, targetVersion, inputFilename },
     },
+    [],
+  );
+}
+
+/**
+ * Build the Shape Generator's schematic for `spec` in the worker. Write it
+ * out with `exportInWorker`.
+ */
+export function generateShapeInWorker(
+  spec: ShapeSpec,
+): Promise<ShapeProjectionResult> {
+  return send<ShapeProjectionResult>(
+    { type: "generateShape", payload: { spec } },
     [],
   );
 }
