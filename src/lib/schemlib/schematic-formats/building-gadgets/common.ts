@@ -47,7 +47,9 @@ export function readUppercasePos(tag: nbt.NbtTag | undefined): BlockPos {
 /**
  * `readUppercasePos` for a schematic's bounds, which must be present: a
  * missing or partial position would read as the origin and make the declared
- * size look tiny.
+ * size look tiny. Each coordinate must be a whole number JavaScript holds
+ * exactly (no fractional Float/Double, no Long past 2^53), or the bounds'
+ * span and origin would be silently rounded.
  */
 export function readRequiredUppercasePos(
   tag: nbt.NbtTag | undefined,
@@ -58,9 +60,13 @@ export function readRequiredUppercasePos(
     ["x", "y", "z"].every((key) => {
       const coord = tag.get(key) ?? tag.get(key.toUpperCase());
       const value = (coord as { value?: unknown } | undefined)?.value;
-      return typeof value === "number" || typeof value === "bigint";
+      return (
+        (typeof value === "number" || typeof value === "bigint") &&
+        // A Long past 2^53 converts to a Number that isn't a safe integer.
+        Number.isSafeInteger(Number(value))
+      );
     });
-  if (!complete) throw new Error(`${what} is missing or incomplete`);
+  if (!complete) throw new Error(`${what} is missing or invalid`);
   return readUppercasePos(tag);
 }
 

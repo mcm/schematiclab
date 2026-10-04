@@ -195,13 +195,22 @@ describe("malformed declared sizes", () => {
       );
     expect(() =>
       BuildingGadgetsV0Schematic.schematicLoad(v0(), options),
-    ).toThrow("BG v0 endPos is missing or incomplete");
+    ).toThrow("BG v0 endPos is missing or invalid");
     expect(() =>
       BuildingGadgetsV0Schematic.schematicLoad(
         v0(new nbt.Compound({ X: new nbt.Int(999), Y: new nbt.Int(999) })),
         options,
       ),
-    ).toThrow("BG v0 endPos is missing or incomplete");
+    ).toThrow("BG v0 endPos is missing or invalid");
+
+    for (const X of [new nbt.Double(999.5), new nbt.Long(9007199254740993n)]) {
+      expect(() =>
+        BuildingGadgetsV0Schematic.schematicLoad(
+          v0(new nbt.Compound({ X, Y: new nbt.Int(9), Z: new nbt.Int(9) })),
+          options,
+        ),
+      ).toThrow("BG v0 endPos is missing or invalid");
+    }
 
     const v2 = new TextEncoder().encode(
       JSON.stringify({
@@ -217,7 +226,7 @@ describe("malformed declared sizes", () => {
       }),
     );
     expect(() => BuildingGadgetsV2Schematic.schematicLoad(v2, options)).toThrow(
-      "BG v2 startpos is missing or incomplete",
+      "BG v2 startpos is missing or invalid",
     );
   });
 
