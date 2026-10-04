@@ -282,6 +282,16 @@ describe("generate_shape", () => {
     expect(text(result)).toBe(BLOB_NOT_CONFIGURED_MESSAGE);
   });
 
+  it("fails without a Blob store before building or rendering the shape", async () => {
+    // An unknown material would otherwise be the error.
+    const result = await runTool(
+      generateShapeTool,
+      { ...glassEllipsoid, material: "minecraft:not_a_block", render: true },
+      makeDeps({ blob: null }),
+    );
+    expect(text(result)).toBe(BLOB_NOT_CONFIGURED_MESSAGE);
+  });
+
   describe("over MCP", () => {
     const clients: Client[] = [];
     afterEach(async () => {

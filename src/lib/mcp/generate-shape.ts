@@ -15,7 +15,7 @@ import { MAX_DIMENSION, MAX_THICKNESS, SHAPE_KINDS } from "../shapes/shapes";
 import { KNOWN_VERSIONS } from "../schemlib/schematic-formats/known-versions";
 import { versionName } from "../schemlib/schematic-formats/version-mapping";
 import { assertProjectionBlocks, resolveLimits } from "./limits";
-import { publishFile } from "./output";
+import { assertBlobConfigured, publishFile } from "./output";
 import { renderProjectionPng } from "./render";
 import { OUTPUT_FORMATS } from "./schematic-tools";
 import { defineTool, jsonResult } from "./types";
@@ -85,6 +85,7 @@ export const generateShapeTool = defineTool({
   annotations: { readOnlyHint: false, openWorldHint: true },
   timeoutHint: "Try a smaller shape.",
   handler: async (args, deps): Promise<CallToolResult> => {
+    assertBlobConfigured(deps);
     const versionId = args.version.trim();
     if (!Object.hasOwn(KNOWN_VERSIONS, versionId)) {
       throw new Error(

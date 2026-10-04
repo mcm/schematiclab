@@ -16,6 +16,10 @@ export function decodeVarintArray(
   let shift = 0;
   for (let i = 0; i < bytes.length; i++) {
     const b = (bytes[i] as number) & 0xff;
+    // The fifth byte holds bits 28-31 only, and must end the varint.
+    if (shift === 28 && (b & 0xf0) !== 0) {
+      throw new Error("Varint in block data is longer than 32 bits");
+    }
     value |= (b & 0x7f) << shift;
     if ((b & 0x80) === 0) {
       if (out.length >= maxCount) {

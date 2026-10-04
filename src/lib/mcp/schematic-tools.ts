@@ -32,7 +32,7 @@ import {
   decompressedTooLargeMessage,
   tooManyBlocksMessage,
 } from "./limits";
-import { publishFile } from "./output";
+import { assertBlobConfigured, publishFile } from "./output";
 import { renderProjectionPng } from "./render";
 import { type McpDeps, defineTool, jsonResult } from "./types";
 
@@ -246,6 +246,7 @@ export const convertSchematicTool = defineTool({
   annotations: { readOnlyHint: false, openWorldHint: true },
   timeoutHint: SCHEMATIC_TIMEOUT_HINT,
   handler: async (args, deps) => {
+    assertBlobConfigured(deps);
     const outputFormat = args.output_format as SchematicFormatId;
     const targetVersion = args.target_version?.trim() || undefined;
     if (
