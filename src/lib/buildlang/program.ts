@@ -274,7 +274,8 @@ function show(v: unknown): string {
   return JSON.stringify(v) ?? String(v);
 }
 
-function key(path: string, k: string): string {
+/** `path.k`, or `path["k"]` for keys that aren't identifiers. */
+export function pathKey(path: string, k: string): string {
   return /^[A-Za-z_][A-Za-z0-9_]*$/.test(k)
     ? `${path}.${k}`
     : `${path}[${JSON.stringify(k)}]`;
@@ -310,7 +311,7 @@ class Validator {
     for (const k of Object.keys(obj)) {
       if (this.isIgnoredKey(k) || expected.includes(k)) continue;
       this.error(
-        key(path, k),
+        pathKey(path, k),
         `unknown key '${k}' (expected ${expected.map((a) => `'${a}'`).join(", ")})`,
       );
     }
@@ -318,7 +319,7 @@ class Validator {
 
   template(name: string, body: unknown): void {
     this.inTemplate = true;
-    this.operations(body, key("templates", name), 0);
+    this.operations(body, pathKey("templates", name), 0);
     this.inTemplate = false;
   }
 
@@ -510,7 +511,7 @@ class Validator {
         !Number.isFinite(weight)
       ) {
         this.error(
-          key(mixPath, name),
+          pathKey(mixPath, name),
           `weight must be a positive number, got ${show(weight)}`,
         );
       }
@@ -552,7 +553,7 @@ class Validator {
       if (this.isIgnoredKey(k) || this.isParam(value)) continue;
       if (!["string", "number", "boolean"].includes(typeof value)) {
         this.error(
-          key(path, k),
+          pathKey(path, k),
           `state value must be a string, number or boolean, got ${show(value)}`,
         );
       }
@@ -695,7 +696,7 @@ class Validator {
         this.operations(arg[k], `${path}.${k}`, depth);
       } else {
         this.error(
-          key(path, k),
+          pathKey(path, k),
           `unknown face '${k}' (expected ${FACE_NAMES.join(", ")} or thickness)`,
         );
       }
@@ -873,7 +874,7 @@ class Validator {
     for (const k of Object.keys(json)) {
       if (k.startsWith("#") || PROGRAM_KEYS.includes(k)) continue;
       this.error(
-        key("", k).replace(/^\./, ""),
+        pathKey("", k).replace(/^\./, ""),
         `unknown program key '${k}' (expected ${PROGRAM_KEYS.join(", ")})`,
       );
     }
@@ -932,7 +933,8 @@ class Validator {
       return;
     }
     for (const [role, material] of Object.entries(palette)) {
-      if (!role.startsWith("#")) this.material(material, key("palette", role));
+      if (!role.startsWith("#"))
+        this.material(material, pathKey("palette", role));
     }
   }
 }
