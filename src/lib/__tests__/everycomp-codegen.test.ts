@@ -31,6 +31,8 @@ const SCOPE: EmitScope = {
 
 /** Evaluate translated TS (plain JS here) with the runtime in scope. */
 function run<T>(source: string, c: object): T {
+  // Runs code this test generated from fixed Java snippets.
+  // nosemgrep
   return new Function("J", "c", `return (${source});`)(J, c) as T;
 }
 

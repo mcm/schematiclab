@@ -28,10 +28,14 @@ export const J = {
   },
   /** `String.replaceAll(regex, replacement)`. */
   replaceAll(s: string, regex: string, replacement: string): string {
+    // Patterns come from the generated module tables and resource ids, not user input.
+    // nosemgrep
     return s.replace(new RegExp(regex, "g"), javaReplacement(replacement));
   },
   /** `String.matches(regex)`: the whole string. */
   matches(s: string, regex: string): boolean {
+    // Patterns come from the generated module tables and resource ids, not user input.
+    // nosemgrep
     return new RegExp(`^(?:${regex})$`).test(s);
   },
   equals(a: unknown, b: unknown): boolean {
@@ -199,13 +203,17 @@ export function replaceFullGenericType(
   const blockFolderPrefix = prefixMatch ? prefixMatch[1] : "";
   const newNamespace = oldNamespace === null ? "" : `${blockId.namespace}:`;
   const oldNs = oldNamespace === null ? "" : `${oldNamespace}:`;
+  // Patterns come from the generated module tables and resource ids, not user input.
+  // nosemgrep
   const re = new RegExp(
     `${oldNs}(${folderRegex})/(/?(?:\\w+/)*\\w*?)(?<![a-zA-Z])${oldTypeName}(?![a-zA-Z])`,
     "g",
   );
   return text.replace(re, (_m, g1: string, g2: string) => {
     const group2 = g2.includes(oldTypeName)
-      ? g2.replace(new RegExp(oldTypeName, "g"), newTypeName)
+      ? // Patterns come from the generated module tables and resource ids, not user input.
+        // nosemgrep
+        g2.replace(new RegExp(oldTypeName, "g"), newTypeName)
       : g2;
     return (
       newNamespace +

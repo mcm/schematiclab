@@ -78,15 +78,17 @@ function escapeRegex(s: string): string {
 
 /** `AbstractSimpleEntrySet.nameScheme`: the type name in an entry name, or null. */
 export function parseTypeName(entry: EcEntrySet, name: string): string | null {
-  const re =
-    entry.prefix !== null
+  const prefix = entry.prefix === null ? null : escapeRegex(entry.prefix);
+  const postfix = escapeRegex(entry.name);
+  const pattern =
+    prefix !== null
       ? entry.name === ""
-        ? new RegExp(`^${escapeRegex(entry.prefix)}_(.+?)$`)
-        : new RegExp(
-            `^${escapeRegex(entry.prefix)}_(.+?)_${escapeRegex(entry.name)}$`,
-          )
-      : new RegExp(`^(.+?)_${escapeRegex(entry.name)}$`);
-  return re.exec(name)?.[1] ?? null;
+        ? `^${prefix}_(.+?)$`
+        : `^${prefix}_(.+?)_${postfix}$`
+      : `^(.+?)_${postfix}$`;
+  // Entry names are escaped table literals, not user input.
+  // nosemgrep
+  return new RegExp(pattern).exec(name)?.[1] ?? null;
 }
 
 /** One entry set of one active registration. */
@@ -164,6 +166,26 @@ export class EcAddonState {
 
   type(kind: BlockTypeKind, id: string): DetectedBlockType | null {
     return this.typesOf(kind).get(id) ?? null;
+  }
+
+  private typeIndex: Map<string, DetectedBlockType> | null = null;
+
+  /** The first type of `kind` in `namespace` named `typeName`, or null. */
+  typeByName(
+    kind: BlockTypeKind,
+    namespace: string,
+    typeName: string,
+  ): DetectedBlockType | null {
+    if (this.typeIndex === null) {
+      this.typeIndex = new Map();
+      for (const [k, types] of this.registries.byKind) {
+        for (const type of types.values()) {
+          const key = `${k}|${type.namespace}|${type.typeName}`;
+          if (!this.typeIndex.has(key)) this.typeIndex.set(key, type);
+        }
+      }
+    }
+    return this.typeIndex.get(`${kind}|${namespace}|${typeName}`) ?? null;
   }
 
   /** The view of a type the translated lambdas see. */
@@ -331,10 +353,7 @@ export class EcAddonState {
       for (const entry of compatModule.entrySets) {
         const typeName = parseTypeName(entry, name);
         if (typeName === null) continue;
-        const type =
-          [...this.typesOf(entry.kind).values()].find(
-            (t) => t.namespace === typeNamespace && t.typeName === typeName,
-          ) ?? null;
+        const type = this.typeByName(entry.kind, typeNamespace, typeName);
         out.push({
           ref: { registration, module: compatModule, entry },
           typeNamespace,
