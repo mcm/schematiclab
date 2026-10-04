@@ -13,7 +13,7 @@ const FORMAT_LABELS: Record<string, string> = {
   "Sponge[v1]": "Sponge v1",
   "Sponge[v2]": "Sponge v2",
   "Sponge[v3]": "Sponge v3",
-  Structure: "Structure",
+  Structure: "Create",
   "BuildingGadgets[1.12]": "Building Gadgets 1.12",
   "BuildingGadgets[1.14.4-1.19.3]": "Building Gadgets 1.14.4–1.19.3",
   "BuildingGadgets2[1.20+]": "Building Gadgets 2 1.20+",
