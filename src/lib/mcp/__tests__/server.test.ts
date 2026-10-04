@@ -111,6 +111,7 @@ describe("MCP endpoint", () => {
     const handler = createMcpRequestHandler({
       fetch: () => Promise.reject(new Error("no network")),
       now: () => new Date(0),
+      blob: null,
     });
     // Not valid JSON: a parse attempt would answer -32700 instead.
     const body = "{" + "x".repeat(MAX_REQUEST_BYTES);
