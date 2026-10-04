@@ -1,0 +1,33 @@
+{
+  "block": [
+    "air",
+    "stone",
+    "cobblestone",
+    "bricks",
+    "stone_bricks",
+    "oak_planks",
+    "spruce_planks",
+    "glass",
+    "white_stained_glass",
+    "glass_pane",
+    "white_stained_glass_pane",
+    "iron_bars",
+    "oak_fence",
+    "spruce_fence",
+    "nether_brick_fence",
+    "oak_fence_gate",
+    "oak_stairs",
+    "spruce_stairs",
+    "stone_brick_stairs",
+    "cobblestone_stairs",
+    "cobblestone_wall",
+    "brick_wall",
+    "stone_brick_wall",
+    "oak_log",
+    "oak_slab",
+    "oak_door",
+    "torch",
+    "wall_torch",
+    "oak_leaves"
+  ]
+}

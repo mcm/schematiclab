@@ -195,6 +195,13 @@ export class WriteLog {
     }
   }
 
+  /** Every non-air cell's final block, as a grid. */
+  composeGrid(): BlockGrid {
+    const grid = new BlockGrid(this.size);
+    for (const [pos, block] of this.compose()) grid.set(pos, block);
+    return grid;
+  }
+
   /**
    * Warnings for hand-placed blocks sharing a cell with another operation's
    * block, which is almost always a mistake (a bed inside a chimney). Painting
@@ -243,14 +250,51 @@ export class WriteLog {
   }
 
   private index(pos: Pos): number | null {
-    const [w, h, d] = this.size;
-    const [x, y, z] = pos;
-    if (x < 0 || y < 0 || z < 0 || x >= w || y >= h || z >= d) return null;
-    return (y * d + z) * w + x;
+    return cellIndex(this.size, pos);
   }
 
   private pos(index: number): Pos {
-    const [w, , d] = this.size;
-    return [index % w, Math.floor(index / (w * d)), Math.floor(index / w) % d];
+    return cellPos(this.size, index);
   }
+}
+
+/** The composed blocks of a build: non-air cells only. */
+export class BlockGrid {
+  private readonly cells = new Map<number, PlacedBlock>();
+
+  constructor(readonly size: Pos) {}
+
+  get count(): number {
+    return this.cells.size;
+  }
+
+  /** The block at `pos`, or null for air and cells outside the build. */
+  get(pos: Pos): PlacedBlock | null {
+    const index = cellIndex(this.size, pos);
+    return (index === null ? undefined : this.cells.get(index)) ?? null;
+  }
+
+  /** Sets a cell inside the build (outside ones are ignored). */
+  set(pos: Pos, block: PlacedBlock): void {
+    const index = cellIndex(this.size, pos);
+    if (index !== null) this.cells.set(index, block);
+  }
+
+  *entries(): Generator<[Pos, PlacedBlock]> {
+    for (const [index, block] of this.cells) {
+      yield [cellPos(this.size, index), block];
+    }
+  }
+}
+
+function cellIndex(size: Pos, pos: Pos): number | null {
+  const [w, h, d] = size;
+  const [x, y, z] = pos;
+  if (x < 0 || y < 0 || z < 0 || x >= w || y >= h || z >= d) return null;
+  return (y * d + z) * w + x;
+}
+
+function cellPos(size: Pos, index: number): Pos {
+  const [w, , d] = size;
+  return [index % w, Math.floor(index / (w * d)), Math.floor(index / w) % d];
 }
