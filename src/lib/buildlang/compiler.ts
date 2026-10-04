@@ -5,11 +5,14 @@
 //
 // Scope operations (Cairn `SPEC.md` section 3): `box`, `split`, `repeat`,
 // `inset` and `faces`. Material operations write through `place`.
+// Composition: `use` (templates), `choose` and `when`.
 //
 // Paths are real program paths: an operation inside a repeat's `do` reports
 // at `….repeat.do[0]` for every tile, and one inside `faces.sides` at
 // `….faces.sides[0]` for every wall, so repeated problems collapse into one
 // message (with a count) and always point at something the agent wrote.
+// Operations in a template body report at `templates.<name>[i]…`, with the
+// outermost `use` that reached them added to the message.
 
 import type { BlockRegistry } from "../blockdata/registry";
 import {
@@ -30,26 +33,30 @@ import {
 } from "./lengths";
 import {
   AIR,
+  hash01,
   type Material,
   type MaterialEntry,
   MaterialResolver,
   pickEntry,
   validatePlacedState,
 } from "./materials";
-import type {
-  Axis,
-  BlockArgs,
-  BoxArgs,
-  DoorArgs,
-  FillArgs,
-  InsetArgs,
-  MaterialSpec,
-  Program,
-  ProgramError,
-  RepeatArgs,
-  SplitArgs,
+import {
+  type Axis,
+  type BlockArgs,
+  type BoxArgs,
+  type DoorArgs,
+  type FillArgs,
+  type InsetArgs,
+  type MaterialSpec,
+  pathKey,
+  type Program,
+  type ProgramError,
+  type RepeatArgs,
+  type SplitArgs,
+  validateOperations,
 } from "./program";
 import { orientStates, Scope, type ScopeFaceName, type Vec } from "./scope";
+import { MAX_TEMPLATE_DEPTH, substituteParams } from "./templates";
 import {
   LayerStack,
   type Pos,
@@ -170,6 +177,13 @@ export class Compiler {
   private readonly maxPlacements: number;
   private placements = 0;
   private readonly checkedStates = new Set<string>();
+  /** Paths of the `use` operations being expanded, outermost first. */
+  private readonly callers: string[] = [];
+  /** Substituted and checked template bodies, by name and parameters. */
+  private readonly expansions = new Map<
+    string,
+    { body: unknown; errors: ProgramError[]; unused: string[] }
+  >();
 
   constructor(
     readonly program: Program,
@@ -213,6 +227,25 @@ export class Compiler {
     };
   }
 
+  // -- reporting ------------------------------------------------------------------
+
+  /** Inside a template, names the outermost `use` that reached the problem. */
+  private located(problem: ProgramError): ProgramError {
+    if (this.callers.length === 0) return problem;
+    return {
+      ...problem,
+      message: `${problem.message} (in a template used at ${this.callers[0]})`,
+    };
+  }
+
+  private error(problem: ProgramError): void {
+    this.errors.push(this.located(problem));
+  }
+
+  private warn(problem: ProgramError): void {
+    this.warnings.push(this.located(problem));
+  }
+
   // -- walking --------------------------------------------------------------------
 
   execOps(ops: unknown, scope: Scope, path: string, depth: number): void {
@@ -223,7 +256,7 @@ export class Compiler {
       );
     }
     if (!Array.isArray(ops)) {
-      this.errors.push({
+      this.error({
         path,
         message: `expected a list of operations, got ${show(ops)}`,
       });
@@ -235,7 +268,7 @@ export class Compiler {
         this.execOp(op, scope, opPath, depth);
       } catch (e) {
         if (!(e instanceof BuildError) || e instanceof FatalBuildError) throw e;
-        this.errors.push(e.toProgramError());
+        this.error(e.toProgramError());
       }
     });
   }
@@ -299,9 +332,11 @@ export class Compiler {
       case "roof":
         throw new BuildError(path, "roof is not supported yet");
       case "use":
+        return this.use(arg, scope, path, depth);
       case "choose":
+        return this.choose(arg, scope, path, depth);
       case "when":
-        throw new BuildError(path, `'${name}' is not implemented yet`);
+        return this.when(arg, scope, path, depth);
       default:
         throw new BuildError(path, `unknown operation '${name}'`);
     }
@@ -394,7 +429,7 @@ export class Compiler {
     const total = scope.size[axis];
     const { sizes, overflow } = splitSizes(lengths, total);
     if (overflow > 0) {
-      this.warnings.push({
+      this.warn({
         path,
         message:
           `fixed part sizes (${total + overflow}) exceed the available ` +
@@ -483,7 +518,7 @@ export class Compiler {
         count > 1 &&
         gap > 0
       ) {
-        this.warnings.push({
+        this.warn({
           path,
           message:
             `tiles cannot be exactly centred (odd leftover space ${slack}); ` +
@@ -559,7 +594,7 @@ export class Compiler {
       sz - amount.front - amount.back,
     ];
     if (Math.min(...size) <= 0) {
-      this.warnings.push({
+      this.warn({
         path,
         message: `inset leaves nothing (scope ${show(scope.size)})`,
       });
@@ -601,6 +636,178 @@ export class Compiler {
       for (const edge of scope.edges()) {
         this.execOps(arg.edges, edge, `${path}.edges`, depth + 1);
       }
+    }
+  }
+
+  // -- composition ------------------------------------------------------------------
+
+  /**
+   * `use`: runs a template in the current scope, by name or as
+   * `{name, with}`. The body is substituted (`templates.ts`), checked like
+   * the rest of the program, and run at its own `templates.<name>` path.
+   */
+  private use(raw: unknown, scope: Scope, path: string, depth: number) {
+    let name: unknown = raw;
+    let params: Json = {};
+    if (isObject(raw)) {
+      name = raw.name;
+      if (raw.with !== undefined) {
+        if (!isObject(raw.with)) {
+          throw new BuildError(
+            `${path}.with`,
+            `must be an object of parameter → value, got ${show(raw.with)}`,
+          );
+        }
+        params = raw.with;
+      }
+    }
+    if (typeof name !== "string") {
+      throw new BuildError(
+        path,
+        `expected a template name or {"name": ..., "with": {...}}, got ${show(raw)}`,
+      );
+    }
+    const templates = this.program.templates ?? {};
+    if (name.startsWith("#") || !Object.hasOwn(templates, name)) {
+      const defined = this.templateNames();
+      throw new BuildError(
+        path,
+        `unknown template '${name}' (defined: ${defined.length ? defined.join(", ") : "none"})`,
+      );
+    }
+    if (this.callers.length >= MAX_TEMPLATE_DEPTH) {
+      throw new BuildError(
+        path,
+        `templates nested more than ${MAX_TEMPLATE_DEPTH} deep (does '${name}' use itself?)`,
+      );
+    }
+    const bodyPath = pathKey("templates", name);
+    const expansion = this.expand(name, params, bodyPath);
+    for (const unused of expansion.unused) {
+      this.warn({
+        path: pathKey(`${path}.with`, unused),
+        message: `template '${name}' has no parameter '${unused}'`,
+      });
+    }
+    this.callers.push(path);
+    try {
+      // a body that doesn't substitute cleanly doesn't run
+      for (const problem of expansion.errors) this.error(problem);
+      if (expansion.errors.length === 0) {
+        this.execOps(expansion.body, scope, bodyPath, depth + 1);
+      }
+    } finally {
+      this.callers.pop();
+    }
+  }
+
+  private templateNames(): string[] {
+    return Object.keys(this.program.templates ?? {})
+      .filter((k) => !k.startsWith("#"))
+      .sort();
+  }
+
+  private expand(name: string, params: Json, bodyPath: string) {
+    const key = JSON.stringify([name, params]);
+    let expansion = this.expansions.get(key);
+    if (!expansion) {
+      const body = (this.program.templates ?? {})[name];
+      const substituted = substituteParams(body, params, bodyPath);
+      const errors =
+        substituted.errors.length > 0
+          ? substituted.errors
+          : validateOperations(
+              substituted.body,
+              bodyPath,
+              this.templateNames(),
+            );
+      const unused = Object.keys(params).filter(
+        (k) => !substituted.used.has(k),
+      );
+      expansion = { body: substituted.body, errors, unused };
+      this.expansions.set(key, expansion);
+    }
+    return expansion;
+  }
+
+  /**
+   * `choose`: a seeded, weighted pick between operation lists, given as a
+   * list or `{options, weights}`. The pick hashes the seed, the scope's
+   * origin and the path, so it is stable for a program and seed.
+   */
+  private choose(raw: unknown, scope: Scope, path: string, depth: number) {
+    const options: unknown = isObject(raw) ? raw.options : raw;
+    const optionsPath = isObject(raw) ? `${path}.options` : path;
+    if (!Array.isArray(options) || options.length === 0) {
+      throw new BuildError(
+        optionsPath,
+        `needs a non-empty list of options, got ${show(options)}`,
+      );
+    }
+    const weights: unknown =
+      isObject(raw) && raw.weights !== undefined
+        ? raw.weights
+        : options.map(() => 1);
+    if (
+      !Array.isArray(weights) ||
+      weights.length !== options.length ||
+      !weights.every(
+        (w) => typeof w === "number" && Number.isFinite(w) && w >= 0,
+      ) ||
+      !weights.some((w) => w > 0)
+    ) {
+      throw new BuildError(
+        `${path}.weights`,
+        `must be a list of ${options.length} non-negative numbers, one per option, at least one positive, got ${show(weights)}`,
+      );
+    }
+    const total = (weights as number[]).reduce((a, b) => a + b, 0);
+    let r = hash01(this.seed, ...scope.origin, path) * total;
+    let pick = 0;
+    for (let i = 0; i < options.length; i++) {
+      const w = weights[i] as number;
+      if (w <= 0) continue;
+      pick = i;
+      if (r < w) break;
+      r -= w;
+    }
+    this.execOps(options[pick], scope, `${optionsPath}[${pick}]`, depth + 1);
+  }
+
+  /**
+   * `when`: runs `do` when the scope's size is at least `min` and at most
+   * `max` on every axis that isn't `null`, else `else`.
+   */
+  private when(raw: unknown, scope: Scope, path: string, depth: number) {
+    const arg = this.expectObject(
+      raw,
+      path,
+      "an object with 'min'/'max', 'do' and 'else'",
+    );
+    const bound = (key: "min" | "max"): (number | null)[] => {
+      const v = arg[key];
+      if (v === undefined) return [null, null, null];
+      if (
+        !Array.isArray(v) ||
+        v.length !== 3 ||
+        !v.every((n) => n === null || Number.isInteger(n))
+      ) {
+        throw new BuildError(
+          `${path}.${key}`,
+          `must be [x, y, z] of integers or null, got ${show(v)}`,
+        );
+      }
+      return v as (number | null)[];
+    };
+    const min = bound("min");
+    const max = bound("max");
+    const ok = scope.size.every(
+      (n, i) =>
+        (min[i] === null || n >= min[i]) && (max[i] === null || n <= max[i]),
+    );
+    const branch = ok ? "do" : "else";
+    if (arg[branch] !== undefined) {
+      this.execOps(arg[branch], scope, `${path}.${branch}`, depth + 1);
     }
   }
 
@@ -820,7 +1027,7 @@ export class Compiler {
     const states = this.localStates(entry, scope, path, options);
     const oriented = orientStates(scope, states);
     for (const key of oriented.unknown) {
-      this.warnings.push({
+      this.warn({
         path,
         message: `unknown ${key} '${states[key]}' ignored`,
       });

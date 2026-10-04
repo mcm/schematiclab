@@ -965,3 +965,18 @@ export function validateProgram(json: unknown): ProgramValidation {
     ? { ok: false, errors: validator.errors }
     : { ok: true, program: json as unknown as Program };
 }
+
+/**
+ * Checks an operation list on its own, outside any template body (so `$`
+ * values are not parameters). The compiler runs it on a template body after
+ * substituting its parameters, reporting at the body's own paths.
+ */
+export function validateOperations(
+  ops: unknown,
+  path: string,
+  templateNames: Iterable<string>,
+): ProgramError[] {
+  const validator = new Validator(new Set(templateNames));
+  validator.operations(ops, path, 0);
+  return validator.errors;
+}
