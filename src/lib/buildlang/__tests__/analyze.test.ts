@@ -158,9 +158,25 @@ describe("enclosure", () => {
     }
     for (const open of ["oak_fence", "torch", "white_carpet"]) {
       expect(
-        analyze(compile(withWindow(open), [5, 5, 5]), registry).enclosedSpaces,
+        analyze(run(withWindow(open), [5, 5, 5]), registry).enclosedSpaces,
       ).toEqual([]);
     }
+  });
+
+  it("skips enclosure when the bounding box is too big", () => {
+    const b = run(
+      [
+        { block: { at: [0, 0, 0], material: "stone" } },
+        { block: { at: [255, 255, 255], material: "stone" } },
+      ],
+      [256, 256, 256],
+    );
+    const a = analyze(b, registry);
+    expect(a.enclosedAir).toBeNull();
+    expect(a.enclosedSpaces).toEqual([]);
+    expect(formatReport(b, a)).toContain(
+      "enclosed air: not measured (the bounding box is too big)",
+    );
   });
 });
 

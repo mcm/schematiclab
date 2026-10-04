@@ -1,37 +1,21 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import {
-  clearBlockDataCache,
   parseMcmetaBlockRegistry,
   parseMcmetaBlocks,
 } from "../../blockdata/load";
 import {
   type BlockRegistry,
   createBlockRegistry,
-  loadBlockRegistry,
 } from "../../blockdata/registry";
 import { postprocess } from "../postprocess";
 import { BlockGrid, type Pos } from "../writes";
-import { run } from "./compile-harness";
+import { registry, run } from "./compile-harness";
 
 const FIXTURES = path.join(__dirname, "../../blockdata/__tests__/fixtures");
 const fixture = (name: string) =>
   readFileSync(path.join(FIXTURES, name), "utf8");
-const mcmetaUrl = (version: string, file = "blocks") =>
-  `https://cdn.jsdelivr.net/gh/misode/mcmeta@${version}-summary/${file}/data.min.json`;
-
-const ROUTES: Record<string, string> = {
-  [mcmetaUrl("1.21.4")]: fixture("registry-mcmeta-1.21.4-blocks.json"),
-};
-
-const fetch = vi.fn(async (input: RequestInfo | URL) => {
-  const body = ROUTES[String(input)];
-  return body === undefined
-    ? new Response("not found", { status: 404 })
-    : new Response(body, { status: 200 });
-});
-
 // Trimmed real mcmeta summaries: 1.15.2 has boolean wall sides, 1.21.4
 // none/low/tall. 1.15.2 isn't a version the app offers, so its registry is
 // built from the data directly.
@@ -54,10 +38,9 @@ function registry1152(): BlockRegistry {
 
 const registries: Record<string, BlockRegistry> = {};
 
-beforeAll(async () => {
-  clearBlockDataCache();
+beforeAll(() => {
   registries["1.15.2"] = registry1152();
-  registries["1.21.4"] = await loadBlockRegistry("1.21.4", { fetch });
+  registries["1.21.4"] = registry;
 });
 
 type Placement = [number, number, number, string, Record<string, string>?];
@@ -158,6 +141,15 @@ describe.each(["1.15.2", "1.21.4"])("on %s", (version) => {
     ]);
     expect(sides(at(1, 0, 0))).toEqual(["false", "true", "false", "true"]);
     expect(at(0, 0, 0)).toEqual({});
+  });
+
+  it("does not connect a pane to light or powder snow", () => {
+    const at = processed(r(), [
+      [0, 0, 0, "light"],
+      [1, 0, 0, "glass_pane"],
+      [2, 0, 0, "powder_snow"],
+    ]);
+    expect(sides(at(1, 0, 0))).toEqual(["false", "false", "false", "false"]);
   });
 
   it("connects panes and iron bars to each other but not to leaves", () => {

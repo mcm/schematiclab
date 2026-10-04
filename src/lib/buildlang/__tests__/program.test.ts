@@ -428,12 +428,16 @@ describe("validateProgram: scope operations", () => {
         { inset: {} },
         { inset: { by: "1" } },
         { inset: { by: { x: 1, up: 2, top: "2" } } },
+        { inset: { by: -1 } },
+        { inset: { by: { left: -2 } } },
       ]),
     ).toEqual([
       "build[0].inset: needs 'by'",
       'build[1].inset.by: must be an integer or an object of sides, got "1"',
       "build[2].inset.by: unknown side 'up' (expected x, y, z, left, right, front, back, top, bottom)",
       'build[2].inset.by.top: must be an integer, got "2"',
+      "build[3].inset.by: must be at least 0, got -1",
+      "build[4].inset.by.left: must be at least 0, got -2",
     ]);
   });
 

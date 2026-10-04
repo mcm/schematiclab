@@ -153,12 +153,12 @@ describe("a whole roofless inn (Cairn's examples compile clean)", () => {
   it("compiles with no errors into one piece, sealed rooms and open doors", async () => {
     const started = performance.now();
     const built = await compileProgram(INN, "1.21.4", deps);
+    expect(built.errors.map(formatProgramError)).toEqual([]);
+    expect(built.analysis).not.toBeNull();
     const { png } = renderProjectionPng(built.projection!, { name: "inn" });
     const elapsed = performance.now() - started;
     expect(png.length).toBeGreaterThan(0);
 
-    expect(built.errors.map(formatProgramError)).toEqual([]);
-    expect(built.analysis).not.toBeNull();
     const analysis = built.analysis!;
     expect(analysis.components).toBe(1);
     expect(analysis.floating).toEqual([]);

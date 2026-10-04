@@ -22,6 +22,13 @@ const MAX_FLOATING = 8;
 const MAX_MATERIALS = 12;
 const MAX_NOTES = 20;
 
+/**
+ * Most half-block cells the enclosure flood fill visits (about a 128-block
+ * cube's bounding box). Bigger bounding boxes skip it: a 256-block cube would
+ * need ~137 million cells and several seconds.
+ */
+export const MAX_ENCLOSURE_CELLS = 24_000_000;
+
 export interface FloatingPiece {
   blocks: number;
   /** The piece's lowest block (lowest y, then z, then x). */
@@ -65,8 +72,11 @@ export interface Analysis {
   /** The largest pieces whose lowest block is above the lowest layer. */
   floating: FloatingPiece[];
   floatingCount: number;
-  /** Blocks of air sealed from the outside (half-block resolution). */
-  enclosedAir: number;
+  /**
+   * Blocks of air sealed from the outside (half-block resolution), or null
+   * when the bounding box is too big to measure (`MAX_ENCLOSURE_CELLS`).
+   */
+  enclosedAir: number | null;
   /** Sealed spaces of at least `MIN_ROOM_BLOCKS` blocks, largest first. */
   enclosedSpaces: number[];
   /** Share of blocks matching their mirror image, 0–1 (3 decimals). */
@@ -228,6 +238,14 @@ const AIR_CELL = 0;
 const SOLID_CELL = 1;
 const VISITED_CELL = 2;
 
+// Half-block cells of padding around the bounding box (one block).
+const ENCLOSURE_PAD = 2;
+
+// The half-block cells `enclosure` allocates for a bounding box of `dims`.
+function enclosureCells(dims: Pos): number {
+  return dims.reduce((n, d) => n * (2 * d + 2 * ENCLOSURE_PAD), 1);
+}
+
 /**
  * Enclosed air at half-block resolution over the occupied bounding box (plus a
  * block of padding): total sealed air and the size of each sealed space, both
@@ -239,8 +257,7 @@ function enclosure(
   min: Pos,
   dims: Pos,
 ): { air: number; rooms: number[] } {
-  const pad = 2;
-  const [w, h, d] = dims.map((n) => 2 * n + 2 * pad);
+  const [w, h, d] = dims.map((n) => 2 * n + 2 * ENCLOSURE_PAD);
   const cells = new Uint8Array(w * h * d);
   const masks = new Map<string, number>();
   for (const [[x, y, z], block] of blocks) {
@@ -251,9 +268,9 @@ function enclosure(
       masks.set(key, mask);
     }
     if (mask === 0) continue;
-    const X = 2 * (x - min[0]) + pad;
-    const Y = 2 * (y - min[1]) + pad;
-    const Z = 2 * (z - min[2]) + pad;
+    const X = 2 * (x - min[0]) + ENCLOSURE_PAD;
+    const Y = 2 * (y - min[1]) + ENCLOSURE_PAD;
+    const Z = 2 * (z - min[2]) + ENCLOSURE_PAD;
     for (let i = 0; i < 8; i++) {
       if (!(mask & (1 << i))) continue;
       const sx = X + (i & 1);
@@ -403,11 +420,15 @@ export function analyze(
 
   // Enclosure at half-block resolution: air leaking through the open half of
   // a stair or slab is caught (a whole-block check misses it).
-  const { air, rooms } = enclosure(registry, blocks, min, dims);
-  analysis.enclosedAir = air;
-  analysis.enclosedSpaces = rooms
-    .filter((r) => r >= MIN_ROOM_BLOCKS)
-    .slice(0, MAX_ROOMS);
+  if (enclosureCells(dims) <= MAX_ENCLOSURE_CELLS) {
+    const { air, rooms } = enclosure(registry, blocks, min, dims);
+    analysis.enclosedAir = air;
+    analysis.enclosedSpaces = rooms
+      .filter((r) => r >= MIN_ROOM_BLOCKS)
+      .slice(0, MAX_ROOMS);
+  } else {
+    analysis.enclosedAir = null;
+  }
 
   // Mirror symmetry about the bounding box centre, by block id.
   let leftRight = 0;
@@ -549,11 +570,13 @@ export function formatReport(
       }
     }
     lines.push(
-      `enclosed air: ${analysis.enclosedAir} blocks; interior spaces ` +
-        `(>=${MIN_ROOM_BLOCKS} blocks): ` +
-        (analysis.enclosedSpaces.length > 0
-          ? vec(analysis.enclosedSpaces)
-          : "NONE - the building has no sealed interior"),
+      analysis.enclosedAir === null
+        ? "enclosed air: not measured (the bounding box is too big)"
+        : `enclosed air: ${analysis.enclosedAir} blocks; interior spaces ` +
+            `(>=${MIN_ROOM_BLOCKS} blocks): ` +
+            (analysis.enclosedSpaces.length > 0
+              ? vec(analysis.enclosedSpaces)
+              : "NONE - the building has no sealed interior"),
       `mirror symmetry: left-right ${percent(analysis.symmetry.leftRight)}, ` +
         `front-back ${percent(analysis.symmetry.frontBack)}`,
     );

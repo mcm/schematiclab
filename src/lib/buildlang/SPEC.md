@@ -284,6 +284,7 @@ on purpose, use `carve`.
    dropped out-of-bounds blocks, collisions (a placed `block` sharing a cell with another
    feature, e.g. a bed inside a chimney), and low symmetry when the design should be symmetric.
    Enclosure is checked at half-block resolution, so gaps through the open half of a stair
-   or slab count as leaks.
+   or slab count as leaks. Builds whose occupied bounding box is much larger than 128 blocks
+   on each side skip this check ("enclosed air: not measured").
 5. Revise by sending the **complete** program again, not a diff. When it is right, compile it
    with an `output_format` to get the schematic file.

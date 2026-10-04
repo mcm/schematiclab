@@ -66,7 +66,7 @@ const NEVER_CONNECT =
 
 // Plain-kind blocks whose sides are not full faces.
 const NOT_FULL =
-  /^minecraft:(\w+_)?(anvil|bell|brewing_stand|cake|campfire|candle|chain|cobweb|conduit|dragon_egg|enchanting_table|end_rod|grindstone|hopper|lectern|lily_pad|sea_pickle|snow|scaffolding|stonecutter|turtle_egg|rail|head|skull|daylight_detector|comparator|repeater|redstone_wire|tripwire|tripwire_hook|cactus|bamboo|cocoa|amethyst_cluster|\w+_bud|pointed_dripstone|azalea|flowering_azalea|big_dripleaf|small_dripleaf|decorated_pot)$/;
+  /^minecraft:(\w+_)?(anvil|bell|brewing_stand|cake|campfire|candle|chain|cobweb|conduit|dragon_egg|enchanting_table|end_rod|grindstone|hopper|lectern|lily_pad|sea_pickle|snow|scaffolding|stonecutter|turtle_egg|rail|head|skull|daylight_detector|comparator|repeater|redstone_wire|tripwire|tripwire_hook|cactus|bamboo|cocoa|amethyst_cluster|\w+_bud|pointed_dripstone|azalea|flowering_azalea|big_dripleaf|small_dripleaf|decorated_pot|light|powder_snow|structure_void)$/;
 
 // Wall posts rise under these (`#wall_post_override`).
 const POST_OVERRIDE_KINDS = new Set([

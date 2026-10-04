@@ -346,6 +346,9 @@ describe("errors", () => {
     expect(resolveError(m, "@roof:slab[half=top]").message).toMatch(
       /^spruce_slab has no state 'half'; its states are type, waterlogged/,
     );
+    expect(resolveError(m, "oak_stairs[__proto__=top]").message).toMatch(
+      /^oak_stairs has no state '__proto__'/,
+    );
     expect(resolveError(m, "oak_stairs[facing=sideways]").message).toMatch(
       /'facing' cannot be 'sideways'; allowed: \+x, -x/,
     );
@@ -395,6 +398,29 @@ describe("mix picks", () => {
   it("is deterministic from seed and world position", () => {
     expect(grid(7)).toEqual(grid(7));
     expect(pickEntry(m(), 1, [3, 4, 5])).toEqual(pickEntry(m(), 1, [3, 4, 5]));
+  });
+
+  it("still follows the weights when their sum overflows", () => {
+    const huge = new MaterialResolver(r1214).resolve(
+      { mix: { cobblestone: 1e308, mossy_cobblestone: 1e308 } },
+      "a",
+    );
+    const picked = new Set<string>();
+    for (let x = 0; x < 16; x++) {
+      for (let z = 0; z < 16; z++) picked.add(pickEntry(huge, 0, [x, 0, z]).id);
+    }
+    expect(picked).toEqual(
+      new Set(["minecraft:cobblestone", "minecraft:mossy_cobblestone"]),
+    );
+    // nested weights multiply; a product that overflows is an error
+    const nested = new MaterialResolver(r1214, {
+      wall: { mix: { cobblestone: 1e200, stone: 1 } },
+    });
+    const e = resolveError(nested, { mix: { "@wall": 1e200 } });
+    expect([e.path, e.message]).toEqual([
+      `build[0].fill.mix["@wall"]`,
+      "weight is too large",
+    ]);
   });
 
   it("changes when the seed changes", () => {

@@ -674,10 +674,12 @@ class Validator {
             `unknown side '${side}' (expected ${INSET_SIDES.join(", ")})`,
           );
         } else {
-          this.integer(amount, `${path}.by.${side}`);
+          this.integer(amount, `${path}.by.${side}`, 0);
         }
       }
-    } else if (!this.isParam(arg.by) && !Number.isInteger(arg.by)) {
+    } else if (typeof arg.by === "number") {
+      this.integer(arg.by, `${path}.by`, 0);
+    } else if (!this.isParam(arg.by)) {
       this.error(
         `${path}.by`,
         `must be an integer or an object of sides, got ${show(arg.by)}`,

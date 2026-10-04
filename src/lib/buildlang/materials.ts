@@ -96,7 +96,13 @@ function parseStates(list: string, path: string): Record<string, string> {
         `bad block state ${JSON.stringify(part.trim())} (expected key=value)`,
       );
     }
-    out[name] = value;
+    // An own property even for `__proto__`, so it is checked like any name.
+    Object.defineProperty(out, name, {
+      value,
+      enumerable: true,
+      writable: true,
+      configurable: true,
+    });
   }
   return out;
 }
@@ -192,7 +198,11 @@ export class MaterialResolver {
         throw new BuildError(mixPath, "weight must be a positive number");
       }
       for (const e of this.resolveIn(name, mixPath, variant, roles).entries) {
-        entries.push({ ...e, weight: weight * e.weight });
+        const product = weight * e.weight;
+        if (!Number.isFinite(product)) {
+          throw new BuildError(mixPath, "weight is too large");
+        }
+        entries.push({ ...e, weight: product });
       }
     }
     if (entries.length === 0) throw new BuildError(path, "empty mix");
@@ -383,10 +393,17 @@ export function pickEntry(
 ): MaterialEntry {
   const { entries } = material;
   if (entries.length === 1) return entries[0];
-  const total = entries.reduce((sum, e) => sum + e.weight, 0);
+  let weights = entries.map((e) => e.weight);
+  let total = weights.reduce((sum, w) => sum + w, 0);
+  if (!Number.isFinite(total)) {
+    // Huge weights overflow the sum; scale them down by the largest.
+    const max = Math.max(...weights);
+    weights = weights.map((w) => w / max);
+    total = weights.reduce((sum, w) => sum + w, 0);
+  }
   let r = hash01(seed, pos[0], pos[1], pos[2]) * total;
-  for (const entry of entries) {
-    r -= entry.weight;
+  for (const [i, entry] of entries.entries()) {
+    r -= weights[i];
     if (r < 0) return entry;
   }
   return entries[entries.length - 1];
