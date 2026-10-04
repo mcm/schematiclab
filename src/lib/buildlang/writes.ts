@@ -153,6 +153,8 @@ const shortId = (id: string) => id.replace(/^minecraft:/, "");
 export class WriteLog {
   /** Writes that fell outside the build and were dropped. */
   outOfBounds = 0;
+  /** Dropped writes per program path, in the order first seen. */
+  readonly outOfBoundsByPath = new Map<string, number>();
   private readonly cells = new Map<number, Write[]>();
   private seq = 0;
 
@@ -168,6 +170,10 @@ export class WriteLog {
     const index = this.index(pos);
     if (index === null) {
       this.outOfBounds++;
+      this.outOfBoundsByPath.set(
+        write.path,
+        (this.outOfBoundsByPath.get(write.path) ?? 0) + 1,
+      );
       return false;
     }
     const log = this.cells.get(index);
@@ -185,6 +191,11 @@ export class WriteLog {
   /** The block `pos` composes to so far, or null for air. */
   peek(pos: Pos): PlacedBlock | null {
     return composeCell(this.writesAt(pos));
+  }
+
+  /** The program path of the write `pos` composes to, or null for air. */
+  pathAt(pos: Pos): string | null {
+    return winningWrite(this.writesAt(pos))?.path ?? null;
   }
 
   /** Every non-air cell's final block. */

@@ -823,7 +823,7 @@ describe("paths and errors", () => {
     );
     expect(b.cells).toHaveLength(4);
     expect(messages(b.warnings)).toEqual([
-      "2 block(s) fell outside the build size [2,1,2] and were dropped (inset the structure or enlarge 'size')",
+      "build[0].faces.front[0].fill: 2 block(s) fell outside the build size [2,1,2] and were dropped (inset the structure or enlarge 'size')",
     ]);
   });
 
