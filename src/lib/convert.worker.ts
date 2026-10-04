@@ -17,8 +17,9 @@ import {
 } from "./convert";
 import type { ModMappingContext } from "./advanced/mod-mapping";
 import {
+  buildShapePreview,
   buildShapeProjection,
-  type ShapeProjectionResult,
+  type ShapePreviewResult,
   type ShapeSpec,
 } from "./shapes/generate";
 import {
@@ -58,8 +59,16 @@ export interface ExportPayload {
   inputFilename: string;
 }
 
-export interface GenerateShapePayload {
+export interface PreviewShapePayload {
   spec: ShapeSpec;
+  /** Bigger shapes come back without their schematic. */
+  maxBlocks: number;
+}
+
+export interface ExportShapePayload {
+  spec: ShapeSpec;
+  outputFormat: SchematicFormatId;
+  inputFilename: string;
 }
 
 export type WorkerRequest =
@@ -72,7 +81,8 @@ export type WorkerRequest =
       payload: TranslatePreviewPayload;
     }
   | { id: number; type: "export"; payload: ExportPayload }
-  | { id: number; type: "generateShape"; payload: GenerateShapePayload };
+  | { id: number; type: "previewShape"; payload: PreviewShapePayload }
+  | { id: number; type: "exportShape"; payload: ExportShapePayload };
 
 export type WorkerResponse =
   | { id: number; ok: true; type: "detect"; result: string }
@@ -88,9 +98,10 @@ export type WorkerResponse =
   | {
       id: number;
       ok: true;
-      type: "generateShape";
-      result: ShapeProjectionResult;
+      type: "previewShape";
+      result: ShapePreviewResult;
     }
+  | { id: number; ok: true; type: "exportShape"; result: ConvertResult }
   | { id: number; ok: false; error: string };
 
 // ── Worker scope shim ─────────────────────────────────────────────────────
@@ -171,9 +182,30 @@ ctx.addEventListener("message", (event) => {
       return;
     }
 
-    if (type === "generateShape") {
-      const result = buildShapeProjection(request.payload.spec);
-      ctx.postMessage({ id, ok: true, type: "generateShape", result });
+    if (type === "previewShape") {
+      const { spec, maxBlocks } = request.payload;
+      const result = buildShapePreview(spec, maxBlocks);
+      ctx.postMessage({ id, ok: true, type: "previewShape", result });
+      return;
+    }
+
+    // Built and written here, so a big shape's placements never cross to the
+    // main thread.
+    if (type === "exportShape") {
+      const { spec, outputFormat, inputFilename } = request.payload;
+      const built = buildShapeProjection(spec);
+      const result: ConvertResult = built.ok
+        ? serializeSchematic({
+            schematic: built.projection,
+            outputFormat,
+            inputFilename,
+          })
+        : built;
+      const transfer: Transferable[] =
+        result.ok && result.bytes.buffer instanceof ArrayBuffer
+          ? [result.bytes.buffer]
+          : [];
+      ctx.postMessage({ id, ok: true, type: "exportShape", result }, transfer);
       return;
     }
 

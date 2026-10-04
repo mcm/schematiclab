@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildShapeGrid,
+  MAX_THICKNESS,
   SHAPE_KINDS,
   voxelIndex,
   type ShapeOptions,
@@ -195,5 +196,32 @@ describe("buildShapeGrid", () => {
         thickness: 0,
       }),
     ).toThrow(/thickness/);
+    expect(() =>
+      buildShapeGrid({
+        shape: "cuboid",
+        width: 3,
+        height: 3,
+        depth: 3,
+        hollow: true,
+        thickness: MAX_THICKNESS + 1,
+      }),
+    ).toThrow(/thickness/);
+  });
+
+  it("leaves the shape solid when the wall is thicker than its core", () => {
+    const options: ShapeOptions = {
+      shape: "ellipsoid",
+      width: 9,
+      height: 7,
+      depth: 9,
+    };
+    const solid = buildShapeGrid(options);
+    const thick = buildShapeGrid({
+      ...options,
+      hollow: true,
+      thickness: MAX_THICKNESS,
+    });
+    expect(thick.count).toBe(solid.count);
+    expect(thick.filled).toEqual(solid.filled);
   });
 });

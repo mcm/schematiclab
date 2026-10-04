@@ -3,9 +3,11 @@ import { describe, expect, it } from "vitest";
 import {
   parseSchematic,
   serializeSchematic,
+  type ParsedSchematicProjection,
   type SchematicFormatId,
 } from "../../convert";
 import {
+  buildShapePreview,
   buildShapeProjection,
   defaultShapeName,
   materialForVersion,
@@ -13,6 +15,26 @@ import {
   parseMaterial,
   type ShapeSpec,
 } from "../generate";
+
+// Every block's position as "x,y,z", moved so the smallest corner is 0,0,0.
+function blockPositions(
+  projection: ParsedSchematicProjection,
+  blockId: string,
+): string[] {
+  const positions: [number, number, number][] = [];
+  for (const region of projection.regions) {
+    for (const block of region.blocks) {
+      if (projection.palette[block.paletteIndex].blockId !== blockId) continue;
+      positions.push([
+        region.origin[0] + block.pos[0],
+        region.origin[1] + block.pos[1],
+        region.origin[2] + block.pos[2],
+      ]);
+    }
+  }
+  const min = [0, 1, 2].map((i) => Math.min(...positions.map((p) => p[i])));
+  return positions.map((p) => p.map((v, i) => v - min[i]).join(",")).sort();
+}
 
 const SPHERE: ShapeSpec = {
   shape: "ellipsoid",
@@ -178,6 +200,35 @@ describe("buildShapeProjection", () => {
     );
     expect(blocks.reduce((n, e) => n + e.count, 0)).toBe(
       result.projection.totalBlocks,
+    );
+    expect(blockPositions(parsed.schematic, "minecraft:stone_bricks")).toEqual(
+      blockPositions(result.projection, "minecraft:stone_bricks"),
+    );
+  });
+});
+
+describe("buildShapePreview", () => {
+  it("leaves out the schematic of shapes over the preview limit", () => {
+    const full = buildShapeProjection(SPHERE);
+    if (!full.ok) throw new Error(full.error);
+    const total = full.projection.totalBlocks;
+    expect(buildShapePreview(SPHERE, total)).toEqual({
+      ok: true,
+      totalBlocks: total,
+      size: [5, 5, 5],
+      projection: full.projection,
+    });
+    expect(buildShapePreview(SPHERE, total - 1)).toEqual({
+      ok: true,
+      totalBlocks: total,
+      size: [5, 5, 5],
+      projection: null,
+    });
+  });
+
+  it("reports why a shape can't be built", () => {
+    expect(buildShapePreview({ ...SPHERE, material: "air" }, 10).ok).toBe(
+      false,
     );
   });
 });

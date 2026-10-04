@@ -26,14 +26,11 @@ import { InlineError } from "@/components/inline-error";
 import { StaticRenders } from "@/components/static-renders";
 import { ThreeDPreview } from "@/components/three-d-preview";
 import { isCatalogedBlockId, searchBlockCatalog } from "@/lib/block-catalog";
-import type {
-  ParsedSchematicProjection,
-  SchematicFormatId,
-} from "@/lib/convert";
+import type { SchematicFormatId } from "@/lib/convert";
 import {
   cancel,
-  exportInWorker,
-  generateShapeInWorker,
+  exportShapeInWorker,
+  previewShapeInWorker,
 } from "@/lib/convert-client";
 import {
   setOutputFormat as storeSetOutputFormat,
@@ -44,11 +41,12 @@ import {
   defaultShapeName,
   parseMaterial,
   vanillaMaterialError,
-  type ShapeProjectionResult,
+  type ShapePreviewResult,
   type ShapeSpec,
 } from "@/lib/shapes/generate";
 import {
   MAX_DIMENSION,
+  MAX_THICKNESS,
   SHAPE_KINDS,
   type ShapeAxis,
   type ShapeKind,
@@ -83,7 +81,7 @@ const DEFAULT_VERSION_ID = VERSION_IDS[VERSION_IDS.length - 1];
 const MAX_MATERIAL_SUGGESTIONS = 50;
 const PREVIEW_DEBOUNCE_MS = 300;
 // Bigger shapes are still generated, but not drawn: the preview meshes
-// every block on the main thread.
+// every block on the main thread. The worker doesn't send their blocks.
 const MAX_PREVIEW_BLOCKS = 300_000;
 const WORKER_CANCELLED_MESSAGE = "Worker cancelled";
 const GENERIC_EXPORT_ERROR =
@@ -173,10 +171,15 @@ function specFromForm(
   let thickness = 1;
   if (form.hollow) {
     const value = Number(form.thickness);
-    if (form.thickness.trim() === "" || !Number.isInteger(value) || value < 1) {
+    if (
+      form.thickness.trim() === "" ||
+      !Number.isInteger(value) ||
+      value < 1 ||
+      value > MAX_THICKNESS
+    ) {
       return {
         spec: null,
-        error: "Wall thickness must be a whole number of at least 1.",
+        error: `Wall thickness must be a whole number from 1 to ${MAX_THICKNESS}.`,
       };
     }
     thickness = value;
@@ -206,14 +209,16 @@ function specFromForm(
 interface PreviewResult {
   key: string;
   nonce: number;
-  result: ShapeProjectionResult;
+  result: ShapePreviewResult;
 }
+
+type ShapePreviewData = Extract<ShapePreviewResult, { ok: true }>;
 
 type PreviewState =
   | { status: "idle" }
   // `previous` is the last shape drawn, kept on screen meanwhile.
-  | { status: "generating"; previous: ParsedSchematicProjection | null }
-  | { status: "ready"; key: string; projection: ParsedSchematicProjection }
+  | { status: "generating"; previous: ShapePreviewData | null }
+  | { status: "ready"; shape: ShapePreviewData }
   | { status: "error"; error: string };
 
 function previewState(
@@ -225,11 +230,11 @@ function previewState(
   if (latest === null || latest.key !== specKey || latest.nonce !== nonce) {
     return {
       status: "generating",
-      previous: latest?.result.ok ? latest.result.projection : null,
+      previous: latest?.result.ok ? latest.result : null,
     };
   }
   return latest.result.ok
-    ? { status: "ready", key: latest.key, projection: latest.result.projection }
+    ? { status: "ready", shape: latest.result }
     : { status: "error", error: latest.result.error };
 }
 
@@ -299,7 +304,7 @@ export default function ShapeGeneratorPage() {
     if (spec === null || specKey === null) return;
     const request = ++requestRef.current;
     const timer = window.setTimeout(() => {
-      generateShapeInWorker(spec).then(
+      previewShapeInWorker(spec, MAX_PREVIEW_BLOCKS).then(
         (result) => {
           if (request !== requestRef.current) return;
           setLatestPreview({ key: specKey, nonce: previewNonce, result });
@@ -330,26 +335,14 @@ export default function ShapeGeneratorPage() {
     [],
   );
 
-  // Writes the shape in the chosen format, reusing the preview's schematic
-  // when it is current.
+  // Builds and writes the shape in the chosen format, all in the worker.
   const writeShape = React.useCallback(async () => {
-    if (spec === null || specKey === null || outputFormat === null) return null;
-    let projection: ParsedSchematicProjection;
-    if (preview.status === "ready" && preview.key === specKey) {
-      projection = preview.projection;
-    } else {
-      const generated = await generateShapeInWorker(spec);
-      if (!generated.ok) {
-        setError(generated.error);
-        return null;
-      }
-      projection = generated.projection;
-    }
+    if (spec === null || outputFormat === null) return null;
     const name = spec.name ?? defaultShapeName(spec);
-    // `exportInWorker` swaps the input filename's extension for the
-    // format's; give it one so a dot in the name survives.
-    const result = await exportInWorker(
-      projection,
+    // Export swaps the input filename's extension for the format's; give it
+    // one so a dot in the name survives.
+    const result = await exportShapeInWorker(
+      spec,
       outputFormat,
       `${name}.shape`,
     );
@@ -358,7 +351,7 @@ export default function ShapeGeneratorPage() {
       return null;
     }
     return result;
-  }, [spec, specKey, outputFormat, preview]);
+  }, [spec, outputFormat]);
 
   const run = React.useCallback(
     async (kind: "download" | "advanced") => {
@@ -584,6 +577,7 @@ export default function ShapeGeneratorPage() {
                     type="number"
                     inputMode="numeric"
                     min={1}
+                    max={MAX_THICKNESS}
                     step={1}
                     value={form.thickness}
                     onChange={(e) => update("thickness", e.currentTarget.value)}
@@ -739,12 +733,11 @@ function ShapePreview({ preview }: { preview: PreviewState }) {
   const [activeTab, setActiveTab] = React.useState<PreviewTabId>("3d");
   const shown =
     preview.status === "ready"
-      ? preview.projection
+      ? preview.shape
       : preview.status === "generating"
         ? preview.previous
         : null;
-  const projection =
-    shown !== null && shown.totalBlocks <= MAX_PREVIEW_BLOCKS ? shown : null;
+  const projection = shown?.projection ?? null;
 
   let message: React.ReactNode = null;
   if (preview.status === "idle") {
@@ -757,7 +750,7 @@ function ShapePreview({ preview }: { preview: PreviewState }) {
     message = `${shown.totalBlocks.toLocaleString()} blocks is too many to preview. You can still download it.`;
   }
 
-  const [w, h, d] = shown !== null ? shown.regions[0].size : [0, 0, 0];
+  const [w, h, d] = shown !== null ? shown.size : [0, 0, 0];
 
   return (
     <Card

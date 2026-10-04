@@ -14,7 +14,7 @@ import type {
 } from "./convert";
 import type { ModMappingContext } from "./advanced/mod-mapping";
 import type { VersionMappingPreview } from "./advanced/version-mapping-preview";
-import type { ShapeProjectionResult, ShapeSpec } from "./shapes/generate";
+import type { ShapePreviewResult, ShapeSpec } from "./shapes/generate";
 import type { WorkerRequest, WorkerResponse } from "./convert.worker";
 
 type Pending = {
@@ -192,14 +192,30 @@ export function exportInWorker(
 }
 
 /**
- * Build the Shape Generator's schematic for `spec` in the worker. Write it
- * out with `exportInWorker`.
+ * Build the Shape Generator's preview for `spec` in the worker. Shapes over
+ * `maxBlocks` blocks come back with only their size and block count.
  */
-export function generateShapeInWorker(
+export function previewShapeInWorker(
   spec: ShapeSpec,
-): Promise<ShapeProjectionResult> {
-  return send<ShapeProjectionResult>(
-    { type: "generateShape", payload: { spec } },
+  maxBlocks: number,
+): Promise<ShapePreviewResult> {
+  return send<ShapePreviewResult>(
+    { type: "previewShape", payload: { spec, maxBlocks } },
+    [],
+  );
+}
+
+/**
+ * Build `spec` and write it in `outputFormat`, both in the worker. The bytes
+ * are transferred back.
+ */
+export function exportShapeInWorker(
+  spec: ShapeSpec,
+  outputFormat: SchematicFormatId,
+  inputFilename: string,
+): Promise<ConvertResult> {
+  return send<ConvertResult>(
+    { type: "exportShape", payload: { spec, outputFormat, inputFilename } },
     [],
   );
 }
