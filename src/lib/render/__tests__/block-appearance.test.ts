@@ -11,6 +11,7 @@ import {
   firstFrameRegion,
   isFullCubeModel,
   linearSrgbToOklab,
+  oklabToSrgb,
   resolveModel,
   resolveTextureRef,
   srgbToLinear,
@@ -212,6 +213,21 @@ describe("colour maths", () => {
     expectOklab(srgbToOklab(0, 0, 0), [0, 0, 0]);
     expectOklab(srgbToOklab(255, 0, 0), [0.628, 0.2249, 0.1258]);
     expectOklab(linearSrgbToOklab(0, 0, 1), [0.452, -0.0325, -0.3115]);
+  });
+
+  it("converts OKLab back to sRGB, clamped to the gamut", () => {
+    const colors: [number, number, number][] = [
+      [255, 255, 255],
+      [0, 0, 0],
+      [255, 0, 0],
+      [122, 122, 122],
+      [12, 200, 77],
+    ];
+    for (const rgb of colors) {
+      expect(oklabToSrgb(...srgbToOklab(...rgb))).toEqual(rgb);
+    }
+    expect(oklabToSrgb(2, 0, 0)).toEqual([255, 255, 255]);
+    expect(oklabToSrgb(-1, 0, 0)).toEqual([0, 0, 0]);
   });
 
   it("linearises sRGB channels", () => {
