@@ -314,24 +314,31 @@ export function contactSheetLayout(
 
 // ── Drawing ───────────────────────────────────────────────────────────────
 
-const FONT = "system-ui, -apple-system, 'Segoe UI', sans-serif";
+const DEFAULT_FONT = "system-ui, -apple-system, 'Segoe UI', sans-serif";
+
+export interface DrawContactSheetOptions {
+  /** CSS font family list; the server passes its bundled font. */
+  fontFamily?: string;
+}
 
 /** Paints `layout` onto `ctx`, whose canvas is `layout.width` × `layout.height`. */
 export function drawContactSheet(
   ctx: CanvasRenderingContext2D,
   model: VoxelModel,
   layout: ContactSheetLayout,
+  options: DrawContactSheetOptions = {},
 ): void {
+  const font = options.fontFamily ?? DEFAULT_FONT;
   ctx.fillStyle = COLORS.page;
   ctx.fillRect(0, 0, layout.width, layout.height);
 
   ctx.textBaseline = "middle";
   ctx.fillStyle = COLORS.title;
-  ctx.font = `600 18px ${FONT}`;
+  ctx.font = `600 18px ${font}`;
   ctx.fillText(layout.title, MARGIN + 4, MARGIN + HEADER_HEIGHT / 2 - 4);
   const titleWidth = ctx.measureText(layout.title).width;
   ctx.fillStyle = COLORS.subtitle;
-  ctx.font = `12px ${FONT}`;
+  ctx.font = `12px ${font}`;
   ctx.fillText(
     layout.subtitle,
     MARGIN + 4 + titleWidth + 16,
@@ -344,12 +351,12 @@ export function drawContactSheet(
     ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
     ctx.textBaseline = "middle";
     ctx.fillStyle = COLORS.title;
-    ctx.font = `600 13px ${FONT}`;
+    ctx.font = `600 13px ${font}`;
     const titleY = rect.y + PANEL_TITLE_HEIGHT / 2;
     ctx.fillText(panel.title, rect.x + PANEL_PADDING, titleY);
     const w = ctx.measureText(panel.title).width;
     ctx.fillStyle = COLORS.subtitle;
-    ctx.font = `11px ${FONT}`;
+    ctx.font = `11px ${font}`;
     ctx.fillText(panel.subtitle, rect.x + PANEL_PADDING + w + 8, titleY);
 
     const content: Rect = {
@@ -368,9 +375,10 @@ export function drawContactSheet(
         model,
         cachedIsoView(model, panel.corner, panel.maxY),
         content,
+        font,
       );
     } else {
-      drawGrid(ctx, model, panel, content);
+      drawGrid(ctx, model, panel, content, font);
     }
     ctx.restore();
   }
@@ -381,6 +389,7 @@ function drawIso(
   model: VoxelModel,
   view: IsoView,
   area: Rect,
+  font: string,
 ): void {
   const { bounds } = view;
   const bw = Math.max(1e-6, bounds.maxX - bounds.minX);
@@ -412,13 +421,14 @@ function drawIso(
     ctx.strokeStyle = outline ? shadeHex(fill, 0.55) : fill;
     ctx.stroke();
   }
-  drawCompass(ctx, view.north, area);
+  drawCompass(ctx, view.north, area, font);
 }
 
 function drawCompass(
   ctx: CanvasRenderingContext2D,
   north: [number, number],
   area: Rect,
+  font: string,
 ): void {
   const cx = area.x + area.width - 30;
   const cy = area.y + area.height - 24;
@@ -434,7 +444,7 @@ function drawCompass(
   ctx.beginPath();
   ctx.arc(cx + nx * len, cy + ny * len, 2.5, 0, Math.PI * 2);
   ctx.fill();
-  ctx.font = `600 12px ${FONT}`;
+  ctx.font = `600 12px ${font}`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText("N", cx + nx * (len + 9), cy + ny * (len + 9));
@@ -455,6 +465,7 @@ function drawGrid(
   model: VoxelModel,
   panel: Extract<ContactSheetPanel, { kind: "grid" }>,
   area: Rect,
+  font: string,
 ): void {
   const { grid, cell } = panel;
   const gx = area.x + GRID_LEFT;
@@ -509,7 +520,7 @@ function drawGrid(
   ctx.strokeRect(gx, gy, width, height);
 
   ctx.fillStyle = COLORS.subtitle;
-  ctx.font = `10px ${FONT}`;
+  ctx.font = `10px ${font}`;
   const step = tickStep(cell);
   const { xAxis, yAxis } = panel;
   ctx.textAlign = "center";
@@ -527,7 +538,7 @@ function drawGrid(
     ctx.fillText(String(label), gx - 6, gy + (row + 0.5) * cell);
   }
   ctx.fillStyle = COLORS.title;
-  ctx.font = `600 11px ${FONT}`;
+  ctx.font = `600 11px ${font}`;
   ctx.textAlign = "right";
   ctx.textBaseline = "top";
   ctx.fillText(xAxis.name, gx + width, gy + height + 16);
