@@ -18,6 +18,16 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["3000--main--schematiclab-v2--steve.dev.smcm.xyz"],
   output: "standalone",
+  // Native module; load it from node_modules rather than bundling it.
+  serverExternalPackages: ["@napi-rs/canvas"],
+  // Files the MCP renderer (`src/lib/mcp/render.ts`) reads from disk.
+  outputFileTracingIncludes: {
+    // A glob, so "[transport]" can't be written literally.
+    "/api/mcp/*": [
+      "./public/minecraft-assets/block-colors.json",
+      "./src/lib/mcp/fonts/*.ttf",
+    ],
+  },
   // The MCP route lives at `api/mcp/[transport]`; serve it at `/api/mcp`.
   async rewrites() {
     return [{ source: "/api/mcp", destination: "/api/mcp/mcp" }];
