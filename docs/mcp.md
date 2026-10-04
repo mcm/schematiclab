@@ -139,12 +139,12 @@ Block ids, properties and defaults come from [misode/mcmeta](https://github.com/
 
 Every limit is in `src/lib/mcp/limits.ts`, and `src/lib/mcp/__tests__/limits.test.ts` exceeds each one.
 
-| Limit                  | Value                               | What happens when it is exceeded                                                                                      |
-| ---------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Request size           | 8 MB (`MAX_REQUEST_BYTES`)          | HTTP 413 with a JSON-RPC error, before the body is parsed. 8 MB leaves room for a 5 MB file sent as base64.           |
-| Decoded schematic size | 5 MB (`MAX_INPUT_BYTES`)            | Tool error "The file is larger than the 5 MB limit." Applies to base64, pastebin/gist downloads and Blob URLs.        |
-| Blocks per projection  | 2,000,000 (`MAX_PROJECTION_BLOCKS`) | Tool error naming the block count. Applies to parsed schematics and generated shapes (the Shape Generator's own cap). |
-| Per-tool timeout       | 45 seconds (`TOOL_TIMEOUT_MS`)      | Tool error "… took longer than 45 seconds and was stopped." It stays under the route's `maxDuration` of 60 seconds.   |
+| Limit                  | Value                               | What happens when it is exceeded                                                                                                                                                                                                                                         |
+| ---------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Request size           | 8 MB (`MAX_REQUEST_BYTES`)          | HTTP 413 with a JSON-RPC error, before the body is parsed. 8 MB leaves room for a 5 MB file sent as base64.                                                                                                                                                              |
+| Decoded schematic size | 5 MB (`MAX_INPUT_BYTES`)            | Tool error "The file is larger than the 5 MB limit." Applies to base64, pastebin/gist downloads and Blob URLs.                                                                                                                                                           |
+| Blocks per projection  | 2,000,000 (`MAX_PROJECTION_BLOCKS`) | Tool error naming the block count. Applies to parsed schematics and generated shapes (the Shape Generator's own cap). A schematic is checked twice: against its regions' declared sizes (air included) before any block data is decoded, then against its parsed blocks. |
+| Per-tool timeout       | 45 seconds (`TOOL_TIMEOUT_MS`)      | Tool error "… took longer than 45 seconds and was stopped." It stays under the route's `maxDuration` of 60 seconds.                                                                                                                                                      |
 
 The timeout ends a tool while it is waiting on the network or Blob storage. Parsing, writing and rendering run synchronously, so their time is bounded by the block limit instead (a 2,000,000-block shape takes about 20 seconds to write and render), and by the function's `maxDuration` as a last resort.
 

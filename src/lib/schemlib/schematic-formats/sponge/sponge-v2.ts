@@ -14,7 +14,12 @@
 import * as nbt from "../../nbt";
 import { Block, BlockPos, BlockState } from "../../blocks";
 import { Entity } from "../../entities";
-import { AbstractRegion, AbstractSchematic } from "../abstract";
+import {
+  AbstractRegion,
+  AbstractSchematic,
+  type SchematicLoadOptions,
+  checkDeclaredVolume,
+} from "../abstract";
 import {
   MinecraftVersion,
   getVersion,
@@ -150,13 +155,19 @@ export class SpongeSchematicV2
 
   // ── Load / dump ────────────────────────────────────────────────────────
 
-  static schematicLoad(obj: string | Uint8Array): SpongeSchematicV2 {
+  static schematicLoad(
+    obj: string | Uint8Array,
+    options?: SchematicLoadOptions,
+  ): SpongeSchematicV2 {
     const bytes = typeof obj === "string" ? new TextEncoder().encode(obj) : obj;
     const named = nbt.loadNbtFromBytes(bytes);
-    return SpongeSchematicV2.fromCompound(named);
+    return SpongeSchematicV2.fromCompound(named, options);
   }
 
-  static fromCompound(compound: nbt.Compound): SpongeSchematicV2 {
+  static fromCompound(
+    compound: nbt.Compound,
+    options?: SchematicLoadOptions,
+  ): SpongeSchematicV2 {
     const versionTag = compound.get("Version");
     if (!(versionTag instanceof nbt.Int)) {
       throw new TypeError("Sponge v2: missing/invalid Version tag");
@@ -171,6 +182,10 @@ export class SpongeSchematicV2
     ) {
       throw new TypeError("Sponge v2: Width/Height/Length must be Short");
     }
+    checkDeclaredVolume(
+      [[widthTag.value, heightTag.value, lengthTag.value]],
+      options,
+    );
     // Offset is optional per spec; default to [0, 0, 0] when missing.
     let offsetArr: [number, number, number] = [0, 0, 0];
     const offsetTag = compound.get("Offset");

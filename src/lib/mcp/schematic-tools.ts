@@ -12,6 +12,7 @@ import {
 } from "../convert";
 import { translateBlockState } from "../schemlib/data/translate";
 import { BlockState } from "../schemlib/blocks";
+import { SchematicTooLargeError } from "../schemlib/schematic-formats/abstract";
 import {
   KNOWN_VERSIONS,
   type MinecraftVersion,
@@ -24,7 +25,11 @@ import {
   type SchematicInput,
   type SchematicInputArgs,
 } from "./input";
-import { assertProjectionBlocks, resolveLimits } from "./limits";
+import {
+  assertProjectionBlocks,
+  resolveLimits,
+  tooManyBlocksMessage,
+} from "./limits";
 import { publishFile } from "./output";
 import { renderProjectionPng } from "./render";
 import { type McpDeps, defineTool, jsonResult } from "./types";
@@ -45,18 +50,24 @@ interface LoadedSchematic {
 
 // Resolves the input and parses it; a parse failure throws the
 // `ParseResult` error text, which `runTool` returns as a tool error, and so
-// does a schematic over `MAX_PROJECTION_BLOCKS`.
+// does a schematic over `MAX_PROJECTION_BLOCKS`. The cap is checked twice:
+// against the regions' declared sizes before any block data is decoded (so a
+// small compressed file declaring a huge region fails fast), and against the
+// parsed blocks.
 async function loadSchematic(
   args: SchematicInputArgs,
   deps: McpDeps,
 ): Promise<LoadedSchematic> {
   const input = await resolveSchematicInput(args, deps);
-  const parsed = parseSchematic(input.bytes);
-  if (!parsed.ok) throw new Error(parsed.error);
-  assertProjectionBlocks(
-    parsed.schematic,
-    resolveLimits(deps.limits).maxProjectionBlocks,
-  );
+  const maxBlocks = resolveLimits(deps.limits).maxProjectionBlocks;
+  const parsed = parseSchematic(input.bytes, { maxBlocks });
+  if (!parsed.ok) {
+    if (parsed.cause instanceof SchematicTooLargeError) {
+      throw new Error(tooManyBlocksMessage(parsed.cause.blocks, maxBlocks));
+    }
+    throw new Error(parsed.error);
+  }
+  assertProjectionBlocks(parsed.schematic, maxBlocks);
   return { input, projection: parsed.schematic };
 }
 

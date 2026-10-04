@@ -14,7 +14,12 @@
 import * as nbt from "../nbt";
 import { Block, BlockPos, BlockState } from "../blocks";
 import { Entity, EntityPos } from "../entities";
-import { AbstractRegion, AbstractSchematic } from "./abstract";
+import {
+  AbstractRegion,
+  AbstractSchematic,
+  type SchematicLoadOptions,
+  checkDeclaredVolume,
+} from "./abstract";
 import {
   MinecraftVersion,
   getVersion,
@@ -210,9 +215,14 @@ export class StructureSchematic extends AbstractRegion {
     return getVersion("1.20.1");
   }
 
-  static schematicLoad(obj: string | Uint8Array): StructureSchematic {
+  static schematicLoad(
+    obj: string | Uint8Array,
+    options?: SchematicLoadOptions,
+  ): StructureSchematic {
     const bytes = typeof obj === "string" ? new TextEncoder().encode(obj) : obj;
     const root = nbt.loadNbtFromBytes(bytes);
+    const [sx, sy, sz] = readPosTriple(root.get("size"));
+    checkDeclaredVolume([[sx, sy, sz]], options);
 
     const dataVersion = readInt(root.get("DataVersion"));
 
@@ -259,8 +269,6 @@ export class StructureSchematic extends AbstractRegion {
         });
       }
     }
-
-    const [sx, sy, sz] = readPosTriple(root.get("size"));
 
     return new StructureSchematic({
       dataVersion,

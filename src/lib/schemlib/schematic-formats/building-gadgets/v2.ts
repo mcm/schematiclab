@@ -12,7 +12,12 @@ import * as nbt from "../../nbt";
 import { Block, BlockPos, BlockState } from "../../blocks";
 import { Entity } from "../../entities";
 import { fromSnbt, toSnbt } from "../../snbt";
-import { AbstractRegion, AbstractSchematic } from "../abstract";
+import {
+  AbstractRegion,
+  AbstractSchematic,
+  type SchematicLoadOptions,
+  checkDeclaredVolume,
+} from "../abstract";
 import { MinecraftVersion, getVersion, posKey } from "../version-mapping";
 import { flattenRegions } from "../single-region";
 import {
@@ -98,7 +103,10 @@ export class BuildingGadgetsV2Schematic
 
   // ── Load / dump ────────────────────────────────────────────────────────
 
-  static schematicLoad(obj: string | Uint8Array): BuildingGadgetsV2Schematic {
+  static schematicLoad(
+    obj: string | Uint8Array,
+    options?: SchematicLoadOptions,
+  ): BuildingGadgetsV2Schematic {
     const text =
       typeof obj === "string" ? obj : new TextDecoder("utf-8").decode(obj);
     const parsed: unknown = JSON.parse(text);
@@ -132,6 +140,11 @@ export class BuildingGadgetsV2Schematic
 
     const startpos = readUppercasePos(spalTag.get("startpos"));
     const endpos = readUppercasePos(spalTag.get("endpos"));
+    const span = endpos.sub(startpos);
+    checkDeclaredVolume(
+      [[Math.abs(span.x) + 1, Math.abs(span.y) + 1, Math.abs(span.z) + 1]],
+      options,
+    );
 
     const statelist: number[] = [];
     const stateListTag = spalTag.get("statelist");

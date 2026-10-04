@@ -1,6 +1,11 @@
 // Barrel re-export for the schematic-formats abstract layer.
 
-export { AbstractRegion, AbstractSchematic } from "./abstract";
+export {
+  AbstractRegion,
+  AbstractSchematic,
+  SchematicTooLargeError,
+} from "./abstract";
+export type { SchematicLoadOptions } from "./abstract";
 export { IntermediateRegion, IntermediateSchematic } from "./intermediate";
 export {
   KNOWN_VERSIONS,

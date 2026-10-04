@@ -15,7 +15,13 @@ import {
   TOOL_TIMEOUT_MS,
   assertProjectionBlocks,
 } from "../limits";
-import { inspectSchematicTool } from "../schematic-tools";
+import {
+  convertSchematicTool,
+  inspectSchematicTool,
+  renderSchematicTool,
+} from "../schematic-tools";
+import { LitematicRegion } from "../../schemlib/schematic-formats/litematic";
+import { oversizedSchematics } from "../../__tests__/oversized-schematics";
 import { createMcpRequestHandler } from "../server";
 import { runTool } from "../tools";
 import { type McpDeps, defineTool, jsonResult } from "../types";
@@ -50,6 +56,7 @@ function stoneBlockArgs(): { base64: string; filename: string } {
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.restoreAllMocks();
 });
 
 describe("request size", () => {
@@ -151,6 +158,54 @@ describe("blocks per projection", () => {
     expect(result.isError).toBe(true);
     expect(text(result)).toContain("27 blocks, more than the 26");
     expect(deps.blob.objects.size).toBe(0);
+  });
+});
+
+describe("declared schematic size", () => {
+  const tools = [
+    { tool: inspectSchematicTool, extra: {} },
+    { tool: convertSchematicTool, extra: { output_format: "Litematic" } },
+    { tool: renderSchematicTool, extra: {} },
+  ];
+
+  for (const { tool, extra } of tools) {
+    it(`stops ${tool.name} on a header declaring more than the limit`, async () => {
+      // Two Litematic regions that only add up to more than 2,000,000, and no
+      // block data to back them.
+      const file = oversizedSchematics().find((f) => f.format === "Litematic")!;
+      const decode = vi.spyOn(LitematicRegion.prototype, "getBlockMatrix");
+      const deps = makeDeps();
+      const result = await runTool(
+        tool,
+        {
+          base64: Buffer.from(file.bytes).toString("base64"),
+          filename: "bomb.litematic",
+          ...extra,
+        },
+        deps,
+      );
+      expect(result.isError).toBe(true);
+      expect(text(result)).toBe(
+        "This schematic has 3,000,000 blocks, more than the 2,000,000 this server handles.",
+      );
+      expect(decode).not.toHaveBeenCalled();
+      expect(deps.blob.objects.size).toBe(0);
+    });
+  }
+
+  it("uses a lowered limit from McpDeps.limits", async () => {
+    const file = oversizedSchematics().find((f) => f.format === "Sponge[v2]")!;
+    const result = await runTool(
+      inspectSchematicTool,
+      {
+        base64: Buffer.from(file.bytes).toString("base64"),
+        filename: "a.schem",
+      },
+      makeDeps({ limits: { maxProjectionBlocks: 10 } }),
+    );
+    expect(text(result)).toBe(
+      "This schematic has 1,000,000,000 blocks, more than the 10 this server handles.",
+    );
   });
 });
 

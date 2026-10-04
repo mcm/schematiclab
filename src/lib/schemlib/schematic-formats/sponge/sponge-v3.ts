@@ -36,7 +36,12 @@
 import * as nbt from "../../nbt";
 import { Block, BlockPos, BlockState } from "../../blocks";
 import { Entity } from "../../entities";
-import { AbstractRegion, AbstractSchematic } from "../abstract";
+import {
+  AbstractRegion,
+  AbstractSchematic,
+  type SchematicLoadOptions,
+  checkDeclaredVolume,
+} from "../abstract";
 import {
   MinecraftVersion,
   getVersion,
@@ -176,7 +181,10 @@ export class SpongeSchematicV3
 
   // ── Load / dump ────────────────────────────────────────────────────────
 
-  static schematicLoad(obj: string | Uint8Array): SpongeSchematicV3 {
+  static schematicLoad(
+    obj: string | Uint8Array,
+    options?: SchematicLoadOptions,
+  ): SpongeSchematicV3 {
     const bytes = typeof obj === "string" ? new TextEncoder().encode(obj) : obj;
     const named = nbt.loadNbtFromBytes(bytes);
     const inner = named.get("Schematic");
@@ -185,10 +193,13 @@ export class SpongeSchematicV3
         "Sponge v3: root must contain a 'Schematic' compound",
       );
     }
-    return SpongeSchematicV3.fromCompound(inner);
+    return SpongeSchematicV3.fromCompound(inner, options);
   }
 
-  static fromCompound(compound: nbt.Compound): SpongeSchematicV3 {
+  static fromCompound(
+    compound: nbt.Compound,
+    options?: SchematicLoadOptions,
+  ): SpongeSchematicV3 {
     const versionTag = compound.get("Version");
     if (!(versionTag instanceof nbt.Int) || versionTag.value !== 3) {
       throw new TypeError(
@@ -210,6 +221,7 @@ export class SpongeSchematicV3
     const width = widthTag.value & 0xffff;
     const height = heightTag.value & 0xffff;
     const length = lengthTag.value & 0xffff;
+    checkDeclaredVolume([[width, height, length]], options);
 
     const offsetTag = compound.get("Offset");
     let offsetArr: [number, number, number] = [0, 0, 0];
