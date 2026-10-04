@@ -39,20 +39,25 @@ export function registerTools(server: McpServer, deps: McpDeps): void {
 }
 
 // Runs a tool's handler, turning a thrown error or a timeout
-// (`TOOL_TIMEOUT_MS`) into a tool error.
+// (`TOOL_TIMEOUT_MS`) into a tool error. A timeout aborts `deps.signal`, so
+// the handler, which keeps running, publishes no file.
 export async function runTool(
   tool: McpTool,
   args: Record<string, unknown>,
   deps: McpDeps,
 ): Promise<CallToolResult> {
+  const controller = new AbortController();
   try {
     const { toolTimeoutMs } = resolveLimits(deps.limits);
     return await withToolTimeout(
       tool.name,
       toolTimeoutMs,
-      Promise.resolve().then(() => tool.handler(args, deps)),
+      Promise.resolve().then(() =>
+        tool.handler(args, { ...deps, signal: controller.signal }),
+      ),
     );
   } catch (err) {
+    controller.abort(err);
     return toolError(err instanceof Error ? err.message : String(err));
   }
 }

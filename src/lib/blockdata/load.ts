@@ -132,10 +132,15 @@ async function fetchJson(url: string, deps: BlockDataDeps): Promise<unknown> {
   try {
     const response = await deps.fetch(url, { signal: controller.signal });
     if (!response.ok) {
+      response.body?.cancel().catch(() => {});
       throw new Error(`Block data request failed (HTTP ${response.status}).`);
     }
     const length = Number(response.headers.get("content-length"));
-    if (length > MAX_BLOCK_DATA_BYTES) throw tooLarge();
+    if (length > MAX_BLOCK_DATA_BYTES) {
+      // Unread, the body would keep its connection and transfer going.
+      response.body?.cancel().catch(() => {});
+      throw tooLarge();
+    }
     const text = await readText(response, controller.signal);
     return JSON.parse(text);
   } catch (err) {

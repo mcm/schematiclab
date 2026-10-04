@@ -88,6 +88,8 @@ export function overallSize(
   const min = [Infinity, Infinity, Infinity];
   const max = [-Infinity, -Infinity, -Infinity];
   for (const { origin, size } of projection.regions) {
+    // A region that is empty along any axis holds no blocks.
+    if (size.some((n) => n === 0)) continue;
     for (let axis = 0; axis < 3; axis++) {
       const a = origin[axis];
       const b = origin[axis] + size[axis] - Math.sign(size[axis]);

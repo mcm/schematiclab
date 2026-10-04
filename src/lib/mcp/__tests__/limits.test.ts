@@ -26,6 +26,7 @@ import {
   gzipBomb,
   oversizedSchematics,
 } from "../../__tests__/oversized-schematics";
+import { publishFile } from "../output";
 import { createMcpRequestHandler } from "../server";
 import { runTool } from "../tools";
 import { type McpDeps, defineTool, jsonResult } from "../types";
@@ -298,6 +299,55 @@ describe("per-tool timeout", () => {
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     expect(result.isError).toBe(true);
     expect(text(result)).toContain("inspect_schematic took longer than");
+  });
+
+  it("keeps a handler that finishes late from storing its file", async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    let late: ReturnType<typeof publishFile> | undefined;
+    const slow = defineTool({
+      ...hangingTool,
+      name: "slow",
+      handler: async (_args, deps) => {
+        await gate;
+        late = publishFile(new Uint8Array([1]), "a.nbt", "x/y", deps);
+        return jsonResult({ ...(await late) });
+      },
+    });
+    const deps = makeDeps({ limits: { toolTimeoutMs: 20 } });
+    const result = await runTool(slow, {}, deps);
+    expect(text(result)).toContain("slow took longer than");
+    release();
+    await vi.waitFor(() => expect(late).toBeDefined());
+    await expect(late).rejects.toThrow("slow took longer than");
+    expect(deps.blob.calls.some((c) => c.method === "put")).toBe(false);
+    expect(deps.blob.objects.size).toBe(0);
+  });
+
+  it("deletes an upload that lands after the timeout", async () => {
+    const deps = makeDeps({ limits: { toolTimeoutMs: 20 } });
+    const put = deps.blob.put.bind(deps.blob);
+    let landed!: () => void;
+    const landing = new Promise<void>((resolve) => (landed = resolve));
+    deps.blob.put = async (...args) => {
+      await landing;
+      return put(...args);
+    };
+    let upload: ReturnType<typeof publishFile> | undefined;
+    const uploading = defineTool({
+      ...hangingTool,
+      name: "upload",
+      handler: async (_args, toolDeps) => {
+        upload = publishFile(new Uint8Array([1]), "a.nbt", "x/y", toolDeps);
+        return jsonResult({ ...(await upload) });
+      },
+    });
+    const result = await runTool(uploading, {}, deps);
+    expect(text(result)).toContain("upload took longer than");
+    landed();
+    await expect(upload).rejects.toThrow("stopped before its file was stored");
+    expect(deps.blob.calls.map((c) => c.method)).toEqual(["put", "del"]);
+    expect(deps.blob.objects.size).toBe(0);
   });
 
   it("returns results that finish in time", async () => {

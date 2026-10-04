@@ -101,6 +101,38 @@ describe("buildVoxelModel", () => {
     ]);
   });
 
+  it("places each region at its origin, passing colorAt local positions", () => {
+    const p = projection([
+      ["minecraft:stone", [0, 0, 0]],
+      ["minecraft:oak_planks", [0, 0, 0]],
+    ]);
+    const [region] = p.regions;
+    p.regions = [
+      { ...region, origin: [0, 0, 0], blocks: region.blocks.slice(0, 1) },
+      { ...region, origin: [3, 1, 0], blocks: region.blocks.slice(1) },
+    ];
+    const seen: [number, number[]][] = [];
+    const m = buildVoxelModel(
+      p,
+      (i) => BLOCK_COLORS[p.palette[i].blockId] ?? "#000000",
+      (regionIndex, pos) => {
+        seen.push([regionIndex, pos]);
+        return undefined;
+      },
+    );
+    expect(m.size).toEqual([4, 2, 1]);
+    expect(m.voxels.map((v) => [v.x, v.y, v.z, colorName(m, v.color)])).toEqual(
+      [
+        [0, 0, 0, "minecraft:stone"],
+        [3, 1, 0, "minecraft:oak_planks"],
+      ],
+    );
+    expect(seen).toEqual([
+      [0, [0, 0, 0]],
+      [1, [0, 0, 0]],
+    ]);
+  });
+
   it("normalizes positions to the model's minimum and skips air", () => {
     const m = model([
       ["minecraft:stone", [10, 64, -5]],

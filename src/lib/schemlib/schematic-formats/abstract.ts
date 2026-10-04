@@ -192,12 +192,19 @@ export class SchematicTooLargeError extends Error {
 /**
  * Throws `SchematicTooLargeError` when the summed volume of `sizes` is over
  * `options.maxBlocks`. Negative sizes (Litematic regions grow either way)
- * count by their magnitude.
+ * count by their magnitude. A size that isn't a whole number (NaN, Infinity,
+ * a string read from a mistyped tag) is rejected outright: it would slip past
+ * the cap and break iteration over the region.
  */
 export function checkDeclaredVolume(
   sizes: ReadonlyArray<readonly [number, number, number]>,
   options: SchematicLoadOptions | undefined,
 ): void {
+  for (const size of sizes) {
+    if (!size.every((n) => Number.isSafeInteger(n))) {
+      throw new Error(`Schematic declares an invalid size: ${size.join(", ")}`);
+    }
+  }
   const max = options?.maxBlocks;
   if (max === undefined) return;
   let blocks = 0;

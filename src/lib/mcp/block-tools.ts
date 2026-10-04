@@ -142,9 +142,13 @@ export function searchBlockIds(ids: Iterable<string>, query: string): string[] {
     .map((hit) => hit.id);
 }
 
+// Far longer than any block name; bounds the work one query costs.
+const MAX_QUERY_LENGTH = 200;
+
 const searchBlocksInput = z.object({
   query: z
     .string()
+    .max(MAX_QUERY_LENGTH)
     .describe(
       "Part of a block name, e.g. 'oak' or 'stone brick'. minecraft: may be left off; spaces count as underscores.",
     ),

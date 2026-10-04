@@ -9,7 +9,12 @@ import { Block, BlockPos, BlockState } from "../blocks";
 import { Entity } from "../entities";
 import * as snbt from "../snbt";
 import * as nbt from "../nbt";
-import { AbstractRegion, AbstractSchematic } from "./abstract";
+import {
+  AbstractRegion,
+  AbstractSchematic,
+  type SchematicLoadOptions,
+  checkDeclaredVolume,
+} from "./abstract";
 import { placeTileEntity, shiftEntity } from "./single-region";
 import {
   MinecraftVersion,
@@ -295,9 +300,21 @@ export class IntermediateSchematic extends AbstractSchematic {
     return this.regions;
   }
 
-  static schematicLoad(obj: string | Uint8Array): IntermediateSchematic {
+  static schematicLoad(
+    obj: string | Uint8Array,
+    options?: SchematicLoadOptions,
+  ): IntermediateSchematic {
     const text = typeof obj === "string" ? obj : new TextDecoder().decode(obj);
     const raw = JSON.parse(text) as SchematicJson;
+    checkDeclaredVolume(
+      raw.regions.map((r) => {
+        if (!Array.isArray(r.size) || r.size.length !== 3) {
+          throw new TypeError("JSON region has no valid size");
+        }
+        return [r.size[0], r.size[1], r.size[2]] as const;
+      }),
+      options,
+    );
     const regions = raw.regions.map(regionFromJson);
     return new IntermediateSchematic(
       raw.metadata,

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { POST } from "@/app/api/import-url/route";
 import {
   ImportUrlError,
+  MAX_GIST_API_BYTES,
   MAX_IMPORT_BYTES,
   fetchImportUrl,
   normalizeImportUrl,
@@ -126,6 +127,59 @@ describe("fetchImportUrl", () => {
       ),
     ).rejects.toThrow("Unexpected gist raw host.");
     expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it("stops reading a body as soon as it passes the limit", async () => {
+    // An endless stream with no content-length: buffering it whole would
+    // never finish.
+    let pulled = 0;
+    let cancelled = false;
+    const endless = () =>
+      new ReadableStream<Uint8Array>({
+        pull(controller) {
+          pulled++;
+          controller.enqueue(new Uint8Array(1024 * 1024));
+        },
+        cancel() {
+          cancelled = true;
+        },
+      });
+    await expect(
+      fetchImportUrl(
+        normalizeImportUrl("https://pastebin.com/a"),
+        vi.fn(async () => new Response(endless())) as never,
+      ),
+    ).rejects.toThrow("Paste is larger than the 5 MB limit");
+    expect(pulled).toBeLessThan(10);
+    expect(cancelled).toBe(true);
+
+    await expect(
+      fetchImportUrl(
+        normalizeImportUrl("https://gist.github.com/abc123"),
+        vi.fn(async () => new Response(endless())) as never,
+      ),
+    ).rejects.toThrow(
+      `Gist API response is larger than the ${MAX_GIST_API_BYTES / (1024 * 1024)} MB limit`,
+    );
+  });
+
+  it("rejects an oversized content-length before reading", async () => {
+    const body = new ReadableStream<Uint8Array>({
+      pull() {
+        throw new Error("read");
+      },
+    });
+    await expect(
+      fetchImportUrl(
+        normalizeImportUrl("https://pastebin.com/a"),
+        vi.fn(
+          async () =>
+            new Response(body, {
+              headers: { "content-length": String(MAX_IMPORT_BYTES + 1) },
+            }),
+        ) as never,
+      ),
+    ).rejects.toThrow("larger than the 5 MB limit");
   });
 
   it("enforces the 5 MB limit and reports HTTP errors", async () => {

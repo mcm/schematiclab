@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { cleanupExpiredOutputs, createCleanupHandler } from "../cleanup";
+import {
+  CLEANUP_GRACE_MS,
+  cleanupExpiredOutputs,
+  createCleanupHandler,
+} from "../cleanup";
 import { OUTPUT_TTL_MS } from "../output";
 import { createFakeBlob } from "./fake-blob";
 
@@ -14,21 +18,24 @@ function seed(pageSize?: number) {
     body: new Uint8Array(),
     uploadedAt: new Date(NOW.getTime() - ms),
   });
-  blob.objects.set("mcp/old-a.schem", at(OUTPUT_TTL_MS + 1));
+  blob.objects.set("mcp/old-a.schem", at(OUTPUT_TTL_MS + CLEANUP_GRACE_MS + 1));
   blob.objects.set("mcp/old-b.nbt", at(3 * OUTPUT_TTL_MS));
   blob.objects.set("mcp/fresh.litematic", at(OUTPUT_TTL_MS - 1000));
+  // Its URL may still be valid: the 24 hours start after the upload.
+  blob.objects.set("mcp/grace.schem", at(OUTPUT_TTL_MS + 1000));
   blob.objects.set("mcp/new.png", at(0));
   blob.objects.set("other/old.bin", at(5 * OUTPUT_TTL_MS));
   return blob;
 }
 
 describe("cleanupExpiredOutputs", () => {
-  it("deletes mcp/ objects older than 24 hours and keeps the rest", async () => {
+  it("deletes mcp/ objects older than 24 hours plus the grace and keeps the rest", async () => {
     const blob = seed();
     const result = await cleanupExpiredOutputs({ blob, now });
-    expect(result).toEqual({ deleted: 2, kept: 2 });
+    expect(result).toEqual({ deleted: 2, kept: 3 });
     expect([...blob.objects.keys()].sort()).toEqual([
       "mcp/fresh.litematic",
+      "mcp/grace.schem",
       "mcp/new.png",
       "other/old.bin",
     ]);
@@ -40,8 +47,8 @@ describe("cleanupExpiredOutputs", () => {
   it("follows list pagination", async () => {
     const blob = seed(1);
     const result = await cleanupExpiredOutputs({ blob, now });
-    expect(result).toEqual({ deleted: 2, kept: 2 });
-    expect(blob.calls.filter((c) => c.method === "list")).toHaveLength(4);
+    expect(result).toEqual({ deleted: 2, kept: 3 });
+    expect(blob.calls.filter((c) => c.method === "list")).toHaveLength(5);
   });
 
   it("does not call del when nothing expired", async () => {
@@ -91,7 +98,7 @@ describe("cron cleanup handler", () => {
     const handler = createCleanupHandler({ blob, now, cronSecret: SECRET });
     const response = await handler(request(`Bearer ${SECRET}`));
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ deleted: 2, kept: 2 });
+    expect(await response.json()).toEqual({ deleted: 2, kept: 3 });
   });
 
   it("answers 503 when no blob store is configured", async () => {

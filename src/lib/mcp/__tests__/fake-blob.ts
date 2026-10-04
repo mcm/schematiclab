@@ -68,6 +68,7 @@ export function createFakeBlob(
       return {
         stream: new Blob([new Uint8Array(object.body)]).stream(),
         size: object.body.byteLength,
+        uploadedAt: object.uploadedAt,
       };
     },
   };

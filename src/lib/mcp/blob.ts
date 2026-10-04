@@ -53,18 +53,20 @@ export interface BlobClient {
   get(
     pathname: string,
     options: { access: "private" },
-  ): Promise<{ stream: ReadableStream<Uint8Array>; size: number } | null>;
+  ): Promise<{
+    stream: ReadableStream<Uint8Array>;
+    size: number;
+    uploadedAt: Date;
+  } | null>;
 }
 
-// Whether the environment names a Blob store the SDK can authenticate to:
-// `BLOB_STORE_ID` (with OIDC on Vercel) or, as the SDK's own fallback,
-// `BLOB_READ_WRITE_TOKEN`.
+// Whether the environment names the Blob store (`BLOB_STORE_ID`, with OIDC
+// on Vercel). A `BLOB_READ_WRITE_TOKEN` alone doesn't count: without the
+// store id, the tools couldn't accept their own output URLs as inputs.
 export function blobCredentialsConfigured(
   env: Record<string, string | undefined>,
 ): boolean {
-  return Boolean(
-    env.BLOB_STORE_ID?.trim() || env.BLOB_READ_WRITE_TOKEN?.trim(),
-  );
+  return Boolean(env.BLOB_STORE_ID?.trim());
 }
 
 export const vercelBlobClient: BlobClient = {
@@ -85,7 +87,11 @@ export const vercelBlobClient: BlobClient = {
     if (result.statusCode !== 200) {
       throw new Error(`Unexpected Blob response ${result.statusCode}`);
     }
-    return { stream: result.stream, size: result.blob.size };
+    return {
+      stream: result.stream,
+      size: result.blob.size,
+      uploadedAt: result.blob.uploadedAt,
+    };
   },
 };
 

@@ -86,6 +86,13 @@ describe("publishFile", () => {
     expect(safeOutputFilename("a/b\\c.litematic")).toBe("c.litematic");
   });
 
+  it("shortens long filenames without losing the extension", () => {
+    const long = safeOutputFilename(`${"x".repeat(300)}.litematic`);
+    expect(long).toHaveLength(100);
+    expect(long.endsWith("x.litematic")).toBe(true);
+    expect(safeOutputFilename(`a.${"y".repeat(300)}`)).toHaveLength(100);
+  });
+
   it("throws a clear error without a blob store", async () => {
     await expect(
       publishFile(BYTES, "a.nbt", "x/y", { blob: null, now }),
@@ -148,19 +155,23 @@ describe("file-writing tools without credentials", () => {
       },
     );
     expect(result.isError).toBeFalsy();
-    expect(result.structuredContent).toMatchObject({ filename: "a.nbt" });
+    expect(result.structuredContent).toMatchObject({
+      filename: "a.nbt",
+      url: `https://store.private.blob.vercel-storage.com/mcp/a-rnd1.nbt?vercel-blob-expires=${NOW.getTime() + OUTPUT_TTL_MS}`,
+    });
   });
 });
 
 describe("blob credentials", () => {
-  it("are configured by BLOB_STORE_ID or the SDK's token fallback", () => {
+  it("are configured by BLOB_STORE_ID only", () => {
     expect(blobCredentialsConfigured({})).toBe(false);
     expect(blobCredentialsConfigured({ BLOB_STORE_ID: " " })).toBe(false);
     expect(blobCredentialsConfigured({ BLOB_STORE_ID: "store_abc" })).toBe(
       true,
     );
+    // Without BLOB_STORE_ID, returned URLs couldn't be read back as inputs.
     expect(blobCredentialsConfigured({ BLOB_READ_WRITE_TOKEN: "t" })).toBe(
-      true,
+      false,
     );
     expect(blobClientFromEnv({})).toBeNull();
     expect(blobClientFromEnv({ BLOB_STORE_ID: "store_abc" })).not.toBeNull();

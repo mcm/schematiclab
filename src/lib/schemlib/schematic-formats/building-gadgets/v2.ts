@@ -23,7 +23,7 @@ import { flattenRegions } from "../single-region";
 import {
   type VersionRange,
   posToUppercaseCompound,
-  readUppercasePos,
+  readRequiredUppercasePos,
   templateVersion,
 } from "./common";
 
@@ -138,8 +138,14 @@ export class BuildingGadgetsV2Schematic
       }
     }
 
-    const startpos = readUppercasePos(spalTag.get("startpos"));
-    const endpos = readUppercasePos(spalTag.get("endpos"));
+    const startpos = readRequiredUppercasePos(
+      spalTag.get("startpos"),
+      "BG v2 startpos",
+    );
+    const endpos = readRequiredUppercasePos(
+      spalTag.get("endpos"),
+      "BG v2 endpos",
+    );
     const span = endpos.sub(startpos);
     checkDeclaredVolume(
       [[Math.abs(span.x) + 1, Math.abs(span.y) + 1, Math.abs(span.z) + 1]],

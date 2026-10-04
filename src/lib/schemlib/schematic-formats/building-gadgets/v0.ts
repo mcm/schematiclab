@@ -25,7 +25,7 @@ import { flattenRegions } from "../single-region";
 import {
   type VersionRange,
   posToUppercaseCompound,
-  readUppercasePos,
+  readRequiredUppercasePos,
   templateVersion,
 } from "./common";
 
@@ -170,8 +170,11 @@ export class BuildingGadgetsV0Schematic
       throw new TypeError("Building Gadgets v0 SNBT must parse to a Compound");
     }
 
-    const startPos = readUppercasePos(root.get("startPos"));
-    const endPos = readUppercasePos(root.get("endPos"));
+    const startPos = readRequiredUppercasePos(
+      root.get("startPos"),
+      "BG v0 startPos",
+    );
+    const endPos = readRequiredUppercasePos(root.get("endPos"), "BG v0 endPos");
     const span = endPos.sub(startPos);
     checkDeclaredVolume(
       [[Math.abs(span.x) + 1, Math.abs(span.y) + 1, Math.abs(span.z) + 1]],
