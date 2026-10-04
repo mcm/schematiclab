@@ -5,7 +5,7 @@
 // (tag_type_id: int8, name: String, payload) until tag_type_id == 0 (TAG_End).
 // A "Named" tag wraps a single (name, Compound) at the root of an NBT file.
 
-import { gunzipSync, gzipSync } from "fflate";
+import { Gunzip, gunzipSync, gzipSync } from "fflate";
 
 // ── Tag type IDs ───────────────────────────────────────────────────────────
 
@@ -1037,14 +1037,68 @@ export function modelToCompound(
 const GZIP_MAGIC_0 = 0x1f;
 const GZIP_MAGIC_1 = 0x8b;
 
-export function loadNbtFromBytes(bytes: Uint8Array): Named {
-  let data = bytes;
-  if (
-    data.length >= 2 &&
-    data[0] === GZIP_MAGIC_0 &&
-    data[1] === GZIP_MAGIC_1
+export function isGzip(bytes: Uint8Array): boolean {
+  return (
+    bytes.length >= 2 && bytes[0] === GZIP_MAGIC_0 && bytes[1] === GZIP_MAGIC_1
+  );
+}
+
+export class DecompressedTooLargeError extends Error {
+  constructor(
+    readonly maxBytes: number,
+    /** Bytes inflated before the stream was stopped (more than `maxBytes`). */
+    readonly inflatedBytes: number,
   ) {
-    data = gunzipSync(data);
+    super(
+      `This schematic decompresses to more than ${maxBytes.toLocaleString("en-US")} bytes, the most this server handles.`,
+    );
+    this.name = "DecompressedTooLargeError";
+  }
+}
+
+// Input is fed to the inflater in chunks this size. Deflate expands at most
+// about 1032:1, so one chunk inflates to at most ~16 MB past the cap.
+const GUNZIP_INPUT_CHUNK = 16 * 1024;
+
+/**
+ * Gunzips `bytes`, throwing `DecompressedTooLargeError` as soon as the output
+ * passes `maxBytes`; the rest of the stream is never inflated.
+ */
+export function gunzipCapped(bytes: Uint8Array, maxBytes: number): Uint8Array {
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  const stream = new Gunzip((chunk) => {
+    chunks.push(chunk);
+    total += chunk.length;
+  });
+  for (let offset = 0; offset < bytes.length; offset += GUNZIP_INPUT_CHUNK) {
+    const end = Math.min(offset + GUNZIP_INPUT_CHUNK, bytes.length);
+    stream.push(bytes.subarray(offset, end), end === bytes.length);
+    if (total > maxBytes) throw new DecompressedTooLargeError(maxBytes, total);
+  }
+  if (chunks.length === 1) return chunks[0];
+  const out = new Uint8Array(total);
+  let at = 0;
+  for (const chunk of chunks) {
+    out.set(chunk, at);
+    at += chunk.length;
+  }
+  return out;
+}
+
+export interface LoadNbtOptions {
+  /** Cap on gunzipped bytes (`DecompressedTooLargeError` past it). */
+  maxDecompressedBytes?: number;
+}
+
+export function loadNbtFromBytes(
+  bytes: Uint8Array,
+  options?: LoadNbtOptions,
+): Named {
+  let data = bytes;
+  if (isGzip(data)) {
+    const max = options?.maxDecompressedBytes;
+    data = max === undefined ? gunzipSync(data) : gunzipCapped(data, max);
   }
   return Named.fromBytes(data) as Named;
 }

@@ -170,6 +170,11 @@ export interface SchematicLoadOptions {
    * so a small compressed file declaring a huge region fails fast.
    */
   maxBlocks?: number;
+  /**
+   * Stop with `DecompressedTooLargeError` (from `nbt.ts`) once gzipped input
+   * inflates past this many bytes, without inflating the rest.
+   */
+  maxDecompressedBytes?: number;
 }
 
 export class SchematicTooLargeError extends Error {

@@ -203,7 +203,7 @@ export class SpongeSchematicV1
     options?: SchematicLoadOptions,
   ): SpongeSchematicV1 {
     const bytes = typeof obj === "string" ? new TextEncoder().encode(obj) : obj;
-    const named = nbt.loadNbtFromBytes(bytes);
+    const named = nbt.loadNbtFromBytes(bytes, options);
     return SpongeSchematicV1.fromCompound(named, options);
   }
 

@@ -358,11 +358,27 @@ export function convertSchematic(
  * With `options.maxBlocks`, a file whose regions declare more blocks than
  * that fails before its block data is decoded; the error's `cause` is the
  * `SchematicTooLargeError` and `error` is its message, unprefixed.
+ *
+ * With `options.maxDecompressedBytes`, gzipped input is inflated once, up to
+ * that many bytes, and the result is reused for detection and loading; past
+ * the cap it fails the same way with a `DecompressedTooLargeError`.
  */
 export function parseSchematic(
   bytes: Uint8Array,
   options?: SchematicLoadOptions,
 ): ParseResult {
+  const maxDecompressed = options?.maxDecompressedBytes;
+  if (maxDecompressed !== undefined && nbt.isGzip(bytes)) {
+    try {
+      bytes = nbt.gunzipCapped(bytes, maxDecompressed);
+    } catch (cause) {
+      if (cause instanceof nbt.DecompressedTooLargeError) {
+        return { ok: false, error: cause.message, cause };
+      }
+      // Not valid gzip: leave the bytes for detection to reject as before.
+    }
+  }
+
   let detectedId: string;
   try {
     detectedId = detectSchematicType(bytes);

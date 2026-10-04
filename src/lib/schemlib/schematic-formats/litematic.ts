@@ -400,7 +400,7 @@ export class LitematicSchematic extends AbstractSchematic {
     options?: SchematicLoadOptions,
   ): LitematicSchematic {
     const bytes = typeof obj === "string" ? new TextEncoder().encode(obj) : obj;
-    const root = nbt.loadNbtFromBytes(bytes);
+    const root = nbt.loadNbtFromBytes(bytes, options);
 
     const metaTag = root.get("Metadata");
     if (!(metaTag instanceof nbt.Compound)) {
