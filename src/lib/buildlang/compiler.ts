@@ -12,6 +12,13 @@
 // message (with a count) and always point at something the agent wrote.
 
 import type { BlockRegistry } from "../blockdata/registry";
+import {
+  buildShapeGrid,
+  MAX_DIMENSION,
+  MAX_THICKNESS,
+  type VoxelGrid,
+  voxelIndex,
+} from "../shapes/shapes";
 import { BuildError } from "./errors";
 import {
   type Length,
@@ -24,13 +31,16 @@ import {
 import {
   AIR,
   type Material,
+  type MaterialEntry,
   MaterialResolver,
   pickEntry,
   validatePlacedState,
 } from "./materials";
 import type {
   Axis,
+  BlockArgs,
   BoxArgs,
+  DoorArgs,
   FillArgs,
   InsetArgs,
   MaterialSpec,
@@ -153,6 +163,9 @@ export class Compiler {
   readonly resolver: MaterialResolver;
   readonly errors: ProgramError[] = [];
   readonly warnings: ProgramError[] = [];
+  /** States a block doesn't have, ignored (fallbacks are the resolver's). */
+  readonly notes: ProgramError[] = [];
+  private readonly notedStates = new Set<string>();
   private readonly seed: number;
   private readonly maxPlacements: number;
   private placements = 0;
@@ -196,7 +209,7 @@ export class Compiler {
       log: this.log,
       errors: dedupe(this.errors),
       warnings: dedupe(warnings),
-      notes: this.resolver.notes,
+      notes: [...this.resolver.notes, ...this.notes],
     };
   }
 
@@ -274,11 +287,17 @@ export class Compiler {
       case "clear":
         return this.fill("air", scope, path);
       case "frame":
+        return this.frame(arg, scope, path);
       case "block":
+        return this.block(arg, scope, path);
       case "door":
+        return this.door(arg, scope, path);
       case "cylinder":
+        return this.round(arg, scope, path, "cylinder");
       case "ellipsoid":
+        return this.round(arg, scope, path, "ellipsoid");
       case "roof":
+        throw new BuildError(path, "roof is not supported yet");
       case "use":
       case "choose":
       case "when":
@@ -587,65 +606,196 @@ export class Compiler {
 
   // -- material operations ----------------------------------------------------------
 
-  /** `fill` (and `clear`): every cell of the scope. */
-  private fill(raw: unknown, scope: Scope, path: string) {
-    let spec: MaterialSpec;
-    let extra: Record<string, string> = {};
-    let onlyEmpty = false;
-    let replace: ReplaceSet | null = null;
+  /**
+   * The material and placement arguments of `fill`, `frame`, `cylinder` and
+   * `ellipsoid`: a bare material, or an object with `material`, `replace`,
+   * `only_empty`, `facing`, `axis`, `half` and `state`.
+   */
+  private placementArgs(
+    raw: unknown,
+    path: string,
+  ): PlacementOptions & {
+    material: Material;
+  } {
     if (typeof raw === "string" || (isObject(raw) && "mix" in raw)) {
-      spec = raw as MaterialSpec;
-    } else if (isObject(raw)) {
-      const arg = raw as unknown as FillArgs;
-      if (arg.material === undefined) {
-        throw new BuildError(path, "missing 'material'");
-      }
-      spec = arg.material;
-      for (const key of ["facing", "axis", "half"] as const) {
-        if (arg[key] !== undefined) extra[key] = String(arg[key]);
-      }
-      for (const [key, value] of Object.entries(arg.state ?? {})) {
-        if (!key.startsWith("#")) extra[key] = String(value);
-      }
-      extra = Object.fromEntries(
-        Object.entries(extra).map(([k, v]) => [k, v.toLowerCase()]),
-      );
-      onlyEmpty = arg.only_empty === true;
-      if (arg.replace !== undefined) {
-        replace = resolveReplace(this.resolver, arg.replace, `${path}.replace`);
-      }
-    } else {
+      return { material: this.resolver.resolve(raw as MaterialSpec, path) };
+    }
+    if (!isObject(raw)) {
       throw new BuildError(
         path,
         `expected a material or an object with 'material', got ${show(raw)}`,
       );
     }
-    const material = this.resolver.resolve(spec, path);
+    const arg = raw as unknown as FillArgs;
+    if (arg.material === undefined) {
+      throw new BuildError(path, "missing 'material'");
+    }
+    return {
+      material: this.resolver.resolve(arg.material, path),
+      extra: extraStates(arg),
+      onlyEmpty: arg.only_empty === true,
+      replace:
+        arg.replace === undefined
+          ? null
+          : resolveReplace(this.resolver, arg.replace, `${path}.replace`),
+    };
+  }
+
+  /** `fill` (and `clear`): every cell of the scope. */
+  private fill(raw: unknown, scope: Scope, path: string) {
+    const { material, ...options } = this.placementArgs(raw, path);
     for (const [x, y, z] of scope.cells()) {
+      this.place(scope, [x, y, z], material, path, options);
+    }
+  }
+
+  /** `frame`: the 12 edges of the scope, logs running along each edge. */
+  private frame(raw: unknown, scope: Scope, path: string) {
+    const { material, ...options } = this.placementArgs(raw, path);
+    const [sx, sy, sz] = scope.size;
+    for (const [x, y, z] of scope.cells()) {
+      const ex = x === 0 || x === sx - 1;
+      const ey = y === 0 || y === sy - 1;
+      const ez = z === 0 || z === sz - 1;
+      if (Number(ex) + Number(ey) + Number(ez) < 2) continue;
+      const axis = ex && ez ? "y" : ey && ez ? "x" : "z";
       this.place(scope, [x, y, z], material, path, {
-        extra,
-        onlyEmpty,
-        replace,
+        ...options,
+        auto: { axis },
       });
+    }
+  }
+
+  /** `block`: one block at `at` (lengths and alignments as for `box`). */
+  private block(raw: unknown, scope: Scope, path: string) {
+    const arg = this.expectObject(
+      raw,
+      path,
+      'an object like {"material": ..., "at": [x, y, z]}',
+    ) as unknown as BlockArgs;
+    if (arg.material === undefined) {
+      throw new BuildError(path, "missing 'material'");
+    }
+    const at: unknown = arg.at ?? [0, 0, 0];
+    if (!Array.isArray(at) || at.length !== 3) {
+      throw new BuildError(
+        `${path}.at`,
+        `must be a list of 3 values [x, y, z], got ${show(at)}`,
+      );
+    }
+    const pos = [0, 1, 2].map((i) =>
+      resolvePosition(
+        length(at[i], "position", `${path}.at[${i}]`),
+        scope.size[i],
+        1,
+      ),
+    );
+    const material = this.resolver.resolve(arg.material, path);
+    this.place(scope, [pos[0], pos[1], pos[2]], material, path, {
+      extra: extraStates(arg),
+      onlyEmpty: arg.only_empty === true,
+      point: true,
+    });
+  }
+
+  /**
+   * `door`: clears a 1×2 opening at the bottom centre of the scope (z = 0)
+   * and hangs a door in it, facing inward on a face scope (`+z` otherwise).
+   * Without a material it uses `@door`.
+   */
+  private door(raw: unknown, scope: Scope, path: string) {
+    let arg: DoorArgs;
+    if (typeof raw === "string" || (isObject(raw) && "mix" in raw)) {
+      arg = { material: raw as MaterialSpec };
+    } else {
+      arg = this.expectObject(
+        raw,
+        path,
+        "a material or an object with 'material'",
+      ) as DoorArgs;
+    }
+    const [sx, sy] = scope.size;
+    const x = integer(arg.x, `${path}.x`, Math.floor((sx - 1) / 2), 0);
+    if (x >= sx) {
+      throw new BuildError(
+        `${path}.x`,
+        `must be less than the scope's width ${sx}, got ${x}`,
+      );
+    }
+    const material = this.resolver.resolve(
+      arg.material ?? "@door",
+      path,
+      "door",
+    );
+    const extra: Record<string, string> = {
+      facing: String(arg.facing ?? (scope.kind === "face" ? "in" : "+z")),
+    };
+    if (arg.hinge !== undefined) extra.hinge = String(arg.hinge);
+    for (let y = 0; y < Math.min(2, sy); y++) {
+      this.place(scope, [x, y, 0], AIR_MATERIAL, path);
+    }
+    this.place(scope, [x, 0, 0], material, path, {
+      extra: lowercase(extra),
+    });
+  }
+
+  /**
+   * `cylinder` (vertical) and `ellipsoid`, fitted to the scope through the
+   * Shape Generator's voxel grids. A hollow cylinder is a tube: each layer
+   * is a ring `thickness` blocks thick, open at the top and bottom.
+   */
+  private round(
+    raw: unknown,
+    scope: Scope,
+    path: string,
+    shape: "cylinder" | "ellipsoid",
+  ) {
+    const { material, ...options } = this.placementArgs(raw, path);
+    const arg: Json = isObject(raw) && !("mix" in raw) ? raw : {};
+    const hollow = arg.hollow === true;
+    const thickness = Math.min(
+      integer(arg.thickness, `${path}.thickness`, 1, 1),
+      MAX_THICKNESS,
+    );
+    const [sx, sy, sz] = scope.size;
+    let grid: VoxelGrid;
+    try {
+      grid = buildShapeGrid({
+        shape,
+        width: sx,
+        height: shape === "cylinder" ? 1 : sy,
+        depth: sz,
+        hollow,
+        thickness,
+      });
+    } catch {
+      throw new BuildError(
+        path,
+        `scope ${show(scope.size)} is too big for '${shape}' (at most ${MAX_DIMENSION} per side)`,
+      );
+    }
+    for (const [x, y, z] of scope.cells()) {
+      const gy = shape === "cylinder" ? 0 : y;
+      if (grid.filled[voxelIndex(grid.size, x, gy, z)]) {
+        this.place(scope, [x, y, z], material, path, options);
+      }
     }
   }
 
   /**
    * Logs one placement of `material` at local `at`: picks the mix entry for
-   * the world cell, turns its states (plus `extra`) into world states and
-   * checks them against the version.
+   * the world cell, adds `extra` states the block has (noting the rest) and
+   * the automatic ones (`auto`, then an axis from a flat scope's shape and
+   * doors, trapdoors and wall torches facing in or out of a face scope),
+   * turns them into world states and checks them against the version.
+   * Doors and beds write both halves, sharing one sequence number.
    */
   place(
     scope: Scope,
     at: Vec,
     material: Material,
     path: string,
-    options: {
-      extra?: Readonly<Record<string, string>>;
-      onlyEmpty?: boolean;
-      replace?: ReplaceSet | null;
-      point?: boolean;
-    } = {},
+    options: PlacementOptions = {},
   ): void {
     const pos = scope.world(...at);
     if (++this.placements > this.maxPlacements) {
@@ -655,36 +805,162 @@ export class Compiler {
       );
     }
     const entry = pickEntry(material, this.seed, pos);
-    let block = null;
-    if (entry.id !== AIR) {
-      const { states, unknown } = orientStates(scope, {
-        ...entry.states,
-        ...options.extra,
-      });
-      for (const key of unknown) {
-        this.warnings.push({
-          path,
-          message: `unknown ${key} '${options.extra?.[key] ?? entry.states[key]}' ignored`,
-        });
-      }
-      const key = JSON.stringify([entry.id, states]);
-      if (!this.checkedStates.has(key)) {
-        const error = validatePlacedState(this.registry, entry.id, states);
-        if (error) throw new BuildError(path, error);
-        this.checkedStates.add(key);
-      }
-      block = { id: entry.id, states };
-    }
-    this.log.write(pos, {
+    const write = {
       ...this.layers.current,
       seq: this.log.nextSeq(),
-      block,
       onlyEmpty: options.onlyEmpty ?? false,
       replace: options.replace ?? null,
       path,
       point: options.point ?? false,
-    });
+    };
+    if (entry.id === AIR) {
+      this.log.write(pos, { ...write, block: null });
+      return;
+    }
+    const states = this.localStates(entry, scope, path, options);
+    const oriented = orientStates(scope, states);
+    for (const key of oriented.unknown) {
+      this.warnings.push({
+        path,
+        message: `unknown ${key} '${states[key]}' ignored`,
+      });
+    }
+    const parts: [Vec, Record<string, string>][] = [];
+    const kind = this.registry.kind(entry.id);
+    if (kind === "door") {
+      parts.push([pos, { ...oriented.states, half: "lower" }]);
+      parts.push([add(pos, [0, 1, 0]), { ...oriented.states, half: "upper" }]);
+    } else if (kind === "bed") {
+      const facing =
+        oriented.states.facing ??
+        this.registry.defaults(entry.id)?.facing ??
+        "north";
+      parts.push([pos, { ...oriented.states, part: "foot" }]);
+      parts.push([
+        add(pos, FACING_VECTORS[facing] ?? [0, 0, 0]),
+        { ...oriented.states, part: "head" },
+      ]);
+    } else {
+      parts.push([pos, oriented.states]);
+    }
+    for (const [, partStates] of parts) {
+      const key = JSON.stringify([entry.id, partStates]);
+      if (!this.checkedStates.has(key)) {
+        const error = validatePlacedState(this.registry, entry.id, partStates);
+        if (error) throw new BuildError(path, error);
+        this.checkedStates.add(key);
+      }
+    }
+    for (const [partPos, partStates] of parts) {
+      this.log.write(partPos, {
+        ...write,
+        block: { id: entry.id, states: partStates },
+      });
+    }
   }
+
+  /**
+   * The states of one placement, directions still local: the material's own,
+   * `extra` (Cairn: a state the block doesn't have is noted and ignored, so
+   * one `axis` can serve a mix of logs and stone) and the automatic ones.
+   */
+  private localStates(
+    entry: MaterialEntry,
+    scope: Scope,
+    path: string,
+    options: PlacementOptions,
+  ): Record<string, string> {
+    const properties = this.registry.properties(entry.id) ?? {};
+    const states = { ...entry.states };
+    for (const [key, value] of Object.entries(options.extra ?? {})) {
+      if (Object.hasOwn(properties, key)) {
+        states[key] = value;
+        continue;
+      }
+      const message = `'${shortId(entry.id)}' has no state '${key}'; ignored`;
+      const noteKey = JSON.stringify([path, message]);
+      if (!this.notedStates.has(noteKey)) {
+        this.notedStates.add(noteKey);
+        this.notes.push({ path, message });
+      }
+    }
+    for (const [key, value] of Object.entries(options.auto ?? {})) {
+      if (Object.hasOwn(properties, key) && !(key in states)) {
+        states[key] = value;
+      }
+    }
+    if (Object.hasOwn(properties, "axis") && !("axis" in states)) {
+      // a one-block-high run of logs lies along its length; a flat area of
+      // them stands upright
+      const [sx, sy, sz] = scope.size;
+      if (sy === 1 && sx > 1 !== sz > 1) states.axis = sx > 1 ? "x" : "z";
+      else if (sy === 1 && sx > 1 && sz > 1) states.axis = "y";
+    }
+    const kind = this.registry.kind(entry.id);
+    if (
+      scope.kind === "face" &&
+      !("facing" in states) &&
+      (kind === "door" || kind === "trapdoor" || kind === "wall_torch")
+    ) {
+      states.facing = kind === "door" ? "in" : "out";
+    }
+    return states;
+  }
+}
+
+interface PlacementOptions {
+  /** States the operation asked for; ignored (with a note) where missing. */
+  extra?: Readonly<Record<string, string>>;
+  /** Automatic states, used where the block has them and nothing set them. */
+  auto?: Readonly<Record<string, string>>;
+  onlyEmpty?: boolean;
+  replace?: ReplaceSet | null;
+  /** A single placed block (`block`), checked for collisions. */
+  point?: boolean;
+}
+
+const AIR_MATERIAL: Material = {
+  entries: [{ weight: 1, id: AIR, states: {} }],
+};
+
+const FACING_VECTORS: Readonly<Record<string, Vec>> = {
+  north: [0, 0, -1],
+  south: [0, 0, 1],
+  east: [1, 0, 0],
+  west: [-1, 0, 0],
+  up: [0, 1, 0],
+  down: [0, -1, 0],
+};
+
+function add(a: Vec, b: Vec): Vec {
+  return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+}
+
+function shortId(id: string): string {
+  return id.replace(/^minecraft:/, "");
+}
+
+function lowercase(states: Record<string, string>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(states).map(([k, v]) => [k, v.toLowerCase()]),
+  );
+}
+
+/** `facing`, `axis`, `half` and `state` of a placement, lowercased. */
+function extraStates(arg: {
+  facing?: unknown;
+  axis?: unknown;
+  half?: unknown;
+  state?: Record<string, unknown>;
+}): Record<string, string> {
+  const extra: Record<string, string> = {};
+  for (const key of ["facing", "axis", "half"] as const) {
+    if (arg[key] !== undefined) extra[key] = String(arg[key]);
+  }
+  for (const [key, value] of Object.entries(arg.state ?? {})) {
+    if (!key.startsWith("#")) extra[key] = String(value);
+  }
+  return lowercase(extra);
 }
 
 /** Compiles a validated program against one version's block registry. */
