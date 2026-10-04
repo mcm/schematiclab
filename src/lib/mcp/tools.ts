@@ -2,6 +2,7 @@
 
 import type { CallToolResult, McpServer } from "@modelcontextprotocol/server";
 import { searchBlocksTool, suggestPaletteTool } from "./block-tools";
+import { checkBuildTool, compileBuildTool } from "./build-tools";
 import { generateShapeTool } from "./generate-shape";
 import { resolveLimits, withToolTimeout } from "./limits";
 import { listVersionsTool } from "./list-versions";
@@ -20,6 +21,8 @@ export const TOOLS: readonly McpTool[] = [
   generateShapeTool,
   searchBlocksTool,
   suggestPaletteTool,
+  compileBuildTool,
+  checkBuildTool,
 ];
 
 export function registerTools(server: McpServer, deps: McpDeps): void {

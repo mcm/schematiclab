@@ -49,7 +49,7 @@ Any MCP client with streamable HTTP support works. Send JSON-RPC as `POST /api/m
 
 Every tool that takes a Minecraft version accepts the ids `list_versions` returns (for example `1.12.2`, `1.20.1`, `1.21.4`), and every tool that writes a file accepts the format ids it returns. Errors (an unknown version, a block missing from a version, a file over a limit…) are returned as tool errors (`isError: true`) with a message saying what to change.
 
-Tools that return data return it twice: as `structuredContent` (matching the tool's output schema) and as JSON in a text content block, for clients that only read text. `render_schematic` is the exception: it returns only a PNG image and a plain-text summary.
+Tools that return data return it twice: as `structuredContent` (matching the tool's output schema) and as JSON in a text content block, for clients that only read text. `render_schematic` is the exception: it returns only a PNG image and a plain-text summary. `compile_build` and `check_build` return their report as markdown text and a summary as `structuredContent`.
 
 ### Schematic inputs
 
@@ -134,6 +134,38 @@ Suggests blocks whose average colour is closest to a target colour.
 - Output: `version`, `target` (`{ hex, reference_block? }`) and `blocks` (`{ id, kind, hex, distance, full_cube }`, closest first by OKLab distance). Each colour is listed once, so a material's stairs, slabs and walls don't crowd out other materials; find them with `search_blocks`. For 1.12.2, `note` as in `search_blocks`.
 
 Block ids, properties and defaults come from [misode/mcmeta](https://github.com/misode/mcmeta) (1.14 and later) and [PrismarineJS/minecraft-data](https://github.com/PrismarineJS/minecraft-data) (1.12.2 and 1.13.x), fetched from jsDelivr the first time a version is used and cached in memory per server instance. `node --experimental-strip-types scripts/check-block-data.mts` checks that every known version loads.
+
+### `compile_build`
+
+Compiles a program in the build language (see [the build language](#build-language)) for one Minecraft version: validation, the compile, post-processing (stair corners, pane, fence and wall connections) and the analysis report. Stateless: send the whole program on every call.
+
+- Input:
+  - `program`: the whole program, a JSON object (or the same as a JSON string). `size` is at most 256 on each axis, and a build places at most 2,000,000 blocks.
+  - `version`: a version id from `list_versions`. Block ids are flattened (1.13+) names for every version; 1.12.2 builds are compiled against the 1.13.2 block data and written as Forge 1.12 states.
+  - `output_format` (optional): also write the build as a schematic in this format.
+  - `render` (optional, default `true`): return a PNG contact sheet of the build.
+- Output, in order:
+  - The report as markdown text: `Errors (fix these first)`, `Warnings` and `Auto-repairs / notes`, each line prefixed with the program path of the operation it comes from (`build[2].box.do[0].fill: …`), then `Geometry` (occupied box, connected and FLOATING pieces, sealed rooms), `Features` (doors, windows, stairs, slabs, light sources, BLOCKED DOOR), symmetry and the most used materials.
+  - With `output_format`, a text block `{"file": {…}}` holding the [output file](#output-files).
+  - Unless `render` is `false`, an `image/png` contact sheet (the same sheet as `render_schematic`).
+  - `structuredContent`: `name`, `minecraft_version`, `valid` (false when the program failed validation), `errors`, `warnings`, `notes` (counts), `block_count` and, with `output_format`, `file`.
+
+Problems with the program are not tool errors: they are in the report, and a program with compile errors still renders and writes what it built. A program that fails validation (a bad key, a size over 256…) gets a report of every validation error and no render or file. A `roof` operation reports `roof is not supported yet` at its path. An unknown version, invalid JSON in a string `program`, block data that can't be fetched, a format that can't hold the build (a Building Gadgets format outside the version's range) and `output_format` without a Blob store are tool errors.
+
+### `check_build`
+
+`compile_build` without the render or the file: the same report and `structuredContent` (no `file`) for the same `program` and `version`. Use it for quick checks between revisions.
+
+## Build language
+
+`compile_build` and `check_build` take programs in Schematiclab's build language, a port of the Cairn proof of concept. Its reference is `src/lib/buildlang/SPEC.md`, which the server also offers to clients:
+
+| Kind     | Name                            | What it returns                                                                                                                                                                                                                                                    |
+| -------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Resource | `schematiclab://buildlang/spec` | `SPEC.md` word for word (`text/markdown`): program structure, scopes, operations, materials, idioms and the design workflow. Roofs are marked "coming soon".                                                                                                       |
+| Prompt   | `design_build`                  | Arguments `request` (what to build) and `version` (a `list_versions` id). One user message: the request, an instruction to work plan-first and compile every revision with `compile_build` for that version, the spec's section 6 (Workflow), then the whole spec. |
+
+The file is read from disk at request time and traced into the MCP route by `outputFileTracingIncludes` in `next.config.ts`.
 
 ## Limits
 
