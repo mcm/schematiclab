@@ -23,6 +23,7 @@ const FORBIDDEN = [
   "lib/mcp/tools.ts",
   "lib/mcp/server.ts",
   "lib/blockdata/load.ts",
+  "lib/blockdata/registry.ts",
 ];
 
 // Module specifiers in `source`: static imports, re-exports and literal
