@@ -68,14 +68,6 @@ const AXIS_LABELS: Record<ShapeAxis, string> = {
   z: "Lying north–south (Z)",
 };
 
-// Building Gadgets can be read but not written yet (their `fromSchematic` is
-// a stub), so a generated shape can't be saved in them.
-const UNWRITABLE_FORMATS: readonly SchematicFormatId[] = [
-  "BuildingGadgets[1.12]",
-  "BuildingGadgets[1.14.4-1.19.3]",
-  "BuildingGadgets2[1.20+]",
-];
-
 const VERSION_IDS: readonly string[] = Object.keys(KNOWN_VERSIONS);
 const DEFAULT_VERSION_ID = VERSION_IDS[VERSION_IDS.length - 1];
 const MAX_MATERIAL_SUGGESTIONS = 50;
@@ -243,12 +235,7 @@ export default function ShapeGeneratorPage() {
   const editorState = useEditorState();
   const [form, setForm] = React.useState<FormState>(INITIAL_FORM);
   const [outputFormat, setOutputFormat] =
-    React.useState<SchematicFormatId | null>(() =>
-      editorState.outputFormat !== null &&
-      !UNWRITABLE_FORMATS.includes(editorState.outputFormat)
-        ? editorState.outputFormat
-        : null,
-    );
+    React.useState<SchematicFormatId | null>(() => editorState.outputFormat);
   const [busy, setBusy] = React.useState<"download" | "advanced" | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const cancelledRef = React.useRef(false);
@@ -649,7 +636,6 @@ export default function ShapeGeneratorPage() {
             <FormatSelector
               value={outputFormat}
               onChange={handleOutputFormatChange}
-              exclude={UNWRITABLE_FORMATS}
             />
 
             <InlineError message={visibleError} />

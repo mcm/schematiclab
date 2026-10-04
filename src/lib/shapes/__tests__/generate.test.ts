@@ -175,10 +175,19 @@ describe("buildShapeProjection", () => {
     "Sponge[v2]",
     "Sponge[v3]",
     "Structure",
+    "BuildingGadgets[1.14.4-1.19.3]",
+    "BuildingGadgets2[1.20+]",
     "StructurizeBlueprint",
   ];
   it.each(formats)("round-trips through %s", (format) => {
-    const spec: ShapeSpec = { ...SPHERE, hollow: true, versionId: "1.19.4" };
+    // Building Gadgets formats only hold their own range of versions.
+    const versionId =
+      format === "BuildingGadgets[1.14.4-1.19.3]"
+        ? "1.18.2"
+        : format === "BuildingGadgets2[1.20+]"
+          ? "1.20.1"
+          : "1.19.4";
+    const spec: ShapeSpec = { ...SPHERE, hollow: true, versionId };
     const result = buildShapeProjection(spec);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -186,6 +195,7 @@ describe("buildShapeProjection", () => {
       schematic: result.projection,
       inputFilename: `${defaultShapeName(spec)}.out`,
       outputFormat: format,
+      targetVersion: spec.versionId,
     });
     expect(exported.ok).toBe(true);
     if (!exported.ok) return;
@@ -204,6 +214,49 @@ describe("buildShapeProjection", () => {
     expect(blockPositions(parsed.schematic, "minecraft:stone_bricks")).toEqual(
       blockPositions(result.projection, "minecraft:stone_bricks"),
     );
+  });
+  it("writes 1.12.2 shapes as Building Gadgets 1.12 templates", () => {
+    const spec: ShapeSpec = {
+      shape: "cuboid",
+      width: 2,
+      height: 1,
+      depth: 2,
+      material: "granite",
+      versionId: "1.12.2",
+    };
+    const result = buildShapeProjection(spec);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const exported = serializeSchematic({
+      schematic: result.projection,
+      inputFilename: "granite.shape",
+      outputFormat: "BuildingGadgets[1.12]",
+      targetVersion: spec.versionId,
+    });
+    expect(exported.ok).toBe(true);
+    if (!exported.ok) return;
+    expect(exported.filename).toBe("granite.txt");
+    const parsed = parseSchematic(exported.bytes);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.schematic.palette.map((e) => [e.blockId, e.count])).toEqual([
+      ["minecraft:stone", 4],
+    ]);
+  });
+
+  it("refuses a Building Gadgets format outside the shape's version", () => {
+    const result = buildShapeProjection({ ...SPHERE, versionId: "1.20.1" });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const exported = serializeSchematic({
+      schematic: result.projection,
+      inputFilename: "sphere.shape",
+      outputFormat: "BuildingGadgets[1.12]",
+      targetVersion: "1.20.1",
+    });
+    expect(exported.ok).toBe(false);
+    if (exported.ok) return;
+    expect(exported.error).toMatch(/1\.12\.2, not 1\.20\.1/);
   });
 });
 

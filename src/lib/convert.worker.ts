@@ -190,7 +190,8 @@ ctx.addEventListener("message", (event) => {
     }
 
     // Built and written here, so a big shape's placements never cross to the
-    // main thread.
+    // main thread. Written for the shape's own version, so a format that
+    // can't hold it (Building Gadgets) fails instead of moving it to another.
     if (type === "exportShape") {
       const { spec, outputFormat, inputFilename } = request.payload;
       const built = buildShapeProjection(spec);
@@ -199,6 +200,7 @@ ctx.addEventListener("message", (event) => {
             schematic: built.projection,
             outputFormat,
             inputFilename,
+            targetVersion: spec.versionId,
           })
         : built;
       const transfer: Transferable[] =

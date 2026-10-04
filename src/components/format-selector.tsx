@@ -66,7 +66,7 @@ export function FormatSelector({
         onValueChange={(next) => onChange(next as SchematicFormatId)}
       >
         <SelectTrigger id={TRIGGER_ID} style={{ width: "100%" }}>
-          <SelectValue placeholder="Choose a schematic type to output" />
+          <SelectValue placeholder="Choose a schematic type" />
         </SelectTrigger>
         <SelectContent>
           {options.map((option) => (

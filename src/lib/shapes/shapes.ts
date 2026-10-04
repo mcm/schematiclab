@@ -141,13 +141,20 @@ function solidGrid(options: ShapeOptions): Uint8Array {
 }
 
 // Solid voxels within `thickness` steps (6-connected) of the outside. The
-// grid's boundary counts as outside, so every face of the shape is closed.
+// grid's boundary counts as outside, so every face of the shape is closed,
+// except along an axis one block long: a flat shape is hollowed within its
+// plane (a ring, not a disc), and a line keeps only its ends.
 function shell(
   size: [number, number, number],
   solid: Uint8Array,
   thickness: number,
 ): Uint8Array {
   const [w, h, d] = size;
+  // A 1×1×1 shape has no longer axis to hollow along, so it stays whole.
+  const flat = Math.max(w, h, d) > 1;
+  const openX = flat && w === 1;
+  const openY = flat && h === 1;
+  const openZ = flat && d === 1;
   let core = solid;
   // Once the core is empty, further steps change nothing.
   let coreCount = 1;
@@ -160,18 +167,10 @@ function shell(
           const i = voxelIndex(size, x, y, z);
           if (!core[i]) continue;
           const interior =
-            x > 0 &&
-            x < w - 1 &&
-            y > 0 &&
-            y < h - 1 &&
-            z > 0 &&
-            z < d - 1 &&
-            core[i - 1] &&
-            core[i + 1] &&
-            core[i - w] &&
-            core[i + w] &&
-            core[i - w * d] &&
-            core[i + w * d];
+            (openX || (x > 0 && x < w - 1 && core[i - 1] && core[i + 1])) &&
+            (openY ||
+              (y > 0 && y < h - 1 && core[i - w * d] && core[i + w * d])) &&
+            (openZ || (z > 0 && z < d - 1 && core[i - w] && core[i + w]));
           if (interior) {
             next[i] = 1;
             coreCount++;

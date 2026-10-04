@@ -176,6 +176,73 @@ describe("buildShapeGrid", () => {
     }
   });
 
+  it("hollows a flat shape into a ring", () => {
+    const solid = buildShapeGrid({
+      shape: "cylinder",
+      width: 15,
+      height: 1,
+      depth: 15,
+    });
+    const ring = buildShapeGrid({
+      shape: "cylinder",
+      width: 15,
+      height: 1,
+      depth: 15,
+      hollow: true,
+      thickness: 1,
+    });
+    expect(at(ring, 7, 0, 7)).toBe(false);
+    expect(at(ring, 0, 0, 7)).toBe(true);
+    expect(at(ring, 7, 0, 0)).toBe(true);
+    expect(ring.count).toBeGreaterThan(0);
+    expect(ring.count).toBeLessThan(solid.count / 2);
+  });
+
+  it("hollows within the plane on whichever axis is one block long", () => {
+    const xFlat = buildShapeGrid({
+      shape: "cuboid",
+      width: 1,
+      height: 5,
+      depth: 5,
+      hollow: true,
+    });
+    expect(xFlat.count).toBe(16);
+    expect(at(xFlat, 0, 2, 2)).toBe(false);
+    const zFlat = buildShapeGrid({
+      shape: "cuboid",
+      width: 5,
+      height: 5,
+      depth: 1,
+      hollow: true,
+      thickness: 2,
+    });
+    expect(zFlat.count).toBe(24);
+    expect(at(zFlat, 2, 2, 0)).toBe(false);
+    expect(at(zFlat, 1, 1, 0)).toBe(true);
+  });
+
+  it("keeps a hollow line's ends and a hollow single block", () => {
+    const line = buildShapeGrid({
+      shape: "cuboid",
+      width: 1,
+      height: 1,
+      depth: 6,
+      hollow: true,
+    });
+    expect(line.count).toBe(2);
+    expect(at(line, 0, 0, 0) && at(line, 0, 0, 5)).toBe(true);
+    for (const shape of SHAPE_KINDS) {
+      const grid = buildShapeGrid({
+        shape,
+        width: 1,
+        height: 1,
+        depth: 1,
+        hollow: true,
+      });
+      expect(grid.count, shape).toBe(1);
+    }
+  });
+
   it("rejects out-of-range dimensions and thickness", () => {
     expect(() =>
       buildShapeGrid({ shape: "cuboid", width: 0, height: 1, depth: 1 }),
