@@ -1,0 +1,80 @@
+{
+  "oak_stairs": [
+    {
+      "facing": ["north", "south", "west", "east"],
+      "half": ["top", "bottom"],
+      "shape": [
+        "straight",
+        "inner_left",
+        "inner_right",
+        "outer_left",
+        "outer_right"
+      ],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "facing": "north",
+      "half": "bottom",
+      "shape": "straight",
+      "waterlogged": "false"
+    }
+  ],
+  "oak_leaves": [
+    {
+      "distance": ["1", "2", "3", "4", "5", "6", "7"],
+      "persistent": ["true", "false"]
+    },
+    { "distance": "7", "persistent": "false" }
+  ],
+  "note_block": [
+    {
+      "instrument": [
+        "harp",
+        "basedrum",
+        "snare",
+        "hat",
+        "bass",
+        "flute",
+        "bell",
+        "guitar",
+        "chime",
+        "xylophone",
+        "iron_xylophone",
+        "cow_bell",
+        "didgeridoo",
+        "bit",
+        "banjo",
+        "pling"
+      ],
+      "note": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "21",
+        "22",
+        "23",
+        "24"
+      ],
+      "powered": ["true", "false"]
+    },
+    { "instrument": "harp", "note": "0", "powered": "false" }
+  ]
+}

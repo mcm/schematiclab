@@ -1,0 +1,11 @@
+{
+  "block": [
+    "air",
+    "stone",
+    "oak_stairs",
+    "oak_leaves",
+    "note_block",
+    "netherite_block"
+  ],
+  "item": ["stone"]
+}

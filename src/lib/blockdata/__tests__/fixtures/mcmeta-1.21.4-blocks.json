@@ -1,0 +1,132 @@
+{
+  "air": [{}, {}],
+  "stone": [{}, {}],
+  "oak_stairs": [
+    {
+      "facing": ["north", "south", "west", "east"],
+      "half": ["top", "bottom"],
+      "shape": [
+        "straight",
+        "inner_left",
+        "inner_right",
+        "outer_left",
+        "outer_right"
+      ],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "facing": "north",
+      "half": "bottom",
+      "shape": "straight",
+      "waterlogged": "false"
+    }
+  ],
+  "oak_leaves": [
+    {
+      "distance": ["1", "2", "3", "4", "5", "6", "7"],
+      "persistent": ["true", "false"],
+      "waterlogged": ["true", "false"]
+    },
+    { "distance": "7", "persistent": "false", "waterlogged": "false" }
+  ],
+  "note_block": [
+    {
+      "instrument": [
+        "harp",
+        "basedrum",
+        "snare",
+        "hat",
+        "bass",
+        "flute",
+        "bell",
+        "guitar",
+        "chime",
+        "xylophone",
+        "iron_xylophone",
+        "cow_bell",
+        "didgeridoo",
+        "bit",
+        "banjo",
+        "pling",
+        "zombie",
+        "skeleton",
+        "creeper",
+        "dragon",
+        "wither_skeleton",
+        "piglin",
+        "custom_head"
+      ],
+      "note": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "21",
+        "22",
+        "23",
+        "24"
+      ],
+      "powered": ["true", "false"]
+    },
+    { "instrument": "harp", "note": "0", "powered": "false" }
+  ],
+  "redstone_wire": [
+    {
+      "east": ["up", "side", "none"],
+      "north": ["up", "side", "none"],
+      "power": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15"
+      ],
+      "south": ["up", "side", "none"],
+      "west": ["up", "side", "none"]
+    },
+    {
+      "east": "none",
+      "north": "none",
+      "power": "0",
+      "south": "none",
+      "west": "none"
+    }
+  ],
+  "pale_oak_log": [{ "axis": ["x", "y", "z"] }, { "axis": "y" }],
+  "creaking_heart": [
+    {
+      "active": ["true", "false"],
+      "axis": ["x", "y", "z"],
+      "natural": ["true", "false"]
+    },
+    { "active": "false", "axis": "y", "natural": "false" }
+  ]
+}
