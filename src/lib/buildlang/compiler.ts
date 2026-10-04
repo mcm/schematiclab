@@ -1181,7 +1181,7 @@ function extraStates(arg: {
 }
 
 /** Compiles a validated program against one version's block registry. */
-export function compileProgram(
+export function compileWithRegistry(
   program: Program,
   registry: BlockRegistry,
   options: CompileOptions = {},

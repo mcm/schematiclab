@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compileProgram } from "../compiler";
+import { compileWithRegistry } from "../compiler";
 import { type Operations, type Program } from "../program";
 import {
   type Built,
@@ -118,7 +118,7 @@ describe("box", () => {
       [2, 2, 2],
     );
     expect(b.errors).toEqual([]);
-    const bad = compileProgram(
+    const bad = compileWithRegistry(
       {
         size: [2, 2, 2],
         build: [{ box: { at: [0, "x", 0], do: [{ fill: "stone" }] } }],
@@ -841,7 +841,8 @@ describe("paths and errors", () => {
 describe("unvalidated input (template substitution can produce it)", () => {
   const raw = (build: unknown, size: [number, number, number] = [3, 3, 3]) =>
     messages(
-      compileProgram({ size, build } as unknown as Program, registry).errors,
+      compileWithRegistry({ size, build } as unknown as Program, registry)
+        .errors,
     );
 
   it("reports malformed operations at their paths", () => {

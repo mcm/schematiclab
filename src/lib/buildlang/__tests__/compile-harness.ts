@@ -9,7 +9,7 @@ import {
   type BlockRegistry,
   loadBlockRegistry,
 } from "../../blockdata/registry";
-import { compileProgram, type CompileResult } from "../compiler";
+import { compileWithRegistry, type CompileResult } from "../compiler";
 import {
   formatProgramError,
   type MaterialSpec,
@@ -66,7 +66,7 @@ export function compile(
   if (!validation.ok) {
     throw new Error(validation.errors.map(formatProgramError).join("\n"));
   }
-  const result = compileProgram(validation.program, registry, {
+  const result = compileWithRegistry(validation.program, registry, {
     maxPlacements,
   });
   const blocks = new Map<
