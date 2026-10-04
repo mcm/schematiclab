@@ -227,8 +227,9 @@ describe("buildShapePreview", () => {
   });
 
   it("reports why a shape can't be built", () => {
-    expect(buildShapePreview({ ...SPHERE, material: "air" }, 10).ok).toBe(
-      false,
-    );
+    expect(buildShapePreview({ ...SPHERE, material: "air" }, 10)).toEqual({
+      ok: false,
+      error: "minecraft:air would generate an empty schematic.",
+    });
   });
 });
