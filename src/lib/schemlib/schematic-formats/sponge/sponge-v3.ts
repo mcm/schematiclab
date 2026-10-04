@@ -186,7 +186,7 @@ export class SpongeSchematicV3
     options?: SchematicLoadOptions,
   ): SpongeSchematicV3 {
     const bytes = typeof obj === "string" ? new TextEncoder().encode(obj) : obj;
-    const named = nbt.loadNbtFromBytes(bytes);
+    const named = nbt.loadNbtFromBytes(bytes, options);
     const inner = named.get("Schematic");
     if (!(inner instanceof nbt.Compound)) {
       throw new TypeError(

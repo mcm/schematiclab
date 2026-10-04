@@ -11,6 +11,13 @@ export const MAX_REQUEST_BYTES = 8 * 1024 * 1024;
 // A schematic input (base64, pastebin/gist or our own Blob URL), decoded.
 export const MAX_INPUT_BYTES = 5 * 1024 * 1024;
 
+// Bytes a gzipped schematic input may inflate to. The bulkiest format per
+// block, Structure (a compound with a position list and a state index per
+// block, about 36 bytes), needs about 72 MB for MAX_PROJECTION_BLOCKS blocks;
+// Litematic and Sponge need a few MB. Inflation stops as soon as this is
+// passed, so a small gzip bomb never expands further.
+export const MAX_DECOMPRESSED_BYTES = 128 * 1024 * 1024;
+
 // Blocks in one parsed schematic or generated shape. Matches the Shape
 // Generator's own `MAX_SHAPE_BLOCKS`; about 20 s to write and render on the
 // server, well inside the tool timeout.
@@ -24,11 +31,13 @@ export const TOOL_TIMEOUT_MS = 45_000;
 // The limits tests may lower through `McpDeps.limits`.
 export interface McpLimits {
   maxProjectionBlocks: number;
+  maxDecompressedBytes: number;
   toolTimeoutMs: number;
 }
 
 export const DEFAULT_LIMITS: McpLimits = {
   maxProjectionBlocks: MAX_PROJECTION_BLOCKS,
+  maxDecompressedBytes: MAX_DECOMPRESSED_BYTES,
   toolTimeoutMs: TOOL_TIMEOUT_MS,
 };
 
@@ -43,6 +52,11 @@ export function formatMegabytes(bytes: number): string {
 /** The tool error for a schematic or shape of `blocks` blocks over `max`. */
 export function tooManyBlocksMessage(blocks: number, max: number): string {
   return `This schematic has ${blocks.toLocaleString("en-US")} blocks, more than the ${max.toLocaleString("en-US")} this server handles.`;
+}
+
+/** The tool error for a gzipped schematic inflating past `maxBytes`. */
+export function decompressedTooLargeMessage(maxBytes: number): string {
+  return `This schematic decompresses to more than ${formatMegabytes(maxBytes)}, the most this server handles.`;
 }
 
 /** Throws when `projection` has more blocks than `max`. */

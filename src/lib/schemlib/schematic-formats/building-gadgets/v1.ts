@@ -122,12 +122,15 @@ function blockStateFromCompound(c: nbt.Compound): BlockState {
   return new BlockState({ Name: name, Properties: props });
 }
 
-function decodeBody(value: unknown): BuildingGadgetsV1Body {
+function decodeBody(
+  value: unknown,
+  options?: SchematicLoadOptions,
+): BuildingGadgetsV1Body {
   if (typeof value !== "string") {
     throw new TypeError("BG v1: body must be a base64 string");
   }
   const bytes = new Uint8Array(Buffer.from(value, "base64"));
-  const named = nbt.loadNbtFromBytes(bytes);
+  const named = nbt.loadNbtFromBytes(bytes, options);
   return bodyFromCompound(named);
 }
 
@@ -348,7 +351,7 @@ export class BuildingGadgetsV1Schematic
       ],
       options,
     );
-    const body = decodeBody(obj2.body);
+    const body = decodeBody(obj2.body, options);
     return new BuildingGadgetsV1Schematic({ header, body });
   }
 

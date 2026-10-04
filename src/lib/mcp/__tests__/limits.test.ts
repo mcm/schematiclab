@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import type { CallToolResult } from "@modelcontextprotocol/server";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import * as route from "@/app/api/mcp/[transport]/route";
 import { MAX_IMPORT_BYTES } from "../../import-url";
@@ -9,6 +9,7 @@ import { MAX_SHAPE_BLOCKS } from "../../shapes/generate";
 import { generateShapeTool } from "../generate-shape";
 import { resolveSchematicInput } from "../input";
 import {
+  MAX_DECOMPRESSED_BYTES,
   MAX_INPUT_BYTES,
   MAX_PROJECTION_BLOCKS,
   MAX_REQUEST_BYTES,
@@ -21,7 +22,10 @@ import {
   renderSchematicTool,
 } from "../schematic-tools";
 import { LitematicRegion } from "../../schemlib/schematic-formats/litematic";
-import { oversizedSchematics } from "../../__tests__/oversized-schematics";
+import {
+  gzipBomb,
+  oversizedSchematics,
+} from "../../__tests__/oversized-schematics";
 import { createMcpRequestHandler } from "../server";
 import { runTool } from "../tools";
 import { type McpDeps, defineTool, jsonResult } from "../types";
@@ -205,6 +209,57 @@ describe("declared schematic size", () => {
     );
     expect(text(result)).toBe(
       "This schematic has 1,000,000,000 blocks, more than the 10 this server handles.",
+    );
+  });
+});
+
+describe("decompressed size", () => {
+  const tools = [
+    { tool: inspectSchematicTool, extra: {} },
+    { tool: convertSchematicTool, extra: { output_format: "Litematic" } },
+    { tool: renderSchematicTool, extra: {} },
+  ];
+  let bomb: Uint8Array;
+
+  beforeAll(async () => {
+    // Under 1 MB of gzip that would inflate to twice the cap.
+    bomb = await gzipBomb(2 * MAX_DECOMPRESSED_BYTES);
+  });
+
+  it("is 128 MB", () => {
+    expect(MAX_DECOMPRESSED_BYTES).toBe(128 * 1024 * 1024);
+  });
+
+  for (const { tool, extra } of tools) {
+    it(`stops ${tool.name} on a small gzip that inflates past the limit`, async () => {
+      expect(bomb.length).toBeLessThan(1024 * 1024);
+      const deps = makeDeps();
+      const result = await runTool(
+        tool,
+        {
+          base64: Buffer.from(bomb).toString("base64"),
+          filename: "bomb.litematic",
+          ...extra,
+        },
+        deps,
+      );
+      expect(result.isError).toBe(true);
+      expect(text(result)).toBe(
+        "This schematic decompresses to more than 128 MB, the most this server handles.",
+      );
+      expect(deps.blob.objects.size).toBe(0);
+    });
+  }
+
+  it("uses a lowered limit from McpDeps.limits", async () => {
+    const small = await gzipBomb(2 * 1024 * 1024);
+    const result = await runTool(
+      inspectSchematicTool,
+      { base64: Buffer.from(small).toString("base64"), filename: "a.nbt" },
+      makeDeps({ limits: { maxDecompressedBytes: 1024 * 1024 } }),
+    );
+    expect(text(result)).toBe(
+      "This schematic decompresses to more than 1 MB, the most this server handles.",
     );
   });
 });

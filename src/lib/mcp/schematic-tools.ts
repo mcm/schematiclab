@@ -13,6 +13,7 @@ import {
 import { translateBlockState } from "../schemlib/data/translate";
 import { BlockState } from "../schemlib/blocks";
 import { SchematicTooLargeError } from "../schemlib/schematic-formats/abstract";
+import { DecompressedTooLargeError } from "../schemlib/nbt";
 import {
   KNOWN_VERSIONS,
   type MinecraftVersion,
@@ -28,6 +29,7 @@ import {
 import {
   assertProjectionBlocks,
   resolveLimits,
+  decompressedTooLargeMessage,
   tooManyBlocksMessage,
 } from "./limits";
 import { publishFile } from "./output";
@@ -59,11 +61,18 @@ async function loadSchematic(
   deps: McpDeps,
 ): Promise<LoadedSchematic> {
   const input = await resolveSchematicInput(args, deps);
-  const maxBlocks = resolveLimits(deps.limits).maxProjectionBlocks;
-  const parsed = parseSchematic(input.bytes, { maxBlocks });
+  const limits = resolveLimits(deps.limits);
+  const maxBlocks = limits.maxProjectionBlocks;
+  const parsed = parseSchematic(input.bytes, {
+    maxBlocks,
+    maxDecompressedBytes: limits.maxDecompressedBytes,
+  });
   if (!parsed.ok) {
     if (parsed.cause instanceof SchematicTooLargeError) {
       throw new Error(tooManyBlocksMessage(parsed.cause.blocks, maxBlocks));
+    }
+    if (parsed.cause instanceof DecompressedTooLargeError) {
+      throw new Error(decompressedTooLargeMessage(parsed.cause.maxBytes));
     }
     throw new Error(parsed.error);
   }

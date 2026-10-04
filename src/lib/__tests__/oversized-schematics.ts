@@ -246,3 +246,28 @@ export function oversizedSchematics(): OversizedSchematic[] {
     buildingGadgetsV2(),
   ];
 }
+
+/**
+ * A gzip stream of `inflatedBytes` zero bytes (about 1/1000 of that in size),
+ * compressed a megabyte at a time so the inflated data is never held whole.
+ */
+export async function gzipBomb(inflatedBytes: number): Promise<Uint8Array> {
+  const { createGzip } = await import("node:zlib");
+  const gzip = createGzip({ level: 9 });
+  const chunks: Buffer[] = [];
+  gzip.on("data", (chunk: Buffer) => chunks.push(chunk));
+  const done = new Promise<void>((resolve, reject) => {
+    gzip.on("end", resolve);
+    gzip.on("error", reject);
+  });
+  const zeros = Buffer.alloc(1024 * 1024);
+  for (let left = inflatedBytes; left > 0; left -= zeros.length) {
+    const chunk = left >= zeros.length ? zeros : zeros.subarray(0, left);
+    if (!gzip.write(chunk)) {
+      await new Promise((resolve) => gzip.once("drain", resolve));
+    }
+  }
+  gzip.end();
+  await done;
+  return new Uint8Array(Buffer.concat(chunks));
+}

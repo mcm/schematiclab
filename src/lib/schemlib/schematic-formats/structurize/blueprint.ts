@@ -211,7 +211,7 @@ export class StructurizeBlueprint extends AbstractRegion {
     options?: SchematicLoadOptions,
   ): StructurizeBlueprint {
     const bytes = typeof obj === "string" ? new TextEncoder().encode(obj) : obj;
-    const root = nbt.loadNbtFromBytes(bytes);
+    const root = nbt.loadNbtFromBytes(bytes, options);
     const sizeX = readInt(root.get("size_x"));
     const sizeY = readInt(root.get("size_y"));
     const sizeZ = readInt(root.get("size_z"));
