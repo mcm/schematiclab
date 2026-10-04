@@ -55,9 +55,11 @@ import {
   type SplitArgs,
   validateOperations,
 } from "./program";
+import { postprocess } from "./postprocess";
 import { orientStates, Scope, type ScopeFaceName, type Vec } from "./scope";
 import { MAX_TEMPLATE_DEPTH, substituteParams } from "./templates";
 import {
+  type BlockGrid,
   LayerStack,
   type Pos,
   type ReplaceSet,
@@ -73,8 +75,10 @@ export const MAX_PLACEMENTS = 2_000_000;
 
 export interface CompileResult {
   size: Pos;
-  /** Every placement; `log.compose()` gives the final blocks. */
+  /** Every placement, as written. */
   log: WriteLog;
+  /** The final blocks: the log composed, with neighbour-dependent states set. */
+  blocks: BlockGrid;
   errors: ProgramError[];
   warnings: ProgramError[];
   /** Fallbacks and repairs (a variant the material lacks, a misspelt block). */
@@ -218,9 +222,12 @@ export class Compiler {
           `or enlarge 'size')`,
       });
     }
+    const blocks = this.log.composeGrid();
+    postprocess(blocks, this.registry);
     return {
       size: this.program.size,
       log: this.log,
+      blocks,
       errors: dedupe(this.errors),
       warnings: dedupe(warnings),
       notes: [...this.resolver.notes, ...this.notes],

@@ -74,7 +74,7 @@ export function compile(
     { id: string; states: Record<string, string> }
   >();
   const cells: Built["cells"] = [];
-  for (const [[x, y, z], block] of result.log.compose()) {
+  for (const [[x, y, z], block] of result.blocks.entries()) {
     const id = block.id.replace(/^minecraft:/, "");
     blocks.set(`${x},${y},${z}`, { id, states: block.states });
     cells.push([x, y, z, id]);

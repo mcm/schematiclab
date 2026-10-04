@@ -1,0 +1,278 @@
+{
+  "glass_pane": [
+    {
+      "east": ["true", "false"],
+      "north": ["true", "false"],
+      "south": ["true", "false"],
+      "waterlogged": ["true", "false"],
+      "west": ["true", "false"]
+    },
+    {
+      "east": "false",
+      "north": "false",
+      "south": "false",
+      "waterlogged": "false",
+      "west": "false"
+    }
+  ],
+  "white_stained_glass_pane": [
+    {
+      "east": ["true", "false"],
+      "north": ["true", "false"],
+      "south": ["true", "false"],
+      "waterlogged": ["true", "false"],
+      "west": ["true", "false"]
+    },
+    {
+      "east": "false",
+      "north": "false",
+      "south": "false",
+      "waterlogged": "false",
+      "west": "false"
+    }
+  ],
+  "iron_bars": [
+    {
+      "east": ["true", "false"],
+      "north": ["true", "false"],
+      "south": ["true", "false"],
+      "waterlogged": ["true", "false"],
+      "west": ["true", "false"]
+    },
+    {
+      "east": "false",
+      "north": "false",
+      "south": "false",
+      "waterlogged": "false",
+      "west": "false"
+    }
+  ],
+  "oak_fence": [
+    {
+      "east": ["true", "false"],
+      "north": ["true", "false"],
+      "south": ["true", "false"],
+      "waterlogged": ["true", "false"],
+      "west": ["true", "false"]
+    },
+    {
+      "east": "false",
+      "north": "false",
+      "south": "false",
+      "waterlogged": "false",
+      "west": "false"
+    }
+  ],
+  "spruce_fence": [
+    {
+      "east": ["true", "false"],
+      "north": ["true", "false"],
+      "south": ["true", "false"],
+      "waterlogged": ["true", "false"],
+      "west": ["true", "false"]
+    },
+    {
+      "east": "false",
+      "north": "false",
+      "south": "false",
+      "waterlogged": "false",
+      "west": "false"
+    }
+  ],
+  "nether_brick_fence": [
+    {
+      "east": ["true", "false"],
+      "north": ["true", "false"],
+      "south": ["true", "false"],
+      "waterlogged": ["true", "false"],
+      "west": ["true", "false"]
+    },
+    {
+      "east": "false",
+      "north": "false",
+      "south": "false",
+      "waterlogged": "false",
+      "west": "false"
+    }
+  ],
+  "oak_fence_gate": [
+    {
+      "facing": ["north", "south", "west", "east"],
+      "in_wall": ["true", "false"],
+      "open": ["true", "false"],
+      "powered": ["true", "false"]
+    },
+    {
+      "facing": "north",
+      "in_wall": "false",
+      "open": "false",
+      "powered": "false"
+    }
+  ],
+  "oak_stairs": [
+    {
+      "facing": ["north", "south", "west", "east"],
+      "half": ["top", "bottom"],
+      "shape": [
+        "straight",
+        "inner_left",
+        "inner_right",
+        "outer_left",
+        "outer_right"
+      ],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "facing": "north",
+      "half": "bottom",
+      "shape": "straight",
+      "waterlogged": "false"
+    }
+  ],
+  "spruce_stairs": [
+    {
+      "facing": ["north", "south", "west", "east"],
+      "half": ["top", "bottom"],
+      "shape": [
+        "straight",
+        "inner_left",
+        "inner_right",
+        "outer_left",
+        "outer_right"
+      ],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "facing": "north",
+      "half": "bottom",
+      "shape": "straight",
+      "waterlogged": "false"
+    }
+  ],
+  "stone_brick_stairs": [
+    {
+      "facing": ["north", "south", "west", "east"],
+      "half": ["top", "bottom"],
+      "shape": [
+        "straight",
+        "inner_left",
+        "inner_right",
+        "outer_left",
+        "outer_right"
+      ],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "facing": "north",
+      "half": "bottom",
+      "shape": "straight",
+      "waterlogged": "false"
+    }
+  ],
+  "cobblestone_stairs": [
+    {
+      "facing": ["north", "south", "west", "east"],
+      "half": ["top", "bottom"],
+      "shape": [
+        "straight",
+        "inner_left",
+        "inner_right",
+        "outer_left",
+        "outer_right"
+      ],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "facing": "north",
+      "half": "bottom",
+      "shape": "straight",
+      "waterlogged": "false"
+    }
+  ],
+  "cobblestone_wall": [
+    {
+      "east": ["true", "false"],
+      "north": ["true", "false"],
+      "south": ["true", "false"],
+      "up": ["true", "false"],
+      "waterlogged": ["true", "false"],
+      "west": ["true", "false"]
+    },
+    {
+      "east": "false",
+      "north": "false",
+      "south": "false",
+      "up": "true",
+      "waterlogged": "false",
+      "west": "false"
+    }
+  ],
+  "brick_wall": [
+    {
+      "east": ["true", "false"],
+      "north": ["true", "false"],
+      "south": ["true", "false"],
+      "up": ["true", "false"],
+      "waterlogged": ["true", "false"],
+      "west": ["true", "false"]
+    },
+    {
+      "east": "false",
+      "north": "false",
+      "south": "false",
+      "up": "true",
+      "waterlogged": "false",
+      "west": "false"
+    }
+  ],
+  "stone_brick_wall": [
+    {
+      "east": ["true", "false"],
+      "north": ["true", "false"],
+      "south": ["true", "false"],
+      "up": ["true", "false"],
+      "waterlogged": ["true", "false"],
+      "west": ["true", "false"]
+    },
+    {
+      "east": "false",
+      "north": "false",
+      "south": "false",
+      "up": "true",
+      "waterlogged": "false",
+      "west": "false"
+    }
+  ],
+  "oak_log": [{ "axis": ["x", "y", "z"] }, { "axis": "y" }],
+  "oak_slab": [
+    { "type": ["top", "bottom", "double"], "waterlogged": ["true", "false"] },
+    { "type": "bottom", "waterlogged": "false" }
+  ],
+  "oak_door": [
+    {
+      "facing": ["north", "south", "west", "east"],
+      "half": ["upper", "lower"],
+      "hinge": ["left", "right"],
+      "open": ["true", "false"],
+      "powered": ["true", "false"]
+    },
+    {
+      "facing": "north",
+      "half": "lower",
+      "hinge": "left",
+      "open": "false",
+      "powered": "false"
+    }
+  ],
+  "wall_torch": [
+    { "facing": ["north", "south", "west", "east"] },
+    { "facing": "north" }
+  ],
+  "oak_leaves": [
+    {
+      "distance": ["1", "2", "3", "4", "5", "6", "7"],
+      "persistent": ["true", "false"]
+    },
+    { "distance": "7", "persistent": "false" }
+  ]
+}
