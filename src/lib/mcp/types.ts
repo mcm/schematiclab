@@ -15,6 +15,9 @@ export interface McpDeps {
   // Null when no Blob store is configured; `publishFile` then throws a clear
   // error, which the tool returns as a tool error.
   blob: BlobClient | null;
+  // `BLOB_STORE_ID`: signed URLs on this store's host are accepted as tool
+  // inputs and read back through `blob.get`.
+  blobStoreId?: string | null;
 }
 
 export interface McpTool<I extends z.ZodObject = z.ZodObject> {

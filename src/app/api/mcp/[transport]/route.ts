@@ -12,6 +12,7 @@ const handleMcp = createMcpRequestHandler({
   fetch: (input, init) => fetch(input, init),
   now: () => new Date(),
   blob: blobClientFromEnv(),
+  blobStoreId: process.env.BLOB_STORE_ID?.trim() || null,
 });
 
 async function handler(
