@@ -860,9 +860,6 @@ describe("unvalidated input (template substitution can produce it)", () => {
     expect(raw([{ splt: {} }])).toEqual([
       "build[0].splt: unknown operation 'splt'",
     ]);
-    expect(raw([{ when: {} }])).toEqual([
-      "build[0].when: 'when' is not implemented yet",
-    ]);
   });
 
   it("checks scope operation arguments", () => {

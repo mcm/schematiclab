@@ -49,17 +49,26 @@ export interface Built extends CompileResult {
   cells: [number, number, number, string][];
 }
 
+export interface ProgramOptions {
+  maxPlacements?: number;
+  templates?: Record<string, unknown>;
+  seed?: number;
+}
+
 export function compile(
   build: unknown,
   size: [number, number, number],
   palette: Record<string, MaterialSpec> = {},
-  options: { maxPlacements?: number } = {},
+  options: ProgramOptions = {},
 ): Built {
-  const validation = validateProgram({ size, palette, build });
+  const { maxPlacements, ...rest } = options;
+  const validation = validateProgram({ size, palette, ...rest, build });
   if (!validation.ok) {
     throw new Error(validation.errors.map(formatProgramError).join("\n"));
   }
-  const result = compileProgram(validation.program, registry, options);
+  const result = compileProgram(validation.program, registry, {
+    maxPlacements,
+  });
   const blocks = new Map<
     string,
     { id: string; states: Record<string, string> }
@@ -83,8 +92,9 @@ export function run(
   build: Operations,
   size: [number, number, number],
   palette: Record<string, MaterialSpec> = {},
+  options: ProgramOptions = {},
 ): Built {
-  const built = compile(build, size, palette);
+  const built = compile(build, size, palette, options);
   expect(built.errors.map(formatProgramError)).toEqual([]);
   return built;
 }
