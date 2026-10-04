@@ -8,7 +8,12 @@
 import * as nbt from "../nbt";
 import { Block, BlockPos, BlockState } from "../blocks";
 import { Entity } from "../entities";
-import { AbstractRegion, AbstractSchematic } from "./abstract";
+import {
+  AbstractRegion,
+  AbstractSchematic,
+  type SchematicLoadOptions,
+  checkDeclaredVolume,
+} from "./abstract";
 import {
   MinecraftVersion,
   getVersion,
@@ -390,7 +395,10 @@ export class LitematicSchematic extends AbstractSchematic {
     return Array.from(this.regions.values());
   }
 
-  static schematicLoad(obj: string | Uint8Array): LitematicSchematic {
+  static schematicLoad(
+    obj: string | Uint8Array,
+    options?: SchematicLoadOptions,
+  ): LitematicSchematic {
     const bytes = typeof obj === "string" ? new TextEncoder().encode(obj) : obj;
     const root = nbt.loadNbtFromBytes(bytes);
 
@@ -407,9 +415,18 @@ export class LitematicSchematic extends AbstractSchematic {
     if (!(regionsTag instanceof nbt.Compound)) {
       throw new Error("Litematic schematic missing Regions compound");
     }
+    const regionTags = [...regionsTag.entries].filter(
+      (entry): entry is [string, nbt.Compound] =>
+        entry[1] instanceof nbt.Compound,
+    );
+    checkDeclaredVolume(
+      regionTags.map(([, value]) =>
+        readBlockPosCompound(value.get("Size")).astuple(),
+      ),
+      options,
+    );
     const regions = new Map<string, LitematicRegion>();
-    for (const [name, value] of regionsTag.entries) {
-      if (!(value instanceof nbt.Compound)) continue;
+    for (const [name, value] of regionTags) {
       regions.set(name, LitematicRegion.fromCompound(value, minecraftVersion));
     }
 

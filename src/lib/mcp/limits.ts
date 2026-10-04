@@ -40,15 +40,18 @@ export function formatMegabytes(bytes: number): string {
   return `${bytes / (1024 * 1024)} MB`;
 }
 
+/** The tool error for a schematic or shape of `blocks` blocks over `max`. */
+export function tooManyBlocksMessage(blocks: number, max: number): string {
+  return `This schematic has ${blocks.toLocaleString("en-US")} blocks, more than the ${max.toLocaleString("en-US")} this server handles.`;
+}
+
 /** Throws when `projection` has more blocks than `max`. */
 export function assertProjectionBlocks(
   projection: Pick<ParsedSchematicProjection, "totalBlocks">,
   max: number = MAX_PROJECTION_BLOCKS,
 ): void {
   if (projection.totalBlocks > max) {
-    throw new Error(
-      `This schematic has ${projection.totalBlocks.toLocaleString("en-US")} blocks, more than the ${max.toLocaleString("en-US")} this server handles.`,
-    );
+    throw new Error(tooManyBlocksMessage(projection.totalBlocks, max));
   }
 }
 

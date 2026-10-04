@@ -15,7 +15,12 @@
 import * as nbt from "../../nbt";
 import { Block, BlockPos, BlockState } from "../../blocks";
 import { Entity } from "../../entities";
-import { AbstractRegion, AbstractSchematic } from "../abstract";
+import {
+  AbstractRegion,
+  AbstractSchematic,
+  type SchematicLoadOptions,
+  checkDeclaredVolume,
+} from "../abstract";
 import {
   MinecraftVersion,
   getVersion,
@@ -201,9 +206,16 @@ export class StructurizeBlueprint extends AbstractRegion {
     return getVersion("1.12.2");
   }
 
-  static schematicLoad(obj: string | Uint8Array): StructurizeBlueprint {
+  static schematicLoad(
+    obj: string | Uint8Array,
+    options?: SchematicLoadOptions,
+  ): StructurizeBlueprint {
     const bytes = typeof obj === "string" ? new TextEncoder().encode(obj) : obj;
     const root = nbt.loadNbtFromBytes(bytes);
+    const sizeX = readInt(root.get("size_x"));
+    const sizeY = readInt(root.get("size_y"));
+    const sizeZ = readInt(root.get("size_z"));
+    checkDeclaredVolume([[sizeX, sizeY, sizeZ]], options);
 
     const blocksTag = root.get("blocks");
     if (!(blocksTag instanceof nbt.IntArray)) {
@@ -239,9 +251,9 @@ export class StructurizeBlueprint extends AbstractRegion {
       optionalData: optionalDataFromCompound(root.get("optional_data")),
       palette,
       requiredMods: stringListFrom(root.get("required_mods")),
-      sizeX: readInt(root.get("size_x")),
-      sizeY: readInt(root.get("size_y")),
-      sizeZ: readInt(root.get("size_z")),
+      sizeX,
+      sizeY,
+      sizeZ,
       tileEntities: compoundListFrom(root.get("tile_entities")),
       version: readInt(root.get("version")),
     });

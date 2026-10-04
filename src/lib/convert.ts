@@ -7,8 +7,10 @@
 import {
   AbstractSchematic,
   MinecraftVersion,
+  SchematicTooLargeError,
   detectSchematicType,
   getVersion,
+  type SchematicLoadOptions,
 } from "./schemlib/schematic-formats";
 import { Block, BlockPos, BlockState } from "./schemlib/blocks";
 import { LitematicSchematic } from "./schemlib/schematic-formats/litematic";
@@ -149,7 +151,10 @@ export type ParseResult =
 // implements load/dump/fromSchematic, plus the canonical extension and mime
 // type per FORMATS.md.
 type SchematicClass = typeof AbstractSchematic & {
-  schematicLoad(obj: string | Uint8Array): AbstractSchematic;
+  schematicLoad(
+    obj: string | Uint8Array,
+    options?: SchematicLoadOptions,
+  ): AbstractSchematic;
   fromSchematic(
     schematic: AbstractSchematic,
     targetVersion: MinecraftVersion | null,
@@ -349,8 +354,15 @@ export function convertSchematic(
  * Detect + parse `bytes` into an `AbstractSchematic` and return a
  * worker-serializable projection. Used by the Advanced Editor to populate
  * editor state on entry. Errors are reported via `{ ok: false }`, never thrown.
+ *
+ * With `options.maxBlocks`, a file whose regions declare more blocks than
+ * that fails before its block data is decoded; the error's `cause` is the
+ * `SchematicTooLargeError` and `error` is its message, unprefixed.
  */
-export function parseSchematic(bytes: Uint8Array): ParseResult {
+export function parseSchematic(
+  bytes: Uint8Array,
+  options?: SchematicLoadOptions,
+): ParseResult {
   let detectedId: string;
   try {
     detectedId = detectSchematicType(bytes);
@@ -373,8 +385,11 @@ export function parseSchematic(bytes: Uint8Array): ParseResult {
 
   let loaded: AbstractSchematic;
   try {
-    loaded = entry.cls.schematicLoad(bytes);
+    loaded = entry.cls.schematicLoad(bytes, options);
   } catch (cause) {
+    if (cause instanceof SchematicTooLargeError) {
+      return { ok: false, error: cause.message, cause };
+    }
     return {
       ok: false,
       error: `Failed to parse ${detectedId} input: ${errorMessage(cause)}`,

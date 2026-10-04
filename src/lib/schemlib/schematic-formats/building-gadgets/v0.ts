@@ -13,7 +13,12 @@ import * as nbt from "../../nbt";
 import { Block, BlockPos, BlockState } from "../../blocks";
 import { Entity } from "../../entities";
 import { fromSnbt, toSnbt } from "../../snbt";
-import { AbstractRegion, AbstractSchematic } from "../abstract";
+import {
+  AbstractRegion,
+  AbstractSchematic,
+  type SchematicLoadOptions,
+  checkDeclaredVolume,
+} from "../abstract";
 import { MinecraftVersion, getVersion, posKey } from "../version-mapping";
 import { forgeStateForLegacy } from "../../data/translate";
 import { flattenRegions } from "../single-region";
@@ -154,13 +159,24 @@ export class BuildingGadgetsV0Schematic
 
   // ── Load / dump ────────────────────────────────────────────────────────
 
-  static schematicLoad(obj: string | Uint8Array): BuildingGadgetsV0Schematic {
+  static schematicLoad(
+    obj: string | Uint8Array,
+    options?: SchematicLoadOptions,
+  ): BuildingGadgetsV0Schematic {
     const text =
       typeof obj === "string" ? obj : new TextDecoder("utf-8").decode(obj);
     const root = fromSnbt(text);
     if (!(root instanceof nbt.Compound)) {
       throw new TypeError("Building Gadgets v0 SNBT must parse to a Compound");
     }
+
+    const startPos = readUppercasePos(root.get("startPos"));
+    const endPos = readUppercasePos(root.get("endPos"));
+    const span = endPos.sub(startPos);
+    checkDeclaredVolume(
+      [[Math.abs(span.x) + 1, Math.abs(span.y) + 1, Math.abs(span.z) + 1]],
+      options,
+    );
 
     const stateIntArrayTag = root.get("stateIntArray");
     if (!(stateIntArrayTag instanceof nbt.IntArray)) {
@@ -179,9 +195,6 @@ export class BuildingGadgetsV0Schematic
       dimTag instanceof nbt.Int || dimTag instanceof nbt.Short
         ? dimTag.value
         : 0;
-
-    const startPos = readUppercasePos(root.get("startPos"));
-    const endPos = readUppercasePos(root.get("endPos"));
 
     const mapIntState: BuildingGadgetsV0MapIntState[] = [];
     const mapIntStateTag = root.get("mapIntState");

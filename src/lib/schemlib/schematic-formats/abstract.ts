@@ -160,6 +160,48 @@ export abstract class AbstractRegion {
   }
 }
 
+// ── Load options ──────────────────────────────────────────────────────────
+
+export interface SchematicLoadOptions {
+  /**
+   * Stop the load with `SchematicTooLargeError` when the regions' declared
+   * sizes add up to more than this many blocks (air included). Loaders check
+   * it as soon as they have read the sizes, before decoding any block data,
+   * so a small compressed file declaring a huge region fails fast.
+   */
+  maxBlocks?: number;
+}
+
+export class SchematicTooLargeError extends Error {
+  constructor(
+    readonly blocks: number,
+    readonly maxBlocks: number,
+  ) {
+    super(
+      `This schematic declares ${blocks.toLocaleString("en-US")} blocks, more than the ${maxBlocks.toLocaleString("en-US")} allowed.`,
+    );
+    this.name = "SchematicTooLargeError";
+  }
+}
+
+/**
+ * Throws `SchematicTooLargeError` when the summed volume of `sizes` is over
+ * `options.maxBlocks`. Negative sizes (Litematic regions grow either way)
+ * count by their magnitude.
+ */
+export function checkDeclaredVolume(
+  sizes: ReadonlyArray<readonly [number, number, number]>,
+  options: SchematicLoadOptions | undefined,
+): void {
+  const max = options?.maxBlocks;
+  if (max === undefined) return;
+  let blocks = 0;
+  for (const [x, y, z] of sizes) {
+    blocks += Math.abs(x) * Math.abs(y) * Math.abs(z);
+  }
+  if (blocks > max) throw new SchematicTooLargeError(blocks, max);
+}
+
 // ── AbstractSchematic ─────────────────────────────────────────────────────
 //
 // TS has no notion of "abstract static", so each static method throws at
@@ -178,7 +220,10 @@ export abstract class AbstractSchematic {
     throw new Error("AbstractSchematic.getDefaultVersion is abstract");
   }
 
-  static schematicLoad(_obj: string | Uint8Array): AbstractSchematic {
+  static schematicLoad(
+    _obj: string | Uint8Array,
+    _options?: SchematicLoadOptions,
+  ): AbstractSchematic {
     throw new Error("AbstractSchematic.schematicLoad is abstract");
   }
 

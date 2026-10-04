@@ -15,7 +15,12 @@ import { Buffer } from "node:buffer";
 import * as nbt from "../../nbt";
 import { Block, BlockPos, BlockState } from "../../blocks";
 import { Entity } from "../../entities";
-import { AbstractRegion, AbstractSchematic } from "../abstract";
+import {
+  AbstractRegion,
+  AbstractSchematic,
+  type SchematicLoadOptions,
+  checkDeclaredVolume,
+} from "../abstract";
 import {
   MinecraftVersion,
   getVersion,
@@ -320,7 +325,10 @@ export class BuildingGadgetsV1Schematic
 
   // ── Load / dump ────────────────────────────────────────────────────────
 
-  static schematicLoad(obj: string | Uint8Array): BuildingGadgetsV1Schematic {
+  static schematicLoad(
+    obj: string | Uint8Array,
+    options?: SchematicLoadOptions,
+  ): BuildingGadgetsV1Schematic {
     const text =
       typeof obj === "string" ? obj : new TextDecoder("utf-8").decode(obj);
     const parsed: unknown = JSON.parse(text);
@@ -329,6 +337,17 @@ export class BuildingGadgetsV1Schematic
     }
     const obj2 = parsed as Record<string, unknown>;
     const header = headerFromJson(obj2.header);
+    const bb = header.bounding_box;
+    checkDeclaredVolume(
+      [
+        [
+          bb.max_x - bb.min_x + 1,
+          bb.max_y - bb.min_y + 1,
+          bb.max_z - bb.min_z + 1,
+        ],
+      ],
+      options,
+    );
     const body = decodeBody(obj2.body);
     return new BuildingGadgetsV1Schematic({ header, body });
   }
