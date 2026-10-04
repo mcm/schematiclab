@@ -15,7 +15,7 @@ import {
   type SchematicFormatId,
 } from "../convert";
 import { Block, BlockPos, BlockState } from "../schemlib/blocks";
-import { Entity } from "../schemlib/entities";
+import { Entity, EntityPos } from "../schemlib/entities";
 import * as nbt from "../schemlib/nbt";
 import { detectSchematicType } from "../schemlib/schematic-formats";
 import {
@@ -27,6 +27,8 @@ import {
   IntermediateSchematic,
 } from "../schemlib/schematic-formats/intermediate";
 import { LitematicSchematic } from "../schemlib/schematic-formats/litematic";
+import { StructureSchematic } from "../schemlib/schematic-formats/structure";
+import { decodeVarintArray } from "../schemlib/schematic-formats/sponge/varint";
 import {
   SpongeSchematicMetadata,
   SpongeSchematicV1,
@@ -74,8 +76,25 @@ function placements(
     .sort();
 }
 
-/** Block entity ids at rebased positions (same rebase as `placements`). */
-function blockEntities(p: ParsedSchematicProjection): string[] {
+/** JSON with sorted object keys, so equal NBT compares equal. */
+function canonicalJson(value: unknown): string {
+  return JSON.stringify(value, (_key, v: unknown) => {
+    if (typeof v === "bigint") return `${v}L`;
+    if (v === null || typeof v !== "object" || Array.isArray(v)) return v;
+    return Object.fromEntries(
+      Object.entries(v).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
+    );
+  });
+}
+
+/**
+ * Block entity ids at rebased positions (same rebase as `placements`), with
+ * the rest of each block entity's NBT when `withData` is set.
+ */
+function blockEntities(
+  p: ParsedSchematicProjection,
+  withData = false,
+): string[] {
   const nonAir = p.regions.flatMap((r) =>
     r.blocks.filter(
       (b) => p.palette[b.paletteIndex].blockId !== "minecraft:air",
@@ -89,7 +108,8 @@ function blockEntities(p: ParsedSchematicProjection): string[] {
       r.blockEntities.map((be) => {
         const id = be.nbt.entries.id;
         const key = be.pos.map((v, axis) => v - min[axis]).join(",");
-        return `${key} ${id?.type === "string" ? id.value : "?"}`;
+        const label = `${key} ${id?.type === "string" ? id.value : "?"}`;
+        return withData ? `${label} ${canonicalJson(be.nbt)}` : label;
       }),
     )
     .sort();
@@ -168,7 +188,7 @@ describe("block entities survive every format that stores them", () => {
     const source = parseOk(input);
     const parsed = parseOk(convertOk(input, format));
     expect(blockEntities(source).length).toBeGreaterThan(0);
-    expect(blockEntities(parsed)).toEqual(blockEntities(source));
+    expect(blockEntities(parsed, true)).toEqual(blockEntities(source, true));
   });
 });
 
@@ -232,6 +252,10 @@ describe("Sponge v1 BlockData", () => {
       .sort((a, b) => a.pos.x - b.pos.x)
       .map((b) => `${b.pos.x} ${b.state.Name}`);
     expect(names).toEqual(blocks.map((b) => `${b.pos.x} ${b.state.Name}`));
+  });
+
+  it("rejects a truncated final varint", () => {
+    expect(() => decodeVarintArray([1, 0x80 - 256])).toThrow(/Truncated/);
   });
 });
 
@@ -337,5 +361,90 @@ describe("Building Gadgets versions", () => {
     });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toContain(message);
+  });
+});
+
+describe("entities", () => {
+  const version = getVersion("1.20.1");
+  const pig = (x: number, y: number, z: number): Entity =>
+    new Entity({
+      id: new nbt.StringTag("minecraft:pig"),
+      Pos: new nbt.NbtList([
+        new nbt.Double(x),
+        new nbt.Double(y),
+        new nbt.Double(z),
+      ]),
+    });
+
+  it("carries non-block entities into Sponge v2", () => {
+    const source = new IntermediateSchematic(
+      {},
+      "pig",
+      [
+        new IntermediateRegion(
+          version,
+          BlockPos.ORIGIN,
+          [2, 1, 1],
+          [
+            new Block(
+              BlockPos.ORIGIN,
+              new BlockState({ Name: "minecraft:stone" }),
+            ),
+          ],
+          [pig(1.5, 0, 0.5)],
+        ),
+      ],
+      version,
+    );
+    const v2 = SpongeSchematicV2.fromSchematic(source, null);
+    expect(v2.Entities.map((e) => e.pos)).toEqual([new EntityPos(1.5, 0, 0.5)]);
+  });
+
+  it("reads Structure entities at their structure-relative position", () => {
+    const structure = new StructureSchematic({
+      dataVersion: version.dataVersion,
+      blocks: [],
+      palette: [],
+      // The nested NBT keeps the world position it was saved at.
+      entities: [
+        {
+          blockPos: new BlockPos(1, 0, 2),
+          pos: new EntityPos(1.5, 0, 2.5),
+          nbt: pig(101.5, 64, 202.5),
+        },
+      ],
+      size: new BlockPos(3, 1, 3),
+    });
+    expect(structure.getEntities().map((e) => e.pos)).toEqual([
+      new EntityPos(1.5, 0, 2.5),
+    ]);
+  });
+});
+
+describe("all-air sources", () => {
+  it("keep the extent of their regions", () => {
+    const version = getVersion("1.20.1");
+    const litematic = LitematicSchematic.fromSchematic(
+      new IntermediateSchematic(
+        {},
+        "empty",
+        [
+          new IntermediateRegion(version, BlockPos.ORIGIN, [2, 1, 1], []),
+          new IntermediateRegion(
+            version,
+            new BlockPos(5, 2, -3),
+            [2, 1, 1],
+            [],
+          ),
+        ],
+        version,
+      ),
+      null,
+    ).schematicDump();
+    const v2 = SpongeSchematicV2.fromSchematic(
+      LitematicSchematic.schematicLoad(litematic),
+      null,
+    );
+    expect([v2.Width, v2.Height, v2.Length]).toEqual([7, 3, 4]);
   });
 });

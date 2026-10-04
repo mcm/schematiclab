@@ -150,6 +150,16 @@ export class LitematicRegion extends AbstractRegion {
     );
   }
 
+  // The declared size, not the non-air blocks' extent: block positions run
+  // from the region's minimum corner, air included.
+  getSize(): [number, number, number] {
+    return [
+      Math.abs(this.size.x),
+      Math.abs(this.size.y),
+      Math.abs(this.size.z),
+    ];
+  }
+
   getBlockMatrix(): Map<string, Block> {
     const absWidth = Math.abs(this.size.x);
     const absHeight = Math.abs(this.size.y);

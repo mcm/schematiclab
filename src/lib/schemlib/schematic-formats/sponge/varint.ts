@@ -16,6 +16,7 @@ export function decodeVarintArray(bytes: number[] | Int8Array): number[] {
       shift += 7;
     }
   }
+  if (shift !== 0) throw new Error("Truncated varint at end of block data");
   return out;
 }
 

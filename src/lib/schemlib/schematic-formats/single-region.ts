@@ -96,6 +96,9 @@ export function flattenRegions(
   const tileEntities = new Map<string, Entity>();
   const entities: Entity[] = [];
   let declaredSize: [number, number, number] = [0, 0, 0];
+  // Union of the regions' declared boxes, for a source with no blocks.
+  const boxMin = [Infinity, Infinity, Infinity];
+  const boxMax = [-Infinity, -Infinity, -Infinity];
 
   for (const region of regions) {
     const translateRegion =
@@ -124,7 +127,14 @@ export function flattenRegions(
     for (const entity of regionEntities) {
       entities.push(shiftEntity(entity, negated));
     }
-    if (regions.length === 1) declaredSize = region.getSize();
+    const regionSize = region.getSize();
+    if (regions.length === 1) declaredSize = regionSize;
+    if (regionSize.every((n) => n > 0)) {
+      [origin.x, origin.y, origin.z].forEach((o, axis) => {
+        boxMin[axis] = Math.min(boxMin[axis], o);
+        boxMax[axis] = Math.max(boxMax[axis], o + regionSize[axis] - 1);
+      });
+    }
   }
 
   let minX = Infinity;
@@ -141,8 +151,14 @@ export function flattenRegions(
     maxY = Math.max(maxY, block.pos.y);
     maxZ = Math.max(maxZ, block.pos.z);
   }
-  const empty = merged.size === 0;
-  const offset = empty ? BlockPos.ORIGIN : new BlockPos(minX, minY, minZ);
+  // With no blocks at all (an all-air source), the extent comes from the
+  // regions' declared boxes instead.
+  if (merged.size === 0 && boxMin[0] !== Infinity) {
+    [minX, minY, minZ] = boxMin;
+    [maxX, maxY, maxZ] = boxMax;
+  }
+  const noExtent = minX === Infinity;
+  const offset = noExtent ? BlockPos.ORIGIN : new BlockPos(minX, minY, minZ);
 
   const blocks: Block[] = [];
   const blockMatrix = new Map<string, Block>();
@@ -166,7 +182,7 @@ export function flattenRegions(
     tileEntityMatrix.set(k, placeTileEntity(entity, pos));
   }
 
-  const extent: [number, number, number] = empty
+  const extent: [number, number, number] = noExtent
     ? [0, 0, 0]
     : [maxX - minX + 1, maxY - minY + 1, maxZ - minZ + 1];
   // A single region that already starts at 0,0,0 keeps its declared size, so

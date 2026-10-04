@@ -201,9 +201,17 @@ interface SchematicJson {
   minecraftVersion: string;
 }
 
+// The reader resolves names through `getVersion`, so refuse to write one it
+// can't read back.
+function jsonVersionName(v: MinecraftVersion): string {
+  const name = versionName(v);
+  getVersion(name);
+  return name;
+}
+
 function regionToJson(region: IntermediateRegion): RegionJson {
   return {
-    minecraftVersion: versionName(region.minecraftVersion),
+    minecraftVersion: jsonVersionName(region.minecraftVersion),
     origin: { x: region.origin.x, y: region.origin.y, z: region.origin.z },
     size: [region.size[0], region.size[1], region.size[2]],
     blocks: region.blocks.map((b) => ({
@@ -304,12 +312,18 @@ export class IntermediateSchematic extends AbstractSchematic {
       metadata: this.metadata,
       name: this.name,
       regions: this.regions.map(regionToJson),
-      minecraftVersion: versionName(this.minecraftVersion),
+      minecraftVersion: jsonVersionName(this.minecraftVersion),
     };
     // Litematic metadata holds Long timestamps (bigint), which JSON can't.
-    return JSON.stringify(out, (_key, value: unknown) =>
-      typeof value === "bigint" ? Number(value) : value,
-    );
+    return JSON.stringify(out, (key, value: unknown) => {
+      if (typeof value !== "bigint") return value;
+      if (!Number.isSafeInteger(Number(value))) {
+        throw new Error(
+          `Metadata value ${key}=${value} is too large to write as JSON`,
+        );
+      }
+      return Number(value);
+    });
   }
 
   static fromSchematic(

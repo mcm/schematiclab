@@ -121,6 +121,31 @@ function intListFromTriple(
   ]);
 }
 
+// An entity's nested `nbt` keeps the world position it was saved at; the
+// record's `pos` and `blockPos` are the structure-relative ones (Minecraft
+// overwrites `Pos` with them when it places the structure).
+function withRelativePos(record: StructureEntityRecord): Entity {
+  const src = record.nbt.toCompound();
+  const out = new nbt.Compound();
+  for (const [k, v] of src.entries) out.set(k, v);
+  out.set(
+    "Pos",
+    new nbt.NbtList([
+      new nbt.Double(record.pos.x),
+      new nbt.Double(record.pos.y),
+      new nbt.Double(record.pos.z),
+    ]),
+  );
+  for (const [key, value] of [
+    ["TileX", record.blockPos.x],
+    ["TileY", record.blockPos.y],
+    ["TileZ", record.blockPos.z],
+  ] as const) {
+    if (src.get(key) instanceof nbt.Int) out.set(key, new nbt.Int(value));
+  }
+  return new Entity(out);
+}
+
 function floatListFromTriple(
   triple: readonly [number, number, number],
 ): nbt.NbtList<nbt.Float> {
@@ -349,13 +374,13 @@ export class StructureSchematic extends AbstractRegion {
   getEntityMatrix(): Map<string, Entity> {
     const matrix = new Map<string, Entity>();
     for (const e of this.entityRecords) {
-      matrix.set(posKey(e.pos), e.nbt);
+      matrix.set(posKey(e.pos), withRelativePos(e));
     }
     return matrix;
   }
 
   getEntities(): Entity[] {
-    return this.entityRecords.map((e) => e.nbt);
+    return this.entityRecords.map(withRelativePos);
   }
 
   getTileEntityMatrix(): Map<string, Entity> {
