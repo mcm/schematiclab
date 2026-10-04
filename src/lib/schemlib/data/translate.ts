@@ -118,6 +118,39 @@ function applyFlatten(
   return state;
 }
 
+let reverseFlattenByName: Map<string, [BlockState, string][]> | null = null;
+
+function reverseFlattenSubsetMatch(state: BlockState): string | undefined {
+  if (reverseFlattenByName === null) {
+    reverseFlattenByName = new Map();
+    for (const [key, idMeta] of Object.entries(REVERSE_FLATTEN_TABLE)) {
+      const tableState = BlockState.fromString(key);
+      const list = reverseFlattenByName.get(tableState.Name) ?? [];
+      list.push([tableState, idMeta]);
+      reverseFlattenByName.set(tableState.Name, list);
+    }
+  }
+  let best: string | undefined;
+  let bestMatches = -1;
+  for (const [tableState, idMeta] of reverseFlattenByName.get(state.Name) ??
+    []) {
+    let matches = 0;
+    let fits = true;
+    for (const [k, v] of tableState.Properties) {
+      if (state.Properties.get(k) !== v) {
+        fits = false;
+        break;
+      }
+      matches++;
+    }
+    if (fits && matches > bestMatches) {
+      best = idMeta;
+      bestMatches = matches;
+    }
+  }
+  return best;
+}
+
 function applyReverseFlatten(
   state: BlockState,
   opts: TranslateOptions | undefined,
@@ -133,10 +166,39 @@ function applyReverseFlatten(
   if (bare !== undefined) {
     return new BlockState({ Name: `minecraft:#${bare}` });
   }
+  // Fallback: the table state of this block whose properties all match the
+  // state's, preferring the most matches. Covers properties the table doesn't
+  // list (a chest's `waterlogged`, which 1.12 has no equivalent for).
+  const subset = reverseFlattenSubsetMatch(state);
+  if (subset !== undefined) {
+    return new BlockState({ Name: `minecraft:#${subset}` });
+  }
   opts?.onWarning?.(
     `No reverse flatten mapping for ${state.toString()}; using air`,
   );
   return new BlockState({ Name: "minecraft:#0:0" });
+}
+
+// Translating down to 1.12 yields legacy `minecraft:#id:meta` names, but
+// Forge-era formats (Building Gadgets 1.12 templates) store IBlockState names.
+// Several Forge states can share an id:meta (properties computed at runtime,
+// like `snowy`); the first one the table lists stands for all of them.
+let legacyToForge: Map<string, string> | null = null;
+
+/**
+ * The Forge 1.12 state for a `minecraft:#id:meta` state, the state itself
+ * when it isn't legacy, or null for a legacy id the Forge table doesn't know.
+ */
+export function forgeStateForLegacy(state: BlockState): BlockState | null {
+  if (!state.Name.startsWith("minecraft:#")) return state;
+  if (legacyToForge === null) {
+    legacyToForge = new Map();
+    for (const [forge, idMeta] of Object.entries(FORGE_1_12_FLATTEN)) {
+      if (!legacyToForge.has(idMeta)) legacyToForge.set(idMeta, forge);
+    }
+  }
+  const forge = legacyToForge.get(state.Name.slice("minecraft:#".length));
+  return forge === undefined ? null : BlockState.fromString(forge);
 }
 
 // ── Per-property default value heuristic ───────────────────────────────────

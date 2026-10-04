@@ -4,8 +4,8 @@
 // NBT with a single top-level Compound containing a `palette`
 // (List<Compound>), a `blocks` IntArray whose bytes are reinterpreted as
 // uint16 indices into the palette, plus `size_x` / `size_y` / `size_z`
-// Shorts, lists of `entities` / `tile_entities` (currently ignored, parity
-// with Python), and miscellaneous metadata (`architects`, `mcversion`,
+// Shorts, lists of `entities` / `tile_entities` (read and written; Python
+// ignored them), and miscellaneous metadata (`architects`, `mcversion`,
 // `name`, `required_mods`, `optional_data`, `version`).
 //
 // Like the vanilla `.nbt` structure format, this is single-region — so the
@@ -21,8 +21,8 @@ import {
   getVersion,
   getVersionFromDataVersion,
   posKey,
-  versionsEqual,
 } from "../version-mapping";
+import { flattenRegions } from "../single-region";
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -251,39 +251,14 @@ export class StructurizeBlueprint extends AbstractRegion {
     schematic: AbstractSchematic,
     targetVersion: MinecraftVersion | null,
   ): StructurizeBlueprint {
-    const regions = schematic.getRegions();
-    if (regions.length > 1) {
-      throw new Error(
-        `Too many regions in source schematic (${regions.length})`,
-      );
-    }
-    const region = schematic.getRegion(0);
-
-    let dataVersion: number;
-    let sourcePalette: BlockState[];
-    let sourceBlockMatrix: Map<string, Block>;
-    let sourceEntities: Entity[];
-    let sourceTileEntities: Entity[];
-
-    if (
-      targetVersion !== null &&
-      !versionsEqual(targetVersion, region.getMinecraftVersion())
-    ) {
-      dataVersion = targetVersion.dataVersion;
-      sourcePalette = region.getTranslatedPalette(targetVersion);
-      sourceBlockMatrix = region.getTranslatedBlockMatrix(targetVersion);
-      sourceEntities = region.getTranslatedEntities(targetVersion);
-      sourceTileEntities = region.getTranslatedTileEntities(targetVersion);
-    } else {
-      dataVersion = (targetVersion ?? schematic.getMinecraftVersion())
-        .dataVersion;
-      sourcePalette = region.getPalette();
-      sourceBlockMatrix = region.getBlockMatrix();
-      sourceEntities = region.getEntities();
-      sourceTileEntities = region.getTileEntities();
-    }
-
-    const [width, height, length] = region.getSize();
+    const {
+      dataVersion,
+      palette: sourcePalette,
+      blockMatrix: sourceBlockMatrix,
+      entities: sourceEntities,
+      tileEntityMatrix: sourceTileEntityMatrix,
+      size: [width, height, length],
+    } = flattenRegions(schematic, targetVersion);
 
     // Ensure AIR is at a known index in the palette. Python uses
     // `source_palette.insert(0, AIR_BLOCK)` if not present.
@@ -330,9 +305,18 @@ export class StructurizeBlueprint extends AbstractRegion {
       }
     }
 
-    const tileEntityCompounds: nbt.Compound[] = sourceTileEntities.map((e) =>
-      e.toCompound(),
-    );
+    const tileEntityCompounds: nbt.Compound[] = [
+      ...sourceTileEntityMatrix.values(),
+    ].map((e) => {
+      const c = new nbt.Compound();
+      for (const [k, v] of e.toCompound().entries) {
+        c.set(
+          k,
+          k === "x" || k === "y" || k === "z" ? new nbt.Short(readInt(v)) : v,
+        );
+      }
+      return c;
+    });
     const entityCompounds: nbt.Compound[] = sourceEntities.map((e) =>
       e.toCompound(),
     );
@@ -427,16 +411,34 @@ export class StructurizeBlueprint extends AbstractRegion {
   }
 
   getEntityMatrix(): Map<string, Entity> {
-    // Python returns `{}` here (the real lookup is commented out). Mirror.
-    return new Map();
-  }
-
-  getEntities(): Entity[] {
-    return [];
+    // Python returns `{}` here (the real lookup is commented out); entity
+    // `Pos` is relative to the blueprint like block positions.
+    const out = new Map<string, Entity>();
+    for (const c of this.entities) {
+      const e = new Entity(c);
+      out.set(posKey(e.pos), e);
+    }
+    return out;
   }
 
   getTileEntityMatrix(): Map<string, Entity> {
-    return new Map();
+    // Structurize stores `x`/`y`/`z` (Shorts) relative to the blueprint;
+    // return the chunk shape (Int `x`/`y`/`z`) other formats expect.
+    const out = new Map<string, Entity>();
+    for (const c of this.tileEntities) {
+      const pos = new BlockPos(
+        readInt(c.get("x")),
+        readInt(c.get("y")),
+        readInt(c.get("z")),
+      );
+      const chunkShape = new nbt.Compound();
+      for (const [k, v] of c.entries) chunkShape.set(k, v);
+      chunkShape.set("x", new nbt.Int(pos.x));
+      chunkShape.set("y", new nbt.Int(pos.y));
+      chunkShape.set("z", new nbt.Int(pos.z));
+      out.set(posKey(pos), new Entity(chunkShape));
+    }
+    return out;
   }
 
   // ── Serialization ───────────────────────────────────────────────────────

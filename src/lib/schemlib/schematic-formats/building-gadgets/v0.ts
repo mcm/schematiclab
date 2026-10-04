@@ -15,7 +15,14 @@ import { Entity } from "../../entities";
 import { fromSnbt, toSnbt } from "../../snbt";
 import { AbstractRegion, AbstractSchematic } from "../abstract";
 import { MinecraftVersion, getVersion, posKey } from "../version-mapping";
-import { posToUppercaseCompound, readUppercasePos } from "./common";
+import { forgeStateForLegacy } from "../../data/translate";
+import { flattenRegions } from "../single-region";
+import {
+  type VersionRange,
+  posToUppercaseCompound,
+  readUppercasePos,
+  templateVersion,
+} from "./common";
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -106,6 +113,14 @@ export class BuildingGadgetsV0Schematic
   extends AbstractRegion
   implements AbstractSchematic
 {
+  /** Largest axis `posIntArray`'s signed-byte offsets can span. */
+  static readonly MAX_AXIS = 128;
+  static readonly VERSION_RANGE: VersionRange = {
+    label: "Building Gadgets 1.12",
+    min: [1, 12, 2],
+    max: [1, 12, 2],
+  };
+
   readonly stateIntArray: number[];
   readonly dim: number;
   readonly posIntArray: number[];
@@ -274,14 +289,73 @@ export class BuildingGadgetsV0Schematic
     return this.getMinecraftVersion().dataVersion;
   }
 
-  static checkSize(_width: number, _height: number, _length: number): void {
-    // No explicit size limit in Python.
+  static checkSize(width: number, height: number, length: number): void {
+    // `posIntArray` packs each offset from `startPos` into a signed byte.
+    for (const [axis, size] of [
+      ["Width", width],
+      ["Height", height],
+      ["Length", length],
+    ] as const) {
+      if (size > BuildingGadgetsV0Schematic.MAX_AXIS) {
+        throw new Error(
+          `${axis} axis too big, ${size} > ${BuildingGadgetsV0Schematic.MAX_AXIS}`,
+        );
+      }
+    }
   }
 
+  /**
+   * Not a port (Python raises NotImplementedError). Translates to 1.12.2,
+   * the only version this format exists for, and stores positions relative
+   * to `startPos` = 0,0,0. Block entities and entities aren't part of the
+   * format.
+   */
   static fromSchematic(
-    _schematic: AbstractSchematic,
-    _targetVersion: MinecraftVersion | null,
+    schematic: AbstractSchematic,
+    targetVersion: MinecraftVersion | null,
   ): BuildingGadgetsV0Schematic {
-    throw new Error("not implemented");
+    const version = templateVersion(
+      BuildingGadgetsV0Schematic.VERSION_RANGE,
+      schematic.getMinecraftVersion(),
+      targetVersion,
+    );
+    const { blocks, size } = flattenRegions(schematic, version);
+    BuildingGadgetsV0Schematic.checkSize(...size);
+
+    // Building Gadgets numbers its map slots from 1.
+    const slots = new Map<string, number>();
+    const mapIntState: BuildingGadgetsV0MapIntState[] = [];
+    const stateIntArray: number[] = [];
+    const posIntArray: number[] = [];
+    for (const block of blocks) {
+      // Translation to 1.12 gives legacy `#id:meta` names; templates hold
+      // Forge state names. A legacy id with no Forge name is dropped.
+      const state = forgeStateForLegacy(block.state);
+      if (state === null || state.Name === "minecraft:air") continue;
+      const key = state.toString();
+      let slot = slots.get(key);
+      if (slot === undefined) {
+        slot = slots.size + 1;
+        slots.set(key, slot);
+        mapIntState.push(
+          new BuildingGadgetsV0MapIntState({ mapSlot: slot, mapState: state }),
+        );
+      }
+      stateIntArray.push(slot);
+      posIntArray.push(encodePackedPos(block.pos));
+    }
+
+    return new BuildingGadgetsV0Schematic({
+      stateIntArray,
+      dim: 0,
+      posIntArray,
+      startPos: BlockPos.ORIGIN,
+      endPos: new BlockPos(
+        Math.max(size[0] - 1, 0),
+        Math.max(size[1] - 1, 0),
+        Math.max(size[2] - 1, 0),
+      ),
+      mapIntState,
+    });
   }
 }

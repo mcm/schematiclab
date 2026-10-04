@@ -119,8 +119,14 @@ export function detectSchematicType(input: string | Uint8Array): string {
     return "BuildingGadgets2[1.20+]";
   }
 
-  // Our own intermediate JSON format.
-  if (parsed.kind === "json" && has(parsed, "minecraft_version")) {
+  // Our own intermediate JSON format. The Python original writes
+  // `minecraft_version`; the TS `IntermediateSchematic` writes
+  // `minecraftVersion` next to `regions`.
+  if (
+    parsed.kind === "json" &&
+    (has(parsed, "minecraft_version") ||
+      (has(parsed, "minecraftVersion") && has(parsed, "regions")))
+  ) {
     return "JSON";
   }
 

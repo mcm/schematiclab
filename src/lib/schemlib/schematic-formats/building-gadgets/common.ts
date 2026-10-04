@@ -9,9 +9,16 @@
 //     either uppercase or lowercase x/y/z and returns a BlockPos.
 //   - `posToUppercaseCompound(pos)` — emits a Compound with `{X, Y, Z}` keys
 //     for serialization.
+//   - `templateVersion(...)` — picks the version a template is written in.
 
 import * as nbt from "../../nbt";
 import { BlockPos } from "../../blocks";
+import {
+  KNOWN_VERSIONS,
+  MinecraftVersion,
+  compareVersions,
+  versionName,
+} from "../version-mapping";
 
 function readIntFromTag(tag: nbt.NbtTag | undefined): number {
   if (tag === undefined) return 0;
@@ -47,4 +54,62 @@ export function posToUppercaseCompound(pos: BlockPos): nbt.Compound {
     Y: new nbt.Int(pos.y),
     Z: new nbt.Int(pos.z),
   });
+}
+
+// ── Output version ────────────────────────────────────────────────────────
+//
+// Each Building Gadgets template format belongs to a range of Minecraft
+// versions. Not a port: the Python writers took the target version as given.
+
+export interface VersionRange {
+  /** Format name for error messages. */
+  label: string;
+  min: readonly [number, number, number];
+  /** Newest version, or null for no upper bound. */
+  max: readonly [number, number, number] | null;
+}
+
+function asVersion(v: readonly [number, number, number]): MinecraftVersion {
+  return { platform: "java", versionNumber: v, dataVersion: 0 };
+}
+
+function tupleName(v: readonly [number, number, number]): string {
+  return v[2] === 0 ? `${v[0]}.${v[1]}` : v.join(".");
+}
+
+/**
+ * The version a template is written in: `targetVersion`, which must be inside
+ * `range`, else the source's version moved into the range (to the oldest
+ * known version for older sources, the newest for newer ones).
+ */
+export function templateVersion(
+  range: VersionRange,
+  sourceVersion: MinecraftVersion,
+  targetVersion: MinecraftVersion | null,
+): MinecraftVersion {
+  const min = asVersion(range.min);
+  const max = range.max === null ? null : asVersion(range.max);
+  const fits = (v: MinecraftVersion): boolean =>
+    compareVersions(v, min) >= 0 &&
+    (max === null || compareVersions(v, max) <= 0);
+  const known = Object.values(KNOWN_VERSIONS)
+    .filter(fits)
+    .sort(compareVersions);
+  const oldest = known[0];
+  const newest = known[known.length - 1];
+
+  if (targetVersion !== null) {
+    if (fits(targetVersion)) return targetVersion;
+    const span =
+      range.max === null
+        ? `${tupleName(range.min)} or newer`
+        : compareVersions(min, asVersion(range.max)) === 0
+          ? tupleName(range.min)
+          : `${tupleName(range.min)} to ${tupleName(range.max)}`;
+    throw new Error(
+      `${range.label} templates are for Minecraft ${span}, not ${versionName(targetVersion)}`,
+    );
+  }
+  if (fits(sourceVersion)) return sourceVersion;
+  return compareVersions(sourceVersion, oldest) < 0 ? oldest : newest;
 }

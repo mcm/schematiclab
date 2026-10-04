@@ -10,10 +10,12 @@ import { Entity } from "../entities";
 import * as snbt from "../snbt";
 import * as nbt from "../nbt";
 import { AbstractRegion, AbstractSchematic } from "./abstract";
+import { placeTileEntity, shiftEntity } from "./single-region";
 import {
   MinecraftVersion,
   getVersion,
   posKey,
+  versionName,
   versionsEqual,
 } from "./version-mapping";
 
@@ -112,7 +114,7 @@ export class IntermediateRegion extends AbstractRegion {
   ): IntermediateRegion {
     let blocks: Block[];
     let entities: Entity[];
-    let tileEntities: Entity[];
+    let tileEntityMatrix: Map<string, Entity>;
     let minecraftVersion: MinecraftVersion;
 
     if (
@@ -121,12 +123,12 @@ export class IntermediateRegion extends AbstractRegion {
     ) {
       blocks = region.getTranslatedBlocks(targetVersion);
       entities = region.getTranslatedEntities(targetVersion);
-      tileEntities = region.getTranslatedTileEntities(targetVersion);
+      tileEntityMatrix = region.getTranslatedTileEntityMatrix(targetVersion);
       minecraftVersion = targetVersion;
     } else {
       blocks = region.getBlocks();
       entities = region.getEntities();
-      tileEntities = region.getTileEntities();
+      tileEntityMatrix = region.getTileEntityMatrix();
       minecraftVersion = region.getMinecraftVersion();
     }
 
@@ -154,12 +156,19 @@ export class IntermediateRegion extends AbstractRegion {
       adjusted.push(new Block(block.pos.sub(offset), block.state));
     }
 
+    // Block entities and entities move with the blocks.
+    const tileEntities = [...tileEntityMatrix].map(([key, entity]) => {
+      const [x, y, z] = key.split(",").map(Number);
+      return placeTileEntity(entity, new BlockPos(x, y, z).sub(offset));
+    });
+
     return new IntermediateRegion(
       minecraftVersion,
-      region.getOrigin().sub(offset),
+      // Blocks moved back by `offset`, so the region starts that far along.
+      region.getOrigin().add(offset),
       region.getSize(),
       adjusted,
-      entities,
+      entities.map((e) => shiftEntity(e, offset)),
       tileEntities,
     );
   }
@@ -194,7 +203,7 @@ interface SchematicJson {
 
 function regionToJson(region: IntermediateRegion): RegionJson {
   return {
-    minecraftVersion: region.minecraftVersion.versionNumber.join("."),
+    minecraftVersion: versionName(region.minecraftVersion),
     origin: { x: region.origin.x, y: region.origin.y, z: region.origin.z },
     size: [region.size[0], region.size[1], region.size[2]],
     blocks: region.blocks.map((b) => ({
@@ -295,9 +304,12 @@ export class IntermediateSchematic extends AbstractSchematic {
       metadata: this.metadata,
       name: this.name,
       regions: this.regions.map(regionToJson),
-      minecraftVersion: this.minecraftVersion.versionNumber.join("."),
+      minecraftVersion: versionName(this.minecraftVersion),
     };
-    return JSON.stringify(out);
+    // Litematic metadata holds Long timestamps (bigint), which JSON can't.
+    return JSON.stringify(out, (_key, value: unknown) =>
+      typeof value === "bigint" ? Number(value) : value,
+    );
   }
 
   static fromSchematic(

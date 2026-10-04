@@ -5,7 +5,11 @@ import { describe, it, expect } from "vitest";
 
 import { BlockState } from "../../blocks";
 import { getVersion } from "../../schematic-formats/version-mapping";
-import { anchorFor, translateBlockState } from "../translate";
+import {
+  anchorFor,
+  forgeStateForLegacy,
+  translateBlockState,
+} from "../translate";
 
 const V = getVersion;
 
@@ -63,6 +67,18 @@ describe("translateBlockState", () => {
       V("1.12.2"),
     );
     expect(out.Name).toBe("minecraft:#4:0");
+  });
+
+  it("reverse-flattens a state with properties the table doesn't list", () => {
+    // The table has chest[facing=north,type=single] but not `waterlogged`.
+    const out = translateBlockState(
+      BlockState.fromString(
+        "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      ),
+      V("1.13.1"),
+      V("1.12.2"),
+    );
+    expect(out.Name).toBe("minecraft:#54:2");
   });
 
   it("falls back to air when no flatten mapping exists", () => {
@@ -168,5 +184,20 @@ describe("translateBlockState across 1.20+ drops", () => {
     );
     expect(out.Name).toBe("minecraft:air");
     expect(warnings).toHaveLength(1);
+  });
+});
+
+describe("forgeStateForLegacy", () => {
+  it("names a legacy id:meta the Forge 1.12 way", () => {
+    const out = forgeStateForLegacy(new BlockState({ Name: "minecraft:#5:1" }));
+    expect(out?.toString()).toBe("minecraft:planks[variant=spruce]");
+  });
+
+  it("leaves non-legacy states alone and rejects unknown ids", () => {
+    const stone = BlockState.fromString("minecraft:stone[variant=granite]");
+    expect(forgeStateForLegacy(stone)).toBe(stone);
+    expect(
+      forgeStateForLegacy(new BlockState({ Name: "minecraft:#9999:0" })),
+    ).toBeNull();
   });
 });

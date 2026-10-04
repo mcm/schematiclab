@@ -5,10 +5,8 @@
 //     fields. (v1/v2 named the root compound "Schematic" directly.)
 //   - Block fields move under a `Blocks` sub-compound: Palette, Data,
 //     BlockEntities. No `PaletteMax` (palette length is implicit).
-//   - `Data` is a ByteArray of varint-encoded palette indices — each varint is
-//     7-bit base-128 with the MSB as continuation. (v2's spec also requires
-//     varint, but our v2 reader cheats and treats one byte per block; v3 has
-//     enough palette entries in practice that the cheat doesn't survive.)
+//   - `Data` is a ByteArray of varint-encoded palette indices (as v1/v2's
+//     `BlockData`), see `./varint`.
 //   - BlockEntity entries are { Id: string, Pos: IntArray[3], Data: Compound }
 //     instead of v2's flat shape.
 //   - Biomes (3D) and Entities (mobs) would live as sibling compounds; this
@@ -45,41 +43,9 @@ import {
   getVersionFromDataVersion,
   posKey,
 } from "../version-mapping";
+import { flattenRegions } from "../single-region";
 import { SpongeSchematicMetadata } from "./sponge-v1";
-
-// ── varint codec (Sponge v3 `Data` encoding) ──────────────────────────────
-
-export function decodeVarintArray(bytes: number[] | Int8Array): number[] {
-  const out: number[] = [];
-  let value = 0;
-  let shift = 0;
-  for (let i = 0; i < bytes.length; i++) {
-    const b = (bytes[i] as number) & 0xff;
-    value |= (b & 0x7f) << shift;
-    if ((b & 0x80) === 0) {
-      out.push(value >>> 0);
-      value = 0;
-      shift = 0;
-    } else {
-      shift += 7;
-    }
-  }
-  return out;
-}
-
-export function encodeVarintArray(values: ArrayLike<number>): number[] {
-  const out: number[] = [];
-  for (let i = 0; i < values.length; i++) {
-    let v = (values[i] as number) >>> 0;
-    while ((v & ~0x7f) !== 0) {
-      out.push(((v & 0x7f) | 0x80) - 256); // NBT ByteArray entries are signed
-      v >>>= 7;
-    }
-    const last = v & 0x7f;
-    out.push(last > 0x7f ? last - 256 : last);
-  }
-  return out;
-}
+import { decodeVarintArray, encodeVarintArray } from "./varint";
 
 // ── BlockEntity shape translation ──────────────────────────────────────────
 //
@@ -468,31 +434,15 @@ export class SpongeSchematicV3
     schematic: AbstractSchematic,
     targetVersion: MinecraftVersion | null,
   ): SpongeSchematicV3 {
-    if (schematic.getRegions().length > 1) {
-      throw new Error(
-        `Too many regions in source schematic (${schematic.getRegions().length})`,
-      );
-    }
-    const region = schematic.getRegion(0);
-
-    let sourcePalette: BlockState[];
-    let sourceBlocks: Block[];
-    let sourceTileEntities: Entity[];
-    let sourceVersion: MinecraftVersion;
-    if (targetVersion) {
-      sourceVersion = targetVersion;
-      sourcePalette = region.getTranslatedPalette(targetVersion);
-      sourceBlocks = region.getTranslatedBlocks(targetVersion);
-      sourceTileEntities = region.getTranslatedTileEntities(targetVersion);
-    } else {
-      sourceVersion = schematic.getMinecraftVersion();
-      sourcePalette = region.getPalette();
-      sourceBlocks = region.getBlocks();
-      sourceTileEntities = region.getTileEntities();
-    }
-
-    const [width, height, length] = region.getSize();
-    const [pos1] = region.getBoundingBox();
+    const {
+      dataVersion,
+      palette: flatPalette,
+      blocks: sourceBlocks,
+      tileEntityMatrix,
+      size: [width, height, length],
+    } = flattenRegions(schematic, targetVersion);
+    let sourcePalette = flatPalette;
+    const sourceTileEntities = [...tileEntityMatrix.values()];
 
     const requiredMods: string[] = [];
 
@@ -515,12 +465,8 @@ export class SpongeSchematicV3
         sourcePalette.push(block.state);
         stateIdx = sourcePalette.length - 1;
       }
-      // Convert paster-space position back to linear index space. Source's
-      // Offset already shifted positions; here we use the bounding box's pos1
-      // as the implicit origin so indices are non-negative.
-      const x = block.pos.x - pos1.x;
-      const y = block.pos.y - pos1.y;
-      const z = block.pos.z - pos1.z;
+      // flattenRegions rebased positions to 0,0,0: they're index space.
+      const { x, y, z } = block.pos;
       const i = x + z * width + y * length * width;
       indices.set(i, stateIdx);
     }
@@ -551,7 +497,7 @@ export class SpongeSchematicV3
     // into the v3 BlockEntity compound shape.
     const blockEntities: nbt.Compound[] = [];
     for (const e of sourceTileEntities) {
-      const v3 = chunkShapeToV3BlockEntity(e.toCompound(), pos1);
+      const v3 = chunkShapeToV3BlockEntity(e.toCompound(), BlockPos.ORIGIN);
       if (v3) blockEntities.push(v3);
     }
 
@@ -560,8 +506,8 @@ export class SpongeSchematicV3
       Width: width,
       Height: height,
       Length: length,
-      Offset: [pos1.x, pos1.y, pos1.z],
-      DataVersion: sourceVersion.dataVersion,
+      Offset: [0, 0, 0],
+      DataVersion: dataVersion,
       Palette: palette,
       BlockData: blockData,
       BlockEntities: blockEntities,
