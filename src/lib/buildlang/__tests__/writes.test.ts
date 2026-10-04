@@ -520,6 +520,7 @@ describe("write log", () => {
     expect(log.write([0, -1, 0], write({}))).toBe(false);
     expect(log.write([1, 1, 1], write({}))).toBe(true);
     expect(log.outOfBounds).toBe(2);
+    expect([...log.outOfBoundsByPath]).toEqual([["build[0].fill", 2]]);
     expect(log.writesAt([5, 5, 5])).toEqual([]);
     expect(log.peek([1, 1, 1])).toEqual({ id: "minecraft:stone", states: {} });
     expect(log.peek([0, 0, 0])).toBeNull();

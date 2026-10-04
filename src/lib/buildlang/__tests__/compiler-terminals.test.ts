@@ -274,7 +274,9 @@ describe("block", () => {
     );
     expect(b.cells).toEqual([[0, 0, 0, "oak_door"]]);
     expect(messages(b.warnings)).toEqual([
-      expect.stringMatching(/^1 block\(s\) fell outside the build size/),
+      expect.stringMatching(
+        /^build\[0\]\.block: 1 block\(s\) fell outside the build size/,
+      ),
     ]);
   });
 

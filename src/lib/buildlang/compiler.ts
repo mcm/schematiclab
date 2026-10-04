@@ -74,6 +74,8 @@ export const MAX_COMPILE_DEPTH = 64;
 export const MAX_PLACEMENTS = 2_000_000;
 
 export interface CompileResult {
+  /** The program's `name`, if it has one. */
+  name?: string;
   size: Pos;
   /** Every placement, as written. */
   log: WriteLog;
@@ -213,11 +215,11 @@ export class Compiler {
       this.errors.push(e.toProgramError());
     }
     const warnings = [...this.warnings, ...this.log.collisions(this.registry)];
-    if (this.log.outOfBounds > 0) {
+    for (const [path, count] of this.log.outOfBoundsByPath) {
       warnings.push({
-        path: "",
+        path,
         message:
-          `${this.log.outOfBounds} block(s) fell outside the build size ` +
+          `${count} block(s) fell outside the build size ` +
           `${show(this.program.size)} and were dropped (inset the structure ` +
           `or enlarge 'size')`,
       });
@@ -225,6 +227,7 @@ export class Compiler {
     const blocks = this.log.composeGrid();
     postprocess(blocks, this.registry);
     return {
+      name: this.program.name,
       size: this.program.size,
       log: this.log,
       blocks,
