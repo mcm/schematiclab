@@ -155,3 +155,30 @@ describe("renderProjectionPng", () => {
     expect(renderProjectionPng(wide).png.length).toBeGreaterThan(0);
   });
 });
+
+describe("sub-block shapes", () => {
+  // A double slab is a full cube; a bottom slab fills only its lower half.
+  // Same block, same colour: the renders differ only through the shape.
+  const slab = (type: string): ParsedSchematicProjection => {
+    const projection = singleBlock("minecraft:oak_slab");
+    projection.palette[0] = {
+      blockState: `minecraft:oak_slab[type=${type}]`,
+      blockId: "minecraft:oak_slab",
+      properties: { type },
+      count: 1,
+    };
+    return projection;
+  };
+
+  it("draws slabs (and the other shaped blocks) as their real shapes", () => {
+    const double = decode(renderProjectionPng(slab("double")).png);
+    const bottom = decode(renderProjectionPng(slab("bottom")).png);
+    expect([bottom.width, bottom.height]).toEqual([
+      double.width,
+      double.height,
+    ]);
+    expect(Buffer.from(bottom.data).equals(Buffer.from(double.data))).toBe(
+      false,
+    );
+  });
+});
