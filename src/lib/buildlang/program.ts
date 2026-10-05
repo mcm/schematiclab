@@ -9,6 +9,7 @@
 // written.
 
 import { parseLength, type LengthContext } from "./lengths";
+import { STD_PREFIX, stdTemplate, stdTemplateNames } from "./std";
 
 /** Largest program `size` on each axis. */
 export const MAX_BUILD_SIZE = 256;
@@ -318,6 +319,13 @@ class Validator {
   }
 
   template(name: string, body: unknown): void {
+    if (name.startsWith(STD_PREFIX)) {
+      this.error(
+        pathKey("templates", name),
+        `template names starting with '${STD_PREFIX}' are reserved for the standard templates`,
+      );
+      return;
+    }
     this.inTemplate = true;
     this.operations(body, pathKey("templates", name), 0);
     this.inTemplate = false;
@@ -801,11 +809,20 @@ class Validator {
       );
       return;
     }
+    if (name.startsWith(STD_PREFIX)) {
+      if (stdTemplate(name) === undefined) {
+        this.error(
+          path,
+          `unknown standard template '${name}' (standard: ${stdTemplateNames().join(", ")})`,
+        );
+      }
+      return;
+    }
     if (!this.templateNames.has(name)) {
       const defined = [...this.templateNames].sort();
       this.error(
         path,
-        `unknown template '${name}' (defined: ${defined.length ? defined.join(", ") : "none"})`,
+        `unknown template '${name}' (defined: ${defined.length ? defined.join(", ") : "none"}; standard: ${stdTemplateNames().join(", ")})`,
       );
     }
   }

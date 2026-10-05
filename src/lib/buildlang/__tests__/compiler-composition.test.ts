@@ -109,7 +109,7 @@ describe("use", () => {
       build: [{ use: { name: "nope" } }],
     });
     expect(messages(b.errors)).toEqual([
-      "build[0].use: unknown template 'nope' (defined: a, b)",
+      "build[0].use: unknown template 'nope' (defined: a, b; standard: std:balcony, std:chimney, std:door_bay, std:dormer, std:porch, std:staircase, std:window_bay)",
     ]);
     // a template name passed as a parameter is only known at compile time
     const c = compile(
@@ -119,7 +119,7 @@ describe("use", () => {
       { templates: { pick: [{ use: "$which" }] } },
     );
     expect(messages(c.errors)).toEqual([
-      "templates.pick[0].use: unknown template 'missing' (defined: pick) (in a template used at build[0].use)",
+      "templates.pick[0].use: unknown template 'missing' (defined: pick; standard: std:balcony, std:chimney, std:door_bay, std:dormer, std:porch, std:staircase, std:window_bay) (in a template used at build[0].use)",
     ]);
   });
 

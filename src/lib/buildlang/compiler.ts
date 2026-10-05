@@ -57,6 +57,7 @@ import {
 } from "./program";
 import { postprocess } from "./postprocess";
 import { orientStates, Scope, type ScopeFaceName, type Vec } from "./scope";
+import { STD_PREFIX, stdDefaults, stdTemplate, stdTemplateNames } from "./std";
 import { MAX_TEMPLATE_DEPTH, substituteParams } from "./templates";
 import {
   type BlockGrid,
@@ -678,11 +679,21 @@ export class Compiler {
       );
     }
     const templates = this.program.templates ?? {};
-    if (name.startsWith("#") || !Object.hasOwn(templates, name)) {
+    const std = stdTemplate(name);
+    if (name.startsWith(STD_PREFIX) && std === undefined) {
+      throw new BuildError(
+        path,
+        `unknown standard template '${name}' (standard: ${stdTemplateNames().join(", ")})`,
+      );
+    }
+    if (
+      std === undefined &&
+      (name.startsWith("#") || !Object.hasOwn(templates, name))
+    ) {
       const defined = this.templateNames();
       throw new BuildError(
         path,
-        `unknown template '${name}' (defined: ${defined.length ? defined.join(", ") : "none"})`,
+        `unknown template '${name}' (defined: ${defined.length ? defined.join(", ") : "none"}; standard: ${stdTemplateNames().join(", ")})`,
       );
     }
     if (this.callers.length >= MAX_TEMPLATE_DEPTH) {
@@ -691,12 +702,15 @@ export class Compiler {
         `templates nested more than ${MAX_TEMPLATE_DEPTH} deep (does '${name}' use itself?)`,
       );
     }
-    const bodyPath = pathKey("templates", name);
+    // A standard template's body reports at `std:<name>[i]…`.
+    const bodyPath = std ? name : pathKey("templates", name);
     const expansion = this.expand(name, params, bodyPath);
     for (const unused of expansion.unused) {
       this.warn({
         path: pathKey(`${path}.with`, unused),
-        message: `template '${name}' has no parameter '${unused}'`,
+        message: std
+          ? `template '${name}' has no parameter '${unused}' (parameters: ${Object.keys(std.params).join(", ")})`
+          : `template '${name}' has no parameter '${unused}'`,
       });
     }
     this.callers.push(path);
@@ -721,8 +735,13 @@ export class Compiler {
     const key = JSON.stringify([name, params]);
     let expansion = this.expansions.get(key);
     if (!expansion) {
-      const body = (this.program.templates ?? {})[name];
-      const substituted = substituteParams(body, params, bodyPath);
+      const std = stdTemplate(name);
+      const body = std ? std.body : (this.program.templates ?? {})[name];
+      const substituted = substituteParams(
+        body,
+        std ? { ...stdDefaults(std), ...params } : params,
+        bodyPath,
+      );
       const errors =
         substituted.errors.length > 0
           ? substituted.errors
@@ -731,8 +750,8 @@ export class Compiler {
               bodyPath,
               this.templateNames(),
             );
-      const unused = Object.keys(params).filter(
-        (k) => !substituted.used.has(k),
+      const unused = Object.keys(params).filter((k) =>
+        std ? !Object.hasOwn(std.params, k) : !substituted.used.has(k),
       );
       expansion = { body: substituted.body, errors, unused };
       this.expansions.set(key, expansion);

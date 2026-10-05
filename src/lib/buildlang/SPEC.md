@@ -170,6 +170,25 @@ a key `"$face"` (when the parameter is a string), and `"${glass}"` inside longer
 as whole `"$n"` values). A `$name` with no such parameter is an error. Templates may use
 other templates, at most 32 deep.
 
+**Standard templates** — every program can also `use` the built-in templates below as
+`"std:<name>"`, with or without `with`. A parameter you don't pass takes its default. Your own
+templates never replace them: a template of yours named `window_bay` is `"window_bay"`, the
+built-in one stays `"std:window_bay"` (template names starting with `std:` are reserved).
+Defaults name the `wall`, `window` and `door` roles, so define those roles or pass materials.
+
+| Template         | Scope                                                                                                                                                       | Parameters (default)                                                                                                   |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `std:window_bay` | A face tile: wall with a window centred across it.                                                                                                          | `wall` (`"@wall"`), `glass` (`"@window"`), `width` (1), `height` (2), `sill` (1, the window's bottom above the tile's) |
+| `std:door_bay`   | A face tile: wall with a door at the bottom centre, facing in, in a 3×3 frame when the tile is at least 3 wide and 3 high.                                  | `wall` (`"@wall"`), `door` (`"@door"`), `frame` (`"@wall"`)                                                            |
+| `std:porch`      | A box in front of a wall (back at z = 0 against the wall): floor on the bottom layer, posts at the front corners, a one-layer roof on top. At least 3 high. | `floor` (`"@wall"`), `post` (`"@wall:fence"`), `roof` (`"@wall:slab"`)                                                 |
+| `std:dormer`     | A box with its window in the front face: walls, a window centred in the front, and a stair gable along x as the top layer. Best 3 or 5 wide, 4+ high.       | `wall` (`"@wall"`), `glass` (`"@window"`), `roof` (`"@wall"`; its `stairs` on the slopes)                              |
+| `std:chimney`    | A solid stack filling the box; at least 3 wide and 3 deep, its top two layers are open in the middle.                                                       | `material` (`"bricks"`)                                                                                                |
+| `std:staircase`  | A straight flight as wide as the box, starting at the front (+z) on the bottom layer and climbing one block per block towards the back, at most 32 steps.   | `stairs` (`"@wall"`; its `stairs` variant), `support` (`"@wall"`, fills under the steps; `"air"` for none)             |
+| `std:balcony`    | A box out from a wall (back at z = 0 against the wall): a floor on the bottom layer and a railing around the front and sides on the layer above.            | `floor` (`"@wall"`), `rail` (`"@wall:fence"`)                                                                          |
+
+`{"use": {"name": "std:window_bay", "with": {"width": 3, "glass": "@window"}}}` in a 5-wide tile
+gives a 3-wide window.
+
 **`choose`** — seeded random pick: `{"choose": {"options": [[...], [...]], "weights": [3, 1]}}`
 or just a list of options.
 
@@ -274,7 +293,8 @@ on purpose, use `carve`.
 
 1. **Plan first**, in a few sentences: footprint, storeys, palette, key features, and
    the dimensions that make repeats symmetric.
-2. Write the program. Prefer roles, templates and repeats over hand-placed blocks.
+2. Write the program. Prefer roles, standard templates, your own templates and repeats over
+   hand-placed blocks.
 3. Compile it with `compile_build` (or `check_build` for the report alone). You will receive a
    report and a contact sheet. The sheet contains four iso views (one per corner), front,
    side and top elevations, two floor plans and a cutaway.

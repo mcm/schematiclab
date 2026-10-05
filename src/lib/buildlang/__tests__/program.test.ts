@@ -562,13 +562,13 @@ describe("validateProgram: composition", () => {
         { templates },
       ),
     ).toEqual([
-      "build[0].use: unknown template 'door_bay' (defined: bay)",
+      "build[0].use: unknown template 'door_bay' (defined: bay; standard: std:balcony, std:chimney, std:door_bay, std:dormer, std:porch, std:staircase, std:window_bay)",
       "build[1].use: missing 'name'",
       "build[2].use.with: must be an object of parameter → value, got []",
       'build[3].use: expected a template name or {"name": ..., "with": {...}}, got 3',
     ]);
     expect(errorsOf([{ use: "bay" }])).toEqual([
-      "build[0].use: unknown template 'bay' (defined: none)",
+      "build[0].use: unknown template 'bay' (defined: none; standard: std:balcony, std:chimney, std:door_bay, std:dormer, std:porch, std:staircase, std:window_bay)",
     ]);
   });
 
