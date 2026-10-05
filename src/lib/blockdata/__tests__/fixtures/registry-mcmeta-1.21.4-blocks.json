@@ -1,13 +1,24 @@
 {
   "air": [{}, {}],
-  "basalt": [{ "axis": ["x", "y", "z"] }, { "axis": "y" }],
+  "basalt": [
+    {
+      "axis": ["x", "y", "z"]
+    },
+    {
+      "axis": "y"
+    }
+  ],
   "birch_button": [
     {
       "face": ["floor", "wall", "ceiling"],
       "facing": ["north", "south", "west", "east"],
       "powered": ["true", "false"]
     },
-    { "face": "wall", "facing": "north", "powered": "false" }
+    {
+      "face": "wall",
+      "facing": "north",
+      "powered": "false"
+    }
   ],
   "birch_door": [
     {
@@ -78,7 +89,11 @@
       ],
       "waterlogged": ["true", "false"]
     },
-    { "attached": "false", "rotation": "0", "waterlogged": "false" }
+    {
+      "attached": "false",
+      "rotation": "0",
+      "waterlogged": "false"
+    }
   ],
   "birch_leaves": [
     {
@@ -86,15 +101,37 @@
       "persistent": ["true", "false"],
       "waterlogged": ["true", "false"]
     },
-    { "distance": "7", "persistent": "false", "waterlogged": "false" }
+    {
+      "distance": "7",
+      "persistent": "false",
+      "waterlogged": "false"
+    }
   ],
-  "birch_log": [{ "axis": ["x", "y", "z"] }, { "axis": "y" }],
+  "birch_log": [
+    {
+      "axis": ["x", "y", "z"]
+    },
+    {
+      "axis": "y"
+    }
+  ],
   "birch_planks": [{}, {}],
   "birch_pressure_plate": [
-    { "powered": ["true", "false"] },
-    { "powered": "false" }
+    {
+      "powered": ["true", "false"]
+    },
+    {
+      "powered": "false"
+    }
   ],
-  "birch_sapling": [{ "stage": ["0", "1"] }, { "stage": "0" }],
+  "birch_sapling": [
+    {
+      "stage": ["0", "1"]
+    },
+    {
+      "stage": "0"
+    }
+  ],
   "birch_sign": [
     {
       "rotation": [
@@ -117,11 +154,20 @@
       ],
       "waterlogged": ["true", "false"]
     },
-    { "rotation": "0", "waterlogged": "false" }
+    {
+      "rotation": "0",
+      "waterlogged": "false"
+    }
   ],
   "birch_slab": [
-    { "type": ["top", "bottom", "double"], "waterlogged": ["true", "false"] },
-    { "type": "bottom", "waterlogged": "false" }
+    {
+      "type": ["top", "bottom", "double"],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "type": "bottom",
+      "waterlogged": "false"
+    }
   ],
   "birch_stairs": [
     {
@@ -164,20 +210,46 @@
       "facing": ["north", "south", "west", "east"],
       "waterlogged": ["true", "false"]
     },
-    { "facing": "north", "waterlogged": "false" }
+    {
+      "facing": "north",
+      "waterlogged": "false"
+    }
   ],
   "birch_wall_sign": [
     {
       "facing": ["north", "south", "west", "east"],
       "waterlogged": ["true", "false"]
     },
-    { "facing": "north", "waterlogged": "false" }
+    {
+      "facing": "north",
+      "waterlogged": "false"
+    }
   ],
-  "birch_wood": [{ "axis": ["x", "y", "z"] }, { "axis": "y" }],
-  "bone_block": [{ "axis": ["x", "y", "z"] }, { "axis": "y" }],
+  "birch_wood": [
+    {
+      "axis": ["x", "y", "z"]
+    },
+    {
+      "axis": "y"
+    }
+  ],
+  "bone_block": [
+    {
+      "axis": ["x", "y", "z"]
+    },
+    {
+      "axis": "y"
+    }
+  ],
   "brick_slab": [
-    { "type": ["top", "bottom", "double"], "waterlogged": ["true", "false"] },
-    { "type": "bottom", "waterlogged": "false" }
+    {
+      "type": ["top", "bottom", "double"],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "type": "bottom",
+      "waterlogged": "false"
+    }
   ],
   "brick_stairs": [
     {
@@ -218,10 +290,17 @@
     }
   ],
   "bricks": [{}, {}],
+  "calcite": [{}, {}],
   "cave_air": [{}, {}],
   "chain": [
-    { "axis": ["x", "y", "z"], "waterlogged": ["true", "false"] },
-    { "axis": "y", "waterlogged": "false" }
+    {
+      "axis": ["x", "y", "z"],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "axis": "y",
+      "waterlogged": "false"
+    }
   ],
   "cherry_button": [
     {
@@ -229,7 +308,11 @@
       "facing": ["north", "south", "west", "east"],
       "powered": ["true", "false"]
     },
-    { "face": "wall", "facing": "north", "powered": "false" }
+    {
+      "face": "wall",
+      "facing": "north",
+      "powered": "false"
+    }
   ],
   "cherry_door": [
     {
@@ -300,7 +383,11 @@
       ],
       "waterlogged": ["true", "false"]
     },
-    { "attached": "false", "rotation": "0", "waterlogged": "false" }
+    {
+      "attached": "false",
+      "rotation": "0",
+      "waterlogged": "false"
+    }
   ],
   "cherry_leaves": [
     {
@@ -308,15 +395,37 @@
       "persistent": ["true", "false"],
       "waterlogged": ["true", "false"]
     },
-    { "distance": "7", "persistent": "false", "waterlogged": "false" }
+    {
+      "distance": "7",
+      "persistent": "false",
+      "waterlogged": "false"
+    }
   ],
-  "cherry_log": [{ "axis": ["x", "y", "z"] }, { "axis": "y" }],
+  "cherry_log": [
+    {
+      "axis": ["x", "y", "z"]
+    },
+    {
+      "axis": "y"
+    }
+  ],
   "cherry_planks": [{}, {}],
   "cherry_pressure_plate": [
-    { "powered": ["true", "false"] },
-    { "powered": "false" }
+    {
+      "powered": ["true", "false"]
+    },
+    {
+      "powered": "false"
+    }
   ],
-  "cherry_sapling": [{ "stage": ["0", "1"] }, { "stage": "0" }],
+  "cherry_sapling": [
+    {
+      "stage": ["0", "1"]
+    },
+    {
+      "stage": "0"
+    }
+  ],
   "cherry_sign": [
     {
       "rotation": [
@@ -339,11 +448,20 @@
       ],
       "waterlogged": ["true", "false"]
     },
-    { "rotation": "0", "waterlogged": "false" }
+    {
+      "rotation": "0",
+      "waterlogged": "false"
+    }
   ],
   "cherry_slab": [
-    { "type": ["top", "bottom", "double"], "waterlogged": ["true", "false"] },
-    { "type": "bottom", "waterlogged": "false" }
+    {
+      "type": ["top", "bottom", "double"],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "type": "bottom",
+      "waterlogged": "false"
+    }
   ],
   "cherry_stairs": [
     {
@@ -386,30 +504,102 @@
       "facing": ["north", "south", "west", "east"],
       "waterlogged": ["true", "false"]
     },
-    { "facing": "north", "waterlogged": "false" }
+    {
+      "facing": "north",
+      "waterlogged": "false"
+    }
   ],
   "cherry_wall_sign": [
     {
       "facing": ["north", "south", "west", "east"],
       "waterlogged": ["true", "false"]
     },
-    { "facing": "north", "waterlogged": "false" }
+    {
+      "facing": "north",
+      "waterlogged": "false"
+    }
   ],
-  "cherry_wood": [{ "axis": ["x", "y", "z"] }, { "axis": "y" }],
+  "cherry_wood": [
+    {
+      "axis": ["x", "y", "z"]
+    },
+    {
+      "axis": "y"
+    }
+  ],
   "chest": [
     {
       "type": ["single", "left", "right"],
       "facing": ["north", "south", "west", "east"],
       "waterlogged": ["true", "false"]
     },
-    { "type": "single", "facing": "north", "waterlogged": "false" }
+    {
+      "type": "single",
+      "facing": "north",
+      "waterlogged": "false"
+    }
   ],
   "chiseled_quartz_block": [{}, {}],
   "chiseled_stone_bricks": [{}, {}],
+  "cobbled_deepslate": [{}, {}],
+  "cobbled_deepslate_slab": [
+    {
+      "type": ["top", "bottom", "double"],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "type": "bottom",
+      "waterlogged": "false"
+    }
+  ],
+  "cobbled_deepslate_stairs": [
+    {
+      "facing": ["north", "south", "west", "east"],
+      "half": ["top", "bottom"],
+      "shape": [
+        "straight",
+        "inner_left",
+        "inner_right",
+        "outer_left",
+        "outer_right"
+      ],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "facing": "north",
+      "half": "bottom",
+      "shape": "straight",
+      "waterlogged": "false"
+    }
+  ],
+  "cobbled_deepslate_wall": [
+    {
+      "east": ["none", "low", "tall"],
+      "north": ["none", "low", "tall"],
+      "south": ["none", "low", "tall"],
+      "up": ["true", "false"],
+      "waterlogged": ["true", "false"],
+      "west": ["none", "low", "tall"]
+    },
+    {
+      "east": "none",
+      "north": "none",
+      "south": "none",
+      "up": "true",
+      "waterlogged": "false",
+      "west": "none"
+    }
+  ],
   "cobblestone": [{}, {}],
   "cobblestone_slab": [
-    { "type": ["top", "bottom", "double"], "waterlogged": ["true", "false"] },
-    { "type": "bottom", "waterlogged": "false" }
+    {
+      "type": ["top", "bottom", "double"],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "type": "bottom",
+      "waterlogged": "false"
+    }
   ],
   "cobblestone_stairs": [
     {
@@ -450,15 +640,335 @@
     }
   ],
   "cracked_stone_bricks": [{}, {}],
+  "crafting_table": [{}, {}],
   "creaking_heart": [
     {
       "active": ["true", "false"],
       "axis": ["x", "y", "z"],
       "natural": ["true", "false"]
     },
-    { "active": "false", "axis": "y", "natural": "false" }
+    {
+      "active": "false",
+      "axis": "y",
+      "natural": "false"
+    }
   ],
+  "dark_oak_button": [
+    {
+      "face": ["floor", "wall", "ceiling"],
+      "facing": ["north", "south", "west", "east"],
+      "powered": ["true", "false"]
+    },
+    {
+      "face": "wall",
+      "facing": "north",
+      "powered": "false"
+    }
+  ],
+  "dark_oak_door": [
+    {
+      "facing": ["north", "south", "west", "east"],
+      "half": ["upper", "lower"],
+      "hinge": ["left", "right"],
+      "open": ["true", "false"],
+      "powered": ["true", "false"]
+    },
+    {
+      "facing": "north",
+      "half": "lower",
+      "hinge": "left",
+      "open": "false",
+      "powered": "false"
+    }
+  ],
+  "dark_oak_fence": [
+    {
+      "east": ["true", "false"],
+      "north": ["true", "false"],
+      "south": ["true", "false"],
+      "waterlogged": ["true", "false"],
+      "west": ["true", "false"]
+    },
+    {
+      "east": "false",
+      "north": "false",
+      "south": "false",
+      "waterlogged": "false",
+      "west": "false"
+    }
+  ],
+  "dark_oak_fence_gate": [
+    {
+      "facing": ["north", "south", "west", "east"],
+      "in_wall": ["true", "false"],
+      "open": ["true", "false"],
+      "powered": ["true", "false"]
+    },
+    {
+      "facing": "north",
+      "in_wall": "false",
+      "open": "false",
+      "powered": "false"
+    }
+  ],
+  "dark_oak_hanging_sign": [
+    {
+      "attached": ["true", "false"],
+      "rotation": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15"
+      ],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "attached": "false",
+      "rotation": "0",
+      "waterlogged": "false"
+    }
+  ],
+  "dark_oak_leaves": [
+    {
+      "distance": ["1", "2", "3", "4", "5", "6", "7"],
+      "persistent": ["true", "false"],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "distance": "7",
+      "persistent": "false",
+      "waterlogged": "false"
+    }
+  ],
+  "dark_oak_log": [
+    {
+      "axis": ["x", "y", "z"]
+    },
+    {
+      "axis": "y"
+    }
+  ],
+  "dark_oak_planks": [{}, {}],
+  "dark_oak_pressure_plate": [
+    {
+      "powered": ["true", "false"]
+    },
+    {
+      "powered": "false"
+    }
+  ],
+  "dark_oak_sapling": [
+    {
+      "stage": ["0", "1"]
+    },
+    {
+      "stage": "0"
+    }
+  ],
+  "dark_oak_sign": [
+    {
+      "rotation": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15"
+      ],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "rotation": "0",
+      "waterlogged": "false"
+    }
+  ],
+  "dark_oak_slab": [
+    {
+      "type": ["top", "bottom", "double"],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "type": "bottom",
+      "waterlogged": "false"
+    }
+  ],
+  "dark_oak_stairs": [
+    {
+      "facing": ["north", "south", "west", "east"],
+      "half": ["top", "bottom"],
+      "shape": [
+        "straight",
+        "inner_left",
+        "inner_right",
+        "outer_left",
+        "outer_right"
+      ],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "facing": "north",
+      "half": "bottom",
+      "shape": "straight",
+      "waterlogged": "false"
+    }
+  ],
+  "dark_oak_trapdoor": [
+    {
+      "facing": ["north", "south", "west", "east"],
+      "half": ["top", "bottom"],
+      "open": ["true", "false"],
+      "powered": ["true", "false"],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "facing": "north",
+      "half": "bottom",
+      "open": "false",
+      "powered": "false",
+      "waterlogged": "false"
+    }
+  ],
+  "dark_oak_wall_hanging_sign": [
+    {
+      "facing": ["north", "south", "west", "east"],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "facing": "north",
+      "waterlogged": "false"
+    }
+  ],
+  "dark_oak_wall_sign": [
+    {
+      "facing": ["north", "south", "west", "east"],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "facing": "north",
+      "waterlogged": "false"
+    }
+  ],
+  "dark_oak_wood": [
+    {
+      "axis": ["x", "y", "z"]
+    },
+    {
+      "axis": "y"
+    }
+  ],
+  "dark_prismarine": [{}, {}],
+  "dark_prismarine_slab": [
+    {
+      "type": ["top", "bottom", "double"],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "type": "bottom",
+      "waterlogged": "false"
+    }
+  ],
+  "dark_prismarine_stairs": [
+    {
+      "facing": ["north", "south", "west", "east"],
+      "half": ["top", "bottom"],
+      "shape": [
+        "straight",
+        "inner_left",
+        "inner_right",
+        "outer_left",
+        "outer_right"
+      ],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "facing": "north",
+      "half": "bottom",
+      "shape": "straight",
+      "waterlogged": "false"
+    }
+  ],
+  "deepslate_tile_slab": [
+    {
+      "type": ["top", "bottom", "double"],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "type": "bottom",
+      "waterlogged": "false"
+    }
+  ],
+  "deepslate_tile_stairs": [
+    {
+      "facing": ["north", "south", "west", "east"],
+      "half": ["top", "bottom"],
+      "shape": [
+        "straight",
+        "inner_left",
+        "inner_right",
+        "outer_left",
+        "outer_right"
+      ],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "facing": "north",
+      "half": "bottom",
+      "shape": "straight",
+      "waterlogged": "false"
+    }
+  ],
+  "deepslate_tile_wall": [
+    {
+      "east": ["none", "low", "tall"],
+      "north": ["none", "low", "tall"],
+      "south": ["none", "low", "tall"],
+      "up": ["true", "false"],
+      "waterlogged": ["true", "false"],
+      "west": ["none", "low", "tall"]
+    },
+    {
+      "east": "none",
+      "north": "none",
+      "south": "none",
+      "up": "true",
+      "waterlogged": "false",
+      "west": "none"
+    }
+  ],
+  "deepslate_tiles": [{}, {}],
   "flower_pot": [{}, {}],
+  "furnace": [
+    {
+      "facing": ["north", "south", "west", "east"],
+      "lit": ["true", "false"]
+    },
+    {
+      "facing": "north",
+      "lit": "false"
+    }
+  ],
   "glass": [{}, {}],
   "glass_pane": [
     {
@@ -476,8 +986,22 @@
       "west": "false"
     }
   ],
-  "grass_block": [{ "snowy": ["true", "false"] }, { "snowy": "false" }],
-  "hay_block": [{ "axis": ["x", "y", "z"] }, { "axis": "y" }],
+  "grass_block": [
+    {
+      "snowy": ["true", "false"]
+    },
+    {
+      "snowy": "false"
+    }
+  ],
+  "hay_block": [
+    {
+      "axis": ["x", "y", "z"]
+    },
+    {
+      "axis": "y"
+    }
+  ],
   "iron_bars": [
     {
       "east": ["true", "false"],
@@ -496,19 +1020,32 @@
   ],
   "iron_block": [{}, {}],
   "jack_o_lantern": [
-    { "facing": ["north", "south", "west", "east"] },
-    { "facing": "north" }
+    {
+      "facing": ["north", "south", "west", "east"]
+    },
+    {
+      "facing": "north"
+    }
   ],
   "ladder": [
     {
       "facing": ["north", "south", "west", "east"],
       "waterlogged": ["true", "false"]
     },
-    { "facing": "north", "waterlogged": "false" }
+    {
+      "facing": "north",
+      "waterlogged": "false"
+    }
   ],
   "lantern": [
-    { "hanging": ["true", "false"], "waterlogged": ["true", "false"] },
-    { "hanging": "false", "waterlogged": "false" }
+    {
+      "hanging": ["true", "false"],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "hanging": "false",
+      "waterlogged": "false"
+    }
   ],
   "lever": [
     {
@@ -516,7 +1053,11 @@
       "facing": ["north", "south", "west", "east"],
       "powered": ["true", "false"]
     },
-    { "face": "wall", "facing": "north", "powered": "false" }
+    {
+      "face": "wall",
+      "facing": "north",
+      "powered": "false"
+    }
   ],
   "light": [
     {
@@ -540,13 +1081,39 @@
       ],
       "waterlogged": ["true", "false"]
     },
-    { "level": "15", "waterlogged": "false" }
+    {
+      "level": "15",
+      "waterlogged": "false"
+    }
+  ],
+  "light_blue_stained_glass": [{}, {}],
+  "light_blue_stained_glass_pane": [
+    {
+      "east": ["true", "false"],
+      "north": ["true", "false"],
+      "south": ["true", "false"],
+      "waterlogged": ["true", "false"],
+      "west": ["true", "false"]
+    },
+    {
+      "east": "false",
+      "north": "false",
+      "south": "false",
+      "waterlogged": "false",
+      "west": "false"
+    }
   ],
   "moss_carpet": [{}, {}],
   "mossy_cobblestone": [{}, {}],
   "mossy_stone_brick_slab": [
-    { "type": ["top", "bottom", "double"], "waterlogged": ["true", "false"] },
-    { "type": "bottom", "waterlogged": "false" }
+    {
+      "type": ["top", "bottom", "double"],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "type": "bottom",
+      "waterlogged": "false"
+    }
   ],
   "mossy_stone_brick_stairs": [
     {
@@ -587,14 +1154,74 @@
     }
   ],
   "mossy_stone_bricks": [{}, {}],
-  "nether_portal": [{ "axis": ["x", "z"] }, { "axis": "x" }],
+  "mud_brick_slab": [
+    {
+      "type": ["top", "bottom", "double"],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "type": "bottom",
+      "waterlogged": "false"
+    }
+  ],
+  "mud_brick_stairs": [
+    {
+      "facing": ["north", "south", "west", "east"],
+      "half": ["top", "bottom"],
+      "shape": [
+        "straight",
+        "inner_left",
+        "inner_right",
+        "outer_left",
+        "outer_right"
+      ],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "facing": "north",
+      "half": "bottom",
+      "shape": "straight",
+      "waterlogged": "false"
+    }
+  ],
+  "mud_brick_wall": [
+    {
+      "east": ["none", "low", "tall"],
+      "north": ["none", "low", "tall"],
+      "south": ["none", "low", "tall"],
+      "up": ["true", "false"],
+      "waterlogged": ["true", "false"],
+      "west": ["none", "low", "tall"]
+    },
+    {
+      "east": "none",
+      "north": "none",
+      "south": "none",
+      "up": "true",
+      "waterlogged": "false",
+      "west": "none"
+    }
+  ],
+  "mud_bricks": [{}, {}],
+  "nether_portal": [
+    {
+      "axis": ["x", "z"]
+    },
+    {
+      "axis": "x"
+    }
+  ],
   "oak_button": [
     {
       "face": ["floor", "wall", "ceiling"],
       "facing": ["north", "south", "west", "east"],
       "powered": ["true", "false"]
     },
-    { "face": "wall", "facing": "north", "powered": "false" }
+    {
+      "face": "wall",
+      "facing": "north",
+      "powered": "false"
+    }
   ],
   "oak_door": [
     {
@@ -665,7 +1292,11 @@
       ],
       "waterlogged": ["true", "false"]
     },
-    { "attached": "false", "rotation": "0", "waterlogged": "false" }
+    {
+      "attached": "false",
+      "rotation": "0",
+      "waterlogged": "false"
+    }
   ],
   "oak_leaves": [
     {
@@ -673,15 +1304,37 @@
       "persistent": ["true", "false"],
       "waterlogged": ["true", "false"]
     },
-    { "distance": "7", "persistent": "false", "waterlogged": "false" }
+    {
+      "distance": "7",
+      "persistent": "false",
+      "waterlogged": "false"
+    }
   ],
-  "oak_log": [{ "axis": ["x", "y", "z"] }, { "axis": "y" }],
+  "oak_log": [
+    {
+      "axis": ["x", "y", "z"]
+    },
+    {
+      "axis": "y"
+    }
+  ],
   "oak_planks": [{}, {}],
   "oak_pressure_plate": [
-    { "powered": ["true", "false"] },
-    { "powered": "false" }
+    {
+      "powered": ["true", "false"]
+    },
+    {
+      "powered": "false"
+    }
   ],
-  "oak_sapling": [{ "stage": ["0", "1"] }, { "stage": "0" }],
+  "oak_sapling": [
+    {
+      "stage": ["0", "1"]
+    },
+    {
+      "stage": "0"
+    }
+  ],
   "oak_sign": [
     {
       "rotation": [
@@ -704,11 +1357,20 @@
       ],
       "waterlogged": ["true", "false"]
     },
-    { "rotation": "0", "waterlogged": "false" }
+    {
+      "rotation": "0",
+      "waterlogged": "false"
+    }
   ],
   "oak_slab": [
-    { "type": ["top", "bottom", "double"], "waterlogged": ["true", "false"] },
-    { "type": "bottom", "waterlogged": "false" }
+    {
+      "type": ["top", "bottom", "double"],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "type": "bottom",
+      "waterlogged": "false"
+    }
   ],
   "oak_stairs": [
     {
@@ -751,23 +1413,40 @@
       "facing": ["north", "south", "west", "east"],
       "waterlogged": ["true", "false"]
     },
-    { "facing": "north", "waterlogged": "false" }
+    {
+      "facing": "north",
+      "waterlogged": "false"
+    }
   ],
   "oak_wall_sign": [
     {
       "facing": ["north", "south", "west", "east"],
       "waterlogged": ["true", "false"]
     },
-    { "facing": "north", "waterlogged": "false" }
+    {
+      "facing": "north",
+      "waterlogged": "false"
+    }
   ],
-  "oak_wood": [{ "axis": ["x", "y", "z"] }, { "axis": "y" }],
+  "oak_wood": [
+    {
+      "axis": ["x", "y", "z"]
+    },
+    {
+      "axis": "y"
+    }
+  ],
   "pale_oak_button": [
     {
       "face": ["floor", "wall", "ceiling"],
       "facing": ["north", "south", "west", "east"],
       "powered": ["true", "false"]
     },
-    { "face": "wall", "facing": "north", "powered": "false" }
+    {
+      "face": "wall",
+      "facing": "north",
+      "powered": "false"
+    }
   ],
   "pale_oak_door": [
     {
@@ -838,7 +1517,11 @@
       ],
       "waterlogged": ["true", "false"]
     },
-    { "attached": "false", "rotation": "0", "waterlogged": "false" }
+    {
+      "attached": "false",
+      "rotation": "0",
+      "waterlogged": "false"
+    }
   ],
   "pale_oak_leaves": [
     {
@@ -846,15 +1529,37 @@
       "persistent": ["true", "false"],
       "waterlogged": ["true", "false"]
     },
-    { "distance": "7", "persistent": "false", "waterlogged": "false" }
+    {
+      "distance": "7",
+      "persistent": "false",
+      "waterlogged": "false"
+    }
   ],
-  "pale_oak_log": [{ "axis": ["x", "y", "z"] }, { "axis": "y" }],
+  "pale_oak_log": [
+    {
+      "axis": ["x", "y", "z"]
+    },
+    {
+      "axis": "y"
+    }
+  ],
   "pale_oak_planks": [{}, {}],
   "pale_oak_pressure_plate": [
-    { "powered": ["true", "false"] },
-    { "powered": "false" }
+    {
+      "powered": ["true", "false"]
+    },
+    {
+      "powered": "false"
+    }
   ],
-  "pale_oak_sapling": [{ "stage": ["0", "1"] }, { "stage": "0" }],
+  "pale_oak_sapling": [
+    {
+      "stage": ["0", "1"]
+    },
+    {
+      "stage": "0"
+    }
+  ],
   "pale_oak_sign": [
     {
       "rotation": [
@@ -877,11 +1582,20 @@
       ],
       "waterlogged": ["true", "false"]
     },
-    { "rotation": "0", "waterlogged": "false" }
+    {
+      "rotation": "0",
+      "waterlogged": "false"
+    }
   ],
   "pale_oak_slab": [
-    { "type": ["top", "bottom", "double"], "waterlogged": ["true", "false"] },
-    { "type": "bottom", "waterlogged": "false" }
+    {
+      "type": ["top", "bottom", "double"],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "type": "bottom",
+      "waterlogged": "false"
+    }
   ],
   "pale_oak_stairs": [
     {
@@ -924,23 +1638,129 @@
       "facing": ["north", "south", "west", "east"],
       "waterlogged": ["true", "false"]
     },
-    { "facing": "north", "waterlogged": "false" }
+    {
+      "facing": "north",
+      "waterlogged": "false"
+    }
   ],
   "pale_oak_wall_sign": [
     {
       "facing": ["north", "south", "west", "east"],
       "waterlogged": ["true", "false"]
     },
-    { "facing": "north", "waterlogged": "false" }
+    {
+      "facing": "north",
+      "waterlogged": "false"
+    }
   ],
-  "pale_oak_wood": [{ "axis": ["x", "y", "z"] }, { "axis": "y" }],
+  "pale_oak_wood": [
+    {
+      "axis": ["x", "y", "z"]
+    },
+    {
+      "axis": "y"
+    }
+  ],
+  "polished_andesite": [{}, {}],
+  "polished_andesite_slab": [
+    {
+      "type": ["top", "bottom", "double"],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "type": "bottom",
+      "waterlogged": "false"
+    }
+  ],
+  "polished_andesite_stairs": [
+    {
+      "facing": ["north", "south", "west", "east"],
+      "half": ["top", "bottom"],
+      "shape": [
+        "straight",
+        "inner_left",
+        "inner_right",
+        "outer_left",
+        "outer_right"
+      ],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "facing": "north",
+      "half": "bottom",
+      "shape": "straight",
+      "waterlogged": "false"
+    }
+  ],
+  "polished_deepslate": [{}, {}],
+  "polished_deepslate_slab": [
+    {
+      "type": ["top", "bottom", "double"],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "type": "bottom",
+      "waterlogged": "false"
+    }
+  ],
+  "polished_deepslate_stairs": [
+    {
+      "facing": ["north", "south", "west", "east"],
+      "half": ["top", "bottom"],
+      "shape": [
+        "straight",
+        "inner_left",
+        "inner_right",
+        "outer_left",
+        "outer_right"
+      ],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "facing": "north",
+      "half": "bottom",
+      "shape": "straight",
+      "waterlogged": "false"
+    }
+  ],
+  "polished_deepslate_wall": [
+    {
+      "east": ["none", "low", "tall"],
+      "north": ["none", "low", "tall"],
+      "south": ["none", "low", "tall"],
+      "up": ["true", "false"],
+      "waterlogged": ["true", "false"],
+      "west": ["none", "low", "tall"]
+    },
+    {
+      "east": "none",
+      "north": "none",
+      "south": "none",
+      "up": "true",
+      "waterlogged": "false",
+      "west": "none"
+    }
+  ],
   "poppy": [{}, {}],
   "potted_poppy": [{}, {}],
   "quartz_block": [{}, {}],
-  "quartz_pillar": [{ "axis": ["x", "y", "z"] }, { "axis": "y" }],
+  "quartz_pillar": [
+    {
+      "axis": ["x", "y", "z"]
+    },
+    {
+      "axis": "y"
+    }
+  ],
   "quartz_slab": [
-    { "type": ["top", "bottom", "double"], "waterlogged": ["true", "false"] },
-    { "type": "bottom", "waterlogged": "false" }
+    {
+      "type": ["top", "bottom", "double"],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "type": "bottom",
+      "waterlogged": "false"
+    }
   ],
   "quartz_stairs": [
     {
@@ -968,23 +1788,50 @@
       "occupied": ["true", "false"],
       "part": ["head", "foot"]
     },
-    { "facing": "north", "occupied": "false", "part": "foot" }
+    {
+      "facing": "north",
+      "occupied": "false",
+      "part": "foot"
+    }
   ],
-  "redstone_torch": [{ "lit": ["true", "false"] }, { "lit": "true" }],
+  "redstone_torch": [
+    {
+      "lit": ["true", "false"]
+    },
+    {
+      "lit": "true"
+    }
+  ],
   "redstone_wall_torch": [
-    { "facing": ["north", "south", "west", "east"], "lit": ["true", "false"] },
-    { "facing": "north", "lit": "true" }
+    {
+      "facing": ["north", "south", "west", "east"],
+      "lit": ["true", "false"]
+    },
+    {
+      "facing": "north",
+      "lit": "true"
+    }
   ],
   "sea_lantern": [{}, {}],
   "short_grass": [{}, {}],
   "soul_lantern": [
-    { "hanging": ["true", "false"], "waterlogged": ["true", "false"] },
-    { "hanging": "false", "waterlogged": "false" }
+    {
+      "hanging": ["true", "false"],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "hanging": "false",
+      "waterlogged": "false"
+    }
   ],
   "soul_torch": [{}, {}],
   "soul_wall_torch": [
-    { "facing": ["north", "south", "west", "east"] },
-    { "facing": "north" }
+    {
+      "facing": ["north", "south", "west", "east"]
+    },
+    {
+      "facing": "north"
+    }
   ],
   "spruce_button": [
     {
@@ -992,7 +1839,11 @@
       "facing": ["north", "south", "west", "east"],
       "powered": ["true", "false"]
     },
-    { "face": "wall", "facing": "north", "powered": "false" }
+    {
+      "face": "wall",
+      "facing": "north",
+      "powered": "false"
+    }
   ],
   "spruce_door": [
     {
@@ -1063,7 +1914,11 @@
       ],
       "waterlogged": ["true", "false"]
     },
-    { "attached": "false", "rotation": "0", "waterlogged": "false" }
+    {
+      "attached": "false",
+      "rotation": "0",
+      "waterlogged": "false"
+    }
   ],
   "spruce_leaves": [
     {
@@ -1071,15 +1926,37 @@
       "persistent": ["true", "false"],
       "waterlogged": ["true", "false"]
     },
-    { "distance": "7", "persistent": "false", "waterlogged": "false" }
+    {
+      "distance": "7",
+      "persistent": "false",
+      "waterlogged": "false"
+    }
   ],
-  "spruce_log": [{ "axis": ["x", "y", "z"] }, { "axis": "y" }],
+  "spruce_log": [
+    {
+      "axis": ["x", "y", "z"]
+    },
+    {
+      "axis": "y"
+    }
+  ],
   "spruce_planks": [{}, {}],
   "spruce_pressure_plate": [
-    { "powered": ["true", "false"] },
-    { "powered": "false" }
+    {
+      "powered": ["true", "false"]
+    },
+    {
+      "powered": "false"
+    }
   ],
-  "spruce_sapling": [{ "stage": ["0", "1"] }, { "stage": "0" }],
+  "spruce_sapling": [
+    {
+      "stage": ["0", "1"]
+    },
+    {
+      "stage": "0"
+    }
+  ],
   "spruce_sign": [
     {
       "rotation": [
@@ -1102,11 +1979,20 @@
       ],
       "waterlogged": ["true", "false"]
     },
-    { "rotation": "0", "waterlogged": "false" }
+    {
+      "rotation": "0",
+      "waterlogged": "false"
+    }
   ],
   "spruce_slab": [
-    { "type": ["top", "bottom", "double"], "waterlogged": ["true", "false"] },
-    { "type": "bottom", "waterlogged": "false" }
+    {
+      "type": ["top", "bottom", "double"],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "type": "bottom",
+      "waterlogged": "false"
+    }
   ],
   "spruce_stairs": [
     {
@@ -1149,20 +2035,39 @@
       "facing": ["north", "south", "west", "east"],
       "waterlogged": ["true", "false"]
     },
-    { "facing": "north", "waterlogged": "false" }
+    {
+      "facing": "north",
+      "waterlogged": "false"
+    }
   ],
   "spruce_wall_sign": [
     {
       "facing": ["north", "south", "west", "east"],
       "waterlogged": ["true", "false"]
     },
-    { "facing": "north", "waterlogged": "false" }
+    {
+      "facing": "north",
+      "waterlogged": "false"
+    }
   ],
-  "spruce_wood": [{ "axis": ["x", "y", "z"] }, { "axis": "y" }],
+  "spruce_wood": [
+    {
+      "axis": ["x", "y", "z"]
+    },
+    {
+      "axis": "y"
+    }
+  ],
   "stone": [{}, {}],
   "stone_brick_slab": [
-    { "type": ["top", "bottom", "double"], "waterlogged": ["true", "false"] },
-    { "type": "bottom", "waterlogged": "false" }
+    {
+      "type": ["top", "bottom", "double"],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "type": "bottom",
+      "waterlogged": "false"
+    }
   ],
   "stone_brick_stairs": [
     {
@@ -1209,15 +2114,29 @@
       "facing": ["north", "south", "west", "east"],
       "powered": ["true", "false"]
     },
-    { "face": "wall", "facing": "north", "powered": "false" }
+    {
+      "face": "wall",
+      "facing": "north",
+      "powered": "false"
+    }
   ],
   "stone_pressure_plate": [
-    { "powered": ["true", "false"] },
-    { "powered": "false" }
+    {
+      "powered": ["true", "false"]
+    },
+    {
+      "powered": "false"
+    }
   ],
   "stone_slab": [
-    { "type": ["top", "bottom", "double"], "waterlogged": ["true", "false"] },
-    { "type": "bottom", "waterlogged": "false" }
+    {
+      "type": ["top", "bottom", "double"],
+      "waterlogged": ["true", "false"]
+    },
+    {
+      "type": "bottom",
+      "waterlogged": "false"
+    }
   ],
   "stone_stairs": [
     {
@@ -1239,8 +2158,22 @@
       "waterlogged": "false"
     }
   ],
-  "stripped_spruce_log": [{ "axis": ["x", "y", "z"] }, { "axis": "y" }],
-  "stripped_spruce_wood": [{ "axis": ["x", "y", "z"] }, { "axis": "y" }],
+  "stripped_spruce_log": [
+    {
+      "axis": ["x", "y", "z"]
+    },
+    {
+      "axis": "y"
+    }
+  ],
+  "stripped_spruce_wood": [
+    {
+      "axis": ["x", "y", "z"]
+    },
+    {
+      "axis": "y"
+    }
+  ],
   "terracotta": [{}, {}],
   "tinted_glass": [{}, {}],
   "torch": [{}, {}],
@@ -1261,8 +2194,12 @@
     }
   ],
   "wall_torch": [
-    { "facing": ["north", "south", "west", "east"] },
-    { "facing": "north" }
+    {
+      "facing": ["north", "south", "west", "east"]
+    },
+    {
+      "facing": "north"
+    }
   ],
   "white_bed": [
     {
@@ -1270,7 +2207,11 @@
       "occupied": ["true", "false"],
       "part": ["head", "foot"]
     },
-    { "facing": "north", "occupied": "false", "part": "foot" }
+    {
+      "facing": "north",
+      "occupied": "false",
+      "part": "foot"
+    }
   ],
   "white_carpet": [{}, {}],
   "white_concrete": [{}, {}],
