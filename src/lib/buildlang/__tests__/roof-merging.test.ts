@@ -125,6 +125,35 @@ describe("roof merging", () => {
     expect(describeBlocks(apart)).not.toEqual(describeBlocks(merged));
     expect(messages(apart.notes).join("\n")).toMatch(/highest surface/);
   });
+
+  it("combines a merge: false roof by highest surface, without a note", () => {
+    const roofs = (merge?: boolean) =>
+      [
+        roofBox([2, 4, 2], [15, 8, 9], { type: "gable", material: "oak" }),
+        roofBox([6, 4, 7], [7, 8, 4], {
+          type: "gable",
+          material: "oak",
+          ridge: "z",
+          ...(merge === undefined ? {} : { merge }),
+        }),
+      ] as Operations;
+    // inside the main footprint, a merging roof adds nothing to it
+    const main = run(roofs().slice(0, 1), [19, 12, 19]);
+    expect(describeBlocks(run(roofs(), [19, 12, 19]))).toEqual(
+      describeBlocks(main),
+    );
+    expect(describeBlocks(run(roofs(true), [19, 12, 19]))).toEqual(
+      describeBlocks(main),
+    );
+    // unmerged, its ridge stands out of the front slope
+    const apart = run(roofs(false), [19, 12, 19]);
+    expect(messages(apart.notes)).toEqual([]);
+    // the dormer's front overhang (z = 11) rises to its ridge over x = 9
+    const column = (b: typeof main) =>
+      b.cells.filter(([x, , z]) => x === 9 && z === 11).map(([, y]) => y);
+    expect(Math.max(...column(main))).toBe(4);
+    expect(Math.max(...column(apart))).toBe(8);
+  });
 });
 
 describe("roof parts", () => {

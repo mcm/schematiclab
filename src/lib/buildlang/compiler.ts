@@ -48,6 +48,7 @@ import {
   type ProgramError,
   type RepeatArgs,
   type SplitArgs,
+  unknownTemplateMessage,
   validateOperations,
 } from "./program";
 import { postprocess } from "./postprocess";
@@ -60,6 +61,7 @@ import {
   type RoofSurface,
 } from "./roofs";
 import { orientStates, Scope, type ScopeFaceName, type Vec } from "./scope";
+import { STD_PREFIX, stdTemplate, stdTemplateNames } from "./std";
 import { MAX_TEMPLATE_DEPTH, substituteParams } from "./templates";
 import {
   type BlockGrid,
@@ -689,12 +691,20 @@ export class Compiler {
         `expected a template name or {"name": ..., "with": {...}}, got ${show(raw)}`,
       );
     }
-    const templates = this.program.templates ?? {};
-    if (name.startsWith("#") || !Object.hasOwn(templates, name)) {
-      const defined = this.templateNames();
+    if (name.startsWith(STD_PREFIX)) {
+      if (!stdTemplate(name)) {
+        throw new BuildError(
+          path,
+          `unknown built-in template '${name}' (built-in: ${stdTemplateNames().join(", ")})`,
+        );
+      }
+    } else if (
+      name.startsWith("#") ||
+      !Object.hasOwn(this.program.templates ?? {}, name)
+    ) {
       throw new BuildError(
         path,
-        `unknown template '${name}' (defined: ${defined.length ? defined.join(", ") : "none"})`,
+        unknownTemplateMessage(name, this.templateNames()),
       );
     }
     if (this.callers.length >= MAX_TEMPLATE_DEPTH) {
@@ -703,7 +713,10 @@ export class Compiler {
         `templates nested more than ${MAX_TEMPLATE_DEPTH} deep (does '${name}' use itself?)`,
       );
     }
-    const bodyPath = pathKey("templates", name);
+    // built-in bodies report at `std:<name>[i]…`
+    const bodyPath = name.startsWith(STD_PREFIX)
+      ? name
+      : pathKey("templates", name);
     const expansion = this.expand(name, params, bodyPath);
     for (const unused of expansion.unused) {
       this.warn({
@@ -733,8 +746,13 @@ export class Compiler {
     const key = JSON.stringify([name, params]);
     let expansion = this.expansions.get(key);
     if (!expansion) {
-      const body = (this.program.templates ?? {})[name];
-      const substituted = substituteParams(body, params, bodyPath);
+      const std = stdTemplate(name);
+      const body = std ? std.body : (this.program.templates ?? {})[name];
+      const substituted = substituteParams(
+        body,
+        std ? { ...std.params, ...params } : params,
+        bodyPath,
+      );
       const errors =
         substituted.errors.length > 0
           ? substituted.errors
