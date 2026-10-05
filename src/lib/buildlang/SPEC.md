@@ -81,6 +81,9 @@ Any operation's argument object may carry `"priority": n` (integer, default 0) a
 - Air only erases blocks from its **own** layer, so a high-priority feature never punches
   holes in lower layers. With `"carve": true`, air cuts through every layer (skylights,
   doorways through another feature's wall).
+- **Roofs default to one layer below their context** (priority −1 at top level). So chimneys,
+  towers, dormers and taller walls win over roofs wherever they are written. Give a roof
+  an explicit `priority` to change that.
 - `only_empty` and `replace` are judged against the cell as composed from lower layers and
   earlier writes.
 
@@ -154,11 +157,43 @@ inward. Intended for a face tile. Without a material it uses `"@door"` (so defin
 **`cylinder`** / **`ellipsoid`** — fitted to the scope: `{"cylinder": {"material": "@wall", "hollow": true, "thickness": 1}}`.
 Hollow walls are watertight. Cylinders are vertical; an ellipsoid fills the whole box.
 
-### Roofs (coming soon)
+### Roofs
 
-**`roof`** is not supported yet: a `roof` operation compiles to the error
-`roof is not supported yet` at its path, and the rest of the program still builds. Until roofs
-arrive, build a flat top with `fill` or `split`, or leave the space above the walls empty.
+**`roof`** — generated from a height field. The eave sits at the scope's y = 0, so put the
+roof in a box directly above the walls. The roof is clipped at the scope height. All roofs
+are placed after the rest of the program, on their own layer (see 3a).
+
+```json
+{
+  "roof": {
+    "type": "gable",
+    "material": "@roof",
+    "pitch": 1,
+    "overhang": 1,
+    "ridge": "auto"
+  }
+}
+```
+
+`{"roof": "hip"}` is short for `{"roof": {"type": "hip"}}`.
+
+- `type`: `gable` (default), `hip`, `pyramid`, `shed`, `gambrel`, `cone`, `dome`, `flat`.
+- `material`: a role or family (default `"@roof"`). Its stairs, slab and block variants are
+  chosen automatically from the slope: stairs where the roof rises about a block per block
+  (their steps face down-slope), bottom or top slabs on gentler slopes and at the ridge,
+  full blocks for `flat`.
+- `pitch`: rise per block (default 1). 1 = stairs; 0.5 = gentle slab roof; 1.5–2 = steep.
+- `overhang`: integer (default 1), or per side `{"all": 1, "left": 0}` (sides `left`, `right`,
+  `back`, `front`; `all` sets the rest). Use 0 where the roof meets another building.
+- `ridge`: `x`, `z`, or `auto` (along the longer side). For `shed`, the high side is the back
+  (ridge `x`) or left (ridge `z`).
+- `height`: maximum height above the eave (and the height of a `dome`).
+- `solid: true` fills the attic. `break` (0–1, default 0.5) sets the gambrel knee.
+- **Size the roof box**: it needs height ≥ pitch × (half the span + overhang) + 1, or the roof
+  flattens at the top.
+
+Roofs at the same eave height combine by taking the highest surface; roofs at different
+heights stay independent (a tower's cone does not swallow a lower annex roof).
 
 ### Composition
 
@@ -210,7 +245,7 @@ States you set yourself win over automatic ones.
 
 ## 5. Idioms
 
-**Storeys** — split y: foundation, walls, floor layer, walls, then space for the roof.
+**Storeys** — split y: foundation, walls, floor layer, walls, roof.
 
 ```json
 {
@@ -235,7 +270,7 @@ States you set yourself win over automatic ones.
           }
         ]
       },
-      { "size": "~" }
+      { "size": "~", "do": [{ "roof": { "type": "gable" } }] }
     ]
   }
 }
@@ -268,11 +303,14 @@ own axes: with `rotate: 1`, a wing 7 wide (world x) and 9 deep (world z) has
 **Feature through another feature's wall**: give it a higher `priority`; to cut an opening
 on purpose, use `carve`.
 
+**Chimney / tower through a roof**: just build it. Roofs sit on a lower layer, so the
+chimney wins wherever it is written. To cut a roof opening on purpose, use `carve`.
+
 **Floor that must not overwrite walls**: `inset` by 1 first, or use `only_empty`.
 
 ## 6. Workflow
 
-1. **Plan first**, in a few sentences: footprint, storeys, palette, key features, and
+1. **Plan first**, in a few sentences: footprint, storeys, roof type, palette, key features, and
    the dimensions that make repeats symmetric.
 2. Write the program. Prefer roles, templates and repeats over hand-placed blocks.
 3. Compile it with `compile_build` (or `check_build` for the report alone). You will receive a

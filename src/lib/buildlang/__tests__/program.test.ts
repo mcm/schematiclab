@@ -539,10 +539,31 @@ describe("validateProgram: material operations", () => {
     ]);
   });
 
-  it("accepts roofs as written and rejects non-objects", () => {
-    expectValid(program([{ roof: { type: "gable", anything: 1 } }]));
-    expect(errorsOf([{ roof: 1 }])).toEqual([
+  it("checks roofs (the rest is in roofs.test.ts)", () => {
+    expectValid(
+      program([
+        { roof: "cone" },
+        {
+          roof: {
+            type: "gable",
+            material: "@roof",
+            pitch: 0.5,
+            overhang: { all: 1, left: 0 },
+            ridge: "auto",
+            gable: false,
+            height: 4,
+            solid: true,
+            break: 0.25,
+            priority: 2,
+          },
+        },
+      ]),
+    );
+    expect(
+      errorsOf([{ roof: 1 }, { roof: { type: "gable", anything: 1 } }]),
+    ).toEqual([
       "build[0].roof: expected a roof type or an object, got 1",
+      "build[1].roof.anything: unknown key 'anything' (expected 'type', 'material', 'pitch', 'overhang', 'ridge', 'gable', 'height', 'solid', 'break', 'priority', 'carve')",
     ]);
   });
 });

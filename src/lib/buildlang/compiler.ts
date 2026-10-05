@@ -4,7 +4,8 @@
 // Worker-safe.
 //
 // Scope operations (Cairn `SPEC.md` section 3): `box`, `split`, `repeat`,
-// `inset` and `faces`. Material operations write through `place`.
+// `inset` and `faces`. Material operations write through `place`. Roofs are
+// collected while the program runs and placed after it (`roofs.ts`).
 // Composition: `use` (templates), `choose` and `when`.
 //
 // Paths are real program paths: an operation inside a repeat's `do` reports
@@ -56,10 +57,18 @@ import {
   validateOperations,
 } from "./program";
 import { postprocess } from "./postprocess";
+import {
+  createRoof,
+  placeRoofs,
+  type Roof,
+  type RoofArgsObject,
+  type RoofLayer,
+} from "./roofs";
 import { orientStates, Scope, type ScopeFaceName, type Vec } from "./scope";
 import { MAX_TEMPLATE_DEPTH, substituteParams } from "./templates";
 import {
   type BlockGrid,
+  type Layer,
   LayerStack,
   type Pos,
   type ReplaceSet,
@@ -185,6 +194,8 @@ export class Compiler {
   private readonly checkedStates = new Set<string>();
   /** Paths of the `use` operations being expanded, outermost first. */
   private readonly callers: string[] = [];
+  /** Roofs collected while the program runs, placed after it (`roofs.ts`). */
+  private readonly roofs: Roof[] = [];
   /** Substituted and checked template bodies, by name and parameters. */
   private readonly expansions = new Map<
     string,
@@ -210,6 +221,7 @@ export class Compiler {
         "build",
         0,
       );
+      this.placeRoofs();
     } catch (e) {
       if (!(e instanceof FatalBuildError)) throw e;
       this.errors.push(e.toProgramError());
@@ -340,7 +352,7 @@ export class Compiler {
       case "ellipsoid":
         return this.round(arg, scope, path, "ellipsoid");
       case "roof":
-        throw new BuildError(path, "roof is not supported yet");
+        return this.roof(arg, scope, path);
       case "use":
         return this.use(arg, scope, path, depth);
       case "choose":
@@ -1000,6 +1012,49 @@ export class Compiler {
   }
 
   /**
+   * `roof`: collected in world space now, placed with every other roof once
+   * the program has run (`placeRoofs`). Unless it sets `priority`, a roof sits
+   * one layer below its context, so chimneys, towers and dormers written
+   * anywhere in the program win over it.
+   */
+  private roof(raw: unknown, scope: Scope, path: string) {
+    const arg = (
+      typeof raw === "string"
+        ? { type: raw }
+        : this.expectObject(raw, path, "a roof type or an object")
+    ) as RoofArgsObject & Json;
+    if (arg.gable !== undefined) {
+      this.notes.push({
+        path: `${path}.gable`,
+        message: "gable infill is not supported yet; ignored",
+      });
+    }
+    const { priority, carve } = this.layers.current;
+    const layer: RoofLayer = {
+      priority: "priority" in arg ? priority : priority - 1,
+      carve,
+      seq: this.log.nextSeq(),
+      path,
+    };
+    this.roofs.push(createRoof(arg, scope, path, this.resolver, layer));
+  }
+
+  private placeRoofs() {
+    const root = Scope.root(this.program.size);
+    try {
+      placeRoofs(this.roofs, (pos, material, states, layer) =>
+        this.place(root, pos, material, layer.path, {
+          extra: states,
+          layer,
+        }),
+      );
+    } catch (e) {
+      if (!(e instanceof BuildError) || e instanceof FatalBuildError) throw e;
+      this.errors.push(e.toProgramError());
+    }
+  }
+
+  /**
    * Logs one placement of `material` at local `at`: picks the mix entry for
    * the world cell, adds `extra` states the block has (noting the rest) and
    * the automatic ones (`auto`, then an axis from a flat scope's shape and
@@ -1022,9 +1077,11 @@ export class Compiler {
       );
     }
     const entry = pickEntry(material, this.seed, pos);
+    const layer = options.layer ?? this.layers.current;
     const write = {
-      ...this.layers.current,
-      seq: this.log.nextSeq(),
+      priority: layer.priority,
+      carve: layer.carve,
+      seq: options.layer?.seq ?? this.log.nextSeq(),
       onlyEmpty: options.onlyEmpty ?? false,
       replace: options.replace ?? null,
       path,
@@ -1134,6 +1191,8 @@ interface PlacementOptions {
   replace?: ReplaceSet | null;
   /** A single placed block (`block`), checked for collisions. */
   point?: boolean;
+  /** Another layer and program order than the current ones (roofs). */
+  layer?: Layer & { seq: number };
 }
 
 const AIR_MATERIAL: Material = {

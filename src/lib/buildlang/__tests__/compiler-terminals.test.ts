@@ -1,6 +1,6 @@
 // Terminal operations (Cairn `SPEC.md` "Material operations"): fill, clear,
-// frame, block, door, cylinder and ellipsoid, plus `roof`, which this epic
-// rejects. Ports Cairn's `test_door_faces_inward_and_has_two_halves`, the door
+// frame, block, door, cylinder and ellipsoid (`roof` is in `roofs.test.ts`).
+// Ports Cairn's `test_door_faces_inward_and_has_two_halves`, the door
 // half of `test_rotate_front_faces_west`, `test_replace_through_round_wall` and
 // the non-cottage parts of `test_placed_block_collisions_are_reported`.
 
@@ -598,27 +598,6 @@ describe("cylinder and ellipsoid", () => {
     expect(messages(big.errors)).toEqual([
       "build[0].box.do[0].ellipsoid: scope [300,1,1] is too big for 'ellipsoid' (at most 256 per side)",
     ]);
-  });
-});
-
-describe("roof", () => {
-  it("is not supported yet, reported at its path", () => {
-    const b = compile(
-      [
-        { fill: "stone" },
-        {
-          box: {
-            do: [{ roof: "gable" }, { roof: { type: "hip", pitch: 1 } }],
-          },
-        },
-      ],
-      [3, 3, 3],
-    );
-    expect(messages(b.errors)).toEqual([
-      "build[1].box.do[0].roof: roof is not supported yet",
-      "build[1].box.do[1].roof: roof is not supported yet",
-    ]);
-    expect(b.cells).toHaveLength(27);
   });
 });
 
