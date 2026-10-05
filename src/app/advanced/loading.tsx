@@ -12,7 +12,7 @@ export default function AdvancedLoading() {
       role="status"
       aria-label="Loading editor"
       style={{
-        minHeight: "100vh",
+        minHeight: "100dvh",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",

@@ -121,9 +121,7 @@ function ModRow({
         padding: "var(--space-2) var(--space-3)",
         borderBottom: "1px solid var(--border-subtle)",
         fontSize: "var(--text-sm)",
-        boxShadow: row.needsDecision
-          ? "inset 3px 0 0 var(--color-warning, var(--color-error))"
-          : "none",
+        boxShadow: row.needsDecision ? "inset 3px 0 0 var(--warning)" : "none",
       }}
     >
       <div
@@ -346,7 +344,7 @@ function RowStatus({
             <IconCheck
               size={14}
               aria-hidden="true"
-              style={{ color: "var(--color-success, currentColor)" }}
+              style={{ color: "var(--success-fg)" }}
             />
           }
         >
@@ -434,7 +432,7 @@ function ProjectLogo({ logoUrl }: { logoUrl: string | null }) {
         height: 20,
         flexShrink: 0,
         borderRadius: "var(--radius-sm)",
-        background: "var(--bg-subtle, var(--border-subtle))",
+        background: "var(--bg-raised)",
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
@@ -449,8 +447,8 @@ function ProjectLogo({ logoUrl }: { logoUrl: string | null }) {
 const TONE_COLORS = {
   default: "var(--text-secondary)",
   muted: "var(--text-tertiary)",
-  warning: "var(--color-warning, var(--color-error))",
-  error: "var(--color-error)",
+  warning: "var(--warning-fg)",
+  error: "var(--danger-fg)",
 } as const;
 
 function StatusLine({

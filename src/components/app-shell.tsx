@@ -1,20 +1,12 @@
 "use client";
 
-import {
-  ToastProvider,
-  ToastViewport,
-  TooltipProvider,
-} from "@iamthemcmaster/ui";
-import { SonnerToaster } from "@iamthemcmaster/ui";
+import { SonnerToaster, TooltipProvider } from "@iamthemcmaster/ui";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <TooltipProvider>
-      <ToastProvider>
-        {children}
-        <ToastViewport />
-        <SonnerToaster position="bottom-right" richColors />
-      </ToastProvider>
+      {children}
+      <SonnerToaster position="bottom-right" richColors />
     </TooltipProvider>
   );
 }

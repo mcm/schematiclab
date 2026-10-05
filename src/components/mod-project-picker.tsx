@@ -256,7 +256,7 @@ function PickerStatus({
       role={tone === "error" ? "alert" : "status"}
       style={{
         padding: "var(--space-4)",
-        color: tone === "error" ? "var(--color-error)" : "var(--text-tertiary)",
+        color: tone === "error" ? "var(--danger-fg)" : "var(--text-tertiary)",
         fontSize: "var(--text-sm)",
         textAlign: "center",
       }}
@@ -336,7 +336,7 @@ function ProjectOption({
             width: 32,
             height: 32,
             borderRadius: "var(--radius-sm)",
-            background: "var(--bg-subtle, var(--border-subtle))",
+            background: "var(--bg-raised)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",

@@ -530,7 +530,7 @@ function NamespaceFilter({
             display: "flex",
             flexDirection: "column",
             gap: "var(--space-2)",
-            width: 280,
+            width: "min(280px, calc(100vw - 2 * var(--space-4)))",
             padding: "var(--space-2)",
           }}
         >

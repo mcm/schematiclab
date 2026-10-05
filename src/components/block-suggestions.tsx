@@ -300,7 +300,7 @@ function ColorSwatch({ candidate }: { candidate: SuggestionCandidate }) {
         border: "1px solid var(--border-subtle)",
         background: appearance
           ? `oklab(${l} ${a} ${b})`
-          : "repeating-linear-gradient(45deg, var(--bg-elevated) 0 4px, var(--bg-page) 4px 8px)",
+          : "repeating-linear-gradient(45deg, var(--bg-raised) 0 4px, var(--bg-page) 4px 8px)",
       }}
     />
   );

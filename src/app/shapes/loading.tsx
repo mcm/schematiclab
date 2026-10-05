@@ -10,7 +10,7 @@ export default function ShapesLoading() {
       role="status"
       aria-label="Loading shape generator"
       style={{
-        minHeight: "100vh",
+        minHeight: "100dvh",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",

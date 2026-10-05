@@ -16,9 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
   TabsContent,
-  TabsLine,
-  TabsLineList,
-  TabsLineTrigger,
+  Tabs,
+  TabsList,
+  TabsTrigger,
 } from "@iamthemcmaster/ui";
 import { IconArrowLeft, IconDownload, IconLoader2 } from "@tabler/icons-react";
 import { FormatSelector } from "@/components/format-selector";
@@ -383,7 +383,7 @@ export default function ShapeGeneratorPage() {
   return (
     <main
       style={{
-        minHeight: "100vh",
+        minHeight: "100dvh",
         display: "flex",
         flexDirection: "column",
       }}
@@ -401,6 +401,7 @@ export default function ShapeGeneratorPage() {
         <Button asChild variant="ghost" size="sm">
           <Link
             href="/"
+            aria-label="Back to Quick Convert"
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -408,7 +409,9 @@ export default function ShapeGeneratorPage() {
             }}
           >
             <IconArrowLeft size={14} aria-hidden="true" />
-            Back to Quick Convert
+            <span className="schematiclab-hide-narrow">
+              Back to Quick Convert
+            </span>
           </Link>
         </Button>
         <div
@@ -444,7 +447,7 @@ export default function ShapeGeneratorPage() {
         <Card style={{ flex: "1 1 320px", maxWidth: 440 }}>
           <CardContent
             style={{
-              padding: "var(--space-6)",
+              padding: "clamp(var(--space-4), 6vw, var(--space-8))",
               display: "flex",
               flexDirection: "column",
               gap: "var(--space-4)",
@@ -757,7 +760,8 @@ function ShapePreview({ preview }: { preview: PreviewState }) {
           gap: "var(--space-2)",
         }}
       >
-        <TabsLine
+        <Tabs
+          variant="underline"
           value={activeTab}
           onValueChange={(next) => setActiveTab(next as PreviewTabId)}
           style={{
@@ -767,10 +771,10 @@ function ShapePreview({ preview }: { preview: PreviewState }) {
             flexDirection: "column",
           }}
         >
-          <TabsLineList>
-            <TabsLineTrigger value="3d">3D Preview</TabsLineTrigger>
-            <TabsLineTrigger value="static">Static Renders</TabsLineTrigger>
-          </TabsLineList>
+          <TabsList className="schematiclab-tab-list">
+            <TabsTrigger value="3d">3D Preview</TabsTrigger>
+            <TabsTrigger value="static">Static Renders</TabsTrigger>
+          </TabsList>
           {projection === null ? (
             <div
               role="status"
@@ -829,7 +833,7 @@ function ShapePreview({ preview }: { preview: PreviewState }) {
               </TabsContent>
             </>
           )}
-        </TabsLine>
+        </Tabs>
         {shown !== null ? (
           <p
             role="status"

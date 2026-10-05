@@ -294,7 +294,7 @@ function StatusMessage({
       role={tone === "error" ? "alert" : "status"}
       style={{
         padding: "var(--space-4)",
-        color: tone === "error" ? "var(--color-error)" : "var(--text-tertiary)",
+        color: tone === "error" ? "var(--danger-fg)" : "var(--text-tertiary)",
         fontSize: "var(--text-sm)",
         textAlign: "center",
       }}
@@ -353,7 +353,7 @@ function ModRow({
             width: 40,
             height: 40,
             borderRadius: "var(--radius-sm)",
-            background: "var(--bg-subtle, var(--border-subtle))",
+            background: "var(--bg-raised)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -456,7 +456,7 @@ function ModRow({
         {load?.state.phase === "error" && !loaded ? (
           <span
             role="alert"
-            style={{ color: "var(--color-error)", fontSize: "var(--text-xs)" }}
+            style={{ color: "var(--danger-fg)", fontSize: "var(--text-xs)" }}
           >
             {load.state.message}
           </span>
@@ -766,7 +766,7 @@ function UnloadAllButton({ fileCount }: { fileCount: number }) {
         <Button
           ref={focusRef("confirm")}
           type="button"
-          variant="destructive"
+          variant="danger"
           size="sm"
           onClick={() => {
             setConfirming(false);
@@ -885,7 +885,7 @@ function ModpackLoadStatus() {
       <div style={{ ...box, flexDirection: "row", alignItems: "start" }}>
         <span
           role="alert"
-          style={{ flex: 1, color: "var(--color-error)", minWidth: 0 }}
+          style={{ flex: 1, color: "var(--danger-fg)", minWidth: 0 }}
         >
           {modpackLoad.message}
         </span>
@@ -972,7 +972,7 @@ function ModpackLoadStatus() {
       )}
       {modpackLoad.failures.length > 0 ? (
         <details>
-          <summary style={{ cursor: "pointer", color: "var(--color-error)" }}>
+          <summary style={{ cursor: "pointer", color: "var(--danger-fg)" }}>
             {modpackLoad.failures.length}{" "}
             {modpackLoad.failures.length === 1 ? "mod" : "mods"} failed
           </summary>
@@ -1227,7 +1227,7 @@ function PendingModRow({ entry }: { entry: ModLoadEntry }) {
         {failed ? (
           <span
             role="alert"
-            style={{ color: "var(--color-error)", fontSize: "var(--text-xs)" }}
+            style={{ color: "var(--danger-fg)", fontSize: "var(--text-xs)" }}
           >
             {state.message}
           </span>
