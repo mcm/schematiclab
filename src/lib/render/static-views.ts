@@ -1,13 +1,15 @@
 // Static renders of a schematic from several angles (the "Static renders"
 // contact sheet in the Advanced Editor): four isometric views, front, side
 // and top elevations, plan slices and a cutaway. Blocks are drawn as
-// flat-coloured cubes, one colour per palette entry.
+// flat-coloured cubes, one colour per palette entry, or as the boxes of their
+// shape for stairs, slabs, fences and the like (`block-shapes.ts`).
 //
 // Pure geometry: no DOM. `contact-sheet-draw.ts` paints the results on a
 // canvas.
 
 import type { ParsedSchematicProjection } from "../convert";
 import { isInvisibleBlockId } from "../invisible-blocks";
+import { blockShape, type ShapeBox } from "./block-shapes";
 
 /** One block of the model, in coordinates relative to the model's minimum. */
 export interface Voxel {
@@ -16,6 +18,8 @@ export interface Voxel {
   z: number;
   /** Index into `VoxelModel.colors`. */
   color: number;
+  /** Index into `VoxelModel.shapes`; absent for a full cube. */
+  shape?: number;
 }
 
 export interface VoxelModel {
@@ -26,6 +30,32 @@ export interface VoxelModel {
   colors: string[];
   /** Voxel index + 1 per cell; 0 = empty. */
   cells: VoxelLookup;
+  /** The boxes of each sub-block shape, indexed by `Voxel.shape`. */
+  shapes: (readonly ShapeBox[])[];
+}
+
+const FULL_CUBE: readonly ShapeBox[] = [[0, 0, 0, 1, 1, 1]];
+
+function boxesOf(model: VoxelModel, voxel: Voxel): readonly ShapeBox[] {
+  return voxel.shape === undefined ? FULL_CUBE : model.shapes[voxel.shape];
+}
+
+/**
+ * Whether `boxes` cover the whole face of their cell on the `side` (0 = low,
+ * 1 = high) of `axis` (0 = x, 1 = y, 2 = z).
+ */
+function coversFace(
+  boxes: readonly ShapeBox[],
+  axis: number,
+  side: 0 | 1,
+): boolean {
+  return boxes.some(
+    (box) =>
+      box[axis + 3 * side] === side &&
+      [0, 1, 2].every(
+        (other) => other === axis || (box[other] === 0 && box[other + 3] === 1),
+      ),
+  );
 }
 
 interface VoxelLookup {
@@ -115,6 +145,7 @@ export function buildVoxelModel(
       voxels: [],
       colors: [],
       cells: voxelLookup([0, 0, 0], []),
+      shapes: [],
     };
   }
   const size: [number, number, number] = [
@@ -135,6 +166,27 @@ export function buildVoxelModel(
     return i;
   };
   const paletteColors = new Map<number, number>();
+  // Equal shapes share one index.
+  const shapes: (readonly ShapeBox[])[] = [];
+  const shapeIndex = new Map<string, number>();
+  const paletteShapes = new Map<number, number | undefined>();
+  const shapeOf = (paletteIndex: number) => {
+    if (paletteShapes.has(paletteIndex)) return paletteShapes.get(paletteIndex);
+    const { blockId, properties } = projection.palette[paletteIndex];
+    const boxes = blockShape(blockId, properties);
+    let index: number | undefined;
+    if (boxes !== undefined) {
+      const key = JSON.stringify(boxes);
+      index = shapeIndex.get(key);
+      if (index === undefined) {
+        index = shapes.length;
+        shapes.push(boxes);
+        shapeIndex.set(key, index);
+      }
+    }
+    paletteShapes.set(paletteIndex, index);
+    return index;
+  };
   const voxels = shown.map(
     ({ regionIndex, local, pos, paletteIndex }): Voxel => {
       let color: number | undefined;
@@ -148,15 +200,18 @@ export function buildVoxelModel(
           paletteColors.set(paletteIndex, color);
         }
       }
-      return {
+      const voxel: Voxel = {
         x: pos[0] - min[0],
         y: pos[1] - min[1],
         z: pos[2] - min[2],
         color,
       };
+      const shape = shapeOf(paletteIndex);
+      if (shape !== undefined) voxel.shape = shape;
+      return voxel;
     },
   );
-  return { size, voxels, colors, cells: voxelLookup(size, voxels) };
+  return { size, voxels, colors, cells: voxelLookup(size, voxels), shapes };
 }
 
 // ── Isometric views ───────────────────────────────────────────────────────
@@ -220,10 +275,48 @@ export interface IsoOptions {
   maxY?: number;
 }
 
+/** A box in view coordinates, cell-local: u0, y0, v0, u1, y1, v1. */
+type ViewBox = ShapeBox;
+
+// `box` in the view coordinates of `corner`, still within its cell.
+function viewBox(corner: IsoCorner, box: ShapeBox): ViewBox {
+  const [x0, y0, z0, x1, y1, z1] = box;
+  const [ua, va] = toView(corner, x0 - 0.5, z0 - 0.5);
+  const [ub, vb] = toView(corner, x1 - 0.5, z1 - 0.5);
+  return [
+    Math.min(ua, ub) + 0.5,
+    y0,
+    Math.min(va, vb) + 0.5,
+    Math.max(ua, ub) + 0.5,
+    y1,
+    Math.max(va, vb) + 0.5,
+  ];
+}
+
+// Whether `a` can hide part of `b` from the camera (at +u, +y, +v): some
+// point of `a` is nearer than some point of `b` on every axis.
+const mayOcclude = (a: ViewBox, b: ViewBox) =>
+  a[3] > b[0] && a[4] > b[1] && a[5] > b[2];
+
+/** The boxes of one cell in painting order: each after every box it may hide. */
+export function paintOrder(boxes: readonly ViewBox[]): ViewBox[] {
+  const rest = [...boxes];
+  const ordered: ViewBox[] = [];
+  while (rest.length > 0) {
+    const next = rest.findIndex((a) =>
+      rest.every((b) => b === a || !mayOcclude(a, b)),
+    );
+    // Boxes that hide each other in a cycle can't be painted correctly in
+    // any order; take the first.
+    ordered.push(...rest.splice(Math.max(0, next), 1));
+  }
+  return ordered;
+}
+
 /**
  * The faces of an isometric view of `model` from `corner`, back to front
- * (paint them in order). Faces hidden behind a neighbouring block are left
- * out.
+ * (paint them in order). Blocks are drawn as their shape's boxes; faces hidden
+ * behind a neighbouring block that covers them are left out.
  */
 export function isoView(
   model: VoxelModel,
@@ -236,50 +329,98 @@ export function isoView(
   // World step that moves +1 along u and along v.
   const uStep = du !== 0 ? [du, 0] : [0, eu];
   const vStep = dv !== 0 ? [dv, 0] : [0, ev];
-  const solid = (x: number, y: number, z: number) =>
-    y <= maxY && model.cells.get(x, y, z) !== 0;
+  // The world axis of each step, and the side of the neighbour's cell that
+  // faces back.
+  const uAxis = uStep[0] !== 0 ? 0 : 2;
+  const vAxis = vStep[0] !== 0 ? 0 : 2;
+  const uBack = uStep[0] + uStep[1] > 0 ? 0 : 1;
+  const vBack = vStep[0] + vStep[1] > 0 ? 0 : 1;
+
+  // Per shape (-1 = full cube): its boxes in view coordinates, in painting
+  // order, and which faces of its cell it covers.
+  const shapeCache = new Map<
+    number,
+    { boxes: ViewBox[]; covers: [boolean, boolean, boolean] }
+  >();
+  const shapeInfo = (voxel: Voxel) => {
+    const key = voxel.shape ?? -1;
+    let info = shapeCache.get(key);
+    if (info === undefined) {
+      const boxes = boxesOf(model, voxel);
+      info = {
+        boxes: paintOrder(boxes.map((box) => viewBox(corner, box))),
+        covers: [
+          coversFace(boxes, 1, 0),
+          coversFace(boxes, uAxis, uBack),
+          coversFace(boxes, vAxis, vBack),
+        ],
+      };
+      shapeCache.set(key, info);
+    }
+    return info;
+  };
+  // Whether the block at (x, y, z) covers its face number `face` of
+  // `shapeInfo`'s `covers` (0 = bottom, 1 = towards -u, 2 = towards -v).
+  const covered = (x: number, y: number, z: number, face: number) => {
+    if (y > maxY) return false;
+    const index = model.cells.get(x, y, z);
+    return index !== 0 && shapeInfo(model.voxels[index - 1]).covers[face];
+  };
 
   const drawn: { depth: number; faces: IsoFace[] }[] = [];
   for (const voxel of model.voxels) {
     const { x, y, z } = voxel;
     if (y > maxY) continue;
     const [u, v] = toView(corner, x, z);
+    const coveredTop = covered(x, y + 1, z, 0);
+    const coveredRight = covered(x + uStep[0], y, z + uStep[1], 1);
+    const coveredLeft = covered(x + vStep[0], y, z + vStep[1], 2);
     const faces: IsoFace[] = [];
-    if (!solid(x, y + 1, z)) {
-      faces.push({
-        kind: "top",
-        color: voxel.color,
-        points: [
-          project(u, y + 1, v),
-          project(u + 1, y + 1, v),
-          project(u + 1, y + 1, v + 1),
-          project(u, y + 1, v + 1),
-        ],
-      });
-    }
-    if (!solid(x + uStep[0], y, z + uStep[1])) {
-      faces.push({
-        kind: "right",
-        color: voxel.color,
-        points: [
-          project(u + 1, y + 1, v),
-          project(u + 1, y + 1, v + 1),
-          project(u + 1, y, v + 1),
-          project(u + 1, y, v),
-        ],
-      });
-    }
-    if (!solid(x + vStep[0], y, z + vStep[1])) {
-      faces.push({
-        kind: "left",
-        color: voxel.color,
-        points: [
-          project(u, y + 1, v + 1),
-          project(u + 1, y + 1, v + 1),
-          project(u + 1, y, v + 1),
-          project(u, y, v + 1),
-        ],
-      });
+    for (const box of shapeInfo(voxel).boxes) {
+      const [u0, y0, v0, u1, y1, v1] = [
+        u + box[0],
+        y + box[1],
+        v + box[2],
+        u + box[3],
+        y + box[4],
+        v + box[5],
+      ];
+      if (!(box[4] === 1 && coveredTop)) {
+        faces.push({
+          kind: "top",
+          color: voxel.color,
+          points: [
+            project(u0, y1, v0),
+            project(u1, y1, v0),
+            project(u1, y1, v1),
+            project(u0, y1, v1),
+          ],
+        });
+      }
+      if (!(box[3] === 1 && coveredRight)) {
+        faces.push({
+          kind: "right",
+          color: voxel.color,
+          points: [
+            project(u1, y1, v0),
+            project(u1, y1, v1),
+            project(u1, y0, v1),
+            project(u1, y0, v0),
+          ],
+        });
+      }
+      if (!(box[5] === 1 && coveredLeft)) {
+        faces.push({
+          kind: "left",
+          color: voxel.color,
+          points: [
+            project(u0, y1, v1),
+            project(u1, y1, v1),
+            project(u1, y0, v1),
+            project(u0, y0, v1),
+          ],
+        });
+      }
     }
     if (faces.length > 0) drawn.push({ depth: u + v + y, faces });
   }
@@ -307,10 +448,12 @@ export function isoView(
 
 // ── Orthographic views ────────────────────────────────────────────────────
 
-/** A 2D grid of colour indices (-1 = empty), row 0 at the top. */
-export interface OrthoGrid {
-  width: number;
-  height: number;
+/** A rectangle inside a grid cell, cell-local (0–1, y down): x0, y0, x1, y1. */
+export type CellRect = readonly [number, number, number, number];
+
+/** A layer of an `OrthoGrid`, one entry per cell, row 0 at the top. */
+export interface OrthoLayer {
+  /** Colour indices; -1 = empty. */
   cells: Int32Array;
   /**
    * Per cell, 0–1: how far the block is from the viewer's far side (top
@@ -318,61 +461,160 @@ export interface OrthoGrid {
    */
   nearness: Float32Array;
   /**
+   * Per cell, -1 when the block fills the cell, else an index into
+   * `OrthoGrid.shapes`: the part of the cell the block covers.
+   */
+  shape: Int32Array;
+}
+
+/** A 2D grid of colour indices (-1 = empty), row 0 at the top. */
+export interface OrthoGrid extends OrthoLayer {
+  width: number;
+  height: number;
+  /**
    * Per cell, for plan slices: true when the cell shows the layer below,
    * drawn faded.
    */
   below?: Uint8Array;
+  /** The rectangles of each partly filled cell, indexed by `shape`. */
+  shapes: (readonly CellRect[])[];
+  /**
+   * Drawn first, where the nearest block doesn't fill its cell: in
+   * elevations the nearest block behind it that does, in plan slices the
+   * layer below (drawn faded). -1 = nothing.
+   */
+  under: OrthoLayer;
 }
 
 export type Elevation = "front" | "side" | "top";
+
+function emptyLayer(cells: number): OrthoLayer {
+  return {
+    cells: new Int32Array(cells).fill(-1),
+    nearness: new Float32Array(cells),
+    shape: new Int32Array(cells).fill(-1),
+  };
+}
 
 function emptyGrid(width: number, height: number): OrthoGrid {
   return {
     width,
     height,
-    cells: new Int32Array(width * height).fill(-1),
-    nearness: new Float32Array(width * height),
+    ...emptyLayer(width * height),
+    shapes: [],
+    under: emptyLayer(width * height),
   };
 }
+
+// Whether `rects` cover the whole cell, sampled on a 16 × 16 grid.
+function fillsCell(rects: readonly CellRect[]): boolean {
+  for (let i = 0; i < 16; i++) {
+    for (let j = 0; j < 16; j++) {
+      const [cx, cy] = [(i + 0.5) / 16, (j + 0.5) / 16];
+      if (
+        !rects.some(
+          ([x0, y0, x1, y1]) => cx > x0 && cx < x1 && cy > y0 && cy < y1,
+        )
+      ) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+/**
+ * The grid shape (-1 = fills the cell, else an index into `grid.shapes`) of
+ * each voxel, given how a box projects into a cell.
+ */
+function gridShapes(
+  model: VoxelModel,
+  grid: OrthoGrid,
+  rectOf: (box: ShapeBox) => CellRect,
+): (voxel: Voxel) => number {
+  const cache = new Map<number, number>();
+  return (voxel) => {
+    if (voxel.shape === undefined) return -1;
+    let index = cache.get(voxel.shape);
+    if (index === undefined) {
+      const rects = model.shapes[voxel.shape].map(rectOf);
+      index = fillsCell(rects) ? -1 : grid.shapes.push(rects) - 1;
+      cache.set(voxel.shape, index);
+    }
+    return index;
+  };
+}
+
+// Projections of a box into a cell, for each view.
+const FRONT_RECT = ([x0, y0, , x1, y1]: ShapeBox): CellRect => [
+  x0,
+  1 - y1,
+  x1,
+  1 - y0,
+];
+const SIDE_RECT = ([, y0, z0, , y1, z1]: ShapeBox): CellRect => [
+  1 - z1,
+  1 - y1,
+  1 - z0,
+  1 - y0,
+];
+const TOP_RECT = ([x0, , z0, x1, , z1]: ShapeBox): CellRect => [x0, z0, x1, z1];
 
 /**
  * An elevation of `model`: "front" looks north from the south (x to the
  * right, y up), "side" looks west from the east (south on the left, y up),
  * "top" looks down with north up (x to the right, z down). Each cell shows
- * the nearest block along the view direction.
+ * the nearest block along the view direction, covering the part of the cell
+ * its shape does, over the nearest block that fills the cell.
  */
 export function elevation(model: VoxelModel, view: Elevation): OrthoGrid {
   const [sx, sy, sz] = model.size;
   // Column and row of a voxel, and its depth (bigger = nearer the viewer).
   let width: number, height: number, depthRange: number;
   let cell: (v: Voxel) => [number, number, number];
+  let rectOf: (box: ShapeBox) => CellRect;
   switch (view) {
     case "front":
       [width, height, depthRange] = [sx, sy, sz];
       cell = (v) => [v.x, sy - 1 - v.y, v.z];
+      rectOf = FRONT_RECT;
       break;
     case "side":
       [width, height, depthRange] = [sz, sy, sx];
       cell = (v) => [sz - 1 - v.z, sy - 1 - v.y, v.x];
+      rectOf = SIDE_RECT;
       break;
     case "top":
       [width, height, depthRange] = [sx, sz, sy];
       cell = (v) => [v.x, v.z, v.y];
+      rectOf = TOP_RECT;
       break;
   }
   const grid = emptyGrid(width, height);
+  const shapeOf = gridShapes(model, grid, rectOf);
   const depth = new Int32Array(width * height).fill(-1);
+  const fullDepth = new Int32Array(width * height).fill(-1);
   for (const voxel of model.voxels) {
     const [col, row, d] = cell(voxel);
     const i = row * width + col;
+    const shape = shapeOf(voxel);
     if (d > depth[i]) {
       depth[i] = d;
       grid.cells[i] = voxel.color;
+      grid.shape[i] = shape;
+    }
+    if (shape === -1 && d > fullDepth[i]) {
+      fullDepth[i] = d;
+      grid.under.cells[i] = voxel.color;
     }
   }
+  const nearness = (d: number) => (depthRange <= 1 ? 1 : d / (depthRange - 1));
   for (let i = 0; i < depth.length; i++) {
-    if (depth[i] >= 0) {
-      grid.nearness[i] = depthRange <= 1 ? 1 : depth[i] / (depthRange - 1);
+    if (depth[i] >= 0) grid.nearness[i] = nearness(depth[i]);
+    if (fullDepth[i] < 0 || fullDepth[i] === depth[i]) {
+      grid.under.cells[i] = -1;
+    } else {
+      grid.under.nearness[i] = nearness(fullDepth[i]);
     }
   }
   return grid;
@@ -380,22 +622,37 @@ export function elevation(model: VoxelModel, view: Elevation): OrthoGrid {
 
 /**
  * The layer at `y` seen from above (north up), with the layer below shown
- * where `y` has no block (`below`).
+ * where `y` has no block (`below`), or under a block that doesn't fill its
+ * cell (`under`).
  */
 export function planSlice(model: VoxelModel, y: number): OrthoGrid {
   const [sx, , sz] = model.size;
   const grid = emptyGrid(sx, sz);
   grid.below = new Uint8Array(sx * sz);
+  const shapeOf = gridShapes(model, grid, TOP_RECT);
+  const { under } = grid;
   for (const voxel of model.voxels) {
     const i = voxel.z * sx + voxel.x;
     if (voxel.y === y) {
       grid.cells[i] = voxel.color;
-      grid.below[i] = 0;
       grid.nearness[i] = 1;
-    } else if (voxel.y === y - 1 && grid.cells[i] === -1) {
-      grid.cells[i] = voxel.color;
-      grid.below[i] = 1;
-      grid.nearness[i] = 1;
+      grid.shape[i] = shapeOf(voxel);
+    } else if (voxel.y === y - 1) {
+      under.cells[i] = voxel.color;
+      under.nearness[i] = 1;
+      under.shape[i] = shapeOf(voxel);
+    }
+  }
+  for (let i = 0; i < sx * sz; i++) {
+    if (grid.cells[i] === -1) {
+      // Only the layer below: show it in place of the layer.
+      grid.cells[i] = under.cells[i];
+      grid.nearness[i] = under.nearness[i];
+      grid.shape[i] = under.shape[i];
+      grid.below[i] = under.cells[i] === -1 ? 0 : 1;
+      under.cells[i] = -1;
+    } else if (grid.shape[i] === -1) {
+      under.cells[i] = -1;
     }
   }
   return grid;

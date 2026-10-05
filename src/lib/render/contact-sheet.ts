@@ -14,6 +14,7 @@ import {
   type IsoCorner,
   type IsoView,
   type OrthoGrid,
+  type OrthoLayer,
   type VoxelModel,
 } from "./static-views";
 
@@ -475,29 +476,51 @@ function drawGrid(
 
   ctx.fillStyle = COLORS.gridEmpty;
   ctx.fillRect(gx, gy, width, height);
+  // Overlap by a fraction of a pixel so small cells leave no seams.
+  const bleed = cell < 4 ? 0.5 : 0;
+  const paint = (
+    layer: OrthoLayer,
+    i: number,
+    col: number,
+    row: number,
+    faded: boolean,
+  ) => {
+    const color = layer.cells[i];
+    if (color < 0) return;
+    let fill = model.colors[color];
+    const n = layer.nearness[i];
+    if (panel.depthShading === "strong") {
+      // Darken low blocks and lighten high ones, which also reads on
+      // near-black blocks.
+      fill = fadeHex(shadeHex(fill, 0.5 + 0.5 * n), 0.3 * n);
+    } else if (panel.depthShading === "light") {
+      fill = shadeHex(fill, 0.8 + 0.2 * n);
+    }
+    if (faded) fill = fadeHex(fill, 0.65);
+    ctx.fillStyle = fill;
+    const x = gx + col * cell;
+    const y = gy + row * cell;
+    const shape = layer.shape[i];
+    if (shape < 0) {
+      ctx.fillRect(x, y, cell + bleed, cell + bleed);
+      return;
+    }
+    // A block that doesn't fill its cell covers only its shape's part.
+    for (const [x0, y0, x1, y1] of grid.shapes[shape]) {
+      ctx.fillRect(
+        x + x0 * cell,
+        y + y0 * cell,
+        (x1 - x0) * cell + bleed,
+        (y1 - y0) * cell + bleed,
+      );
+    }
+  };
   for (let row = 0; row < grid.height; row++) {
     for (let col = 0; col < grid.width; col++) {
       const i = row * grid.width + col;
-      const color = grid.cells[i];
-      if (color < 0) continue;
-      let fill = model.colors[color];
-      if (panel.depthShading === "strong") {
-        // Darken low blocks and lighten high ones, which also reads on
-        // near-black blocks.
-        const n = grid.nearness[i];
-        fill = fadeHex(shadeHex(fill, 0.5 + 0.5 * n), 0.3 * n);
-      } else if (panel.depthShading === "light") {
-        fill = shadeHex(fill, 0.8 + 0.2 * grid.nearness[i]);
-      }
-      if (grid.below?.[i] === 1) fill = fadeHex(fill, 0.65);
-      ctx.fillStyle = fill;
-      // Overlap by a fraction of a pixel so small cells leave no seams.
-      ctx.fillRect(
-        gx + col * cell,
-        gy + row * cell,
-        cell + (cell < 4 ? 0.5 : 0),
-        cell + (cell < 4 ? 0.5 : 0),
-      );
+      // Plan slices show the layer below faded.
+      paint(grid.under, i, col, row, grid.below !== undefined);
+      paint(grid, i, col, row, grid.below?.[i] === 1);
     }
   }
 

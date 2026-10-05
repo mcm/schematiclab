@@ -4,7 +4,11 @@ import { GlobalFonts } from "@napi-rs/canvas";
 import { describe, expect, it } from "vitest";
 import { parseSchematic, type ParsedSchematicProjection } from "../../convert";
 import { decodePng, type RgbaImage } from "../../render/block-appearance";
-import { fallbackBlockColor, oklabToHex } from "../../render/static-views";
+import {
+  fallbackBlockColor,
+  oklabToHex,
+  shadeHex,
+} from "../../render/static-views";
 import {
   MAX_RENDER_EDGE,
   MAX_RENDER_FACE_CELLS,
@@ -126,6 +130,37 @@ describe("renderProjectionPng", () => {
     expect(distinctColors(decode(png))).toContain(
       hexToInt(fallbackBlockColor(id)),
     );
+  });
+
+  it("draws blocks as their sub-block shapes", () => {
+    const slab = (type: string): ParsedSchematicProjection => {
+      const projection = singleBlock("minecraft:oak_slab");
+      projection.palette[0].properties = { type };
+      return projection;
+    };
+    // Same block, same colour: only the shape differs. Count the pixels of
+    // the iso views' shaded east faces: half as tall on a slab, though the
+    // views scale the smaller slab up to fill their panels.
+    const colored = (type: string) => {
+      const image = decode(renderProjectionPng(slab(type)).png);
+      const block = hexToInt(
+        shadeHex(
+          oklabToHex(vanillaBlockColors()["minecraft:oak_slab"].oklab),
+          0.62,
+        ),
+      );
+      let count = 0;
+      for (let i = 0; i < image.data.length; i += 4) {
+        const c =
+          (image.data[i] << 16) | (image.data[i + 1] << 8) | image.data[i + 2];
+        if (c === block) count++;
+      }
+      return count;
+    };
+    const half = colored("bottom");
+    const full = colored("double");
+    expect(half).toBeGreaterThan(0);
+    expect(half / full).toBeLessThan(0.9);
   });
 
   it("rejects a few blocks spread too far apart to render", () => {

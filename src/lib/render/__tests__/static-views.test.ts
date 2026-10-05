@@ -28,7 +28,22 @@ const BLOCK_COLORS: Record<string, string> = {
   "minecraft:stone": "#808080",
   "minecraft:oak_planks": "#a0784a",
   "minecraft:red_wool": "#a02020",
+  "minecraft:oak_stairs": "#b08850",
+  "minecraft:oak_slab": "#c09860",
+  "minecraft:oak_fence": "#705030",
 };
+
+// `minecraft:oak_stairs[facing=north,half=bottom]` → id and properties.
+function parseState(state: string): [string, Record<string, string>] {
+  const match = /^([^[]+)(?:\[(.*)\])?$/.exec(state)!;
+  const properties = Object.fromEntries(
+    (match[2] ?? "")
+      .split(",")
+      .filter((kv) => kv !== "")
+      .map((kv) => kv.split("=")),
+  );
+  return [match[1], properties];
+}
 
 function projection(
   blocks: [string, [number, number, number]][],
@@ -46,8 +61,8 @@ function projection(
     totalBlocks: blocks.length,
     palette: ids.map((id) => ({
       blockState: id,
-      blockId: id,
-      properties: {},
+      blockId: parseState(id)[0],
+      properties: parseState(id)[1],
       count: blocks.filter(([b]) => b === id).length,
     })),
     regions: [
@@ -171,6 +186,124 @@ describe("buildVoxelModel", () => {
       "#808080",
       "#ff0000",
     ]);
+  });
+});
+
+describe("sub-block shapes", () => {
+  const STAIR = "minecraft:oak_stairs[facing=north,half=bottom,shape=straight]";
+
+  it("gives stairs, slabs and fences their shapes, shared per state", () => {
+    const m = model([
+      [STAIR, [0, 0, 0]],
+      [STAIR, [1, 0, 0]],
+      ["minecraft:oak_slab[type=top]", [2, 0, 0]],
+      ["minecraft:stone", [3, 0, 0]],
+    ]);
+    expect(m.voxels.map((v) => v.shape)).toEqual([0, 0, 1, undefined]);
+    expect(m.shapes).toEqual([
+      [
+        [0, 0, 0, 1, 0.5, 1],
+        [0, 0.5, 0, 1, 1, 0.5],
+      ],
+      [[0, 0.5, 0, 1, 1, 1]],
+    ]);
+  });
+
+  it("paints a stair's slab before its step", () => {
+    const m = model([[STAIR, [0, 0, 0]]]);
+    const view = isoView(m, "south-east");
+    // Slab: top, east, south. Step: top, east, south.
+    expect(view.faces.map((f) => f.kind)).toEqual([
+      "top",
+      "right",
+      "left",
+      "top",
+      "right",
+      "left",
+    ]);
+    // The step's top is the highest face (smallest screen y).
+    const topY = (i: number) =>
+      Math.min(...view.faces[i].points.map((p) => p[1]));
+    expect(topY(3)).toBeLessThan(topY(0));
+  });
+
+  it("paints a stair in front of a full block after the block", () => {
+    const m = model([
+      [STAIR, [0, 0, 1]],
+      ["minecraft:stone", [0, 0, 0]],
+    ]);
+    const view = isoView(m, "south-east");
+    const names = view.faces.map((f) => colorName(m, f.color));
+    // The stone keeps its south face: the stair south of it doesn't cover it.
+    expect(names).toEqual([
+      "minecraft:stone",
+      "minecraft:stone",
+      "minecraft:stone",
+      ...new Array(6).fill(STAIR.replace(/\[.*/, "")),
+    ]);
+    // From the north-west the stair is behind the block, so it goes first.
+    const back = isoView(m, "north-west").faces.map((f) =>
+      colorName(m, f.color),
+    );
+    expect(back[0]).toBe("minecraft:oak_stairs");
+    expect(back.at(-1)).toBe("minecraft:stone");
+  });
+
+  it("culls only faces a neighbour's shape covers", () => {
+    const m = model([
+      ["minecraft:stone", [0, 0, 0]],
+      ["minecraft:oak_slab[type=bottom]", [0, 1, 0]],
+      [
+        "minecraft:oak_fence[north=false,east=false,south=false,west=false]",
+        [1, 0, 0],
+      ],
+    ]);
+    const view = isoView(m, "south-east");
+    const stone = view.faces.filter(
+      (f) => colorName(m, f.color) === "minecraft:stone",
+    );
+    // The slab covers the stone's top; the fence post doesn't cover its east face.
+    expect(stone.map((f) => f.kind)).toEqual(["right", "left"]);
+  });
+
+  it("fills elevation cells by the area a shape covers, over a full block behind", () => {
+    const m = model([
+      ["minecraft:oak_slab[type=bottom]", [0, 0, 1]],
+      ["minecraft:stone", [0, 0, 0]],
+      ["minecraft:oak_slab[type=top]", [1, 0, 0]],
+    ]);
+    const front = elevation(m, "front");
+    // Bottom slab in front of stone: the slab's lower half over the stone.
+    expect(colorName(m, front.cells[0])).toBe("minecraft:oak_slab");
+    expect(front.shapes[front.shape[0]]).toEqual([[0, 0.5, 1, 1]]);
+    expect(colorName(m, front.under.cells[0])).toBe("minecraft:stone");
+    expect(front.under.nearness[0]).toBe(0);
+    // Top slab with nothing behind it.
+    expect(front.shapes[front.shape[1]]).toEqual([[0, 0, 1, 0.5]]);
+    expect(front.under.cells[1]).toBe(-1);
+    // From above, a slab fills its cell.
+    const top = elevation(m, "top");
+    expect([...top.shape]).toEqual([-1, -1, -1, -1]);
+    expect([...top.under.cells]).toEqual([-1, -1, -1, -1]);
+  });
+
+  it("shows a plan cell's shape over the layer below", () => {
+    const m = model([
+      ["minecraft:stone", [0, 0, 0]],
+      [
+        "minecraft:oak_fence[north=false,east=true,south=false,west=false]",
+        [0, 1, 0],
+      ],
+    ]);
+    const grid = planSlice(m, 1);
+    expect(colorName(m, grid.cells[0])).toBe("minecraft:oak_fence");
+    expect(grid.shapes[grid.shape[0]]).toEqual([
+      [6 / 16, 6 / 16, 10 / 16, 10 / 16],
+      [7 / 16, 7 / 16, 1, 9 / 16],
+      [7 / 16, 7 / 16, 1, 9 / 16],
+    ]);
+    expect(colorName(m, grid.under.cells[0])).toBe("minecraft:stone");
+    expect(grid.below![0]).toBe(0);
   });
 });
 
