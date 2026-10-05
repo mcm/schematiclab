@@ -10,6 +10,7 @@
 
 import { parseLength, type LengthContext } from "./lengths";
 import { STD_PREFIX, stdTemplate, stdTemplateNames } from "./std";
+import { ROOF_TYPES, type RoofType } from "./roofs";
 
 /** Largest program `size` on each axis. */
 export const MAX_BUILD_SIZE = 256;
@@ -166,8 +167,40 @@ export interface RoundArgs extends FillArgs {
   thickness?: number;
 }
 
-/** Roofs come in a later epic; their arguments are not checked yet. */
-export type RoofArgs = string | (LayerArgs & Record<string, unknown>);
+export type RoofOverhang =
+  | number
+  | {
+      all?: number;
+      left?: number;
+      right?: number;
+      back?: number;
+      front?: number;
+    };
+
+export interface RoofPartArgs {
+  at?: [LengthSpec, LengthSpec];
+  size?: [LengthSpec, LengthSpec];
+  type?: RoofType;
+  ridge?: "x" | "z" | "auto";
+  pitch?: number;
+  overhang?: RoofOverhang;
+}
+
+export interface RoofObjectArgs extends LayerArgs {
+  type?: RoofType;
+  material?: MaterialSpec;
+  pitch?: number;
+  overhang?: RoofOverhang;
+  ridge?: "x" | "z" | "auto";
+  gable?: MaterialSpec | false;
+  height?: number;
+  solid?: boolean;
+  break?: number;
+  parts?: RoofPartArgs[];
+}
+
+/** A roof type, or an object of roof options. */
+export type RoofArgs = RoofType | RoofObjectArgs;
 
 export type UseArgs = string | { name: string; with?: Record<string, unknown> };
 
@@ -255,6 +288,9 @@ export function formatProgramError(error: ProgramError): string {
 type Json = Record<string, unknown>;
 
 const LAYER_KEYS = ["priority", "carve"];
+const ROOF_PART_OPTIONS = ["type", "ridge", "pitch", "overhang"];
+const ROOF_OPTIONS = ["material", "gable", "height", "solid", "break", "parts"];
+const OVERHANG_SIDES = ["all", "left", "right", "back", "front"];
 const PLACEMENT_KEYS = [
   "replace",
   "only_empty",
@@ -436,12 +472,25 @@ class Validator {
 
   // -- values -------------------------------------------------------------------
 
-  private integer(v: unknown, path: string, min?: number): void {
+  private integer(v: unknown, path: string, min?: number, max?: number): void {
     if (this.isParam(v)) return;
     if (!Number.isInteger(v)) {
       this.error(path, `must be an integer, got ${show(v)}`);
     } else if (min !== undefined && (v as number) < min) {
       this.error(path, `must be at least ${min}, got ${show(v)}`);
+    } else if (max !== undefined && (v as number) > max) {
+      this.error(path, `must be at most ${max}, got ${show(v)}`);
+    }
+  }
+
+  private number(v: unknown, path: string, min: number, max?: number): void {
+    if (this.isParam(v)) return;
+    if (typeof v !== "number" || !Number.isFinite(v)) {
+      this.error(path, `must be a number, got ${show(v)}`);
+    } else if (v < min) {
+      this.error(path, `must be at least ${min}, got ${show(v)}`);
+    } else if (max !== undefined && v > max) {
+      this.error(path, `must be at most ${max}, got ${show(v)}`);
     }
   }
 
@@ -779,8 +828,91 @@ class Validator {
   }
 
   private roof(arg: unknown, path: string): void {
-    if (typeof arg === "string") return;
-    this.object(arg, path, "a roof type or an object");
+    if (typeof arg === "string") {
+      this.oneOf(arg, path, ROOF_TYPES);
+      return;
+    }
+    if (!this.object(arg, path, "a roof type or an object")) return;
+    this.keys(arg, path, [...ROOF_PART_OPTIONS, ...ROOF_OPTIONS]);
+    this.roofOptions(arg, path);
+    if ("material" in arg) this.material(arg.material, `${path}.material`);
+    if ("gable" in arg && arg.gable !== false && arg.gable !== "auto") {
+      this.material(arg.gable, `${path}.gable`);
+    }
+    if ("height" in arg) this.number(arg.height, `${path}.height`, 0);
+    if ("solid" in arg) this.boolean(arg.solid, `${path}.solid`);
+    if ("break" in arg) this.number(arg.break, `${path}.break`, 0, 1);
+    if (!("parts" in arg) || this.isParam(arg.parts)) return;
+    const parts = arg.parts;
+    if (!Array.isArray(parts) || parts.length === 0) {
+      this.error(
+        `${path}.parts`,
+        `must be a non-empty list of parts, got ${show(parts)}`,
+      );
+      return;
+    }
+    parts.forEach((part, i) => {
+      const partPath = `${path}.parts[${i}]`;
+      if (this.isParam(part)) return;
+      if (
+        !this.object(
+          part,
+          partPath,
+          'a part like {"at": [x, z], "size": [w, d]}',
+        )
+      )
+        return;
+      this.keys(part, partPath, ["at", "size", ...ROOF_PART_OPTIONS], false);
+      this.roofOptions(part, partPath);
+      if ("at" in part) {
+        this.pair(part.at, `${partPath}.at`, (v, p) =>
+          this.length(v, p, "position"),
+        );
+      }
+      if ("size" in part) {
+        this.pair(part.size, `${partPath}.size`, (v, p) =>
+          this.length(v, p, "size"),
+        );
+      }
+    });
+  }
+
+  // The options a roof part can override.
+  private roofOptions(arg: Json, path: string): void {
+    if ("type" in arg) this.oneOf(arg.type, `${path}.type`, ROOF_TYPES);
+    if ("ridge" in arg)
+      this.oneOf(arg.ridge, `${path}.ridge`, ["x", "z", "auto"]);
+    if ("pitch" in arg) this.number(arg.pitch, `${path}.pitch`, 0);
+    if (!("overhang" in arg) || this.isParam(arg.overhang)) return;
+    const overhang = arg.overhang;
+    if (isObject(overhang)) {
+      this.keys(overhang, `${path}.overhang`, OVERHANG_SIDES, false);
+      for (const side of OVERHANG_SIDES) {
+        if (side in overhang) {
+          this.integer(
+            overhang[side],
+            `${path}.overhang.${side}`,
+            0,
+            MAX_BUILD_SIZE,
+          );
+        }
+      }
+    } else {
+      this.integer(overhang, `${path}.overhang`, 0, MAX_BUILD_SIZE);
+    }
+  }
+
+  private pair(
+    v: unknown,
+    path: string,
+    item: (value: unknown, path: string) => void,
+  ): void {
+    if (this.isParam(v)) return;
+    if (!Array.isArray(v) || v.length !== 2) {
+      this.error(path, `must be a list of 2 values [x, z], got ${show(v)}`);
+      return;
+    }
+    v.forEach((value, i) => item(value, `${path}[${i}]`));
   }
 
   // -- composition --------------------------------------------------------------

@@ -15,13 +15,7 @@
 // outermost `use` that reached them added to the message.
 
 import type { BlockRegistry } from "../blockdata/registry";
-import {
-  buildShapeGrid,
-  MAX_DIMENSION,
-  MAX_THICKNESS,
-  type VoxelGrid,
-  voxelIndex,
-} from "../shapes/shapes";
+import { MAX_THICKNESS } from "../shapes/shapes";
 import { BuildError } from "./errors";
 import {
   type Length,
@@ -56,12 +50,15 @@ import {
   validateOperations,
 } from "./program";
 import { postprocess } from "./postprocess";
+import { RoofEngine, type RoofHost, type RoofInfo } from "./roofs";
 import { orientStates, Scope, type ScopeFaceName, type Vec } from "./scope";
 import { STD_PREFIX, stdDefaults, stdTemplate, stdTemplateNames } from "./std";
 import { MAX_TEMPLATE_DEPTH, substituteParams } from "./templates";
 import {
   type BlockGrid,
+  type Layer,
   LayerStack,
+  type PlacedBlock,
   type Pos,
   type ReplaceSet,
   resolveReplace,
@@ -86,6 +83,8 @@ export interface CompileResult {
   warnings: ProgramError[];
   /** Fallbacks and repairs (a variant the material lacks, a misspelt block). */
   notes: ProgramError[];
+  /** One entry per merged roof surface, for the sealing check. */
+  roofs: RoofInfo[];
 }
 
 export interface CompileOptions {
@@ -171,7 +170,7 @@ function dedupe(errors: readonly ProgramError[]): ProgramError[] {
   );
 }
 
-export class Compiler {
+export class Compiler implements RoofHost {
   readonly log: WriteLog;
   readonly layers = new LayerStack();
   readonly resolver: MaterialResolver;
@@ -191,6 +190,8 @@ export class Compiler {
     string,
     { body: unknown; errors: ProgramError[]; unused: string[] }
   >();
+  private readonly roofs = new RoofEngine(this);
+  private readonly root: Scope;
 
   constructor(
     readonly program: Program,
@@ -201,16 +202,18 @@ export class Compiler {
     this.log = new WriteLog(program.size);
     this.resolver = new MaterialResolver(registry, program.palette ?? {});
     this.seed = program.seed ?? 0;
+    this.root = Scope.root(program.size);
   }
 
   run(): CompileResult {
     try {
-      this.execOps(
-        this.program.build,
-        Scope.root(this.program.size),
-        "build",
-        0,
-      );
+      this.execOps(this.program.build, this.root, "build", 0);
+      try {
+        this.roofs.resolve();
+      } catch (e) {
+        if (!(e instanceof BuildError) || e instanceof FatalBuildError) throw e;
+        this.error(e.toProgramError());
+      }
     } catch (e) {
       if (!(e instanceof FatalBuildError)) throw e;
       this.errors.push(e.toProgramError());
@@ -235,6 +238,7 @@ export class Compiler {
       errors: dedupe(this.errors),
       warnings: dedupe(warnings),
       notes: [...this.resolver.notes, ...this.notes],
+      roofs: this.roofs.info,
     };
   }
 
@@ -341,7 +345,7 @@ export class Compiler {
       case "ellipsoid":
         return this.round(arg, scope, path, "ellipsoid");
       case "roof":
-        throw new BuildError(path, "roof is not supported yet");
+        return this.roof(arg, scope, path);
       case "use":
         return this.use(arg, scope, path, depth);
       case "choose":
@@ -976,9 +980,12 @@ export class Compiler {
   }
 
   /**
-   * `cylinder` (vertical) and `ellipsoid`, fitted to the scope through the
-   * Shape Generator's voxel grids. A hollow cylinder is a tube: each layer
-   * is a ring `thickness` blocks thick, open at the top and bottom.
+   * `cylinder` (vertical) and `ellipsoid`, fitted to the scope: cells whose
+   * centres fall inside the ellipse (or ellipsoid). A hollow shape keeps the
+   * cells with a neighbour `thickness` blocks away (diagonals included, and
+   * up and down for an ellipsoid) outside it, so curved walls are watertight
+   * with no corner-only contacts. A hollow cylinder is a tube, open at the
+   * top and bottom.
    */
   private round(
     raw: unknown,
@@ -989,33 +996,77 @@ export class Compiler {
     const { material, ...options } = this.placementArgs(raw, path);
     const arg: Json = isObject(raw) && !("mix" in raw) ? raw : {};
     const hollow = arg.hollow === true;
-    const thickness = Math.min(
+    const t = Math.min(
       integer(arg.thickness, `${path}.thickness`, 1, 1),
       MAX_THICKNESS,
     );
     const [sx, sy, sz] = scope.size;
-    let grid: VoxelGrid;
-    try {
-      grid = buildShapeGrid({
-        shape,
-        width: sx,
-        height: shape === "cylinder" ? 1 : sy,
-        depth: sz,
-        hollow,
-        thickness,
-      });
-    } catch {
-      throw new BuildError(
-        path,
-        `scope ${show(scope.size)} is too big for '${shape}' (at most ${MAX_DIMENSION} per side)`,
-      );
-    }
-    for (const [x, y, z] of scope.cells()) {
-      const gy = shape === "cylinder" ? 0 : y;
-      if (grid.filled[voxelIndex(grid.size, x, gy, z)]) {
-        this.place(scope, [x, y, z], material, path, options);
+    const sphere = shape === "ellipsoid";
+    const inside = (x: number, y: number, z: number) => {
+      if (x < 0 || y < 0 || z < 0 || x >= sx || y >= sy || z >= sz) {
+        return false;
       }
+      const dx = (x + 0.5 - sx / 2) / (sx / 2);
+      const dz = (z + 0.5 - sz / 2) / (sz / 2);
+      let d = dx * dx + dz * dz;
+      if (sphere) {
+        const dy = (y + 0.5 - sy / 2) / (sy / 2);
+        d += dy * dy;
+      }
+      return d <= 1 + 1e-9;
+    };
+    const neighbours: Vec[] = [];
+    for (const a of [-t, 0, t]) {
+      for (const c of [-t, 0, t]) if (a || c) neighbours.push([a, 0, c]);
     }
+    if (sphere) neighbours.push([0, t, 0], [0, -t, 0]);
+    for (const [x, y, z] of scope.cells()) {
+      if (!inside(x, y, z)) continue;
+      if (
+        hollow &&
+        neighbours.every(([a, b, c]) => inside(x + a, y + b, z + c))
+      ) {
+        continue;
+      }
+      this.place(scope, [x, y, z], material, path, options);
+    }
+  }
+
+  /**
+   * `roof`: collected now, placed with every other roof once the program has
+   * run (`roofs.ts`). Unless it sets a priority it sits one layer below its
+   * context, so chimneys, towers and dormers written anywhere win over it.
+   */
+  private roof(raw: unknown, scope: Scope, path: string) {
+    const current = this.layers.current;
+    const layer: Layer =
+      isObject(raw) && "priority" in raw
+        ? current
+        : { priority: current.priority - 1, carve: current.carve };
+    this.roofs.register(raw, scope, path, layer, this.log.nextSeq());
+  }
+
+  /** The roof engine's world-space placement, on the roof's own layer. */
+  placeWorld(
+    pos: Vec,
+    material: Material,
+    states: Record<string, string>,
+    source: { layer: Layer; seq: number; path: string },
+    onlyEmpty = false,
+  ): void {
+    this.place(this.root, pos, material, source.path, {
+      extra: states,
+      onlyEmpty,
+      layer: { ...source.layer, seq: source.seq },
+    });
+  }
+
+  peek(pos: Pos): PlacedBlock | null {
+    return this.log.peek(pos);
+  }
+
+  note(problem: ProgramError): void {
+    this.notes.push(problem);
   }
 
   /**
@@ -1042,8 +1093,10 @@ export class Compiler {
     }
     const entry = pickEntry(material, this.seed, pos);
     const write = {
-      ...this.layers.current,
-      seq: this.log.nextSeq(),
+      ...(options.layer ?? {
+        ...this.layers.current,
+        seq: this.log.nextSeq(),
+      }),
       onlyEmpty: options.onlyEmpty ?? false,
       replace: options.replace ?? null,
       path,
@@ -1120,6 +1173,8 @@ export class Compiler {
         this.notes.push({ path, message });
       }
     }
+    // a roof's world-space placement takes no automatic states
+    if (options.layer) return states;
     for (const [key, value] of Object.entries(options.auto ?? {})) {
       if (Object.hasOwn(properties, key) && !(key in states)) {
         states[key] = value;
@@ -1153,6 +1208,8 @@ interface PlacementOptions {
   replace?: ReplaceSet | null;
   /** A single placed block (`block`), checked for collisions. */
   point?: boolean;
+  /** The layer and program order of a roof placement (else the current ones). */
+  layer?: Layer & { seq: number };
 }
 
 const AIR_MATERIAL: Material = {

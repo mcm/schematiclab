@@ -539,10 +539,73 @@ describe("validateProgram: material operations", () => {
     ]);
   });
 
-  it("accepts roofs as written and rejects non-objects", () => {
-    expectValid(program([{ roof: { type: "gable", anything: 1 } }]));
-    expect(errorsOf([{ roof: 1 }])).toEqual([
+  it("checks roofs", () => {
+    expectValid(
+      program([
+        { roof: "hip" },
+        {
+          roof: {
+            type: "gable",
+            material: "@roof",
+            pitch: 0.5,
+            overhang: { all: 1, left: 0 },
+            ridge: "auto",
+            gable: false,
+            height: 4,
+            solid: true,
+            break: 0.4,
+            priority: 2,
+            parts: [
+              { at: [0, "center"], size: ["50%", "~"], type: "shed" },
+              { ridge: "z", pitch: 2, overhang: 0 },
+            ],
+          },
+        },
+        { roof: { gable: { mix: { stone: 1 } } } },
+      ]),
+    );
+    expect(
+      errorsOf([
+        { roof: 1 },
+        { roof: "mansard" },
+        {
+          roof: {
+            type: "flat",
+            anything: 1,
+            pitch: -1,
+            overhang: { all: 1.5, top: 1 },
+            ridge: "y",
+            gable: true,
+            height: "tall",
+            solid: 1,
+            break: 2,
+          },
+        },
+        { roof: { overhang: 300, parts: [] } },
+        {
+          roof: {
+            parts: [3, { at: [0], size: [-1, "~"], material: "oak" }],
+          },
+        },
+      ]),
+    ).toEqual([
       "build[0].roof: expected a roof type or an object, got 1",
+      'build[1].roof: must be one of "cone", "dome", "flat", "gable", "gambrel", "hip", "pyramid", "shed", got "mansard"',
+      "build[2].roof.anything: unknown key 'anything' (expected 'type', 'ridge', 'pitch', 'overhang', 'material', 'gable', 'height', 'solid', 'break', 'parts', 'priority', 'carve')",
+      'build[2].roof.ridge: must be one of "x", "z", "auto", got "y"',
+      "build[2].roof.pitch: must be at least 0, got -1",
+      "build[2].roof.overhang.top: unknown key 'top' (expected 'all', 'left', 'right', 'back', 'front')",
+      "build[2].roof.overhang.all: must be an integer, got 1.5",
+      'build[2].roof.gable: material must be a string or {"mix": {...}}, got true',
+      'build[2].roof.height: must be a number, got "tall"',
+      "build[2].roof.solid: must be true or false, got 1",
+      "build[2].roof.break: must be at most 1, got 2",
+      "build[3].roof.overhang: must be at most 256, got 300",
+      "build[3].roof.parts: must be a non-empty list of parts, got []",
+      'build[4].roof.parts[0]: expected a part like {"at": [x, z], "size": [w, d]}, got 3',
+      "build[4].roof.parts[1].material: unknown key 'material' (expected 'at', 'size', 'type', 'ridge', 'pitch', 'overhang')",
+      "build[4].roof.parts[1].at: must be a list of 2 values [x, z], got [0]",
+      "build[4].roof.parts[1].size[0]: size -1 must not be negative",
     ]);
   });
 });

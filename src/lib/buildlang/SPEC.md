@@ -154,11 +154,72 @@ inward. Intended for a face tile. Without a material it uses `"@door"` (so defin
 **`cylinder`** / **`ellipsoid`** — fitted to the scope: `{"cylinder": {"material": "@wall", "hollow": true, "thickness": 1}}`.
 Hollow walls are watertight. Cylinders are vertical; an ellipsoid fills the whole box.
 
-### Roofs (coming soon)
+### Roofs
 
-**`roof`** is not supported yet: a `roof` operation compiles to the error
-`roof is not supported yet` at its path, and the rest of the program still builds. Until roofs
-arrive, build a flat top with `fill` or `split`, or leave the space above the walls empty.
+**`roof`** — generated from a height field. The eave sits at the scope's y = 0, so put the
+roof in a box directly above the walls; the roof is clipped at the scope's height. Roofs are
+placed after the rest of the program, one priority below the operation that wrote them (so
+chimneys, towers and dormers win over them wherever they are written), unless the roof sets
+its own `priority`.
+
+```json
+{
+  "roof": {
+    "type": "gable",
+    "material": "@roof",
+    "pitch": 1,
+    "overhang": 1,
+    "ridge": "auto",
+    "gable": "auto"
+  }
+}
+```
+
+`{"roof": "hip"}` is short for `{"roof": {"type": "hip"}}`.
+
+- `type`: `gable` (default), `hip`, `pyramid`, `shed`, `gambrel`, `cone`, `dome` or `flat`.
+- `material` (default `"@roof"`): a role or family. Its stairs, slab and block variants are
+  picked from the slope: stairs (their high side up the slope) where it rises a block per block, slabs
+  where it is gentler, full blocks under the surface where a column needs filling.
+- `pitch` (default 1): rise per block. 1 = stairs; 0.5 = a gentle slab roof; 1.5–2 = steep.
+- `overhang` (default 1): blocks past the walls, an integer or per side
+  `{"all": 1, "left": 0}` (`left`, `right`, `back`, `front`; use 0 where the roof meets
+  another building).
+- `ridge`: `x`, `z` or `auto` (default: along the longer side). For `shed`, the high side is
+  the back (ridge `x`) or the left (ridge `z`).
+- `gable`: closes gable triangles and the gap between the wall tops and the roof.
+  - `"auto"` (default): continues the full block directly below the eave, so walls, mixes and
+    posts run up into the roof and open sides stay open.
+  - a material, to use that instead.
+  - `false`, to leave the gap open on purpose (the report then says the roof isn't sealed).
+- `height`: the most the roof rises (default: the scope's height − 1), and a `dome`'s height.
+- `solid: true` fills the attic. `break` (0–1, default 0.5) sets a `gambrel`'s knee.
+- **Size the roof box**: it needs a height of at least pitch × (half the span + overhang) + 1,
+  or the roof flattens at the top.
+
+**Roofs merge automatically.** Gable, hip and pyramid roofs with the same eave height, pitch,
+material, priority and `gable` become one roof over their combined footprint, even when they
+come from separate `roof` operations in differently rotated boxes: ridges run into each
+other, valleys form where wings meet, and stair corners are recomputed. So the simplest way
+to roof an L, T or cross plan is to **roof each wing on its own at the same eave height**.
+Other shapes (shed, gambrel, cone, dome, flat) combine with them by highest surface, and
+roofs at different eave heights stay independent.
+
+One `roof` can also cover several footprints with `parts`. Each part is
+`{"at": [x, z], "size": [w, d]}` (lengths as for `box`, default the whole scope) plus
+optional overrides of `type`, `ridge`, `pitch` and `overhang`.
+
+```json
+{
+  "roof": {
+    "material": "@roof",
+    "parts": [
+      { "at": [2, 2], "size": [21, 9], "type": "hip" },
+      { "at": [14, 10], "size": [9, 9], "type": "gable", "ridge": "z" }
+    ]
+  }
+}
+```
 
 ### Composition
 

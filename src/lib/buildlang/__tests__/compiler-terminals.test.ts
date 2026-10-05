@@ -1,6 +1,6 @@
 // Terminal operations (Cairn `SPEC.md` "Material operations"): fill, clear,
-// frame, block, door, cylinder and ellipsoid, plus `roof`, which this epic
-// rejects. Ports Cairn's `test_door_faces_inward_and_has_two_halves`, the door
+// frame, block, door, cylinder and ellipsoid (roofs are in `roofs.test.ts`).
+// Ports Cairn's `test_door_faces_inward_and_has_two_halves`, the door
 // half of `test_rotate_front_faces_west`, `test_replace_through_round_wall` and
 // the non-cottage parts of `test_placed_block_collisions_are_reported`.
 
@@ -478,7 +478,7 @@ describe("automatic facings in face scopes", () => {
 });
 
 describe("cylinder and ellipsoid", () => {
-  it("fits the Shape Generator's grids to the scope", () => {
+  it("fills the cells whose centres fall inside, like the Shape Generator", () => {
     const cylinder = run([{ cylinder: "stone" }], [7, 3, 5]);
     const disc = buildShapeGrid({
       shape: "cylinder",
@@ -582,7 +582,7 @@ describe("cylinder and ellipsoid", () => {
     }
   });
 
-  it("caps an oversized thickness and reports oversized scopes", () => {
+  it("caps an oversized thickness", () => {
     const b = run(
       [{ cylinder: { material: "stone", hollow: true, thickness: 500 } }],
       [5, 1, 5],
@@ -591,34 +591,29 @@ describe("cylinder and ellipsoid", () => {
       buildShapeGrid({ shape: "cylinder", width: 5, height: 1, depth: 5 })
         .count,
     );
-    const big = compile(
-      [{ box: { size: [300, 1, 1], do: [{ ellipsoid: "stone" }] } }],
-      [4, 1, 1],
-    );
-    expect(messages(big.errors)).toEqual([
-      "build[0].box.do[0].ellipsoid: scope [300,1,1] is too big for 'ellipsoid' (at most 256 per side)",
-    ]);
   });
-});
 
-describe("roof", () => {
-  it("is not supported yet, reported at its path", () => {
-    const b = compile(
-      [
-        { fill: "stone" },
-        {
-          box: {
-            do: [{ roof: "gable" }, { roof: { type: "hip", pitch: 1 } }],
-          },
-        },
-      ],
-      [3, 3, 3],
+  it("keeps a hollow wall's cells with a diagonal neighbour outside (Cairn)", () => {
+    const b = run(
+      [{ cylinder: { material: "stone", hollow: true } }],
+      [9, 1, 9],
     );
-    expect(messages(b.errors)).toEqual([
-      "build[1].box.do[0].roof: roof is not supported yet",
-      "build[1].box.do[1].roof: roof is not supported yet",
+    const rows = Array.from({ length: 9 }, (_, z) =>
+      Array.from({ length: 9 }, (_, x) =>
+        b.at(x, 0, z) === "stone" ? "#" : ".",
+      ).join(""),
+    );
+    expect(rows).toEqual([
+      "..#####..",
+      ".##...##.",
+      "##.....##",
+      "#.......#",
+      "#.......#",
+      "#.......#",
+      "##.....##",
+      ".##...##.",
+      "..#####..",
     ]);
-    expect(b.cells).toHaveLength(27);
   });
 });
 

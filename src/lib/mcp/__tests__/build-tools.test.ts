@@ -246,7 +246,7 @@ describe("compile_build", () => {
     expect(deps.blob.objects.size).toBe(0);
   });
 
-  it("reports a roof as not supported yet and builds the rest", async () => {
+  it("reports a problem in a roof at its path and builds the rest", async () => {
     const result = await runTool(
       compileBuildTool,
       {
@@ -260,7 +260,7 @@ describe("compile_build", () => {
       makeDeps(),
     );
     expect(texts(result)[0]).toContain(
-      "build[3].roof: roof is not supported yet",
+      "build[3].roof: palette has no role '@roof'. Defined roles: wall",
     );
     expect(result.structuredContent).toMatchObject({ valid: true, errors: 1 });
   });
@@ -412,11 +412,11 @@ describe("over MCP", () => {
 describe("SPEC.md", () => {
   const spec = readFileSync(SPEC_FILE, "utf8");
 
-  it("is version-agnostic, bounded at 256 and has no roofs yet", () => {
+  it("is version-agnostic, bounded at 256 and documents roofs", () => {
     expect(spec).not.toMatch(/1\.21\.4|Cairn|512/);
     expect(spec).toContain("at most 256 on\n  each axis");
-    expect(spec).toContain("### Roofs (coming soon)");
-    expect(spec).toContain("roof is not supported yet");
+    expect(spec).toContain("### Roofs\n");
+    expect(spec).not.toMatch(/coming soon|not supported yet/);
   });
 
   it("is traced into the MCP route", () => {
