@@ -475,29 +475,46 @@ function drawGrid(
 
   ctx.fillStyle = COLORS.gridEmpty;
   ctx.fillRect(gx, gy, width, height);
+  const shade = (color: number, nearness: number, below: boolean) => {
+    let fill = model.colors[color];
+    if (panel.depthShading === "strong") {
+      // Darken low blocks and lighten high ones, which also reads on
+      // near-black blocks.
+      fill = fadeHex(shadeHex(fill, 0.5 + 0.5 * nearness), 0.3 * nearness);
+    } else if (panel.depthShading === "light") {
+      fill = shadeHex(fill, 0.8 + 0.2 * nearness);
+    }
+    return below ? fadeHex(fill, 0.65) : fill;
+  };
+  // Overlap by a fraction of a pixel so small cells leave no seams.
+  const seam = cell < 4 ? 0.5 : 0;
   for (let row = 0; row < grid.height; row++) {
     for (let col = 0; col < grid.width; col++) {
       const i = row * grid.width + col;
       const color = grid.cells[i];
       if (color < 0) continue;
-      let fill = model.colors[color];
-      if (panel.depthShading === "strong") {
-        // Darken low blocks and lighten high ones, which also reads on
-        // near-black blocks.
-        const n = grid.nearness[i];
-        fill = fadeHex(shadeHex(fill, 0.5 + 0.5 * n), 0.3 * n);
-      } else if (panel.depthShading === "light") {
-        fill = shadeHex(fill, 0.8 + 0.2 * grid.nearness[i]);
-      }
-      if (grid.below?.[i] === 1) fill = fadeHex(fill, 0.65);
-      ctx.fillStyle = fill;
-      // Overlap by a fraction of a pixel so small cells leave no seams.
-      ctx.fillRect(
-        gx + col * cell,
-        gy + row * cell,
-        cell + (cell < 4 ? 0.5 : 0),
-        cell + (cell < 4 ? 0.5 : 0),
+      ctx.fillStyle = shade(color, grid.nearness[i], grid.below?.[i] === 1);
+      ctx.fillRect(gx + col * cell, gy + row * cell, cell + seam, cell + seam);
+    }
+  }
+  // Sub-block shapes, far to near, fill only the area they cover.
+  for (const [i, partials] of grid.partial) {
+    const col = i % grid.width;
+    const row = Math.floor(i / grid.width);
+    for (const partial of partials) {
+      ctx.fillStyle = shade(
+        partial.color,
+        partial.nearness,
+        partial.below === true,
       );
+      for (const [c0, r0, c1, r1] of partial.rects) {
+        ctx.fillRect(
+          gx + (col + c0) * cell,
+          gy + (row + r0) * cell,
+          (c1 - c0) * cell + seam,
+          (r1 - r0) * cell + seam,
+        );
+      }
     }
   }
 

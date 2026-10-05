@@ -307,6 +307,133 @@ describe("planSlice", () => {
   });
 });
 
+describe("sub-block shapes", () => {
+  const STAIR = "minecraft:oak_stairs[facing=north,half=bottom,shape=straight]";
+  const SLAB = "minecraft:oak_slab[type=bottom]";
+
+  // Like `model`, with block states written `id[name=value,...]`.
+  function shapedModel(
+    blocks: [string, [number, number, number]][],
+  ): VoxelModel {
+    const states = [...new Set(blocks.map(([state]) => state))];
+    const base = projection(blocks);
+    const p: ParsedSchematicProjection = {
+      ...base,
+      palette: states.map((state) => {
+        const [, blockId, props = ""] = /^([^[]+)(?:\[(.*)\])?$/.exec(state)!;
+        return {
+          blockState: state,
+          blockId,
+          properties: Object.fromEntries(
+            props
+              .split(",")
+              .filter(Boolean)
+              .map((kv) => kv.split("=")),
+          ),
+          count: blocks.filter(([b]) => b === state).length,
+        };
+      }),
+      regions: [
+        {
+          ...base.regions[0],
+          blocks: blocks.map(([state, pos]) => ({
+            pos,
+            paletteIndex: states.indexOf(state),
+          })),
+        },
+      ],
+    };
+    return buildVoxelModel(p, (i) =>
+      p.palette[i].blockId === "minecraft:stone" ? "#808080" : "#a0784a",
+    );
+  }
+
+  it("gives shaped blocks a shared shape and leaves full cubes without one", () => {
+    const m = shapedModel([
+      [STAIR, [0, 0, 0]],
+      [STAIR, [1, 0, 0]],
+      ["minecraft:stone", [2, 0, 0]],
+    ]);
+    expect(m.voxels.map((v) => v.shape)).toEqual([0, 0, undefined]);
+    expect(m.shapes).toHaveLength(1);
+    expect(m.shapes[0]).toHaveLength(2);
+  });
+
+  it("draws each box of a stair", () => {
+    const view = isoView(shapedModel([[STAIR, [0, 0, 0]]]), "south-east");
+    // Two boxes, three faces each.
+    expect(view.faces).toHaveLength(6);
+    // The slab's top is half a block lower than the step's.
+    const tops = view.faces.filter((f) => f.kind === "top");
+    expect(tops[0].points[0][1] - tops[1].points[0][1]).toBeCloseTo(0.5);
+  });
+
+  it("paints a stair in front of a full block after the block", () => {
+    // The stair sits south of the stone, nearer a south-east camera.
+    const m = shapedModel([
+      [STAIR, [0, 0, 1]],
+      ["minecraft:stone", [0, 0, 0]],
+    ]);
+    const view = isoView(m, "south-east");
+    const shapeFaces = (color: string) =>
+      view.faces
+        .map((f, i) => (m.colors[f.color] === color ? i : -1))
+        .filter((i) => i >= 0);
+    const stone = shapeFaces("#808080");
+    const stair = shapeFaces("#a0784a");
+    // The stone keeps its south face: a stair doesn't hide it.
+    expect(stone).toHaveLength(3);
+    expect(Math.max(...stone)).toBeLessThan(Math.min(...stair));
+    // Within the stair, the back step comes after the slab under it.
+    const stairTops = view.faces.filter(
+      (f) => f.kind === "top" && m.colors[f.color] === "#a0784a",
+    );
+    expect(stairTops[1].points[0][1]).toBeLessThan(stairTops[0].points[0][1]);
+    // From the north-west the stair is behind the stone and comes first.
+    const back = isoView(m, "north-west");
+    expect(m.colors[back.faces[0].color]).toBe("#a0784a");
+  });
+
+  it("fills elevation cells by the area a shape covers", () => {
+    const m = shapedModel([
+      [SLAB, [0, 0, 1]],
+      ["minecraft:stone", [0, 0, 0]],
+    ]);
+    const front = elevation(m, "front");
+    // The stone behind shows; the slab covers the cell's lower half.
+    expect(front.cells[0]).toBe(m.voxels[1].color);
+    expect(front.partial.get(0)).toEqual([
+      { color: m.voxels[0].color, nearness: 1, rects: [[0, 0.5, 1, 1]] },
+    ]);
+    // From above, the slab is lower than the stone and has nothing behind it.
+    const top = elevation(m, "top");
+    expect(top.cells[1]).toBe(-1);
+    expect(top.partial.get(1)![0].rects).toEqual([[0, 0, 1, 1]]);
+    // A stair seen from the side is an L.
+    const side = elevation(shapedModel([[STAIR, [0, 0, 0]]]), "side");
+    expect(side.partial.get(0)![0].rects).toEqual([
+      [0, 0.5, 1, 1],
+      [0.5, 0, 1, 0.5],
+    ]);
+  });
+
+  it("shows the floor below under a shape in a plan slice", () => {
+    const m = shapedModel([
+      ["minecraft:stone", [0, 0, 0]],
+      ["minecraft:oak_fence[north=true]", [0, 1, 0]],
+    ]);
+    const plan = planSlice(m, 1);
+    expect(plan.cells[0]).toBe(m.voxels[0].color);
+    expect(plan.below![0]).toBe(1);
+    const [fence] = plan.partial.get(0)!;
+    expect(fence.below).toBeUndefined();
+    expect(fence.rects).toHaveLength(3);
+    // A shape one layer down is shown faded.
+    const lower = planSlice(m, 2);
+    expect(lower.partial.get(0)![0].below).toBe(true);
+  });
+});
+
 describe("defaultPlanLevels", () => {
   it("picks the layers above the densest lower and upper layers", () => {
     const blocks: [string, [number, number, number]][] = [];

@@ -1,13 +1,16 @@
 // Static renders of a schematic from several angles (the "Static renders"
 // contact sheet in the Advanced Editor): four isometric views, front, side
 // and top elevations, plan slices and a cutaway. Blocks are drawn as
-// flat-coloured cubes, one colour per palette entry.
+// flat-coloured cubes, one colour per palette entry; stairs, slabs, fences,
+// panes, walls, doors, trapdoors and carpets as the boxes they fill
+// (`block-shapes.ts`).
 //
 // Pure geometry: no DOM. `contact-sheet-draw.ts` paints the results on a
 // canvas.
 
 import type { ParsedSchematicProjection } from "../convert";
 import { isInvisibleBlockId } from "../invisible-blocks";
+import { blockShape, type BlockBox } from "./block-shapes";
 
 /** One block of the model, in coordinates relative to the model's minimum. */
 export interface Voxel {
@@ -16,6 +19,8 @@ export interface Voxel {
   z: number;
   /** Index into `VoxelModel.colors`. */
   color: number;
+  /** Index into `VoxelModel.shapes`; absent for a full cube. */
+  shape?: number;
 }
 
 export interface VoxelModel {
@@ -24,6 +29,8 @@ export interface VoxelModel {
   voxels: Voxel[];
   /** sRGB hex colours (`#rrggbb`), indexed by `Voxel.color`. */
   colors: string[];
+  /** Sub-block shapes, indexed by `Voxel.shape`. */
+  shapes: BlockBox[][];
   /** Voxel index + 1 per cell; 0 = empty. */
   cells: VoxelLookup;
 }
@@ -114,6 +121,7 @@ export function buildVoxelModel(
       size: [0, 0, 0],
       voxels: [],
       colors: [],
+      shapes: [],
       cells: voxelLookup([0, 0, 0], []),
     };
   }
@@ -135,6 +143,26 @@ export function buildVoxelModel(
     return i;
   };
   const paletteColors = new Map<number, number>();
+  const shapes: BlockBox[][] = [];
+  const shapeIndex = new Map<string, number>();
+  const paletteShapes = new Map<number, number | undefined>();
+  const shapeOf = (paletteIndex: number) => {
+    if (paletteShapes.has(paletteIndex)) return paletteShapes.get(paletteIndex);
+    const { blockId, properties } = projection.palette[paletteIndex];
+    const boxes = blockShape(blockId, properties);
+    let index: number | undefined;
+    if (boxes !== null) {
+      const key = JSON.stringify(boxes);
+      index = shapeIndex.get(key);
+      if (index === undefined) {
+        index = shapes.length;
+        shapes.push(boxes);
+        shapeIndex.set(key, index);
+      }
+    }
+    paletteShapes.set(paletteIndex, index);
+    return index;
+  };
   const voxels = shown.map(
     ({ regionIndex, local, pos, paletteIndex }): Voxel => {
       let color: number | undefined;
@@ -148,15 +176,24 @@ export function buildVoxelModel(
           paletteColors.set(paletteIndex, color);
         }
       }
-      return {
+      const voxel: Voxel = {
         x: pos[0] - min[0],
         y: pos[1] - min[1],
         z: pos[2] - min[2],
         color,
       };
+      const shape = shapeOf(paletteIndex);
+      if (shape !== undefined) voxel.shape = shape;
+      return voxel;
     },
   );
-  return { size, voxels, colors, cells: voxelLookup(size, voxels) };
+  return { size, voxels, colors, shapes, cells: voxelLookup(size, voxels) };
+}
+
+/** Whether a full cube sits at (x, y, z). */
+function fullCubeAt(model: VoxelModel, x: number, y: number, z: number) {
+  const i = model.cells.get(x, y, z);
+  return i !== 0 && model.voxels[i - 1].shape === undefined;
 }
 
 // ── Isometric views ───────────────────────────────────────────────────────
@@ -215,6 +252,68 @@ function project(u: number, y: number, v: number): [number, number] {
   return [(u - v) * COS30, (u + v) * SIN30 - y];
 }
 
+/** A box in a cell's view coordinates: [u0, y0, v0, u1, y1, v1], each 0–1. */
+type ViewBox = BlockBox;
+
+const UNIT_VIEW_BOX: ViewBox = [0, 0, 0, 1, 1, 1];
+
+/**
+ * `boxes` turned into `corner`'s view coordinates and ordered back to front:
+ * a box comes before every box it lies wholly behind along u, v or y (the
+ * camera looks from +u, +v and +y).
+ */
+function orderedViewBoxes(corner: IsoCorner, boxes: readonly BlockBox[]) {
+  // `toView` rotates the cell [0, 1]² onto a unit square that may start at
+  // -1; shift it back to [0, 1]², as `isoView` places cells.
+  const corners = [
+    toView(corner, 0, 0),
+    toView(corner, 1, 0),
+    toView(corner, 0, 1),
+    toView(corner, 1, 1),
+  ];
+  const offU = Math.min(...corners.map(([u]) => u));
+  const offV = Math.min(...corners.map(([, v]) => v));
+  const view = boxes.map(([x0, y0, z0, x1, y1, z1]): ViewBox => {
+    const [ua, va] = toView(corner, x0, z0);
+    const [ub, vb] = toView(corner, x1, z1);
+    return [
+      Math.min(ua, ub) - offU,
+      y0,
+      Math.min(va, vb) - offV,
+      Math.max(ua, ub) - offU,
+      y1,
+      Math.max(va, vb) - offV,
+    ];
+  });
+  const behind = (a: ViewBox, b: ViewBox) =>
+    a[3] <= b[0] || a[4] <= b[1] || a[5] <= b[2];
+  const centre = (b: ViewBox) => b[0] + b[1] + b[2] + b[3] + b[4] + b[5];
+  const left = [...view];
+  const ordered: ViewBox[] = [];
+  while (left.length > 0) {
+    // The backmost box no remaining box lies behind, nearest the back first.
+    let pick = -1;
+    for (let i = 0; i < left.length; i++) {
+      const blocked = left.some(
+        (other, j) => j !== i && behind(other, left[i]),
+      );
+      if (!blocked && (pick < 0 || centre(left[i]) < centre(left[pick]))) {
+        pick = i;
+      }
+    }
+    // Boxes that overlap each other have no strict order; fall back to centres.
+    if (pick < 0) {
+      pick = 0;
+      for (let i = 1; i < left.length; i++) {
+        if (centre(left[i]) < centre(left[pick])) pick = i;
+      }
+    }
+    ordered.push(left[pick]);
+    left.splice(pick, 1);
+  }
+  return ordered;
+}
+
 export interface IsoOptions {
   /** Leave out blocks above this y (relative to the model), for a cutaway. */
   maxY?: number;
@@ -236,53 +335,63 @@ export function isoView(
   // World step that moves +1 along u and along v.
   const uStep = du !== 0 ? [du, 0] : [0, eu];
   const vStep = dv !== 0 ? [dv, 0] : [0, ev];
-  const solid = (x: number, y: number, z: number) =>
-    y <= maxY && model.cells.get(x, y, z) !== 0;
+  // Only full cubes hide a neighbour's face.
+  const full = (x: number, y: number, z: number) =>
+    y <= maxY && fullCubeAt(model, x, y, z);
+  const viewBoxes = model.shapes.map((boxes) =>
+    orderedViewBoxes(corner, boxes),
+  );
 
   const drawn: { depth: number; faces: IsoFace[] }[] = [];
   for (const voxel of model.voxels) {
     const { x, y, z } = voxel;
     if (y > maxY) continue;
     const [u, v] = toView(corner, x, z);
+    const boxes =
+      voxel.shape === undefined ? [UNIT_VIEW_BOX] : viewBoxes[voxel.shape];
     const faces: IsoFace[] = [];
-    if (!solid(x, y + 1, z)) {
-      faces.push({
-        kind: "top",
-        color: voxel.color,
-        points: [
-          project(u, y + 1, v),
-          project(u + 1, y + 1, v),
-          project(u + 1, y + 1, v + 1),
-          project(u, y + 1, v + 1),
-        ],
-      });
-    }
-    if (!solid(x + uStep[0], y, z + uStep[1])) {
-      faces.push({
-        kind: "right",
-        color: voxel.color,
-        points: [
-          project(u + 1, y + 1, v),
-          project(u + 1, y + 1, v + 1),
-          project(u + 1, y, v + 1),
-          project(u + 1, y, v),
-        ],
-      });
-    }
-    if (!solid(x + vStep[0], y, z + vStep[1])) {
-      faces.push({
-        kind: "left",
-        color: voxel.color,
-        points: [
-          project(u, y + 1, v + 1),
-          project(u + 1, y + 1, v + 1),
-          project(u + 1, y, v + 1),
-          project(u, y, v + 1),
-        ],
-      });
+    for (const [u0, y0, v0, u1, y1, v1] of boxes) {
+      // A face on the cell's boundary is hidden by a full cube next to it.
+      if (!(y1 === 1 && full(x, y + 1, z))) {
+        faces.push({
+          kind: "top",
+          color: voxel.color,
+          points: [
+            project(u + u0, y + y1, v + v0),
+            project(u + u1, y + y1, v + v0),
+            project(u + u1, y + y1, v + v1),
+            project(u + u0, y + y1, v + v1),
+          ],
+        });
+      }
+      if (!(u1 === 1 && full(x + uStep[0], y, z + uStep[1]))) {
+        faces.push({
+          kind: "right",
+          color: voxel.color,
+          points: [
+            project(u + u1, y + y1, v + v0),
+            project(u + u1, y + y1, v + v1),
+            project(u + u1, y + y0, v + v1),
+            project(u + u1, y + y0, v + v0),
+          ],
+        });
+      }
+      if (!(v1 === 1 && full(x + vStep[0], y, z + vStep[1]))) {
+        faces.push({
+          kind: "left",
+          color: voxel.color,
+          points: [
+            project(u + u0, y + y1, v + v1),
+            project(u + u1, y + y1, v + v1),
+            project(u + u1, y + y0, v + v1),
+            project(u + u0, y + y0, v + v1),
+          ],
+        });
+      }
     }
     if (faces.length > 0) drawn.push({ depth: u + v + y, faces });
   }
+  // Cells back to front; `sort` is stable, so a cell's boxes keep their order.
   drawn.sort((a, b) => a.depth - b.depth);
   const faces = drawn.flatMap((d) => d.faces);
 
@@ -311,6 +420,7 @@ export function isoView(
 export interface OrthoGrid {
   width: number;
   height: number;
+  /** Per cell, the nearest full cube's colour (-1 = none). */
   cells: Int32Array;
   /**
    * Per cell, 0–1: how far the block is from the viewer's far side (top
@@ -322,6 +432,22 @@ export interface OrthoGrid {
    * drawn faded.
    */
   below?: Uint8Array;
+  /**
+   * Sub-block shapes in front of a cell's full cube (or of nothing), keyed
+   * by cell index and listed far to near. Each fills only the part of the
+   * cell its boxes cover.
+   */
+  partial: Map<number, OrthoPartial[]>;
+}
+
+export interface OrthoPartial {
+  color: number;
+  /** As `OrthoGrid.nearness`. */
+  nearness: number;
+  /** For plan slices: shows the layer below, drawn faded. */
+  below?: boolean;
+  /** Covered areas in cell-local 0–1 coordinates: [col0, row0, col1, row1]. */
+  rects: [number, number, number, number][];
 }
 
 export type Elevation = "front" | "side" | "top";
@@ -332,14 +458,42 @@ function emptyGrid(width: number, height: number): OrthoGrid {
     height,
     cells: new Int32Array(width * height).fill(-1),
     nearness: new Float32Array(width * height),
+    partial: new Map(),
   };
+}
+
+// A box's footprint in a view's cell, rows growing downwards.
+type Footprint = (b: BlockBox) => [number, number, number, number];
+
+const FOOTPRINTS: Record<Elevation, Footprint> = {
+  front: ([x0, y0, , x1, y1]) => [x0, 1 - y1, x1, 1 - y0],
+  side: ([, y0, z0, , y1, z1]) => [1 - z1, 1 - y1, 1 - z0, 1 - y0],
+  top: ([x0, , z0, x1, , z1]) => [x0, z0, x1, z1],
+};
+
+function footprint(
+  model: VoxelModel,
+  voxel: Voxel,
+  view: Elevation,
+): [number, number, number, number][] {
+  return model.shapes[voxel.shape!].map(FOOTPRINTS[view]);
+}
+
+function addPartial(grid: OrthoGrid, i: number, partial: OrthoPartial) {
+  let list = grid.partial.get(i);
+  if (list === undefined) {
+    list = [];
+    grid.partial.set(i, list);
+  }
+  list.push(partial);
 }
 
 /**
  * An elevation of `model`: "front" looks north from the south (x to the
  * right, y up), "side" looks west from the east (south on the left, y up),
  * "top" looks down with north up (x to the right, z down). Each cell shows
- * the nearest block along the view direction.
+ * the nearest full cube along the view direction, and the sub-block shapes
+ * in front of it by the area they cover.
  */
 export function elevation(model: VoxelModel, view: Elevation): OrthoGrid {
   const [sx, sy, sz] = model.size;
@@ -360,9 +514,11 @@ export function elevation(model: VoxelModel, view: Elevation): OrthoGrid {
       cell = (v) => [v.x, v.z, v.y];
       break;
   }
+  const nearness = (d: number) => (depthRange <= 1 ? 1 : d / (depthRange - 1));
   const grid = emptyGrid(width, height);
   const depth = new Int32Array(width * height).fill(-1);
   for (const voxel of model.voxels) {
+    if (voxel.shape !== undefined) continue;
     const [col, row, d] = cell(voxel);
     const i = row * width + col;
     if (d > depth[i]) {
@@ -371,32 +527,66 @@ export function elevation(model: VoxelModel, view: Elevation): OrthoGrid {
     }
   }
   for (let i = 0; i < depth.length; i++) {
-    if (depth[i] >= 0) {
-      grid.nearness[i] = depthRange <= 1 ? 1 : depth[i] / (depthRange - 1);
-    }
+    if (depth[i] >= 0) grid.nearness[i] = nearness(depth[i]);
+  }
+  const partials: { i: number; d: number; voxel: Voxel }[] = [];
+  for (const voxel of model.voxels) {
+    if (voxel.shape === undefined) continue;
+    const [col, row, d] = cell(voxel);
+    const i = row * width + col;
+    if (d > depth[i]) partials.push({ i, d, voxel });
+  }
+  partials.sort((a, b) => a.d - b.d);
+  for (const { i, d, voxel } of partials) {
+    addPartial(grid, i, {
+      color: voxel.color,
+      nearness: nearness(d),
+      rects: footprint(model, voxel, view),
+    });
   }
   return grid;
 }
 
 /**
  * The layer at `y` seen from above (north up), with the layer below shown
- * where `y` has no block (`below`).
+ * where `y` has no full cube (`below`). Sub-block shapes fill the area they
+ * cover.
  */
 export function planSlice(model: VoxelModel, y: number): OrthoGrid {
   const [sx, , sz] = model.size;
   const grid = emptyGrid(sx, sz);
   grid.below = new Uint8Array(sx * sz);
+  const at = new Map<number, Voxel>();
+  const under = new Map<number, Voxel>();
   for (const voxel of model.voxels) {
     const i = voxel.z * sx + voxel.x;
-    if (voxel.y === y) {
+    if (voxel.y === y) at.set(i, voxel);
+    else if (voxel.y === y - 1) under.set(i, voxel);
+  }
+  const show = (i: number, voxel: Voxel, below: boolean) => {
+    if (voxel.shape === undefined) {
       grid.cells[i] = voxel.color;
-      grid.below[i] = 0;
+      grid.below![i] = below ? 1 : 0;
       grid.nearness[i] = 1;
-    } else if (voxel.y === y - 1 && grid.cells[i] === -1) {
-      grid.cells[i] = voxel.color;
-      grid.below[i] = 1;
-      grid.nearness[i] = 1;
+    } else {
+      addPartial(grid, i, {
+        color: voxel.color,
+        nearness: 1,
+        ...(below ? { below } : {}),
+        rects: footprint(model, voxel, "top"),
+      });
     }
+  };
+  for (let i = 0; i < sx * sz; i++) {
+    const top = at.get(i);
+    const bottom = under.get(i);
+    if (
+      bottom !== undefined &&
+      (top === undefined || top.shape !== undefined)
+    ) {
+      show(i, bottom, true);
+    }
+    if (top !== undefined) show(i, top, false);
   }
   return grid;
 }
