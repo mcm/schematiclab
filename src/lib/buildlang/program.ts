@@ -9,6 +9,7 @@
 // written.
 
 import { parseLength, type LengthContext } from "./lengths";
+import { STD_PREFIX, stdTemplate, stdTemplateNames } from "./std";
 
 /** Largest program `size` on each axis. */
 export const MAX_BUILD_SIZE = 256;
@@ -201,6 +202,8 @@ export interface RoofObjectArgs extends LayerArgs {
   height?: number;
   /** Fill the attic. */
   solid?: boolean;
+  /** False: never merge with other roofs, combine by highest surface. */
+  merge?: boolean;
   /** Gambrel knee, 0–1 (default 0.5). */
   break?: number;
   /** Several footprints in the scope, each overriding the shape arguments. */
@@ -348,6 +351,20 @@ function isObject(v: unknown): v is Json {
 
 function show(v: unknown): string {
   return JSON.stringify(v) ?? String(v);
+}
+
+/**
+ * The error for a `use` of a program template that isn't defined, pointing
+ * at the built-in template when there is one of that name.
+ */
+export function unknownTemplateMessage(
+  name: string,
+  defined: readonly string[],
+): string {
+  const hint = stdTemplate(STD_PREFIX + name)
+    ? `; the built-in one is '${STD_PREFIX}${name}'`
+    : "";
+  return `unknown template '${name}' (defined: ${defined.length ? defined.join(", ") : "none"}${hint})`;
 }
 
 /** `path.k`, or `path["k"]` for keys that aren't identifiers. */
@@ -876,6 +893,7 @@ class Validator {
       "height",
       "solid",
       "break",
+      "merge",
       "parts",
     ]);
     if ("type" in arg) this.oneOf(arg.type, `${path}.type`, ROOF_TYPES);
@@ -886,6 +904,7 @@ class Validator {
     if ("ridge" in arg)
       this.oneOf(arg.ridge, `${path}.ridge`, ["x", "z", "auto"]);
     if ("solid" in arg) this.boolean(arg.solid, `${path}.solid`);
+    if ("merge" in arg) this.boolean(arg.merge, `${path}.merge`);
     if ("gable" in arg) {
       const g = arg.gable;
       if (g === true) {
@@ -986,11 +1005,17 @@ class Validator {
       );
       return;
     }
-    if (!this.templateNames.has(name)) {
-      const defined = [...this.templateNames].sort();
+    if (name.startsWith(STD_PREFIX)) {
+      if (!stdTemplate(name)) {
+        this.error(
+          path,
+          `unknown built-in template '${name}' (built-in: ${stdTemplateNames().join(", ")})`,
+        );
+      }
+    } else if (!this.templateNames.has(name)) {
       this.error(
         path,
-        `unknown template '${name}' (defined: ${defined.length ? defined.join(", ") : "none"})`,
+        unknownTemplateMessage(name, [...this.templateNames].sort()),
       );
     }
   }
@@ -1079,7 +1104,12 @@ class Validator {
         );
       } else {
         for (const [name, body] of Object.entries(json.templates)) {
-          if (!name.startsWith("#")) this.template(name, body);
+          if (name.startsWith(STD_PREFIX)) {
+            this.error(
+              pathKey("templates", name),
+              `template names can't start with '${STD_PREFIX}', which names the built-in templates`,
+            );
+          } else if (!name.startsWith("#")) this.template(name, body);
         }
       }
     }
@@ -1144,7 +1174,9 @@ export function validateProgram(json: unknown): ProgramValidation {
     };
   }
   const templateNames = isObject(json.templates)
-    ? Object.keys(json.templates).filter((k) => !k.startsWith("#"))
+    ? Object.keys(json.templates).filter(
+        (k) => !k.startsWith("#") && !k.startsWith(STD_PREFIX),
+      )
     : [];
   const validator = new Validator(new Set(templateNames));
   validator.program(json);

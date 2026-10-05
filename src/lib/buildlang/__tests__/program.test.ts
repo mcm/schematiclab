@@ -554,16 +554,22 @@ describe("validateProgram: material operations", () => {
             height: 4,
             solid: true,
             break: 0.25,
+            merge: false,
             priority: 2,
           },
         },
       ]),
     );
     expect(
-      errorsOf([{ roof: 1 }, { roof: { type: "gable", anything: 1 } }]),
+      errorsOf([
+        { roof: 1 },
+        { roof: { type: "gable", anything: 1 } },
+        { roof: { merge: "no" } },
+      ]),
     ).toEqual([
       "build[0].roof: expected a roof type or an object, got 1",
-      "build[1].roof.anything: unknown key 'anything' (expected 'type', 'material', 'pitch', 'overhang', 'ridge', 'gable', 'height', 'solid', 'break', 'parts', 'priority', 'carve')",
+      "build[1].roof.anything: unknown key 'anything' (expected 'type', 'material', 'pitch', 'overhang', 'ridge', 'gable', 'height', 'solid', 'break', 'merge', 'parts', 'priority', 'carve')",
+      'build[2].roof.merge: must be true or false, got "no"',
     ]);
   });
 });
@@ -583,7 +589,7 @@ describe("validateProgram: composition", () => {
         { templates },
       ),
     ).toEqual([
-      "build[0].use: unknown template 'door_bay' (defined: bay)",
+      "build[0].use: unknown template 'door_bay' (defined: bay; the built-in one is 'std:door_bay')",
       "build[1].use: missing 'name'",
       "build[2].use.with: must be an object of parameter → value, got []",
       'build[3].use: expected a template name or {"name": ..., "with": {...}}, got 3',

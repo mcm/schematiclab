@@ -201,6 +201,8 @@ are placed after the rest of the program, on their own layer (see 3a).
 
 - `height`: maximum height above the eave (and the height of a `dome`).
 - `solid: true` fills the attic. `break` (0–1, default 0.5) sets the gambrel knee.
+- `merge: false`: never merge with other roofs; combine with them by highest surface
+  instead (see below). Use it for a dormer or a gable that should cross the main roof.
 - **Size the roof box**: it needs height ≥ pitch × (half the span + overhang) + 1, or the roof
   flattens at the top.
 
@@ -212,8 +214,8 @@ are recomputed. So the simplest way to roof an L, T or cross plan is to **roof e
 its own at the same eave height**; wing ridges extend into the main roof by themselves.
 Other shapes (shed, cone, dome, gambrel, flat) and roofs that don't merge combine by taking
 the highest surface at the same eave height (with a note when gable, hip or pyramid roofs
-didn't merge); roofs at different heights stay independent (a tower's cone does not swallow
-a lower annex roof).
+didn't merge, unless written with `merge: false`); roofs at different heights stay
+independent (a tower's cone does not swallow a lower annex roof).
 
 You can also give one `roof` several footprints with `parts`. Each part is
 `{"at": [x, z], "size": [w, d]}` within the roof's box (positions and sizes as for `box`;
@@ -242,6 +244,13 @@ a key `"$face"` (when the parameter is a string), and `"${glass}"` inside longer
 (string or number parameters; the result is always a string, so pass numbers such as sizes
 as whole `"$n"` values). A `$name` with no such parameter is an error. Templates may use
 other templates, at most 32 deep.
+
+**Standard templates** — built-in templates, used as `{"use": "std:window_bay"}` or
+`{"use": {"name": "std:porch", "with": {"deck": "oak"}}}`. Every parameter has a default, so
+pass only the ones you change. Defaults that are roles (`"@window"`) need that role in your
+palette, or pass a material instead. A program template of the same name (`"window_bay"`)
+is a different template: `std:` always means the built-in one, and program template names
+can't start with `std:`. See section 5a for the list.
 
 **`choose`** — seeded random pick: `{"choose": {"options": [[...], [...]], "weights": [3, 1]}}`
 or just a list of options.
@@ -346,11 +355,73 @@ chimney wins wherever it is written. To cut a roof opening on purpose, use `carv
 
 **Floor that must not overwrite walls**: `inset` by 1 first, or use `only_empty`.
 
+## 5a. Standard templates
+
+Parameters that take operations (`lintel`, `under`) run them in a scope of their own, for
+example `"lintel": [{"fill": "@trim"}]`; they default to nothing.
+
+**`std:window_bay`** — a window centred in a face tile (a `repeat` tile of a `faces` scope,
+usually 3 wide), through the whole wall thickness. Write it after the wall fill.
+
+- `glass` (default `"@window"`): the window material.
+- `width` (1), `height` (2): the window's size.
+- `sill` (1): rows of wall left below the window.
+- `under` (none): operations on the row just below the window, across the tile.
+- `lintel` (none): operations on the row just above the window, across the tile.
+
+**`std:door_bay`** — a door at the bottom centre of a face tile, facing inward.
+
+- `door` (default `"@door:door"`): the door material.
+- `hinge` (`"left"`): `left` or `right`.
+- `lintel` (none): operations on the row above the door (y = 2), across the tile.
+
+**`std:porch`** — a covered porch filling its box. Put the box in front of an entrance with
+its back against the wall and its bottom at ground level, at least 3 high: a deck on the
+bottom row, a post at each front corner and a roof on the top row.
+
+- `deck` (default `"@floor"`): the deck.
+- `post` (`"@post"`): the corner posts (a log, or a fence such as `"@floor:fence"`).
+- `roof` (`"@roof:slab"`): the top row.
+
+**`std:balcony`** — a floor sticking out of a wall with a railing round its three open
+sides. Put the box in front of the wall with its back against it, its bottom at the floor
+level of the storey it opens from, at least 2 high; give that storey a door onto it.
+
+- `floor` (default `"@floor"`): the floor.
+- `railing` (`"@floor:fence"`): the railing.
+
+**`std:dormer`** — a gabled dormer with a window in its gable. Put the box in the main
+roof's box: bottom at the eave (y = 0), front flush with the wall below
+(`"at": ["center", 0, -4], "size": [7, "~", 4]`), 5–9 wide. Its roof (ridge front to back,
+`merge: false`) crosses the main roof and joins it in valleys; the gable infill closes the
+front round the window, continuing the wall below.
+
+- `roof` (default `"@roof"`), `pitch` (1), `gable` (`"auto"`), `overhang` (1): as for
+  `roof`; match the main roof.
+- `glass` (`"@window"`): the window.
+- `width` (1), `height` (2): the window's size, from the eave up.
+
+**`std:chimney`** — fills its box with the chimney and caps the top row. Run it in a box from
+the ground (or a floor) up past the roof; it wins over the roof (section 3a).
+
+- `material` (default `"@chimney"`): the stack.
+- `cap` (`"@chimney:slab"`): the top row.
+
+**`std:staircase`** — a straight, solid flight across the box's width: the bottom step at
+the front (+z), climbing one block per block toward the back, so a box `n` high and `n` deep
+holds `n` steps (at most 16). Rotate the box to point it another way. Each step clears the
+box above it, so write the staircase after the floors and let its box reach through the
+floor above to cut the stairwell.
+
+- `material` (default `"@floor"`): a role or family; uses its `stairs` and `block`
+  variants.
+
 ## 6. Workflow
 
 1. **Plan first**, in a few sentences: footprint, storeys, roof type, palette, key features, and
    the dimensions that make repeats symmetric.
-2. Write the program. Prefer roles, templates and repeats over hand-placed blocks.
+2. Write the program. Prefer roles, templates and repeats over hand-placed blocks, and the
+   standard templates (section 5a) over inventing your own details.
 3. Compile it with `compile_build` (or `check_build` for the report alone). You will receive a
    report and a contact sheet. The sheet contains four iso views (one per corner), front,
    side and top elevations, two floor plans and a cutaway.

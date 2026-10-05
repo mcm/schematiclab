@@ -308,7 +308,7 @@ describe("roof errors", () => {
     if (result.ok) return;
     expect(result.errors.map((e) => `${e.path}: ${e.message}`)).toEqual([
       'build[0].roof: must be one of "gable", "hip", "pyramid", "shed", "gambrel", "cone", "dome", "flat", got "spire"',
-      "build[1].roof.shape: unknown key 'shape' (expected 'type', 'material', 'pitch', 'overhang', 'ridge', 'gable', 'height', 'solid', 'break', 'parts', 'priority', 'carve')",
+      "build[1].roof.shape: unknown key 'shape' (expected 'type', 'material', 'pitch', 'overhang', 'ridge', 'gable', 'height', 'solid', 'break', 'merge', 'parts', 'priority', 'carve')",
       'build[1].roof.type: must be one of "gable", "hip", "pyramid", "shed", "gambrel", "cone", "dome", "flat", got "mansard"',
       "build[1].roof.pitch: must be at least 0, got -1",
       'build[1].roof.height: must be a number, got "tall"',

@@ -123,8 +123,11 @@ export interface Roof {
   /**
    * The roof's `material` and `gable` as written: gable, hip and pyramid
    * parts merge only when these, the eave height, pitch and priority match.
+   * With `merge: false`, unique to the `roof` operation.
    */
   mergeKey: string;
+  /** False when the roof was written with `merge: false`. */
+  merges: boolean;
 }
 
 export interface RoofArgsObject {
@@ -137,6 +140,7 @@ export interface RoofArgsObject {
   solid?: unknown;
   break?: unknown;
   gable?: unknown;
+  merge?: unknown;
   parts?: unknown;
 }
 
@@ -247,6 +251,13 @@ export function createRoofs(
       `must be true or false, got ${show(arg.solid)}`,
     );
   }
+  if (arg.merge !== undefined && typeof arg.merge !== "boolean") {
+    throw new BuildError(
+      `${path}.merge`,
+      `must be true or false, got ${show(arg.merge)}`,
+    );
+  }
+  const merges = arg.merge !== false;
   const spec = (arg.material ?? "@roof") as MaterialSpec;
   const materialPath = arg.material === undefined ? path : `${path}.material`;
   const materials: RoofMaterials = {
@@ -271,7 +282,9 @@ export function createRoofs(
     gable,
     solid: arg.solid === true,
     layer,
-    mergeKey: stableKey([spec, g]),
+    // a roof that doesn't merge still merges its own parts
+    mergeKey: merges ? stableKey([spec, g]) : `unmerged ${layer.seq}`,
+    merges,
   };
 
   if (arg.parts === undefined) {
@@ -360,6 +373,7 @@ function createPart(
     solid: boolean;
     layer: RoofLayer;
     mergeKey: string;
+    merges: boolean;
   },
 ): Roof {
   const type = arg.type ?? "gable";
@@ -477,6 +491,7 @@ function createPart(
     solid: common.solid,
     layer: common.layer,
     mergeKey: common.mergeKey,
+    merges: common.merges,
   };
 }
 
@@ -691,6 +706,8 @@ export function placeRoofs(
   const notes: RoofNote[] = [];
   const groupsByBase = new Map<number, Roof[][]>();
   for (const group of skeleton.values()) {
+    // roofs written with `merge: false` are combined on purpose
+    if (!group[0].merges) continue;
     const same = groupsByBase.get(group[0].base);
     if (same) same.push(group);
     else groupsByBase.set(group[0].base, [group]);
