@@ -183,6 +183,30 @@ describe("Cairn's examples", () => {
     expect(Math.max(...annex.map(({ pos }) => pos[1]))).toBeLessThanOrEqual(10);
   });
 
+  it("warns when the cottage's bed is moved into the chimney", () => {
+    const program = example("cottage");
+    const beds: { at: number[] }[] = [];
+    const walk = (node: unknown) => {
+      if (Array.isArray(node)) {
+        node.forEach(walk);
+      } else if (typeof node === "object" && node !== null) {
+        const { block } = node as { block?: { material?: unknown } };
+        if (block?.material === "red_bed") beds.push(block as { at: number[] });
+        Object.values(node).forEach(walk);
+      }
+    };
+    walk(program);
+    expect(beds.map(({ at }) => at)).toEqual([[-1, 0, 4]]);
+    beds[0].at = [-1, 0, 0];
+
+    const built = compileForRegistry(program, "1.21.4", registry);
+    expect(
+      built.warnings
+        .map(formatProgramError)
+        .some((w) => w.includes("red_bed") && w.includes("bricks")),
+    ).toBe(true);
+  });
+
   it("treats only blocks from the same mix as equal", () => {
     const program: unknown = JSON.parse(
       readFileSync(path.join(CAIRN, "cottage.json"), "utf8"),
