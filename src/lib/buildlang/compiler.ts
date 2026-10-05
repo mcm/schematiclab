@@ -16,13 +16,7 @@
 // outermost `use` that reached them added to the message.
 
 import type { BlockRegistry } from "../blockdata/registry";
-import {
-  buildShapeGrid,
-  MAX_DIMENSION,
-  MAX_THICKNESS,
-  type VoxelGrid,
-  voxelIndex,
-} from "../shapes/shapes";
+import { MAX_DIMENSION, MAX_THICKNESS } from "../shapes/shapes";
 import { BuildError } from "./errors";
 import {
   type Length,
@@ -975,9 +969,12 @@ export class Compiler {
   }
 
   /**
-   * `cylinder` (vertical) and `ellipsoid`, fitted to the scope through the
-   * Shape Generator's voxel grids. A hollow cylinder is a tube: each layer
-   * is a ring `thickness` blocks thick, open at the top and bottom.
+   * `cylinder` (vertical) and `ellipsoid`, fitted to the scope: the cells
+   * whose centres lie in the ellipse (or ellipsoid) touching the scope's
+   * sides. Hollow keeps the cells with a neighbour `thickness` away outside
+   * the shape, diagonals included so curved walls have no corner-only
+   * contacts (Cairn's rule); for an ellipsoid also above and below. So a
+   * hollow cylinder is a tube, open at the top and bottom.
    */
   private round(
     raw: unknown,
@@ -988,32 +985,40 @@ export class Compiler {
     const { material, ...options } = this.placementArgs(raw, path);
     const arg: Json = isObject(raw) && !("mix" in raw) ? raw : {};
     const hollow = arg.hollow === true;
-    const thickness = Math.min(
+    const t = Math.min(
       integer(arg.thickness, `${path}.thickness`, 1, 1),
       MAX_THICKNESS,
     );
     const [sx, sy, sz] = scope.size;
-    let grid: VoxelGrid;
-    try {
-      grid = buildShapeGrid({
-        shape,
-        width: sx,
-        height: shape === "cylinder" ? 1 : sy,
-        depth: sz,
-        hollow,
-        thickness,
-      });
-    } catch {
+    if (Math.max(sx, sy, sz) > MAX_DIMENSION) {
       throw new BuildError(
         path,
         `scope ${show(scope.size)} is too big for '${shape}' (at most ${MAX_DIMENSION} per side)`,
       );
     }
-    for (const [x, y, z] of scope.cells()) {
-      const gy = shape === "cylinder" ? 0 : y;
-      if (grid.filled[voxelIndex(grid.size, x, gy, z)]) {
-        this.place(scope, [x, y, z], material, path, options);
+    const centred = (i: number, n: number) => (i + 0.5 - n / 2) / (n / 2);
+    const inside = (x: number, y: number, z: number) => {
+      if (x < 0 || x >= sx || y < 0 || y >= sy || z < 0 || z >= sz) {
+        return false;
       }
+      let d = centred(x, sx) ** 2 + centred(z, sz) ** 2;
+      if (shape === "ellipsoid") d += centred(y, sy) ** 2;
+      return d <= 1 + 1e-9;
+    };
+    const neighbours: Pos[] = [];
+    for (const a of [-t, 0, t]) {
+      for (const c of [-t, 0, t]) if (a || c) neighbours.push([a, 0, c]);
+    }
+    if (shape === "ellipsoid") neighbours.push([0, t, 0], [0, -t, 0]);
+    for (const [x, y, z] of scope.cells()) {
+      if (!inside(x, y, z)) continue;
+      if (
+        hollow &&
+        neighbours.every(([a, b, c]) => inside(x + a, y + b, z + c))
+      ) {
+        continue;
+      }
+      this.place(scope, [x, y, z], material, path, options);
     }
   }
 
