@@ -173,7 +173,11 @@ function isWallMounted(registry: BlockRegistry, block: PlacedBlock): boolean {
 }
 
 /** Kinds of the full, opaque blocks walls are built from. */
-const WALL_KINDS: ReadonlySet<BlockKind> = new Set(["block", "log", "pillar"]);
+export const WALL_KINDS: ReadonlySet<BlockKind> = new Set([
+  "block",
+  "log",
+  "pillar",
+]);
 
 const shortId = (id: string) => id.replace(/^minecraft:/, "");
 

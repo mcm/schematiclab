@@ -170,7 +170,8 @@ are placed after the rest of the program, on their own layer (see 3a).
     "material": "@roof",
     "pitch": 1,
     "overhang": 1,
-    "ridge": "auto"
+    "ridge": "auto",
+    "gable": "@wall"
   }
 }
 ```
@@ -187,13 +188,49 @@ are placed after the rest of the program, on their own layer (see 3a).
   `back`, `front`; `all` sets the rest). Use 0 where the roof meets another building.
 - `ridge`: `x`, `z`, or `auto` (along the longer side). For `shed`, the high side is the back
   (ridge `x`) or left (ridge `z`).
+- `gable`: closes the gable triangles and the gap between the wall tops and the roof, along
+  the roof's edge. Values:
+  - `"auto"` (default): continues whatever full, opaque wall block is directly below (logs
+    keep their `axis`), so walls, mixes and posts run up into the roof, and open sides and
+    glass stay open.
+  - a material, to use that instead.
+  - `false` (or `"none"`), to leave the gap open on purpose.
+
+  The infill only fills empty cells, so windows and chimneys in the gable stay.
+
 - `height`: maximum height above the eave (and the height of a `dome`).
 - `solid: true` fills the attic. `break` (0–1, default 0.5) sets the gambrel knee.
 - **Size the roof box**: it needs height ≥ pitch × (half the span + overhang) + 1, or the roof
   flattens at the top.
 
-Roofs at the same eave height combine by taking the highest surface; roofs at different
-heights stay independent (a tower's cone does not swallow a lower annex roof).
+**Roofs merge automatically.** Gable, hip and pyramid roofs with the same eave height,
+pitch, material, `gable` and priority are merged into one roof over their combined
+footprint. This works even when they come from separate `roof` operations in differently
+rotated boxes. Ridges run into each other, valleys form where wings meet, and stair corners
+are recomputed. So the simplest way to roof an L, T or cross plan is to **roof each wing on
+its own at the same eave height**; wing ridges extend into the main roof by themselves.
+Other shapes (shed, cone, dome, gambrel, flat) and roofs that don't merge combine by taking
+the highest surface at the same eave height (with a note when gable, hip or pyramid roofs
+didn't merge); roofs at different heights stay independent (a tower's cone does not swallow
+a lower annex roof).
+
+You can also give one `roof` several footprints with `parts`. Each part is
+`{"at": [x, z], "size": [w, d]}` within the roof's box (positions and sizes as for `box`;
+default the whole box) plus optional overrides of `type`, `ridge`, `pitch`, `overhang` and
+`break`.
+
+```json
+{
+  "roof": {
+    "material": "@roof",
+    "gable": "@wall",
+    "parts": [
+      { "at": [2, 2], "size": [21, 9], "type": "hip" },
+      { "at": [14, 10], "size": [9, 9], "type": "gable", "ridge": "z" }
+    ]
+  }
+}
+```
 
 ### Composition
 

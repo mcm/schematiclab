@@ -12,7 +12,7 @@ import {
   type Operations,
   validateProgram,
 } from "../program";
-import { type Built, compile, messages, run } from "./compile-harness";
+import { compile, describeBlocks, messages, run } from "./compile-harness";
 
 interface GoldenCase {
   program: {
@@ -30,26 +30,6 @@ const GOLDEN = JSON.parse(
     "utf8",
   ),
 ) as { cases: Record<string, GoldenCase> };
-
-/** Blocks in the golden format, `waterlogged` left out as in the fixture. */
-function describeBlocks(b: Built): string[] {
-  return b.cells
-    .map(([x, y, z, id]) => {
-      const states = Object.entries(b.states(x, y, z))
-        .filter(([k]) => k !== "waterlogged")
-        .sort(([a], [c]) => (a < c ? -1 : 1))
-        .map(([k, v]) => `${k}=${v}`);
-      return {
-        key: [x, y, z],
-        text: `${x},${y},${z} ${id}${states.length ? `[${states.join(",")}]` : ""}`,
-      };
-    })
-    .sort(
-      (a, c) =>
-        a.key[0] - c.key[0] || a.key[1] - c.key[1] || a.key[2] - c.key[2],
-    )
-    .map((e) => e.text);
-}
 
 /** A 9×h×7 roof scope at [2, 0, 2] in a 13×8×11 build (Cairn's test house). */
 const roofed = (roof: unknown, size: [number, number, number] = [9, 8, 7]) =>
@@ -328,7 +308,7 @@ describe("roof errors", () => {
     if (result.ok) return;
     expect(result.errors.map((e) => `${e.path}: ${e.message}`)).toEqual([
       'build[0].roof: must be one of "gable", "hip", "pyramid", "shed", "gambrel", "cone", "dome", "flat", got "spire"',
-      "build[1].roof.shape: unknown key 'shape' (expected 'type', 'material', 'pitch', 'overhang', 'ridge', 'gable', 'height', 'solid', 'break', 'priority', 'carve')",
+      "build[1].roof.shape: unknown key 'shape' (expected 'type', 'material', 'pitch', 'overhang', 'ridge', 'gable', 'height', 'solid', 'break', 'parts', 'priority', 'carve')",
       'build[1].roof.type: must be one of "gable", "hip", "pyramid", "shed", "gambrel", "cone", "dome", "flat", got "mansard"',
       "build[1].roof.pitch: must be at least 0, got -1",
       'build[1].roof.height: must be a number, got "tall"',
@@ -362,13 +342,6 @@ describe("roof errors", () => {
       ),
     ]);
     expect(b.cells).toHaveLength(27);
-  });
-
-  it("notes that gable infill isn't supported yet", () => {
-    const b = roofed({ type: "gable", material: "oak", gable: "stone" });
-    expect(messages(b.notes)).toContain(
-      "build[0].box.do[0].roof.gable: gable infill is not supported yet; ignored",
-    );
   });
 });
 

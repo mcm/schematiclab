@@ -101,3 +101,26 @@ export function run(
 
 export const messages = (errors: CompileResult["warnings"]) =>
   errors.map(formatProgramError);
+
+/**
+ * Blocks in the format of the Cairn golden fixtures (`fixtures/cairn/`):
+ * `"x,y,z id[state=value,…]"` sorted by position, `waterlogged` left out.
+ */
+export function describeBlocks(b: Built): string[] {
+  return b.cells
+    .map(([x, y, z, id]) => {
+      const states = Object.entries(b.states(x, y, z))
+        .filter(([k]) => k !== "waterlogged")
+        .sort(([a], [c]) => (a < c ? -1 : 1))
+        .map(([k, v]) => `${k}=${v}`);
+      return {
+        key: [x, y, z],
+        text: `${x},${y},${z} ${id}${states.length ? `[${states.join(",")}]` : ""}`,
+      };
+    })
+    .sort(
+      (a, c) =>
+        a.key[0] - c.key[0] || a.key[1] - c.key[1] || a.key[2] - c.key[2],
+    )
+    .map((e) => e.text);
+}

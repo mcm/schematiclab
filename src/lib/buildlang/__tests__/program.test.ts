@@ -563,7 +563,7 @@ describe("validateProgram: material operations", () => {
       errorsOf([{ roof: 1 }, { roof: { type: "gable", anything: 1 } }]),
     ).toEqual([
       "build[0].roof: expected a roof type or an object, got 1",
-      "build[1].roof.anything: unknown key 'anything' (expected 'type', 'material', 'pitch', 'overhang', 'ridge', 'gable', 'height', 'solid', 'break', 'priority', 'carve')",
+      "build[1].roof.anything: unknown key 'anything' (expected 'type', 'material', 'pitch', 'overhang', 'ridge', 'gable', 'height', 'solid', 'break', 'parts', 'priority', 'carve')",
     ]);
   });
 });
