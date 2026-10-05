@@ -165,8 +165,43 @@ export interface RoundArgs extends FillArgs {
   thickness?: number;
 }
 
-/** Roofs come in a later epic; their arguments are not checked yet. */
-export type RoofArgs = string | (LayerArgs & Record<string, unknown>);
+export type RoofType =
+  | "gable"
+  | "hip"
+  | "pyramid"
+  | "shed"
+  | "gambrel"
+  | "cone"
+  | "dome"
+  | "flat";
+
+/** Overhang per side; `all` sets the sides not named (default 1). */
+export interface RoofOverhang {
+  all?: number;
+  left?: number;
+  right?: number;
+  back?: number;
+  front?: number;
+}
+
+export interface RoofObjectArgs extends LayerArgs {
+  type?: RoofType;
+  material?: MaterialSpec;
+  /** Rise per block (default 1). */
+  pitch?: number;
+  overhang?: number | RoofOverhang;
+  ridge?: "x" | "z" | "auto";
+  /** Gable infill: not supported yet, noted and ignored. */
+  gable?: MaterialSpec | boolean | null;
+  /** Clip height above the eave (and a dome's height). */
+  height?: number;
+  /** Fill the attic. */
+  solid?: boolean;
+  /** Gambrel knee, 0–1 (default 0.5). */
+  break?: number;
+}
+
+export type RoofArgs = RoofType | RoofObjectArgs;
 
 export type UseArgs = string | { name: string; with?: Record<string, unknown> };
 
@@ -254,6 +289,16 @@ export function formatProgramError(error: ProgramError): string {
 type Json = Record<string, unknown>;
 
 const LAYER_KEYS = ["priority", "carve"];
+const ROOF_TYPES: readonly RoofType[] = [
+  "gable",
+  "hip",
+  "pyramid",
+  "shed",
+  "gambrel",
+  "cone",
+  "dome",
+  "flat",
+];
 const PLACEMENT_KEYS = [
   "replace",
   "only_empty",
@@ -434,6 +479,20 @@ class Validator {
       this.error(path, `must be an integer, got ${show(v)}`);
     } else if (min !== undefined && (v as number) < min) {
       this.error(path, `must be at least ${min}, got ${show(v)}`);
+    }
+  }
+
+  private number(v: unknown, path: string, min: number, max = Infinity) {
+    if (this.isParam(v)) return;
+    if (typeof v !== "number" || !Number.isFinite(v)) {
+      this.error(path, `must be a number, got ${show(v)}`);
+    } else if (v < min || v > max) {
+      this.error(
+        path,
+        max === Infinity
+          ? `must be at least ${min}, got ${show(v)}`
+          : `must be between ${min} and ${max}, got ${show(v)}`,
+      );
     }
   }
 
@@ -771,8 +830,54 @@ class Validator {
   }
 
   private roof(arg: unknown, path: string): void {
-    if (typeof arg === "string") return;
-    this.object(arg, path, "a roof type or an object");
+    if (typeof arg === "string") {
+      this.oneOf(arg, path, ROOF_TYPES);
+      return;
+    }
+    if (!this.object(arg, path, "a roof type or an object")) return;
+    this.keys(arg, path, [
+      "type",
+      "material",
+      "pitch",
+      "overhang",
+      "ridge",
+      "gable",
+      "height",
+      "solid",
+      "break",
+    ]);
+    if ("type" in arg) this.oneOf(arg.type, `${path}.type`, ROOF_TYPES);
+    if ("material" in arg) this.material(arg.material, `${path}.material`);
+    if ("pitch" in arg) this.number(arg.pitch, `${path}.pitch`, 0);
+    if ("height" in arg) this.number(arg.height, `${path}.height`, 0);
+    if ("break" in arg) this.number(arg.break, `${path}.break`, 0, 1);
+    if ("ridge" in arg)
+      this.oneOf(arg.ridge, `${path}.ridge`, ["x", "z", "auto"]);
+    if ("solid" in arg) this.boolean(arg.solid, `${path}.solid`);
+    if ("gable" in arg) {
+      const g = arg.gable;
+      if (typeof g !== "boolean" && g !== null && !this.isParam(g)) {
+        this.material(g, `${path}.gable`);
+      }
+    }
+    if ("overhang" in arg) {
+      const ov = arg.overhang;
+      if (isObject(ov)) {
+        this.keys(
+          ov,
+          `${path}.overhang`,
+          ["all", "left", "right", "back", "front"],
+          false,
+        );
+        for (const [side, v] of Object.entries(ov)) {
+          if (!this.isIgnoredKey(side)) {
+            this.integer(v, pathKey(`${path}.overhang`, side), 0);
+          }
+        }
+      } else {
+        this.integer(ov, `${path}.overhang`, 0);
+      }
+    }
   }
 
   // -- composition --------------------------------------------------------------
