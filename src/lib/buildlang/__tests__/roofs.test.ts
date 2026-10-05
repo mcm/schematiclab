@@ -2,10 +2,11 @@
 // `tests/test_spec.py` ported.
 
 import { describe, expect, it } from "vitest";
+import { analyze, formatReport } from "../analyze";
 import type { Operations } from "../program";
 import { RoofEngine, type RoofHost } from "../roofs";
 import { Scope } from "../scope";
-import { messages, run } from "./compile-harness";
+import { messages, registry, run } from "./compile-harness";
 
 const LAYER = { priority: -1, carve: false };
 
@@ -474,5 +475,65 @@ describe("gable infill", () => {
       gable: false,
     });
     expect(b.cells.filter(([, , , id]) => id === "spruce_planks")).toEqual([]);
+  });
+});
+
+describe("roof sealing", () => {
+  const leaks = (b: ReturnType<typeof run>) => analyze(b, registry).roofLeaks;
+
+  // `house` puts the eave one block above the 4-high walls (y = 4), so the
+  // eave layer is the gap between the wall tops and the roof.
+  it("reports a roof whose gap to the walls is left open (Cairn)", () => {
+    const b = house({
+      type: "gable",
+      material: "spruce",
+      overhang: 1,
+      gable: false,
+    });
+    const path = "build[0].box.do[0].split.parts[1].do[0].roof";
+    expect(leaks(b)).toEqual([
+      {
+        roof: path,
+        columns: 63,
+        examples: [
+          [2, 4, 2],
+          [2, 4, 3],
+          [2, 4, 4],
+          [2, 4, 5],
+        ],
+        eaveY: 4,
+      },
+    ]);
+    expect(formatReport(b, analyze(b, registry))).toContain(
+      `ROOF NOT SEALED (${path}): outside air gets under the roof in 63 column(s), ` +
+        "e.g. at [[2, 4, 2], [2, 4, 3], [2, 4, 4], [2, 4, 5]]. Usually a gap between " +
+        "the wall tops and the roof (eave y=4); set the roof's 'gable' infill, or " +
+        "lower the roof onto the walls",
+    );
+  });
+
+  it("finds it sealed with 'auto' gables (Cairn)", () => {
+    const b = house({ type: "gable", material: "spruce", overhang: 1 });
+    expect(leaks(b)).toEqual([]);
+    expect(formatReport(b, analyze(b, registry))).not.toContain(
+      "ROOF NOT SEALED",
+    );
+  });
+
+  it("finds a shallow shed roof over walls sealed (Cairn)", () => {
+    const b = house({
+      type: "shed",
+      ridge: "z",
+      material: "spruce",
+      pitch: 0.5,
+      overhang: 1,
+    });
+    expect(leaks(b)).toEqual([]);
+  });
+
+  it("finds a hip roof over walls sealed", () => {
+    const b = house({ type: "hip", material: "spruce", overhang: 1 });
+    expect(leaks(b)).toEqual([]);
+    expect(analyze(b, registry).enclosedSpaces).toHaveLength(1);
   });
 });

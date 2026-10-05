@@ -120,8 +120,8 @@ export interface RoofInfo {
   core: [number, number][];
   /** World y of the eave. */
   base: number;
-  /** The surface block's y per column. */
-  top: Map<number, number>;
+  /** The y of a column's surface block, or undefined where there is none. */
+  top(x: number, z: number): number | undefined;
   /** The roof operations' program paths, joined. */
   path: string;
 }
@@ -456,7 +456,7 @@ export class RoofEngine {
     this.info.push({
       core: [...coreAll].map(unkey),
       base: Math.min(...sources.map((s) => s.base)),
-      top: new Map(top),
+      top: (x, z) => top.get(key(x, z)),
       path: [...new Set(sources.map((s) => s.parts[0].path))].sort().join(", "),
     });
     for (const c of coreAll) {

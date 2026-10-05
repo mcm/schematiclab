@@ -6,11 +6,12 @@
 //
 // Differences from Cairn: flood fill and component labelling are done here
 // (no scipy), a block's 2×2×2 occupancy comes from its kind and state (no
-// collision geometry), roofs aren't analysed yet, and every finding that came
-// from an operation names its program path.
+// collision geometry), and every finding that came from an operation names
+// its program path.
 
 import type { BlockKind, BlockRegistry } from "../blockdata/registry";
 import type { CompileResult } from "./compiler";
+import type { RoofInfo } from "./roofs";
 import { formatProgramError, type ProgramError } from "./program";
 import type { PlacedBlock, Pos } from "./writes";
 
@@ -21,6 +22,7 @@ const MAX_ROOMS = 10;
 const MAX_FLOATING = 8;
 const MAX_MATERIALS = 12;
 const MAX_NOTES = 20;
+const MAX_LEAK_EXAMPLES = 4;
 
 /**
  * Most half-block cells the enclosure flood fill visits (about a 128-block
@@ -51,6 +53,18 @@ export interface BlockedDoor {
   byPath: string | null;
 }
 
+/** A roof whose underside outside air reaches. */
+export interface RoofLeak {
+  /** The roof operations' program paths, joined. */
+  roof: string;
+  /** Columns under the roof (no overhang) where outside air gets in. */
+  columns: number;
+  /** The lowest leaking cells (y, then x, then z), up to four. */
+  examples: Pos[];
+  /** World y of the eave. */
+  eaveY: number;
+}
+
 export interface Features {
   doors: number;
   window_blocks: number;
@@ -79,6 +93,11 @@ export interface Analysis {
   enclosedAir: number | null;
   /** Sealed spaces of at least `MIN_ROOM_BLOCKS` blocks, largest first. */
   enclosedSpaces: number[];
+  /**
+   * Roofs outside air gets under (empty when enclosure isn't measured,
+   * like `enclosedAir`).
+   */
+  roofLeaks: RoofLeak[];
   /** Share of blocks matching their mirror image, 0–1 (3 decimals). */
   symmetry: { leftRight: number; frontBack: number };
   features: Features;
@@ -256,6 +275,7 @@ function enclosure(
   blocks: [Pos, PlacedBlock][],
   min: Pos,
   dims: Pos,
+  outsideCheck: (isOutside: (pos: Pos) => boolean) => void,
 ): { air: number; rooms: number[] } {
   const [w, h, d] = dims.map((n) => 2 * n + 2 * ENCLOSURE_PAD);
   const cells = new Uint8Array(w * h * d);
@@ -303,6 +323,23 @@ function enclosure(
     return size;
   };
   fill(0);
+  // Whether outside air reaches any half-block cell of block `pos` (cells
+  // beyond the padded bounding box are outside).
+  outsideCheck(([x, y, z]) => {
+    const X = 2 * (x - min[0]) + ENCLOSURE_PAD;
+    const Y = 2 * (y - min[1]) + ENCLOSURE_PAD;
+    const Z = 2 * (z - min[2]) + ENCLOSURE_PAD;
+    if (X < 0 || Y < 0 || Z < 0 || X + 1 >= w || Y + 1 >= h || Z + 1 >= d) {
+      return true;
+    }
+    for (let i = 0; i < 8; i++) {
+      const sx = X + (i & 1);
+      const sy = Y + ((i >> 1) & 1);
+      const sz = Z + ((i >> 2) & 1);
+      if (cells[(sy * d + sz) * w + sx] === VISITED_CELL) return true;
+    }
+    return false;
+  });
   let air = 0;
   const rooms: number[] = [];
   for (let i = 0; i < cells.length; i++) {
@@ -313,6 +350,50 @@ function enclosure(
   }
   rooms.sort((a, b) => b - a);
   return { air: Math.floor(air / 8), rooms };
+}
+
+/**
+ * Per roof: the core columns where outside air reaches a cell between the
+ * eave and the roof surface (the first such cell of each column, from the
+ * eave up). Usually a gap between the wall tops and the roof.
+ */
+function roofLeaks(
+  result: CompileResult,
+  outside: (pos: Pos) => boolean,
+): RoofLeak[] {
+  const leaks: RoofLeak[] = [];
+  for (const info of result.roofs) {
+    const hits = leakingColumns(result, info, outside);
+    if (hits.length === 0) continue;
+    hits.sort((a, b) => a[1] - b[1] || a[0] - b[0] || a[2] - b[2]);
+    leaks.push({
+      roof: info.path,
+      columns: hits.length,
+      examples: hits.slice(0, MAX_LEAK_EXAMPLES),
+      eaveY: info.base,
+    });
+  }
+  return leaks;
+}
+
+function leakingColumns(
+  result: CompileResult,
+  info: RoofInfo,
+  outside: (pos: Pos) => boolean,
+): Pos[] {
+  const hits: Pos[] = [];
+  for (const [x, z] of info.core) {
+    const top = info.top(x, z);
+    if (top === undefined) continue;
+    for (let y = info.base; y < top; y++) {
+      if (result.blocks.get([x, y, z]) !== null) continue;
+      if (outside([x, y, z])) {
+        hits.push([x, y, z]);
+        break;
+      }
+    }
+  }
+  return hits;
 }
 
 /** Analyses a compiled build's final blocks. */
@@ -332,6 +413,7 @@ export function analyze(
     floatingCount: 0,
     enclosedAir: 0,
     enclosedSpaces: [],
+    roofLeaks: [],
     symmetry: { leftRight: 0, frontBack: 0 },
     features: {
       doors: 0,
@@ -421,7 +503,9 @@ export function analyze(
   // Enclosure at half-block resolution: air leaking through the open half of
   // a stair or slab is caught (a whole-block check misses it).
   if (enclosureCells(dims) <= MAX_ENCLOSURE_CELLS) {
-    const { air, rooms } = enclosure(registry, blocks, min, dims);
+    const { air, rooms } = enclosure(registry, blocks, min, dims, (outside) => {
+      analysis.roofLeaks = roofLeaks(result, outside);
+    });
     analysis.enclosedAir = air;
     analysis.enclosedSpaces = rooms
       .filter((r) => r >= MIN_ROOM_BLOCKS)
@@ -580,6 +664,14 @@ export function formatReport(
       `mirror symmetry: left-right ${percent(analysis.symmetry.leftRight)}, ` +
         `front-back ${percent(analysis.symmetry.frontBack)}`,
     );
+    for (const leak of analysis.roofLeaks) {
+      lines.push(
+        `ROOF NOT SEALED (${leak.roof}): outside air gets under the roof in ` +
+          `${leak.columns} column(s), e.g. at [${leak.examples.map(vec).join(", ")}]. ` +
+          `Usually a gap between the wall tops and the roof (eave y=${leak.eaveY}); ` +
+          `set the roof's 'gable' infill, or lower the roof onto the walls`,
+      );
+    }
     for (const bd of analysis.blockedDoors) {
       lines.push(
         `BLOCKED DOOR at ${vec(bd.door)}${from(bd.doorPath)}: ${bd.by} at ` +
