@@ -58,7 +58,7 @@ import {
 } from "./program";
 import { postprocess } from "./postprocess";
 import {
-  createRoof,
+  createRoofs,
   placeRoofs,
   type Roof,
   type RoofArgsObject,
@@ -73,6 +73,7 @@ import {
   type Pos,
   type ReplaceSet,
   resolveReplace,
+  WALL_KINDS,
   WriteLog,
 } from "./writes";
 
@@ -1023,12 +1024,6 @@ export class Compiler {
         ? { type: raw }
         : this.expectObject(raw, path, "a roof type or an object")
     ) as RoofArgsObject & Json;
-    if (arg.gable !== undefined) {
-      this.notes.push({
-        path: `${path}.gable`,
-        message: "gable infill is not supported yet; ignored",
-      });
-    }
     const { priority, carve } = this.layers.current;
     const layer: RoofLayer = {
       priority: "priority" in arg ? priority : priority - 1,
@@ -1036,18 +1031,29 @@ export class Compiler {
       seq: this.log.nextSeq(),
       path,
     };
-    this.roofs.push(createRoof(arg, scope, path, this.resolver, layer));
+    this.roofs.push(...createRoofs(arg, scope, path, this.resolver, layer));
   }
 
   private placeRoofs() {
     const root = Scope.root(this.program.size);
     try {
-      placeRoofs(this.roofs, (pos, material, states, layer) =>
-        this.place(root, pos, material, layer.path, {
-          extra: states,
-          layer,
-        }),
-      );
+      const notes = placeRoofs(this.roofs, {
+        place: (pos, material, states, layer, onlyEmpty) =>
+          this.place(root, pos, material, layer.path, {
+            extra: states,
+            layer,
+            onlyEmpty,
+          }),
+        wallAt: (pos) => {
+          const block = this.log.peek(pos);
+          if (block === null) return null;
+          if (!WALL_KINDS.has(this.registry.kind(block.id))) return false;
+          const states: Record<string, string> =
+            block.states.axis === undefined ? {} : { axis: block.states.axis };
+          return { entries: [{ weight: 1, id: block.id, states }] };
+        },
+      });
+      this.notes.push(...notes);
     } catch (e) {
       if (!(e instanceof BuildError) || e instanceof FatalBuildError) throw e;
       this.errors.push(e.toProgramError());

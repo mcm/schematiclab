@@ -10,19 +10,32 @@
 // Chebyshev (L∞) distance to the nearest eave edge, gable ends left out of the
 // distance: for equal pitches on a rectilinear plan that is the straight
 // skeleton, since mitred inward offsetting of an orthogonal polygon is erosion
-// by a square. Shed, gambrel, cone, dome and flat roofs use their own formula.
-// Roofs at the same eave height combine by the highest surface; roofs at
-// different heights stay independent (a tower's cone overhanging a low annex
-// must not swallow the annex roof).
+// by a square. So gable, hip and pyramid parts sharing an eave height, pitch,
+// material, gable infill and priority merge into one surface over their
+// combined footprint, and L, T and cross plans get ridges and valleys even
+// when the parts come from separate `roof` operations in rotated scopes. One
+// `roof` may also have several footprints (`parts`). Shed, gambrel, cone, dome
+// and flat roofs use their own formula. Roofs at the same eave height combine
+// by the highest surface; roofs at different heights stay independent (a
+// tower's cone overhanging a low annex must not swallow the annex roof).
 //
 // The surface is turned into blocks from the local gradient (after the GDMC
 // 2024 winner "Frightful Hobgoblin"): stairs, facing up-slope, where the
 // surface rises by about a block per block, else bottom or top slabs, and
 // full blocks for flat roofs. Each column is filled down until no side is left
 // open beside a neighbour's lower surface. Stair corner shapes are recomputed
-// afterwards by `postprocess`.
+// afterwards by `postprocess`. Last, the gable infill closes the gable
+// triangles and the gap between the wall tops and the roof along the edge of
+// the combined footprint.
 
 import { BuildError } from "./errors";
+import {
+  type Length,
+  type LengthContext,
+  parseLength,
+  resolvePosition,
+  resolveSize,
+} from "./lengths";
 import type { Material, MaterialResolver } from "./materials";
 import type { MaterialSpec } from "./program";
 import type { Scope, Vec } from "./scope";
@@ -81,7 +94,13 @@ export interface RoofMaterials {
   block: Material;
 }
 
-/** One roof, in world space. */
+/**
+ * What closes the gap between the walls and the roof: `"auto"` continues the
+ * wall block below, a material uses that material, null leaves it open.
+ */
+export type GableInfill = "auto" | Material | null;
+
+/** One roof footprint (a `roof` operation, or one of its `parts`), in world space. */
 export interface Roof {
   type: RoofType;
   pitch: number;
@@ -98,8 +117,14 @@ export interface Roof {
   /** Whether the footprint's edge on world side `dir` is an eave (not a gable end). */
   isEave(dir: Dir): boolean;
   materials: RoofMaterials;
+  gable: GableInfill;
   solid: boolean;
   layer: RoofLayer;
+  /**
+   * The roof's `material` and `gable` as written: gable, hip and pyramid
+   * parts merge only when these, the eave height, pitch and priority match.
+   */
+  mergeKey: string;
 }
 
 export interface RoofArgsObject {
@@ -111,7 +136,18 @@ export interface RoofArgsObject {
   height?: unknown;
   solid?: unknown;
   break?: unknown;
+  gable?: unknown;
+  parts?: unknown;
 }
+
+/** The arguments a part of a roof may override. */
+type RoofShapeArgs = Pick<
+  RoofArgsObject,
+  "type" | "pitch" | "overhang" | "ridge" | "break"
+>;
+
+/** `gable` values that leave the gap open. */
+const OPEN_GABLE = new Set<unknown>([false, null, "none", "off"]);
 
 const show = (v: unknown) => JSON.stringify(v) ?? String(v);
 
@@ -156,22 +192,176 @@ function overhangArg(v: unknown, path: string) {
   return { left: n, right: n, back: n, front: n };
 }
 
+/** JSON with object keys sorted, so equal specs give equal keys. */
+function stableKey(v: unknown): string {
+  return JSON.stringify(v, (_k, value: unknown) =>
+    typeof value === "object" && value !== null && !Array.isArray(value)
+      ? Object.fromEntries(
+          Object.entries(value).sort(([a], [b]) => (a < b ? -1 : 1)),
+        )
+      : value,
+  );
+}
+
+function lengthArg(v: unknown, context: LengthContext, path: string): Length {
+  const parsed = parseLength(v, context);
+  if (!parsed.ok) throw new BuildError(path, parsed.error);
+  return parsed.length;
+}
+
+/** A part's `[x, z]` pair (`at` or `size`), or `fallback` when absent. */
+function pairArg(v: unknown, path: string, fallback: [unknown, unknown]) {
+  if (v === undefined) return fallback;
+  if (!Array.isArray(v) || v.length !== 2) {
+    throw new BuildError(
+      path,
+      `must be a list of 2 values [x, z], got ${show(v)}`,
+    );
+  }
+  return v as [unknown, unknown];
+}
+
 /**
- * The roof `arg` asks for over `scope`, in world space. `layer` is the roof's
- * own layer (one below its context unless it sets `priority`). Throws
- * `BuildError`.
+ * The roof footprints `arg` asks for over `scope`, in world space: the whole
+ * scope, or each of its `parts` (`at` and `size` as `[x, z]` within the
+ * scope, overriding `type`, `pitch`, `overhang`, `ridge` and `break`).
+ * `layer` is the roof's own layer (one below its context unless it sets
+ * `priority`). Throws `BuildError`.
  */
-export function createRoof(
+export function createRoofs(
   arg: RoofArgsObject,
   scope: Scope,
   path: string,
   resolver: MaterialResolver,
   layer: RoofLayer,
-): Roof {
+): Roof[] {
   const { uy } = scope;
   if (uy[0] !== 0 || uy[1] !== 1 || uy[2] !== 0) {
     throw new BuildError(path, "roofs need an upright scope");
   }
+  const [W, H, D] = scope.size;
+  const capRel = numberArg(arg.height, `${path}.height`, H - 1, 0);
+  if (arg.solid !== undefined && typeof arg.solid !== "boolean") {
+    throw new BuildError(
+      `${path}.solid`,
+      `must be true or false, got ${show(arg.solid)}`,
+    );
+  }
+  const spec = (arg.material ?? "@roof") as MaterialSpec;
+  const materialPath = arg.material === undefined ? path : `${path}.material`;
+  const materials: RoofMaterials = {
+    stairs: resolver.resolve(spec, materialPath, "stairs"),
+    slab: resolver.resolve(spec, materialPath, "slab"),
+    block: resolver.resolve(spec, materialPath, "block"),
+  };
+  const g = arg.gable === undefined ? "auto" : arg.gable;
+  let gable: GableInfill;
+  if (OPEN_GABLE.has(g)) gable = null;
+  else if (g === "auto") gable = "auto";
+  else if (g === true) {
+    throw new BuildError(
+      `${path}.gable`,
+      'must be "auto", a material or false, got true',
+    );
+  } else gable = resolver.resolve(g, `${path}.gable`);
+  const common = {
+    capRel,
+    domeHeight: arg.height === undefined ? undefined : capRel,
+    materials,
+    gable,
+    solid: arg.solid === true,
+    layer,
+    mergeKey: stableKey([spec, g]),
+  };
+
+  if (arg.parts === undefined) {
+    return [createPart(arg, scope, [0, 0, W, D], path, common)];
+  }
+  if (!Array.isArray(arg.parts) || arg.parts.length === 0) {
+    throw new BuildError(
+      `${path}.parts`,
+      `must be a non-empty list, got ${show(arg.parts)}`,
+    );
+  }
+  const roofs: Roof[] = [];
+  arg.parts.forEach((raw: unknown, i) => {
+    const partPath = `${path}.parts[${i}]`;
+    if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+      throw new BuildError(partPath, "each part must be an object");
+    }
+    const part = raw as RoofShapeArgs & { at?: unknown; size?: unknown };
+    const at = pairArg(part.at, `${partPath}.at`, [0, 0]);
+    const size = pairArg(part.size, `${partPath}.size`, ["~", "~"]);
+    const rect: number[] = [];
+    [W, D].forEach((total, axis) => {
+      const atLen = lengthArg(at[axis], "position", `${partPath}.at[${axis}]`);
+      const sizeLen = lengthArg(
+        size[axis],
+        "size",
+        `${partPath}.size[${axis}]`,
+      );
+      // an aligned part needs its size first; otherwise "~" is the rest after `at`
+      let pos: number;
+      let extent: number;
+      if (atLen.kind === "align") {
+        extent = resolveSize(sizeLen, total, total);
+        pos = resolvePosition(atLen, total, extent);
+      } else {
+        pos = resolvePosition(atLen, total, 0);
+        extent = resolveSize(sizeLen, total, total - pos);
+      }
+      rect[axis] = pos;
+      rect[axis + 2] = extent;
+    });
+    if (rect[2] <= 0 || rect[3] <= 0) return;
+    const shape: RoofShapeArgs = {
+      type: arg.type,
+      pitch: arg.pitch,
+      overhang: arg.overhang,
+      ridge: arg.ridge,
+      break: arg.break,
+    };
+    for (const key of [
+      "type",
+      "pitch",
+      "overhang",
+      "ridge",
+      "break",
+    ] as const) {
+      if (part[key] !== undefined) shape[key] = part[key];
+    }
+    roofs.push(
+      createPart(
+        shape,
+        scope,
+        rect as [number, number, number, number],
+        partPath,
+        common,
+      ),
+    );
+  });
+  return roofs;
+}
+
+/**
+ * One footprint: the `[x0, z0, W, D]` rectangle of `scope` with `arg`'s
+ * shape. Throws `BuildError` (at `path`, the part's own).
+ */
+function createPart(
+  arg: RoofShapeArgs,
+  scope: Scope,
+  [x0, z0, W, D]: [number, number, number, number],
+  path: string,
+  common: {
+    capRel: number;
+    domeHeight: number | undefined;
+    materials: RoofMaterials;
+    gable: GableInfill;
+    solid: boolean;
+    layer: RoofLayer;
+    mergeKey: string;
+  },
+): Roof {
   const type = arg.type ?? "gable";
   if (
     typeof type !== "string" ||
@@ -183,17 +373,10 @@ export function createRoof(
     );
   }
   const rtype = type as RoofType;
-  const [W, H, D] = scope.size;
-  const capRel = numberArg(arg.height, `${path}.height`, H - 1, 0);
+  const { capRel } = common;
   const pitch = numberArg(arg.pitch, `${path}.pitch`, 1, 0);
   const kb = numberArg(arg.break, `${path}.break`, 0.5, 0, 1);
   const ov = overhangArg(arg.overhang, `${path}.overhang`);
-  if (arg.solid !== undefined && typeof arg.solid !== "boolean") {
-    throw new BuildError(
-      `${path}.solid`,
-      `must be true or false, got ${show(arg.solid)}`,
-    );
-  }
   let ridge = arg.ridge ?? "auto";
   if (ridge === "auto") ridge = W >= D ? "x" : "z";
   if (ridge !== "x" && ridge !== "z") {
@@ -202,14 +385,6 @@ export function createRoof(
       `must be "x", "z" or "auto", got ${show(arg.ridge)}`,
     );
   }
-
-  const spec = (arg.material ?? "@roof") as MaterialSpec;
-  const materialPath = arg.material === undefined ? path : `${path}.material`;
-  const materials: RoofMaterials = {
-    stairs: resolver.resolve(spec, materialPath, "stairs"),
-    slab: resolver.resolve(spec, materialPath, "slab"),
-    block: resolver.resolve(spec, materialPath, "block"),
-  };
 
   const { left: ol, right: or, back: ob, front: of } = ov;
   const cx = (W - 1) / 2;
@@ -233,7 +408,7 @@ export function createRoof(
     const b = (span * kb) / 2;
     return d <= b ? 2 * pitch * d : 2 * pitch * b + 0.5 * pitch * (d - b);
   };
-  const domeHeight = arg.height === undefined ? R : capRel;
+  const domeHeight = common.domeHeight ?? R;
   const surface: (u: number, v: number) => number = {
     gable: (u: number, v: number) => pitch * (ridge === "x" ? dz(v) : dx(u)),
     hip: (u: number, v: number) => pitch * Math.min(dx(u), dz(v)),
@@ -256,7 +431,7 @@ export function createRoof(
   const toLocal = (qx: number, qz: number): [number, number] => {
     const ddx = qx - ox;
     const ddz = qz - oz;
-    return [ddx * ux[0] + ddz * ux[2], ddx * uz[0] + ddz * uz[2]];
+    return [ddx * ux[0] + ddz * ux[2] - x0, ddx * uz[0] + ddz * uz[2] - z0];
   };
   const height = (qx: number, qz: number): number | null => {
     const [u, v] = toLocal(qx, qz);
@@ -264,7 +439,7 @@ export function createRoof(
     return base + Math.max(0, Math.min(surface(u, v), capRel));
   };
   const worldCell = (u: number, v: number): Dir => {
-    const w: Vec = scope.world(u, 0, v);
+    const w: Vec = scope.world(u + x0, 0, v + z0);
     return [w[0], w[2]];
   };
   const cells = new Map<string, Dir>();
@@ -297,9 +472,11 @@ export function createRoof(
     core,
     height,
     isEave,
-    materials,
-    solid: arg.solid === true,
-    layer,
+    materials: common.materials,
+    gable: common.gable,
+    solid: common.solid,
+    layer: common.layer,
+    mergeKey: common.mergeKey,
   };
 }
 
@@ -312,6 +489,7 @@ interface Source {
   core: ReadonlySet<string>;
   flat: boolean;
   materials: RoofMaterials;
+  gable: GableInfill;
   solid: boolean;
   base: number;
   layer: RoofLayer;
@@ -333,6 +511,7 @@ function source(
     core,
     flat,
     materials: first.materials,
+    gable: first.gable,
     solid: roofs.some((r) => r.solid),
     base: first.base,
     layer: { ...first.layer, seq },
@@ -436,31 +615,81 @@ function skeletonSource(roofs: readonly Roof[]): Source | null {
 
 // -- placement ----------------------------------------------------------------
 
-/** Writes one roof block in world space on its roof's layer. */
-export type RoofPlacer = (
-  pos: Vec,
-  material: Material,
-  states: Record<string, string>,
-  layer: RoofLayer,
-) => void;
+/** Where roofs are placed: the build as composed so far. */
+export interface RoofWorld {
+  /**
+   * Writes one roof block in world space on its roof's layer; `onlyEmpty`
+   * writes only into air.
+   */
+  place(
+    pos: Vec,
+    material: Material,
+    states: Record<string, string>,
+    layer: RoofLayer,
+    onlyEmpty?: boolean,
+  ): void;
+  /**
+   * The block at `pos` as composed so far, as a material a gable can
+   * continue (a full opaque block, only its `axis` kept); null for air,
+   * false for any other block.
+   */
+  wallAt(pos: Vec): Material | false | null;
+}
+
+/** A note about how roofs were combined. */
+export interface RoofNote {
+  path: string;
+  message: string;
+}
 
 /**
- * Places every collected roof, after the rest of the program. Each `roof`
- * operation is one surface; surfaces at the same eave height combine by the
- * highest one.
+ * Places every collected roof, after the rest of the program. Gable, hip and
+ * pyramid parts with the same eave height, pitch, material, gable infill and
+ * priority merge into one surface; the other roofs, and surfaces that didn't
+ * merge, combine by the highest one at the same eave height. Returns notes
+ * for roofs at one eave height that didn't merge.
  */
-export function placeRoofs(roofs: readonly Roof[], place: RoofPlacer): void {
+export function placeRoofs(
+  roofs: readonly Roof[],
+  world: RoofWorld,
+): RoofNote[] {
   const sources: Source[] = [];
-  const skeleton: Roof[][] = [];
+  const skeleton = new Map<string, Roof[]>();
   for (const r of roofs) {
-    if (SKELETON.has(r.type)) skeleton.push([r]);
-    else {
+    if (SKELETON.has(r.type)) {
+      const key = JSON.stringify([
+        r.base,
+        r.pitch,
+        r.mergeKey,
+        r.layer.priority,
+      ]);
+      const group = skeleton.get(key);
+      if (group) group.push(r);
+      else skeleton.set(key, [r]);
+    } else {
       sources.push(source([r], r.height, r.cells, r.core, r.type === "flat"));
     }
   }
-  for (const group of skeleton) {
+  for (const group of skeleton.values()) {
     const s = skeletonSource(group);
     if (s) sources.push(s);
+  }
+  const notes: RoofNote[] = [];
+  const groupsByBase = new Map<number, Roof[][]>();
+  for (const group of skeleton.values()) {
+    const same = groupsByBase.get(group[0].base);
+    if (same) same.push(group);
+    else groupsByBase.set(group[0].base, [group]);
+  }
+  for (const groups of groupsByBase.values()) {
+    if (groups.length < 2) continue;
+    notes.push({
+      path: [...new Set(groups.map((g) => g[0].layer.path))].join(", "),
+      message:
+        "roofs with the same eave height but different pitch, material, " +
+        "gable or priority were combined by highest surface instead of " +
+        "merged into one roof",
+    });
   }
   const byBase = new Map<number, Source[]>();
   for (const s of sources) {
@@ -468,7 +697,8 @@ export function placeRoofs(roofs: readonly Roof[], place: RoofPlacer): void {
     if (group) group.push(s);
     else byBase.set(s.base, [s]);
   }
-  for (const group of byBase.values()) placeSurface(group, place);
+  for (const group of byBase.values()) placeSurface(group, world);
+  return notes;
 }
 
 type ColumnInfo =
@@ -476,7 +706,8 @@ type ColumnInfo =
   | { kind: "slab"; half: "bottom" | "top"; src: Source }
   | { kind: "block"; src: Source };
 
-function placeSurface(sources: readonly Source[], place: RoofPlacer): void {
+function placeSurface(sources: readonly Source[], world: RoofWorld): void {
+  const place = world.place.bind(world);
   const F = (qx: number, qz: number): [number | null, Source | null] => {
     let best: number | null = null;
     let src: Source | null = null;
@@ -580,4 +811,50 @@ function placeSurface(sources: readonly Source[], place: RoofPlacer): void {
       place([x, y, z], materials.block, {}, layer);
     }
   }
+
+  // gable infill along the edge of the combined footprint
+  const coreAll = new Set<string>();
+  for (const s of sources) for (const k of s.core) coreAll.add(k);
+  for (const key of coreAll) {
+    const level = top.get(key);
+    if (level === undefined) continue;
+    const [x, z] = all.get(key)!;
+    if (DIRS.every(([a, b]) => coreAll.has(cellKey(x + a, z + b)))) continue;
+    const column = info.get(key)!;
+    const owner = column.src;
+    const src = [owner, ...sources.filter((s) => s !== owner)].find(
+      (s) => s.gable !== null && s.core.has(key),
+    );
+    if (src === undefined) continue;
+    const material =
+      src.gable === "auto" ? wallBelow(world, x, src.base, z) : src.gable;
+    // nothing to continue: an open structure stays open
+    if (material === null) continue;
+    if (column.kind === "slab" && column.half === "top") {
+      // a top slab over a wall leaves a half-block slot; close it
+      place([x, level, z], src.materials.slab, { type: "double" }, src.layer);
+    }
+    for (let y = src.base; y < level; y++) {
+      place([x, y, z], material, {}, src.layer, true);
+    }
+  }
+}
+
+/**
+ * For `gable: "auto"`: the wall block under the eave in this column (the
+ * first non-air block up to three below), or null when there is none a gable
+ * can continue.
+ */
+function wallBelow(
+  world: RoofWorld,
+  x: number,
+  base: number,
+  z: number,
+): Material | null {
+  for (let y = base - 1; y > Math.max(-1, base - 4); y--) {
+    const wall = world.wallAt([x, y, z]);
+    if (wall === null) continue;
+    return wall || null;
+  }
+  return null;
 }

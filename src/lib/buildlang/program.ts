@@ -191,13 +191,30 @@ export interface RoofObjectArgs extends LayerArgs {
   pitch?: number;
   overhang?: number | RoofOverhang;
   ridge?: "x" | "z" | "auto";
-  /** Gable infill: not supported yet, noted and ignored. */
-  gable?: MaterialSpec | boolean | null;
+  /**
+   * Gable infill: `"auto"` (default) continues the wall below, a material
+   * uses that material, `false` (or `null`, `"none"`, `"off"`) leaves the
+   * gap open.
+   */
+  gable?: MaterialSpec | false | null;
   /** Clip height above the eave (and a dome's height). */
   height?: number;
   /** Fill the attic. */
   solid?: boolean;
   /** Gambrel knee, 0–1 (default 0.5). */
+  break?: number;
+  /** Several footprints in the scope, each overriding the shape arguments. */
+  parts?: RoofPart[];
+}
+
+/** One footprint of a multi-part roof, `[x, z]` within the roof's scope. */
+export interface RoofPart {
+  at?: [LengthSpec, LengthSpec];
+  size?: [LengthSpec, LengthSpec];
+  type?: RoofType;
+  pitch?: number;
+  overhang?: number | RoofOverhang;
+  ridge?: "x" | "z" | "auto";
   break?: number;
 }
 
@@ -289,6 +306,20 @@ export function formatProgramError(error: ProgramError): string {
 type Json = Record<string, unknown>;
 
 const LAYER_KEYS = ["priority", "carve"];
+/** Keys of a roof's `parts`: `at`, `size` and the shape overrides. */
+const ROOF_PART_KEYS = [
+  "at",
+  "size",
+  "type",
+  "pitch",
+  "overhang",
+  "ridge",
+  "break",
+];
+
+/** `gable` words that aren't materials: `auto`, and `none`/`off` for open. */
+const GABLE_WORDS: ReadonlySet<string> = new Set(["auto", "none", "off"]);
+
 const ROOF_TYPES: readonly RoofType[] = [
   "gable",
   "hip",
@@ -845,6 +876,7 @@ class Validator {
       "height",
       "solid",
       "break",
+      "parts",
     ]);
     if ("type" in arg) this.oneOf(arg.type, `${path}.type`, ROOF_TYPES);
     if ("material" in arg) this.material(arg.material, `${path}.material`);
@@ -856,27 +888,75 @@ class Validator {
     if ("solid" in arg) this.boolean(arg.solid, `${path}.solid`);
     if ("gable" in arg) {
       const g = arg.gable;
-      if (typeof g !== "boolean" && g !== null && !this.isParam(g)) {
+      if (g === true) {
+        this.error(
+          `${path}.gable`,
+          'must be "auto", a material or false, got true',
+        );
+      } else if (
+        g !== false &&
+        g !== null &&
+        !(typeof g === "string" && GABLE_WORDS.has(g)) &&
+        !this.isParam(g)
+      ) {
         this.material(g, `${path}.gable`);
       }
     }
-    if ("overhang" in arg) {
-      const ov = arg.overhang;
-      if (isObject(ov)) {
-        this.keys(
-          ov,
-          `${path}.overhang`,
-          ["all", "left", "right", "back", "front"],
-          false,
+    if ("overhang" in arg) this.roofOverhang(arg.overhang, `${path}.overhang`);
+    if ("parts" in arg) {
+      const parts = arg.parts;
+      if (this.isParam(parts)) return;
+      if (!Array.isArray(parts) || parts.length === 0) {
+        this.error(
+          `${path}.parts`,
+          `must be a non-empty list, got ${show(parts)}`,
         );
-        for (const [side, v] of Object.entries(ov)) {
-          if (!this.isIgnoredKey(side)) {
-            this.integer(v, pathKey(`${path}.overhang`, side), 0);
-          }
-        }
-      } else {
-        this.integer(ov, `${path}.overhang`, 0);
+        return;
       }
+      parts.forEach((part, i) => {
+        const partPath = `${path}.parts[${i}]`;
+        if (this.isParam(part)) return;
+        if (!this.object(part, partPath, "an object with 'at' and 'size'"))
+          return;
+        this.keys(part, partPath, ROOF_PART_KEYS, false);
+        for (const [key, context] of [
+          ["at", "position"],
+          ["size", "size"],
+        ] as const) {
+          if (!(key in part) || this.isParam(part[key])) continue;
+          const v = part[key];
+          if (!Array.isArray(v) || v.length !== 2) {
+            this.error(
+              `${partPath}.${key}`,
+              `must be a list of 2 values [x, z], got ${show(v)}`,
+            );
+            continue;
+          }
+          v.forEach((value, j) =>
+            this.length(value, `${partPath}.${key}[${j}]`, context),
+          );
+        }
+        if ("type" in part)
+          this.oneOf(part.type, `${partPath}.type`, ROOF_TYPES);
+        if ("pitch" in part) this.number(part.pitch, `${partPath}.pitch`, 0);
+        if ("break" in part) this.number(part.break, `${partPath}.break`, 0, 1);
+        if ("ridge" in part)
+          this.oneOf(part.ridge, `${partPath}.ridge`, ["x", "z", "auto"]);
+        if ("overhang" in part)
+          this.roofOverhang(part.overhang, `${partPath}.overhang`);
+      });
+    }
+  }
+
+  /** A roof's `overhang`: an integer, or one per side. */
+  private roofOverhang(ov: unknown, path: string): void {
+    if (isObject(ov)) {
+      this.keys(ov, path, ["all", "left", "right", "back", "front"], false);
+      for (const [side, v] of Object.entries(ov)) {
+        if (!this.isIgnoredKey(side)) this.integer(v, pathKey(path, side), 0);
+      }
+    } else {
+      this.integer(ov, path, 0);
     }
   }
 
