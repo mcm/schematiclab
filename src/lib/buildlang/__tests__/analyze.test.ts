@@ -500,6 +500,58 @@ describe("roof sealing", () => {
     ]);
   });
 
+  it("seals a shallow shed roof over walls (test_shallow_shed_roof_over_walls_is_sealed)", () => {
+    // Cairn's `_house`: stone brick walls 4 high, the roof box above them
+    const b = run(
+      [
+        {
+          box: {
+            at: [2, 0, 2],
+            size: [9, 12, 7],
+            do: [
+              {
+                split: {
+                  axis: "y",
+                  parts: [
+                    {
+                      size: 4,
+                      do: [
+                        {
+                          faces: {
+                            sides: [{ fill: "stone_bricks" }],
+                            bottom: [{ fill: "stone" }],
+                          },
+                        },
+                      ],
+                    },
+                    {
+                      size: "~",
+                      do: [
+                        {
+                          roof: {
+                            type: "shed",
+                            ridge: "z",
+                            material: "spruce",
+                            pitch: 0.5,
+                            overhang: 1,
+                          },
+                        },
+                      ],
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      ],
+      [13, 12, 11],
+    );
+    const a = analyze(b, registry);
+    expect(a.roofLeaks).toEqual([]);
+    expect(a.enclosedSpaces.length).toBe(1);
+  });
+
   it("names every roof of a merged surface", () => {
     const b = run(
       [
