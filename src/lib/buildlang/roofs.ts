@@ -643,16 +643,30 @@ export interface RoofNote {
 }
 
 /**
+ * One placed roof surface (roofs merged or combined at one eave height), for
+ * the sealing check: the columns of its combined core, each with the level of
+ * its surface block.
+ */
+export interface RoofSurface {
+  /** The `roof` operations' program paths, sorted and comma-separated. */
+  path: string;
+  /** The lowest eave height. */
+  base: number;
+  /** `[x, z, top]` per core column. */
+  columns: [number, number, number][];
+}
+
+/**
  * Places every collected roof, after the rest of the program. Gable, hip and
  * pyramid parts with the same eave height, pitch, material, gable infill and
  * priority merge into one surface; the other roofs, and surfaces that didn't
  * merge, combine by the highest one at the same eave height. Returns notes
- * for roofs at one eave height that didn't merge.
+ * for roofs at one eave height that didn't merge, and the placed surfaces.
  */
 export function placeRoofs(
   roofs: readonly Roof[],
   world: RoofWorld,
-): RoofNote[] {
+): { notes: RoofNote[]; surfaces: RoofSurface[] } {
   const sources: Source[] = [];
   const skeleton = new Map<string, Roof[]>();
   for (const r of roofs) {
@@ -697,8 +711,8 @@ export function placeRoofs(
     if (group) group.push(s);
     else byBase.set(s.base, [s]);
   }
-  for (const group of byBase.values()) placeSurface(group, world);
-  return notes;
+  const surfaces = [...byBase.values()].map((g) => placeSurface(g, world));
+  return { notes, surfaces };
 }
 
 type ColumnInfo =
@@ -706,7 +720,10 @@ type ColumnInfo =
   | { kind: "slab"; half: "bottom" | "top"; src: Source }
   | { kind: "block"; src: Source };
 
-function placeSurface(sources: readonly Source[], world: RoofWorld): void {
+function placeSurface(
+  sources: readonly Source[],
+  world: RoofWorld,
+): RoofSurface {
   const place = world.place.bind(world);
   const F = (qx: number, qz: number): [number | null, Source | null] => {
     let best: number | null = null;
@@ -815,6 +832,19 @@ function placeSurface(sources: readonly Source[], world: RoofWorld): void {
   // gable infill along the edge of the combined footprint
   const coreAll = new Set<string>();
   for (const s of sources) for (const k of s.core) coreAll.add(k);
+  const surface: RoofSurface = {
+    path: [...new Set(sources.flatMap((s) => s.roofs.map((r) => r.layer.path)))]
+      .sort()
+      .join(", "),
+    base: Math.min(...sources.map((s) => s.base)),
+    columns: [],
+  };
+  for (const key of coreAll) {
+    const level = top.get(key);
+    if (level === undefined) continue;
+    const [x, z] = all.get(key)!;
+    surface.columns.push([x, z, level]);
+  }
   for (const key of coreAll) {
     const level = top.get(key);
     if (level === undefined) continue;
@@ -838,6 +868,7 @@ function placeSurface(sources: readonly Source[], world: RoofWorld): void {
       place([x, y, z], material, {}, src.layer, true);
     }
   }
+  return surface;
 }
 
 /**
