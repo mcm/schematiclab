@@ -10,3 +10,4 @@ semgrep-results.json
 .chief/
 .tessl/
 .ralph-tui
+src/lib/buildlang/__tests__/fixtures/cairn/

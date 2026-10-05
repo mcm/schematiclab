@@ -1,0 +1,79 @@
+{
+  "name": "Timber-frame cottage",
+  "size": [17, 18, 13],
+  "seed": 7,
+  "palette": {
+    "foundation": {"mix": {"cobblestone": 3, "mossy_cobblestone": 1}},
+    "stone":      {"mix": {"stone_bricks": 6, "cracked_stone_bricks": 1, "mossy_stone_bricks": 1}},
+    "plaster":    "calcite",
+    "frame":      "spruce_log",
+    "floor":      "spruce",
+    "roof":       "dark_oak",
+    "window":     "glass_pane",
+    "door":       "spruce"
+  },
+  "templates": {
+    "bay_window": [
+      {"box": {"at": [1, 1, 0], "size": [1, 2, 1], "do": [{"fill": "@window"}]}}
+    ],
+    "bay_door": [
+      {"door": "@door:door"}
+    ],
+    "timber_storey": [
+      {"fill": "@plaster"},
+      {"split": {"axis": "y", "parts": [
+        {"size": 1, "do": [{"fill": "@frame"}]},
+        {"size": "~"},
+        {"size": 1, "do": [{"fill": "@frame"}]}
+      ]}},
+      {"repeat": {"axis": "x", "every": 1, "gap": 3, "do": [{"fill": "@frame"}]}},
+      {"box": {"at": [0, 1, 0], "size": ["100%", 3, 1], "do": [
+        {"repeat": {"axis": "x", "every": 3, "gap": 1, "do": [{"use": "bay_window"}]}}
+      ]}}
+    ]
+  },
+  "build": [
+    {"box": {"at": [2, 0, 2], "size": [13, 18, 9], "do": [
+      {"split": {"axis": "y", "parts": [
+        {"size": 1, "do": [
+          {"fill": "@foundation"},
+          {"inset": {"by": 1, "do": [{"fill": "@floor"}]}}
+        ]},
+        {"size": 4, "#": "ground storey: stone with a centred door", "do": [
+          {"faces": {
+            "sides": [
+              {"fill": "@stone"},
+              {"repeat": {"axis": "x", "every": 3, "gap": 1, "do": [{"use": "bay_window"}]}}
+            ],
+            "front": [
+              {"fill": "@stone"},
+              {"repeat": {"axis": "x", "every": 3, "gap": 1,
+                          "pattern": [[{"use": "bay_window"}], [{"use": "bay_door"}], [{"use": "bay_window"}]]}}
+            ],
+            "edges": [{"fill": "@foundation"}]
+          }}
+        ]},
+        {"size": 5, "#": "upper storey: timber frame over plaster", "do": [
+          {"faces": {
+            "bottom": [{"fill": "@floor"}],
+            "sides": [{"use": "timber_storey"}],
+            "edges": [{"fill": "@frame"}]
+          }}
+        ]},
+        {"size": "~", "do": [
+          {"roof": {"type": "gable", "material": "@roof", "pitch": 1, "overhang": 1, "gable": "@plaster"}}
+        ]}
+      ]}},
+      {"box": {"at": [10, 1, 1], "size": [2, "~", 2], "#": "chimney through the roof", "do": [
+        {"fill": "bricks"},
+        {"box": {"at": [0, -1, 0], "size": [2, 1, 2], "do": [{"fill": "brick_slab"}]}}
+      ]}},
+      {"box": {"at": [1, 1, 1], "size": [11, 4, 7], "#": "ground-floor furnishings", "do": [
+        {"block": {"at": [0, 0, 0], "material": "crafting_table"}},
+        {"block": {"at": [1, 0, 0], "material": "furnace", "facing": "+z"}},
+        {"block": {"at": [-1, 0, 4], "material": "red_bed", "facing": "+z"}},
+        {"block": {"at": [5, 3, 3], "material": "lantern", "state": {"hanging": "true"}}}
+      ]}}
+    ]}}
+  ]
+}

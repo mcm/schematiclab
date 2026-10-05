@@ -1,0 +1,443 @@
+{
+  "name": "Wizard tower with annex",
+  "size": [
+    25,
+    40,
+    21
+  ],
+  "seed": 11,
+  "palette": {
+    "foundation": "cobbled_deepslate",
+    "wall": {
+      "mix": {
+        "stone_bricks": 5,
+        "mossy_stone_bricks": 2,
+        "cracked_stone_bricks": 1
+      }
+    },
+    "trim": "polished_deepslate",
+    "floor": "spruce",
+    "roof": "dark_prismarine",
+    "window": "light_blue_stained_glass_pane",
+    "rail": "spruce_fence",
+    "annex_wall": "spruce",
+    "annex_roof": "spruce"
+  },
+  "build": [
+    {
+      "box": {
+        "at": [
+          2,
+          0,
+          2
+        ],
+        "size": [
+          17,
+          1,
+          17
+        ],
+        "#": "plinth",
+        "do": [
+          {
+            "cylinder": {
+              "material": "@foundation"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "box": {
+        "at": [
+          3,
+          0,
+          3
+        ],
+        "size": [
+          15,
+          "~",
+          15
+        ],
+        "#": "tower",
+        "do": [
+          {
+            "split": {
+              "axis": "y",
+              "parts": [
+                {
+                  "size": 24,
+                  "do": [
+                    {
+                      "cylinder": {
+                        "material": "@wall",
+                        "hollow": true
+                      }
+                    },
+                    {
+                      "repeat": {
+                        "axis": "y",
+                        "every": 6,
+                        "align": "start",
+                        "do": [
+                          {
+                            "box": {
+                              "at": [
+                                1,
+                                0,
+                                1
+                              ],
+                              "size": [
+                                13,
+                                1,
+                                13
+                              ],
+                              "do": [
+                                {
+                                  "cylinder": {
+                                    "material": "@floor"
+                                  }
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "box": {
+                              "at": [
+                                "center",
+                                2,
+                                0
+                              ],
+                              "size": [
+                                1,
+                                2,
+                                "100%"
+                              ],
+                              "do": [
+                                {
+                                  "fill": {
+                                    "material": "@window",
+                                    "replace": "@wall"
+                                  }
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "box": {
+                              "at": [
+                                0,
+                                2,
+                                "center"
+                              ],
+                              "size": [
+                                "100%",
+                                2,
+                                1
+                              ],
+                              "do": [
+                                {
+                                  "fill": {
+                                    "material": "@window",
+                                    "replace": "@wall"
+                                  }
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "box": {
+                              "at": [
+                                0,
+                                5,
+                                0
+                              ],
+                              "size": [
+                                "100%",
+                                1,
+                                "100%"
+                              ],
+                              "do": [
+                                {
+                                  "cylinder": {
+                                    "material": "@trim",
+                                    "hollow": true
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        ],
+                        "first": [
+                          {
+                            "box": {
+                              "at": [
+                                1,
+                                0,
+                                1
+                              ],
+                              "size": [
+                                13,
+                                1,
+                                13
+                              ],
+                              "do": [
+                                {
+                                  "cylinder": {
+                                    "material": "@floor"
+                                  }
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "box": {
+                              "at": [
+                                0,
+                                2,
+                                "center"
+                              ],
+                              "size": [
+                                "100%",
+                                2,
+                                1
+                              ],
+                              "do": [
+                                {
+                                  "fill": {
+                                    "material": "@window",
+                                    "replace": "@wall"
+                                  }
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "box": {
+                              "at": [
+                                0,
+                                5,
+                                0
+                              ],
+                              "size": [
+                                "100%",
+                                1,
+                                "100%"
+                              ],
+                              "do": [
+                                {
+                                  "cylinder": {
+                                    "material": "@trim",
+                                    "hollow": true
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        ],
+                        "#": "ground storey ('first') has no north/south windows: the front door sits in that column"
+                      }
+                    },
+                    {
+                      "block": {
+                        "at": [
+                          "center",
+                          1,
+                          -1
+                        ],
+                        "material": "@annex_wall:door",
+                        "facing": "-z"
+                      }
+                    },
+                    {
+                      "block": {
+                        "at": [
+                          "center",
+                          4,
+                          -2
+                        ],
+                        "material": "lantern"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "size": "~",
+                  "do": [
+                    {
+                      "roof": {
+                        "type": "cone",
+                        "material": "@roof",
+                        "pitch": 1.5,
+                        "overhang": 1
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "box": {
+        "at": [
+          2,
+          18,
+          2
+        ],
+        "size": [
+          17,
+          1,
+          17
+        ],
+        "#": "balcony ring",
+        "do": [
+          {
+            "cylinder": {
+              "material": "@trim:slab",
+              "hollow": true,
+              "only_empty": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "box": {
+        "at": [
+          2,
+          19,
+          2
+        ],
+        "size": [
+          17,
+          1,
+          17
+        ],
+        "do": [
+          {
+            "cylinder": {
+              "material": "@rail",
+              "hollow": true,
+              "only_empty": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "box": {
+        "at": [
+          17,
+          0,
+          6
+        ],
+        "size": [
+          7,
+          10,
+          9
+        ],
+        "#": "annex against the tower's east side",
+        "do": [
+          {
+            "split": {
+              "axis": "y",
+              "parts": [
+                {
+                  "size": 1,
+                  "do": [
+                    {
+                      "fill": "@foundation"
+                    }
+                  ]
+                },
+                {
+                  "size": 4,
+                  "do": [
+                    {
+                      "faces": {
+                        "sides": [
+                          {
+                            "fill": {
+                              "material": "@annex_wall",
+                              "only_empty": true
+                            }
+                          }
+                        ],
+                        "right": [
+                          {
+                            "fill": "@annex_wall"
+                          },
+                          {
+                            "repeat": {
+                              "axis": "x",
+                              "every": 3,
+                              "gap": 1,
+                              "do": [
+                                {
+                                  "box": {
+                                    "at": [
+                                      1,
+                                      1,
+                                      0
+                                    ],
+                                    "size": [
+                                      1,
+                                      2,
+                                      1
+                                    ],
+                                    "do": [
+                                      {
+                                        "fill": "@window"
+                                      }
+                                    ]
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        ],
+                        "front": [
+                          {
+                            "fill": "@annex_wall"
+                          },
+                          {
+                            "door": "@annex_wall:door"
+                          }
+                        ],
+                        "edges": [
+                          {
+                            "fill": "spruce_log"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "size": "~",
+                  "do": [
+                    {
+                      "roof": {
+                        "type": "shed",
+                        "ridge": "z",
+                        "material": "@annex_roof",
+                        "pitch": 0.5,
+                        "overhang": {
+                          "all": 1,
+                          "left": 0
+                        },
+                        "gable": "@annex_wall"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
