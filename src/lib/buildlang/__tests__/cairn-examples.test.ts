@@ -83,6 +83,22 @@ function describeProjection(
   return cells;
 }
 
+const example = (name: string): unknown =>
+  JSON.parse(readFileSync(path.join(CAIRN, `${name}.json`), "utf8"));
+
+/** Every block an example compiles to, in world coordinates. */
+function compiledBlocks(name: string) {
+  const built = compileForRegistry(example(name), "1.21.4", registry);
+  const { palette, regions } = built.projection!;
+  return regions.flatMap((region) =>
+    region.blocks.map(({ pos, paletteIndex }) => ({
+      pos: pos.map((v, a) => v + region.origin[a]),
+      id: palette[paletteIndex].blockId.replace(/^minecraft:/, ""),
+      properties: palette[paletteIndex].properties as Record<string, string>,
+    })),
+  );
+}
+
 describe("Cairn's examples", () => {
   it.each(["cottage", "manor", "tower"])(
     "%s compiles clean to the blocks and states of Cairn's build",
@@ -117,6 +133,55 @@ describe("Cairn's examples", () => {
       expect(differences).toEqual([]);
     },
   );
+
+  it.each([
+    ["cottage", [535, 289]],
+    ["manor", [1307, 516, 196]],
+    ["tower", [1289, 605, 605, 605, 168]],
+  ])("%s has the interior spaces of Cairn's report", (name, spaces) => {
+    // `samples/*.report.md`; the tower's are its 4 storeys (the top one with
+    // the attic) and the annex (test_tower_roofs_are_sealed).
+    const built = compileForRegistry(example(name), "1.21.4", registry);
+    expect(built.analysis!.enclosedSpaces).toEqual(spaces);
+  });
+
+  it("gives the manor's merged roof no cliffs and proper corners (test_merged_roof_has_no_cliffs_and_proper_corners)", () => {
+    const blocks = compiledBlocks("manor");
+    const top = new Map<string, number>();
+    for (const { pos, id } of blocks) {
+      if (pos[1] < 10 || !id.startsWith("deepslate_tile")) continue;
+      const key = `${pos[0]},${pos[2]}`;
+      top.set(key, Math.max(top.get(key) ?? -1, pos[1]));
+    }
+    expect(top.size).toBeGreaterThan(0);
+    const cliffs = [...top].flatMap(([key, y]) => {
+      const [x, z] = key.split(",").map(Number);
+      return [
+        [x + 1, z],
+        [x, z + 1],
+      ]
+        .map(([nx, nz]) => top.get(`${nx},${nz}`))
+        .filter((ny) => ny !== undefined && Math.abs(ny - y) > 1)
+        .map(() => key);
+    });
+    expect(cliffs).toEqual([]);
+    const shapes = new Set(
+      blocks
+        .filter(({ id }) => id.endsWith("_stairs"))
+        .map(({ properties }) => properties.shape),
+    );
+    expect(shapes.has("inner_left") || shapes.has("outer_left")).toBe(true);
+    expect([...shapes].some((shape) => shape?.startsWith("inner"))).toBe(true);
+  });
+
+  it("keeps the tower's annex roof below its cone (test_roofs_at_different_heights_stay_independent)", () => {
+    const annex = compiledBlocks("tower").filter(
+      ({ pos, id }) =>
+        pos[0] >= 17 && id.startsWith("spruce") && id !== "spruce_fence",
+    );
+    expect(annex.length).toBeGreaterThan(0);
+    expect(Math.max(...annex.map(({ pos }) => pos[1]))).toBeLessThanOrEqual(10);
+  });
 
   it("treats only blocks from the same mix as equal", () => {
     const program: unknown = JSON.parse(
