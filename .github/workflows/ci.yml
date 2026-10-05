@@ -11,7 +11,6 @@
 #   • Markdown linting (markdownlint — advisory)
 #   • Unused dependency detection (knip — advisory)
 #   • Unit tests (Vitest w/ coverage)
-#   • Coverage upload (Codecov)
 #   • Build verification
 #   • Bundle size tracking (PR comment)
 #   • Dependency license compliance (license-checker-rseidelsohn)
@@ -21,7 +20,6 @@
 #
 # Secrets to configure:
 #   • NPM_TOKEN    — read-only granular token scoped to @spicosolutions
-#   • CODECOV_TOKEN — https://codecov.io
 #
 # Note: third-party actions are pinned to full commit SHAs (with a version
 # comment) to satisfy Semgrep's supply-chain rules and prevent mutable-tag
@@ -209,14 +207,6 @@ jobs:
         run: pnpm exec vitest run --coverage
         env:
           CI: true
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4.6.0
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/lcov.info,./coverage/coverage-final.json
-          fail_ci_if_error: false
-          flags: unittests
 
   # ===========================================================================
   # 5. Build Verification
