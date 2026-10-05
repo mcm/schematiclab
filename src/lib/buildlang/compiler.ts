@@ -63,6 +63,7 @@ import {
   type Roof,
   type RoofArgsObject,
   type RoofLayer,
+  type RoofSurface,
 } from "./roofs";
 import { orientStates, Scope, type ScopeFaceName, type Vec } from "./scope";
 import { MAX_TEMPLATE_DEPTH, substituteParams } from "./templates";
@@ -95,6 +96,8 @@ export interface CompileResult {
   warnings: ProgramError[];
   /** Fallbacks and repairs (a variant the material lacks, a misspelt block). */
   notes: ProgramError[];
+  /** The placed roof surfaces, for the sealing check. */
+  roofs: RoofSurface[];
 }
 
 export interface CompileOptions {
@@ -197,6 +200,7 @@ export class Compiler {
   private readonly callers: string[] = [];
   /** Roofs collected while the program runs, placed after it (`roofs.ts`). */
   private readonly roofs: Roof[] = [];
+  private readonly roofSurfaces: RoofSurface[] = [];
   /** Substituted and checked template bodies, by name and parameters. */
   private readonly expansions = new Map<
     string,
@@ -247,6 +251,7 @@ export class Compiler {
       errors: dedupe(this.errors),
       warnings: dedupe(warnings),
       notes: [...this.resolver.notes, ...this.notes],
+      roofs: this.roofSurfaces,
     };
   }
 
@@ -1037,7 +1042,7 @@ export class Compiler {
   private placeRoofs() {
     const root = Scope.root(this.program.size);
     try {
-      const notes = placeRoofs(this.roofs, {
+      const { notes, surfaces } = placeRoofs(this.roofs, {
         place: (pos, material, states, layer, onlyEmpty) =>
           this.place(root, pos, material, layer.path, {
             extra: states,
@@ -1054,6 +1059,7 @@ export class Compiler {
         },
       });
       this.notes.push(...notes);
+      this.roofSurfaces.push(...surfaces);
     } catch (e) {
       if (!(e instanceof BuildError) || e instanceof FatalBuildError) throw e;
       this.errors.push(e.toProgramError());

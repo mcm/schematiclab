@@ -194,7 +194,8 @@ are placed after the rest of the program, on their own layer (see 3a).
     keep their `axis`), so walls, mixes and posts run up into the roof, and open sides and
     glass stay open.
   - a material, to use that instead.
-  - `false` (or `"none"`), to leave the gap open on purpose.
+  - `false` (or `"none"`), to leave the gap open on purpose (the report will say the roof
+    isn't sealed).
 
   The infill only fills empty cells, so windows and chimneys in the gable stay.
 
@@ -355,7 +356,8 @@ chimney wins wherever it is written. To cut a roof opening on purpose, use `carv
    side and top elevations, two floor plans and a cutaway.
 4. **Fix ERRORS first**, then warnings, then design issues. Errors, warnings and notes name
    the program path of the operation they come from (`build[2].box.do[0].fill`); findings
-   give real coordinates. Watch for: FLOATING pieces, BLOCKED DOOR, no sealed interior,
+   give real coordinates. Watch for: FLOATING pieces, BLOCKED DOOR, ROOF NOT SEALED (outside
+   air under a roof, usually a gap between the wall tops and the roof), no sealed interior,
    dropped out-of-bounds blocks, collisions (a placed `block` sharing a cell with another
    feature, e.g. a bed inside a chimney), and low symmetry when the design should be symmetric.
    Enclosure is checked at half-block resolution, so gaps through the open half of a stair

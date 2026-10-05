@@ -6,8 +6,8 @@
 //
 // Differences from Cairn: flood fill and component labelling are done here
 // (no scipy), a block's 2×2×2 occupancy comes from its kind and state (no
-// collision geometry), roofs aren't analysed yet, and every finding that came
-// from an operation names its program path.
+// collision geometry), and every finding that came from an operation names
+// its program path.
 
 import type { BlockKind, BlockRegistry } from "../blockdata/registry";
 import type { CompileResult } from "./compiler";
@@ -21,6 +21,7 @@ const MAX_ROOMS = 10;
 const MAX_FLOATING = 8;
 const MAX_MATERIALS = 12;
 const MAX_NOTES = 20;
+const MAX_LEAK_EXAMPLES = 4;
 
 /**
  * Most half-block cells the enclosure flood fill visits (about a 128-block
@@ -49,6 +50,16 @@ export interface BlockedDoor {
   by: string;
   at: Pos;
   byPath: string | null;
+}
+
+export interface RoofLeak {
+  /** The roof operations' program paths. */
+  roof: string;
+  /** Core columns where outside air gets under the roof. */
+  columns: number;
+  /** Up to four of them (the lowest air cell of each), by y, x, then z. */
+  examples: Pos[];
+  eaveY: number;
 }
 
 export interface Features {
@@ -81,6 +92,8 @@ export interface Analysis {
   enclosedSpaces: number[];
   /** Share of blocks matching their mirror image, 0–1 (3 decimals). */
   symmetry: { leftRight: number; frontBack: number };
+  /** Roofs with outside air under them (not checked when enclosure isn't). */
+  roofLeaks: RoofLeak[];
   features: Features;
   blockedDoors: BlockedDoor[];
   /** Most used block ids (without `minecraft:`) with counts. */
@@ -236,7 +249,8 @@ class IndexStack {
 
 const AIR_CELL = 0;
 const SOLID_CELL = 1;
-const VISITED_CELL = 2;
+const OUTSIDE_CELL = 2;
+const INTERIOR_CELL = 3;
 
 // Half-block cells of padding around the bounding box (one block).
 const ENCLOSURE_PAD = 2;
@@ -249,14 +263,15 @@ function enclosureCells(dims: Pos): number {
 /**
  * Enclosed air at half-block resolution over the occupied bounding box (plus a
  * block of padding): total sealed air and the size of each sealed space, both
- * in whole blocks (8 sub-cells each, rounded down like Cairn).
+ * in whole blocks (8 sub-cells each, rounded down like Cairn), and whether
+ * outside air reaches any half-block cell of a block.
  */
 function enclosure(
   registry: BlockRegistry,
   blocks: [Pos, PlacedBlock][],
   min: Pos,
   dims: Pos,
-): { air: number; rooms: number[] } {
+): { air: number; rooms: number[]; outsideAt: (pos: Pos) => boolean } {
   const [w, h, d] = dims.map((n) => 2 * n + 2 * ENCLOSURE_PAD);
   const cells = new Uint8Array(w * h * d);
   const masks = new Map<string, number>();
@@ -285,9 +300,9 @@ function enclosure(
   // Fills the air connected to `start` (6-connected), returning its size.
   // Index steps may wrap a row, but only between padding cells, which are
   // all outside air anyway.
-  const fill = (start: number): number => {
+  const fill = (start: number, mark: number): number => {
     let size = 0;
-    cells[start] = VISITED_CELL;
+    cells[start] = mark;
     stack.push(start);
     while (stack.length > 0) {
       const i = stack.pop();
@@ -295,24 +310,73 @@ function enclosure(
       for (const step of steps) {
         const n = i + step;
         if (n >= 0 && n < cells.length && cells[n] === AIR_CELL) {
-          cells[n] = VISITED_CELL;
+          cells[n] = mark;
           stack.push(n);
         }
       }
     }
     return size;
   };
-  fill(0);
+  fill(0, OUTSIDE_CELL);
   let air = 0;
   const rooms: number[] = [];
   for (let i = 0; i < cells.length; i++) {
     if (cells[i] !== AIR_CELL) continue;
-    const size = fill(i);
+    const size = fill(i, INTERIOR_CELL);
     air += size;
     rooms.push(Math.floor(size / 8));
   }
   rooms.sort((a, b) => b - a);
-  return { air: Math.floor(air / 8), rooms };
+  const outsideAt = ([x, y, z]: Pos): boolean => {
+    const X = 2 * (x - min[0]) + ENCLOSURE_PAD;
+    const Y = 2 * (y - min[1]) + ENCLOSURE_PAD;
+    const Z = 2 * (z - min[2]) + ENCLOSURE_PAD;
+    // beyond the padding is all outside air
+    if (X < 0 || Y < 0 || Z < 0 || X + 1 >= w || Y + 1 >= h || Z + 1 >= d) {
+      return true;
+    }
+    for (let i = 0; i < 8; i++) {
+      const sx = X + (i & 1);
+      const sy = Y + ((i >> 1) & 1);
+      const sz = Z + ((i >> 2) & 1);
+      if (cells[(sy * d + sz) * w + sx] === OUTSIDE_CELL) return true;
+    }
+    return false;
+  };
+  return { air: Math.floor(air / 8), rooms, outsideAt };
+}
+
+/**
+ * Roofs with outside air under them: per surface, the core columns with an
+ * empty cell between the eave and the surface block that outside air reaches.
+ */
+function roofLeaks(
+  result: CompileResult,
+  outsideAt: (pos: Pos) => boolean,
+): RoofLeak[] {
+  const leaks: RoofLeak[] = [];
+  for (const surface of result.roofs) {
+    const hits: Pos[] = [];
+    for (const [x, z, top] of surface.columns) {
+      for (let y = surface.base; y < top; y++) {
+        const pos: Pos = [x, y, z];
+        if (result.blocks.get(pos) !== null) continue;
+        if (outsideAt(pos)) {
+          hits.push(pos);
+          break;
+        }
+      }
+    }
+    if (hits.length === 0) continue;
+    hits.sort((a, b) => a[1] - b[1] || a[0] - b[0] || a[2] - b[2]);
+    leaks.push({
+      roof: surface.path,
+      columns: hits.length,
+      examples: hits.slice(0, MAX_LEAK_EXAMPLES),
+      eaveY: surface.base,
+    });
+  }
+  return leaks;
 }
 
 /** Analyses a compiled build's final blocks. */
@@ -333,6 +397,7 @@ export function analyze(
     enclosedAir: 0,
     enclosedSpaces: [],
     symmetry: { leftRight: 0, frontBack: 0 },
+    roofLeaks: [],
     features: {
       doors: 0,
       window_blocks: 0,
@@ -421,11 +486,12 @@ export function analyze(
   // Enclosure at half-block resolution: air leaking through the open half of
   // a stair or slab is caught (a whole-block check misses it).
   if (enclosureCells(dims) <= MAX_ENCLOSURE_CELLS) {
-    const { air, rooms } = enclosure(registry, blocks, min, dims);
+    const { air, rooms, outsideAt } = enclosure(registry, blocks, min, dims);
     analysis.enclosedAir = air;
     analysis.enclosedSpaces = rooms
       .filter((r) => r >= MIN_ROOM_BLOCKS)
       .slice(0, MAX_ROOMS);
+    analysis.roofLeaks = roofLeaks(result, outsideAt);
   } else {
     analysis.enclosedAir = null;
   }
@@ -580,6 +646,15 @@ export function formatReport(
       `mirror symmetry: left-right ${percent(analysis.symmetry.leftRight)}, ` +
         `front-back ${percent(analysis.symmetry.frontBack)}`,
     );
+    for (const lk of analysis.roofLeaks) {
+      lines.push(
+        `ROOF NOT SEALED (${lk.roof}): outside air gets under the roof in ` +
+          `${lk.columns} column(s), e.g. at [${lk.examples.map(vec).join(", ")}]. ` +
+          `Usually a gap between the wall tops and the roof (eave ` +
+          `y=${lk.eaveY}); set the roof's 'gable' infill, or lower the roof ` +
+          `onto the walls`,
+      );
+    }
     for (const bd of analysis.blockedDoors) {
       lines.push(
         `BLOCKED DOOR at ${vec(bd.door)}${from(bd.doorPath)}: ${bd.by} at ` +

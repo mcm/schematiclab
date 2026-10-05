@@ -415,3 +415,114 @@ describe("formatReport", () => {
     expect(text).toContain("## Materials (top)\nNone.\n");
   });
 });
+
+describe("roof sealing", () => {
+  // Stone walls 4 high with a floor, and a gable roof on top of them (its
+  // eave on the row above the walls), `lift` blocks higher.
+  const house = (gable: false | "auto", lift = 0) =>
+    run(
+      [
+        {
+          box: {
+            at: [2, 0, 2],
+            size: [7, 4, 7],
+            do: [
+              {
+                faces: {
+                  sides: [{ fill: "stone" }],
+                  bottom: [{ fill: "stone" }],
+                },
+              },
+            ],
+          },
+        },
+        {
+          box: {
+            at: [2, 4 + lift, 2],
+            size: [7, 6, 7],
+            do: [{ roof: { type: "gable", material: "oak", gable } }],
+          },
+        },
+      ],
+      [11, 12, 11],
+    );
+
+  // Expected lines are Cairn's report for the same program.
+  it("reports a roof over walls left open with gable: false", () => {
+    const b = house(false);
+    const a = analyze(b, registry);
+    expect(a.roofLeaks).toEqual([
+      {
+        roof: "build[1].box.do[0].roof",
+        columns: 49,
+        examples: [
+          [2, 4, 2],
+          [2, 4, 3],
+          [2, 4, 4],
+          [2, 4, 5],
+        ],
+        eaveY: 4,
+      },
+    ]);
+    expect(report(b)).toContain(
+      "ROOF NOT SEALED (build[1].box.do[0].roof): outside air gets under " +
+        "the roof in 49 column(s), e.g. at [[2, 4, 2], [2, 4, 3], " +
+        "[2, 4, 4], [2, 4, 5]]. Usually a gap between the wall tops and the " +
+        "roof (eave y=4); set the roof's 'gable' infill, or lower the roof " +
+        "onto the walls",
+    );
+    expect(a.enclosedSpaces).toEqual([]);
+  });
+
+  it("doesn't report the same roof with gable: auto", () => {
+    const b = house("auto");
+    const a = analyze(b, registry);
+    expect(a.roofLeaks).toEqual([]);
+    expect(a.enclosedSpaces).toEqual([145]);
+    expect(report(b)).not.toContain("ROOF NOT SEALED");
+  });
+
+  it("reports a gap gable infill can't close", () => {
+    // a block of air between the wall tops and the eave
+    const a = analyze(house("auto", 1), registry);
+    expect(a.roofLeaks).toEqual([
+      {
+        roof: "build[1].box.do[0].roof",
+        columns: 25,
+        examples: [
+          [3, 5, 3],
+          [3, 5, 4],
+          [3, 5, 5],
+          [3, 5, 6],
+        ],
+        eaveY: 5,
+      },
+    ]);
+  });
+
+  it("names every roof of a merged surface", () => {
+    const b = run(
+      [
+        { box: { size: [5, 1, 5], do: [{ fill: "stone" }] } },
+        {
+          box: {
+            at: [0, 1, 0],
+            size: [5, 4, 5],
+            do: [{ roof: { type: "hip", gable: false } }],
+          },
+        },
+        {
+          box: {
+            at: [5, 1, 0],
+            size: [5, 4, 5],
+            do: [{ roof: { type: "hip", gable: false } }],
+          },
+        },
+      ],
+      [10, 6, 5],
+      { roof: "oak" },
+    );
+    const [leak] = analyze(b, registry).roofLeaks;
+    expect(leak.roof).toBe("build[1].box.do[0].roof, build[2].box.do[0].roof");
+  });
+});
