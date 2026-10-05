@@ -67,7 +67,7 @@ export function FileDropzone({ file, onFileChange }: FileDropzoneProps) {
     alignItems: "center",
     justifyContent: "center",
     gap: "var(--space-3)",
-    padding: "var(--space-7) var(--space-4)",
+    padding: "var(--space-12) var(--space-4)",
     borderRadius: "var(--radius-lg)",
     border: `2px dashed ${isDragging ? "var(--border-accent)" : "var(--border-default)"}`,
     background: isDragging ? "var(--bg-raised)" : "var(--bg-surface)",

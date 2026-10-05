@@ -18,9 +18,9 @@ export function InlineError({ message }: InlineErrorProps) {
         gap: "var(--space-2)",
         padding: "var(--space-3) var(--space-4)",
         borderRadius: "var(--radius-md)",
-        border: "1px solid var(--color-error)",
-        background: "color-mix(in srgb, var(--color-error) 10%, transparent)",
-        color: "var(--color-error)",
+        border: "1px solid var(--danger-border)",
+        background: "var(--danger-tint)",
+        color: "var(--danger-fg)",
         fontSize: "var(--text-sm)",
         lineHeight: 1.4,
       }}

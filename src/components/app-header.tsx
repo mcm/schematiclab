@@ -82,7 +82,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        padding: "0 var(--space-5)",
+        padding: "0 var(--space-6)",
         background: "color-mix(in srgb, var(--bg-page) 88%, transparent)",
         backdropFilter: "blur(12px)",
         borderBottom: "1px solid var(--border-subtle)",
@@ -147,7 +147,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
               width: 7,
               height: 7,
               borderRadius: "50%",
-              background: "var(--glacier-500)",
+              background: "var(--accent)",
               border: "2px solid var(--bg-page)",
             }}
           />
@@ -201,7 +201,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
             <DropdownMenuItem>Profile</DropdownMenuItem>
             <DropdownMenuItem>Billing</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem style={{ color: "var(--error)" }}>
+            <DropdownMenuItem style={{ color: "var(--danger-fg)" }}>
               Sign out
             </DropdownMenuItem>
           </DropdownMenuContent>

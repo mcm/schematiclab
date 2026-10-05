@@ -7,9 +7,9 @@ import {
   Card,
   CardContent,
   TabsContent,
-  TabsLine,
-  TabsLineList,
-  TabsLineTrigger,
+  Tabs,
+  TabsList,
+  TabsTrigger,
 } from "@iamthemcmaster/ui";
 import { IconAlertCircle, IconArrowLeft } from "@tabler/icons-react";
 import { IconArrowBackUp } from "@tabler/icons-react";
@@ -83,7 +83,7 @@ function PanelSkeleton() {
         style={{
           height: 12,
           borderRadius: "var(--radius-sm)",
-          background: "var(--bg-elevated)",
+          background: "var(--bg-raised)",
           width: "60%",
           opacity: 0.6,
         }}
@@ -92,7 +92,7 @@ function PanelSkeleton() {
         style={{
           height: 12,
           borderRadius: "var(--radius-sm)",
-          background: "var(--bg-elevated)",
+          background: "var(--bg-raised)",
           width: "85%",
           opacity: 0.5,
         }}
@@ -101,7 +101,7 @@ function PanelSkeleton() {
         style={{
           height: 12,
           borderRadius: "var(--radius-sm)",
-          background: "var(--bg-elevated)",
+          background: "var(--bg-raised)",
           width: "40%",
           opacity: 0.45,
         }}
@@ -253,10 +253,12 @@ function EditorShell({
         gridTemplateColumns: isNarrow
           ? "1fr"
           : "minmax(0, 2fr) minmax(280px, 1fr)",
+        // Narrow viewports stack the panels and scroll the page; each panel
+        // gets most of a screen so its own lists scroll inside it.
         gridTemplateRows: isNarrow
-          ? "minmax(320px, 60vh) minmax(0, 1fr)"
+          ? "minmax(320px, 60dvh) minmax(480px, 85dvh)"
           : "1fr",
-        overflow: "hidden",
+        overflow: isNarrow ? "visible" : "hidden",
       }}
     >
       <PreviewTabs parseStatus={parseStatus} inputFilename={inputFilename} />
@@ -314,7 +316,8 @@ function PreviewTabs({
           flexDirection: "column",
         }}
       >
-        <TabsLine
+        <Tabs
+          variant="underline"
           value={activeTab}
           onValueChange={(next) => setActiveTab(next as PreviewTabId)}
           style={{
@@ -324,10 +327,10 @@ function PreviewTabs({
             flexDirection: "column",
           }}
         >
-          <TabsLineList>
-            <TabsLineTrigger value="3d">3D Preview</TabsLineTrigger>
-            <TabsLineTrigger value="static">Static Renders</TabsLineTrigger>
-          </TabsLineList>
+          <TabsList className="schematiclab-tab-list">
+            <TabsTrigger value="3d">3D Preview</TabsTrigger>
+            <TabsTrigger value="static">Static Renders</TabsTrigger>
+          </TabsList>
           <TabsContent
             value="3d"
             forceMount
@@ -378,7 +381,7 @@ function PreviewTabs({
               ? staticRendersBody(parseStatus, inputFilename)
               : null}
           </TabsContent>
-        </TabsLine>
+        </Tabs>
       </CardContent>
     </Card>
   );
@@ -457,7 +460,8 @@ function RightTabs({
           flexDirection: "column",
         }}
       >
-        <TabsLine
+        <Tabs
+          variant="underline"
           value={activeTab}
           onValueChange={(next) => setActiveTab(next as RightTabId)}
           style={{
@@ -467,12 +471,12 @@ function RightTabs({
             flexDirection: "column",
           }}
         >
-          <TabsLineList>
-            <TabsLineTrigger value="materials">Material List</TabsLineTrigger>
-            <TabsLineTrigger value="version">Version Mapping</TabsLineTrigger>
-            <TabsLineTrigger value="mods">Mods</TabsLineTrigger>
-            <TabsLineTrigger value="export">Export</TabsLineTrigger>
-          </TabsLineList>
+          <TabsList className="schematiclab-tab-list">
+            <TabsTrigger value="materials">Material List</TabsTrigger>
+            <TabsTrigger value="version">Version Mapping</TabsTrigger>
+            <TabsTrigger value="mods">Mods</TabsTrigger>
+            <TabsTrigger value="export">Export</TabsTrigger>
+          </TabsList>
           <TabsContent
             value="materials"
             forceMount
@@ -564,7 +568,7 @@ function RightTabs({
           >
             {exportBody(parseStatus, inputFilename, handleGoToVersionMapping)}
           </TabsContent>
-        </TabsLine>
+        </Tabs>
       </CardContent>
       {pickerRequest !== null && sourceVersionId !== null ? (
         pickerRequest.request.mode === "map" ? (
@@ -611,9 +615,9 @@ function ErrorBanner({ message }: { message: string }) {
         alignItems: "flex-start",
         gap: "var(--space-3)",
         padding: "var(--space-3) var(--space-4)",
-        borderBottom: "1px solid var(--color-error)",
-        background: "color-mix(in srgb, var(--color-error) 10%, transparent)",
-        color: "var(--color-error)",
+        borderBottom: "1px solid var(--danger-border)",
+        background: "var(--danger-tint)",
+        color: "var(--danger-fg)",
         fontSize: "var(--text-sm)",
         lineHeight: 1.4,
       }}
@@ -649,13 +653,13 @@ function EmptyState() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: "var(--space-6) var(--space-4)",
+        padding: "var(--space-8) var(--space-4)",
       }}
     >
       <Card style={{ maxWidth: 480, width: "100%" }}>
         <CardContent
           style={{
-            padding: "var(--space-6)",
+            padding: "clamp(var(--space-4), 6vw, var(--space-8))",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
@@ -850,10 +854,10 @@ export default function AdvancedPage() {
   return (
     <main
       style={{
-        height: "100vh",
+        ...(isNarrow ? { minHeight: "100dvh" } : { height: "100dvh" }),
         display: "flex",
         flexDirection: "column",
-        overflow: "hidden",
+        overflow: isNarrow ? "visible" : "hidden",
       }}
     >
       <header
@@ -870,6 +874,7 @@ export default function AdvancedPage() {
         <Button asChild variant="ghost" size="sm">
           <Link
             href="/"
+            aria-label="Back to Quick Convert"
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -877,7 +882,9 @@ export default function AdvancedPage() {
             }}
           >
             <IconArrowLeft size={14} aria-hidden="true" />
-            Back to Quick Convert
+            <span className="schematiclab-hide-narrow">
+              Back to Quick Convert
+            </span>
           </Link>
         </Button>
         <div

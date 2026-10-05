@@ -775,7 +775,7 @@ export function ThreeDPreview({
       <div
         role="alert"
         style={{
-          color: "var(--color-error)",
+          color: "var(--danger-fg)",
           fontSize: "var(--text-sm)",
           padding: "var(--space-3)",
         }}
@@ -804,7 +804,7 @@ export function ThreeDPreview({
       <div
         role="alert"
         style={{
-          color: "var(--color-error)",
+          color: "var(--danger-fg)",
           fontSize: "var(--text-sm)",
           padding: "var(--space-3)",
         }}

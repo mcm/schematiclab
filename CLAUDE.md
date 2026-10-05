@@ -105,6 +105,6 @@ Some mods register blocks at runtime instead of shipping them in their jar, so t
 ### Other
 
 - `/api/import-url` fetches pastebin.com or gist.github.com URLs server-side, using a hostname-equality allowlist.
-- UI components come from the private `@iamthemcmaster/ui` package (installing it needs `NPM_TOKEN`), and icons come from `@tabler/icons-react`.
+- UI components come from the private `@iamthemcmaster/ui` package (1.1, installing it needs `NPM_TOKEN`), and icons come from `@tabler/icons-react`. Use its 1.1 vocabulary (`variant="danger"`, `<Tabs variant="underline">`, `notify`/`SonnerToaster` only) and semantic tokens (`--danger-fg`, `--bg-raised`; `--space-N` is N × 4px). Its precompiled CSS doesn't guarantee arbitrary Tailwind classes, so responsive rules live in `src/app/globals.css` (`schematiclab-tab-list` for scrolling tab lists, `schematiclab-hide-narrow` for labels that collapse on phones).
 - The `@/*` import alias maps to `src/*`.
 - Unused variables must be prefixed with `_` to satisfy lint.

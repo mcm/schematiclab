@@ -362,7 +362,7 @@ export function BlockStatePicker({
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "1fr auto 1fr",
+              gridTemplateColumns: "minmax(0, 1fr) auto minmax(0, 1fr)",
               gap: "var(--space-3)",
               alignItems: "center",
               paddingBottom: "var(--space-3)",
@@ -502,7 +502,7 @@ export function BlockStatePicker({
                         fontFamily: "var(--font-mono, ui-monospace, monospace)",
                         cursor: "pointer",
                         background: isHighlighted
-                          ? "var(--bg-elevated)"
+                          ? "var(--bg-raised)"
                           : "transparent",
                         color: "var(--text-primary)",
                         display: "flex",
@@ -523,7 +523,7 @@ export function BlockStatePicker({
                         <span
                           style={{
                             flexShrink: 0,
-                            fontFamily: "var(--font-sans, inherit)",
+                            fontFamily: "var(--font-body)",
                             fontSize: "var(--text-xs)",
                             color: "var(--text-tertiary)",
                           }}
@@ -792,7 +792,7 @@ function StateCard({
         padding: "var(--space-3)",
         border: "1px solid var(--border-subtle)",
         borderRadius: "var(--radius-md)",
-        background: "var(--bg-elevated)",
+        background: "var(--bg-raised)",
         minWidth: 0,
       }}
     >

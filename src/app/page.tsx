@@ -186,10 +186,10 @@ export default function HomePage() {
   return (
     <main
       style={{
-        minHeight: "100vh",
+        minHeight: "100dvh",
         display: "flex",
         justifyContent: "center",
-        padding: "var(--space-6) var(--space-4)",
+        padding: "var(--space-8) var(--space-4)",
       }}
     >
       <div
@@ -199,7 +199,7 @@ export default function HomePage() {
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          gap: "var(--space-6)",
+          gap: "var(--space-8)",
         }}
       >
         <Image
@@ -216,7 +216,7 @@ export default function HomePage() {
         <Card style={{ width: "100%" }}>
           <CardContent
             style={{
-              padding: "var(--space-6)",
+              padding: "clamp(var(--space-4), 6vw, var(--space-8))",
               display: "flex",
               flexDirection: "column",
               gap: "var(--space-4)",

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import "@iamthemcmaster/ui/styles";
+import "@iamthemcmaster/ui/styles/fonts";
 import "./globals.css";
 import { AppShell } from "@/components/app-shell";
 

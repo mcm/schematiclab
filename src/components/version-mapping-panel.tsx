@@ -1187,7 +1187,7 @@ function ProblematicRow({
             <span
               style={{
                 color: "var(--text-tertiary)",
-                fontFamily: "var(--font-sans, inherit)",
+                fontFamily: "var(--font-body)",
               }}
             >
               {" "}
@@ -1239,7 +1239,7 @@ function ProblematicRow({
         style={{
           margin: 0,
           paddingLeft: "var(--space-4)",
-          color: "var(--color-error)",
+          color: "var(--danger-fg)",
           fontSize: "var(--text-xs)",
           lineHeight: 1.4,
         }}
@@ -1613,7 +1613,7 @@ function PreviewSummary({ state }: { state: PreviewState }) {
       <div
         role="alert"
         style={{
-          color: "var(--color-error)",
+          color: "var(--danger-fg)",
           fontSize: "var(--text-sm)",
         }}
       >
