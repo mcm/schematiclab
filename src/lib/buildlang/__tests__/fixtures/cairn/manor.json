@@ -1,0 +1,331 @@
+{
+  "name": "L-shaped brick manor",
+  "size": [25, 18, 21],
+  "seed": 3,
+  "palette": {
+    "foundation": "stone_bricks",
+    "wall": {
+      "mix": {
+        "bricks": 8,
+        "mud_bricks": 1
+      }
+    },
+    "trim": "polished_andesite",
+    "floor": "dark_oak",
+    "roof": "deepslate_tiles",
+    "window": "glass_pane",
+    "door": "dark_oak"
+  },
+  "templates": {
+    "window_bay": [
+      {
+        "box": {
+          "at": [1, 1, 0],
+          "size": [1, 2, 1],
+          "do": [
+            {
+              "fill": "@window"
+            }
+          ]
+        }
+      },
+      {
+        "box": {
+          "at": [0, 3, 0],
+          "size": [3, 1, 1],
+          "do": [
+            {
+              "fill": "@trim"
+            }
+          ]
+        }
+      }
+    ],
+    "door_bay": [
+      {
+        "door": "@door:door"
+      },
+      {
+        "box": {
+          "at": [0, 2, 0],
+          "size": [3, 1, 1],
+          "do": [
+            {
+              "fill": "@trim"
+            }
+          ]
+        }
+      }
+    ],
+    "facade": [
+      {
+        "fill": "@wall"
+      },
+      {
+        "repeat": {
+          "axis": "x",
+          "every": 3,
+          "gap": 1,
+          "do": [
+            {
+              "use": "window_bay"
+            }
+          ]
+        }
+      }
+    ],
+    "facade_with_door": [
+      {
+        "fill": "@wall"
+      },
+      {
+        "repeat": {
+          "axis": "x",
+          "every": 3,
+          "gap": 1,
+          "pattern": "$bays"
+        }
+      }
+    ],
+    "two_storeys": [
+      {
+        "split": {
+          "axis": "y",
+          "parts": [
+            {
+              "size": 1,
+              "do": [
+                {
+                  "fill": "@foundation"
+                },
+                {
+                  "inset": {
+                    "by": 1,
+                    "do": [
+                      {
+                        "fill": "@floor"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "size": 4,
+              "do": [
+                {
+                  "faces": {
+                    "sides": [
+                      {
+                        "use": "facade"
+                      }
+                    ],
+                    "$front_face": [
+                      {
+                        "use": {
+                          "name": "facade_with_door",
+                          "with": {
+                            "bays": "$bays"
+                          }
+                        }
+                      }
+                    ],
+                    "edges": [
+                      {
+                        "fill": "@trim"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "size": 1,
+              "do": [
+                {
+                  "faces": {
+                    "sides": [
+                      {
+                        "fill": "@trim"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "inset": {
+                    "by": 1,
+                    "do": [
+                      {
+                        "fill": "@floor"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "size": 4,
+              "do": [
+                {
+                  "faces": {
+                    "sides": [
+                      {
+                        "use": "facade"
+                      }
+                    ],
+                    "edges": [
+                      {
+                        "fill": "@trim"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "build": [
+    {
+      "box": {
+        "at": [2, 0, 2],
+        "size": [21, 16, 9],
+        "#": "main block, front faces south",
+        "do": [
+          {
+            "use": {
+              "name": "two_storeys",
+              "with": {
+                "front_face": "front",
+                "bays": [
+                  [
+                    {
+                      "use": "window_bay"
+                    }
+                  ],
+                  [
+                    {
+                      "use": "door_bay"
+                    }
+                  ],
+                  [
+                    {
+                      "use": "window_bay"
+                    }
+                  ],
+                  [
+                    {
+                      "use": "window_bay"
+                    }
+                  ],
+                  [
+                    {
+                      "use": "window_bay"
+                    }
+                  ]
+                ]
+              }
+            }
+          },
+          {
+            "box": {
+              "at": [0, 10, 0],
+              "size": ["100%", "~", "100%"],
+              "#": "main roof",
+              "do": [
+                {
+                  "roof": {
+                    "type": "hip",
+                    "material": "@roof",
+                    "overhang": 1,
+                    "gable": "@wall"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "box": {
+              "at": [1, 1, 1],
+              "size": [2, 16, 2],
+              "#": "chimney: priority 1 so it always wins over the roof",
+              "do": [
+                {
+                  "fill": "bricks"
+                }
+              ],
+              "priority": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "box": {
+        "at": [14, 0, 10],
+        "size": [9, 16, 9],
+        "rotate": 1,
+        "#": "wing: rotated so its front faces west into the courtyard",
+        "do": [
+          {
+            "use": {
+              "name": "two_storeys",
+              "with": {
+                "front_face": "front",
+                "bays": [
+                  [
+                    {
+                      "use": "window_bay"
+                    }
+                  ],
+                  [
+                    {
+                      "use": "door_bay"
+                    }
+                  ]
+                ]
+              }
+            }
+          },
+          {
+            "faces": {
+              "left": [
+                {
+                  "box": {
+                    "at": [3, 1, 0],
+                    "size": [3, 3, 1],
+                    "do": [
+                      {
+                        "door": "@door:door"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "box": {
+              "at": [0, 10, 0],
+              "size": ["100%", "~", "100%"],
+              "#": "wing roof; merges with the main roof",
+              "do": [
+                {
+                  "roof": {
+                    "type": "gable",
+                    "ridge": "x",
+                    "material": "@roof",
+                    "overhang": 1,
+                    "gable": "@wall"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
