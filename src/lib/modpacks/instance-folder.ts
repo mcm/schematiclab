@@ -16,10 +16,11 @@ import {
   parseMinecraftInstance,
 } from "../mods/modpack-instance.ts";
 import type { ModpackModSource, ModpackSource } from "./extract.ts";
-import { MODPACK_LOADERS, type ModpackLoader } from "./schema.ts";
-
-/** An exported CurseForge pack's manifest. */
-export const EXPORT_MANIFEST_NAME = "manifest.json";
+import {
+  EXPORT_MANIFEST_NAME,
+  parsePackManifest,
+  toModpackLoader,
+} from "./pack-manifest.ts";
 
 type Json = Record<string, unknown>;
 
@@ -37,13 +38,6 @@ function positiveInt(value: unknown): number | null {
   return typeof value === "number" && Number.isSafeInteger(value) && value > 0
     ? value
     : null;
-}
-
-function toLoader(value: string | null): ModpackLoader {
-  return value !== null &&
-    (MODPACK_LOADERS as readonly string[]).includes(value)
-    ? (value as ModpackLoader)
-    : "unknown";
 }
 
 async function readJson(file: string): Promise<unknown> {
@@ -153,7 +147,7 @@ async function readCurseForgeInstance(
     name: instance.name,
     displayVersion: str(manifest.version),
     minecraftVersion: instance.gameVersion,
-    loader: toLoader(instance.loader),
+    loader: toModpackLoader(instance.loader),
     curseForgeProjectId: positiveInt(installed.addonID),
     packFileId: positiveInt(installedFile.id),
     mods,
@@ -166,21 +160,9 @@ async function readExportedPack(
   dir: string,
   exportFile: string,
 ): Promise<ModpackSource> {
-  const root = asObject(await readJson(exportFile));
-  const minecraft = asObject(root.minecraft);
-  if (str(minecraft.version) === null || !Array.isArray(root.files)) {
-    throw new Error(
-      `${exportFile} isn't a CurseForge pack manifest (no minecraft.version or files).`,
-    );
-  }
-  const loaders = Array.isArray(minecraft.modLoaders)
-    ? minecraft.modLoaders.map(asObject)
-    : [];
-  const primary = loaders.find((l) => l.primary === true) ?? loaders[0];
-  const loader = toLoader(
-    str(primary?.id)?.split("-")[0]?.toLowerCase() ?? null,
-  );
-  const overrides = path.join(dir, str(root.overrides) ?? "overrides");
+  const raw = await readJson(exportFile);
+  const manifest = parsePackManifest(raw, exportFile);
+  const overrides = path.join(dir, manifest.overrides);
 
   const jars = new Map([
     ...(await jarsIn(path.join(overrides, "mods"))),
@@ -189,7 +171,7 @@ async function readExportedPack(
   const mods: ModpackModSource[] = [...jars].map(([name, file]) =>
     jarSource(nameFromJar(name), file, null),
   );
-  const files = root.files.map(asObject).filter((f) => f.required !== false);
+  const { files } = manifest;
   const warnings: string[] = [];
   const installedJars = await jarsIn(path.join(dir, "mods"));
   if (installedJars.size > 0) {
@@ -200,10 +182,7 @@ async function readExportedPack(
     );
   } else {
     // A bare export: CurseForge files are downloaded by the launcher.
-    for (const file of files) {
-      const projectId = positiveInt(file.projectID);
-      const fileId = positiveInt(file.fileID);
-      if (projectId === null || fileId === null) continue;
+    for (const { projectId, fileId } of files) {
       mods.push({
         name: `CurseForge project ${projectId}`,
         fileName: null,
@@ -212,18 +191,18 @@ async function readExportedPack(
         size: null,
         read: null,
         missingMessage:
-          "The export doesn't include CurseForge files (the launcher downloads them). Upload an installed instance instead.",
+          "The export doesn't include CurseForge files (the launcher downloads them). Upload an installed instance, or use --curseforge.",
       });
     }
   }
   mods.sort(byName);
 
   return {
-    name: str(root.name) ?? path.basename(path.resolve(dir)),
-    displayVersion: str(root.version),
-    minecraftVersion: str(minecraft.version),
-    loader,
-    curseForgeProjectId: null,
+    name: manifest.name ?? path.basename(path.resolve(dir)),
+    displayVersion: manifest.version,
+    minecraftVersion: manifest.minecraftVersion,
+    loader: manifest.loader,
+    curseForgeProjectId: manifest.projectId,
     packFileId: null,
     mods,
     hasKubeJs:

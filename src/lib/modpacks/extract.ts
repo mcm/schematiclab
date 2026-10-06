@@ -54,11 +54,18 @@ export interface ModpackModSource {
   read: (() => Promise<Uint8Array>) | null;
   /** Why the jar isn't available (with `read: null`). */
   missingMessage?: string;
+  /** The status of a mod with `read: null` (default `failed`). */
+  missingStatus?: Extract<
+    ModStatus,
+    "failed" | "skipped-undistributable" | "skipped-too-large"
+  >;
 }
 
 /** A pack as a source (instance folder, CurseForge…) describes it. */
 export interface ModpackSource {
   name: string;
+  /** The pack's slug when the source has one (CurseForge's). */
+  slug?: string;
   /** The pack's own version label, when the source names one. */
   displayVersion: string | null;
   minecraftVersion: string | null;
@@ -235,7 +242,7 @@ async function extractMod(
   if (source.read === null) {
     return ended(
       (await modFileKey(source, null)) ?? fallbackKey(),
-      "failed",
+      source.missingStatus ?? "failed",
       source.missingMessage ?? "The jar isn't available.",
     );
   }
@@ -354,7 +361,7 @@ export async function extractModpack(
   if (source.minecraftVersion === null) {
     throw new Error("The pack doesn't name its Minecraft version.");
   }
-  const slug = options.slug ?? slugifyModpackName(source.name);
+  const slug = options.slug ?? source.slug ?? slugifyModpackName(source.name);
   if (!MODPACK_SLUG_PATTERN.test(slug)) {
     throw new Error(
       `Invalid slug "${slug}": use lower-case words joined by hyphens.`,
