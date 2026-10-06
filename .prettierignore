@@ -8,5 +8,6 @@ next-env.d.ts
 pnpm-lock.yaml
 semgrep-results.json
 .chief/
+.vercel/
 .tessl/
 .ralph-tui
