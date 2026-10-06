@@ -12,7 +12,7 @@
 //
 // Worker-safe: no DOM access.
 
-import { normalizeResourceId } from "../../render/block-appearance";
+import { normalizeResourceId } from "../../render/block-appearance.ts";
 
 /** One resolved 1.12 blockstate variant. */
 export interface LegacyBlockstateVariant {

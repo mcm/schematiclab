@@ -135,11 +135,11 @@ const unit = z.number().min(0).max(1);
 
 export const modBlockAppearanceSchema = z.object({
   /** Alpha-weighted average colour of the default state's faces. */
-  average: hexColor,
+  hex: hexColor,
   /** OKLab `[L, a, b]` of the average. */
   oklab: z.tuple([z.number(), z.number(), z.number()]),
-  /** Main colours with their share of opaque texels, largest first. */
-  dominant: z.array(z.object({ color: hexColor, share: unit })),
+  /** Up to 3 main colours with their share of opaque texels, largest first. */
+  dominant: z.array(z.object({ hex: hexColor, share: unit })).max(3),
   /** How much the texture varies around its average, 0 (flat) to 1. */
   variance: unit,
 });
@@ -156,7 +156,7 @@ const swatchRect = z.tuple([
 export const modBlockSwatchSchema = z.object({
   /** Mod-file key: the sheet is `mod-files/<file>/swatches.png`. */
   file: blobKey,
-  /** Face name (`top`, `side`, `bottom`…) → its rectangle in the sheet. */
+  /** Face (`top`, `side`, `bottom`) → its 16×16 rectangle in the sheet. */
   faces: z.record(z.string(), swatchRect),
 });
 export type ModBlockSwatch = z.infer<typeof modBlockSwatchSchema>;
