@@ -8,7 +8,7 @@ export const MODS_CLASS_ID = 6;
 export const MODPACKS_CLASS_ID = 4471;
 
 /** Jar size cap when `CURSEFORGE_MAX_JAR_BYTES` isn't set. */
-export const DEFAULT_MAX_JAR_BYTES = 64 * 1024 * 1024;
+export const DEFAULT_MAX_JAR_BYTES = 100 * 1024 * 1024;
 /** Redirect hops followed from a CDN URL. */
 export const MAX_CDN_REDIRECTS = 5;
 /** Hosts mod files may be downloaded from (every redirect hop included). */

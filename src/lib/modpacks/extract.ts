@@ -28,6 +28,7 @@ import {
 import { classifyModBlock } from "./classify.ts";
 import {
   BLOB_KEY_PATTERN,
+  BLOCK_ID_PATTERN,
   MODPACK_FORMAT_VERSION,
   MODPACK_SLUG_PATTERN,
   type ModpackBlock,
@@ -402,6 +403,14 @@ export async function extractModpack(
     seenKeys.set(mod.key, mod.name);
     mods.push(mod);
     for (const block of result.blocks) {
+      // A leftover blockstate file can be named something Minecraft
+      // couldn't register (`vs_clockwork:OLD_flap_bearing`).
+      if (!BLOCK_ID_PATTERN.test(block.id)) {
+        warnings.push(
+          `${block.id} in ${mod.name} isn't a valid block id; it was left out.`,
+        );
+        continue;
+      }
       const existing = blocks.get(block.id);
       if (existing !== undefined) {
         warnings.push(

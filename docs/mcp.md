@@ -263,30 +263,31 @@ Modpacks are uploaded by the operator with a CLI; the MCP server only reads them
 
 ```bash
 pnpm modpack:upload --instance <dir> [--slug <slug>] [--version <label>]
-pnpm modpack:upload --curseforge <slug|id> [--file <id>] [--slug <slug>] [--version <label>]
+pnpm modpack:upload --curseforge <slug|id> [--file <id>] [--mods-dir <dir>] [--slug <slug>] [--version <label>]
 pnpm modpack:upload --instance <dir> --dry-run --out <dir>
 ```
 
-| Option                    | Meaning                                                                                                                                                                  |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `--instance <dir>`        | A CurseForge app instance folder (`minecraftinstance.json` + `mods/`) or an unzipped pack export (`manifest.json` + `overrides/mods/`).                                  |
-| `--curseforge <slug\|id>` | Download a CurseForge modpack (class 4471) by slug or project id, and its mods, into a temporary folder removed at the end. Downloads only go to CurseForge's CDN hosts. |
-| `--file <id>`             | With `--curseforge`, the pack file to upload. Defaults to the latest file.                                                                                               |
-| `--slug <slug>`           | The pack's slug in refs. Defaults to the pack's name, slugified (`All the Mods 10` → `all-the-mods-10`).                                                                 |
-| `--version <label>`       | The display version. Defaults to the pack's own version.                                                                                                                 |
-| `--dry-run --out <dir>`   | Write the same files under `<dir>` instead of the Blob store. Needs no credentials.                                                                                      |
+| Option                    | Meaning                                                                                                                                                                                                          |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--instance <dir>`        | A CurseForge app instance folder (`minecraftinstance.json` + `mods/`) or an unzipped pack export (`manifest.json` + `overrides/mods/`).                                                                          |
+| `--curseforge <slug\|id>` | Download a CurseForge modpack (class 4471) by slug or project id, and its mods, into a temporary folder removed at the end. Downloads only go to CurseForge's CDN hosts.                                         |
+| `--file <id>`             | With `--curseforge`, the pack file to upload. Defaults to the latest file.                                                                                                                                       |
+| `--mods-dir <dir>`        | With `--curseforge`, a mods folder of an installed copy (a server install's will do). Files that can't be downloaded (undistributable or too large) are read from it when a jar has the same file name and size. |
+| `--slug <slug>`           | The pack's slug in refs. Defaults to the pack's name, slugified (`All the Mods 10` → `all-the-mods-10`).                                                                                                         |
+| `--version <label>`       | The display version. Defaults to the pack's own version.                                                                                                                                                         |
+| `--dry-run --out <dir>`   | Write the same files under `<dir>` instead of the Blob store. Needs no credentials.                                                                                                                              |
 
 **Credentials.** The Blob store's credentials come from the environment as for the server: `vercel env pull .env.local` writes them, and the CLI reads `.env.local`. Without them it exits with a message saying so. `--curseforge` also needs `CURSEFORGE_API_KEY` (environment or `.env.local`).
 
 **Mod statuses.** The summary counts every mod by status, and `list_modpacks` reports the non-`ok` ones:
 
-| Status                    | Meaning                                                                                                                                                                                                                            |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ok`                      | Its blocks are in the pack.                                                                                                                                                                                                        |
-| `no-blocks`               | The jar has no blockstates (a library or a mod without blocks).                                                                                                                                                                    |
-| `skipped-undistributable` | `--curseforge` only: the author disallows third-party downloads, so CurseForge gives no download URL. Install the pack in the CurseForge app and re-run with `--instance <instance folder>` (same `--slug`) to include these mods. |
-| `skipped-too-large`       | The jar is over the size limit (`CURSEFORGE_MAX_JAR_BYTES` for downloads).                                                                                                                                                         |
-| `failed`                  | The jar is missing or couldn't be read or parsed; the message says why.                                                                                                                                                            |
+| Status                    | Meaning                                                                                                                                                                                       |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ok`                      | Its blocks are in the pack.                                                                                                                                                                   |
+| `no-blocks`               | The jar has no blockstates (a library or a mod without blocks).                                                                                                                               |
+| `skipped-undistributable` | `--curseforge` only: the author disallows third-party downloads, so CurseForge gives no download URL. Re-run with `--mods-dir` pointing at an installed copy's `mods/` to include these mods. |
+| `skipped-too-large`       | The jar is over the size limit (`CURSEFORGE_MAX_JAR_BYTES` for downloads, default 100 MiB; `--mods-dir` reads it from disk instead).                                                          |
+| `failed`                  | The jar is missing or couldn't be read or parsed; the message says why.                                                                                                                       |
 
 The summary also lists blocks registered at runtime that the upload can't see (a `kubejs/` folder, Every Compat, Unlimited Chisel Works), the block count, the bytes written and the ref to use.
 
