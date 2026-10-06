@@ -20,12 +20,17 @@ const nextConfig: NextConfig = {
   output: "standalone",
   // Native module; load it from node_modules rather than bundling it.
   serverExternalPackages: ["@napi-rs/canvas"],
-  // Files the MCP renderer (`src/lib/mcp/render.ts`) and the build language
+  // Files the MCP renderer (`src/lib/mcp/render.ts`), vanilla appearance
+  // descriptors (`src/lib/mcp/vanilla-appearance.ts`) and the build language
   // spec resource (`src/lib/mcp/build-tools.ts`) read from disk.
   outputFileTracingIncludes: {
     // A glob, so "[transport]" can't be written literally.
     "/api/mcp/*": [
       "./public/minecraft-assets/block-colors.json",
+      "./public/minecraft-assets/atlas.png",
+      "./public/minecraft-assets/atlas-uvs.json",
+      "./public/minecraft-assets/blockstates.json",
+      "./public/minecraft-assets/models.json",
       "./src/lib/mcp/fonts/*.ttf",
       "./src/lib/buildlang/SPEC.md",
     ],
