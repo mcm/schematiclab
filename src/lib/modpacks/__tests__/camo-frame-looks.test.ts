@@ -26,8 +26,13 @@ import {
   type ModpackModSource,
 } from "../extract";
 import { encodeRgbaPng } from "../png";
-import { publishModpack, type ModpackStore } from "../publish";
-import { clearModpackCache, loadModpackIndex } from "../reader";
+import {
+  blobModpackStore,
+  publishModpack,
+  type ModpackStore,
+} from "../publish";
+import { fakeModpackBlobApi } from "./fake-modpack-blob";
+import { clearModpackCache } from "../reader";
 import type { ModpackBlock } from "../schema";
 
 const ROOT = path.join(__dirname, "../../../..");
@@ -164,17 +169,7 @@ async function extract(mods: ModpackModSource[]): Promise<ModpackExtraction> {
 }
 
 function fakeBlobStore(blob: FakeBlob): ModpackStore {
-  return {
-    description: "fake Blob",
-    readIndex() {
-      clearModpackCache();
-      return loadModpackIndex(blob);
-    },
-    exists: async (pathname) => blob.objects.has(pathname),
-    async write(pathname, body) {
-      blob.objects.set(pathname, { body, uploadedAt: NOW });
-    },
-  };
+  return blobModpackStore(fakeModpackBlobApi(blob, () => NOW));
 }
 
 // Copycats+ first: Create's texture isn't read yet when it's extracted.

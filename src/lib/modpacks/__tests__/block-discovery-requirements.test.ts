@@ -61,8 +61,13 @@ import {
 import { readInstanceFolder } from "../instance-folder";
 import { modFileSwatchesPath } from "../paths";
 import { encodeRgbaPng } from "../png";
-import { publishModpack, type ModpackStore } from "../publish";
-import { clearModpackCache, loadModpackIndex } from "../reader";
+import {
+  blobModpackStore,
+  publishModpack,
+  type ModpackStore,
+} from "../publish";
+import { fakeModpackBlobApi } from "./fake-modpack-blob";
+import { clearModpackCache } from "../reader";
 import {
   MODPACK_FORMAT_VERSION,
   modpackDataSchema,
@@ -239,17 +244,7 @@ const blockOf = (data: ModpackData, id: string) =>
 
 /** `publishModpack`'s store, writing into the fake Blob store. */
 function fakeBlobStore(blob: FakeBlob): ModpackStore {
-  return {
-    description: "fake Blob",
-    readIndex() {
-      clearModpackCache();
-      return loadModpackIndex(blob);
-    },
-    exists: async (pathname) => blob.objects.has(pathname),
-    async write(pathname, body) {
-      blob.objects.set(pathname, { body, uploadedAt: NOW });
-    },
-  };
+  return blobModpackStore(fakeModpackBlobApi(blob, () => NOW));
 }
 
 async function published(
