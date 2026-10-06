@@ -103,6 +103,12 @@ export interface BlockRegistry {
   repair(raw: string): RepairResult;
   /** Up to `n` known block ids whose names are close to `name`. */
   suggest(name: string, n?: number): string[];
+  /**
+   * Whether the registry has blocks of mod namespaces (a modpack's), and of
+   * `namespace` (without its colon). Vanilla registries leave it out, so
+   * `a:b` in the build language is always `family:variant` for them.
+   */
+  hasNamespace?(namespace: string): boolean;
 }
 
 const NAMESPACE = "minecraft:";

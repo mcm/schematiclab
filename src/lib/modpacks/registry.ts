@@ -214,6 +214,7 @@ export function createModpackRegistry(
       registryOf(base)?.variant(base, variant) ?? null,
     repair,
     suggest,
+    hasNamespace: (namespace) => mods.has(`${namespace}:`),
   };
 
   return {

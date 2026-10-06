@@ -272,6 +272,9 @@ or just a list of options.
 
 - Variants: `block`, `stairs`, `slab`, `wall`, `fence`, `fence_gate`, `door`, `trapdoor`, `log`, `pillar`, `button`, `pressure_plate`.
 - A wood name (`"spruce"`) as a role means its planks; `"spruce:log"` is the log.
+- With a `modpack`, a mod block is written with its namespace (`"create:brass_casing"`,
+  `"create:brass_casing[axis=x]"`; `"mod:block:stairs"` for a variant) and must be one of the
+  pack's blocks. A bare name only one mod has (`"brass_casing"`) is repaired to its id.
 - If a variant or block doesn't exist in the target version, a sensible fallback is used and
   noted in the report (for example a wood that is newer than the version). Misspelt names are
   repaired when the intent is clear, and noted; otherwise they are errors with suggestions.
