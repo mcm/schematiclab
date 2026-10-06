@@ -21,7 +21,8 @@ const nextConfig: NextConfig = {
   // Native module; load it from node_modules rather than bundling it.
   serverExternalPackages: ["@napi-rs/canvas"],
   // Files the MCP renderer (`src/lib/mcp/render.ts`), vanilla appearance
-  // descriptors (`src/lib/mcp/vanilla-appearance.ts`), camo shape packs
+  // descriptors and face swatches (`src/lib/mcp/vanilla-appearance.ts`, also
+  // drawn by `show_blocks`), camo shape packs
   // (`src/lib/mcp/camo-options.ts`) and the build language
   // spec resource (`src/lib/mcp/build-tools.ts`) read from disk.
   outputFileTracingIncludes: {

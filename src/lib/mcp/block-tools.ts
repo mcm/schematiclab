@@ -95,7 +95,7 @@ export function blocksOfVersion(data: BlockData, versionId: string): BlockData {
 }
 
 /** The blocks one call searches. */
-interface SearchScope {
+export interface SearchScope {
   versionId: string;
   /** Vanilla blocks of the version (1.12.2: only those it has). */
   data: BlockData;
@@ -104,7 +104,7 @@ interface SearchScope {
   modpack: ModpackBlocks | null;
 }
 
-async function searchScope(
+export async function searchScope(
   args: { version?: string; modpack?: string },
   deps: McpDeps,
 ): Promise<SearchScope> {
@@ -122,7 +122,7 @@ async function searchScope(
   };
 }
 
-function scopeNote(scope: SearchScope): string | undefined {
+export function scopeNote(scope: SearchScope): string | undefined {
   const notes: string[] = [];
   if (scope.data.translateOnExport) {
     notes.push(
@@ -138,7 +138,7 @@ function scopeNote(scope: SearchScope): string | undefined {
   return notes.length > 0 ? notes.join(" ") : undefined;
 }
 
-const versionInput = z
+export const versionInput = z
   .string()
   .optional()
   .describe(
@@ -214,22 +214,9 @@ export function blockColorsForVersion(
   if (cached) return cached;
   const colors = vanillaBlockColors();
   const descriptors = vanillaBlockDescriptors();
-  const from = Object.hasOwn(KNOWN_VERSIONS, data.sourceVersion)
-    ? KNOWN_VERSIONS[data.sourceVersion]
-    : MINECRAFT_1_13_2;
   const out = new Map<string, VanillaColor>();
-  for (const [id, info] of data.blocks) {
-    let bundleId: string | undefined = Object.hasOwn(colors, id)
-      ? id
-      : undefined;
-    if (!bundleId) {
-      const translated = translateBlockState(
-        new BlockState({ Name: id, Properties: info.defaults }),
-        from,
-        BUNDLE_MINECRAFT_VERSION,
-      ).Name;
-      if (Object.hasOwn(colors, translated)) bundleId = translated;
-    }
+  for (const id of data.blocks.keys()) {
+    const bundleId = vanillaBundleId(data, id);
     if (!bundleId) continue;
     const appearance = colors[bundleId];
     const descriptor = descriptors.get(bundleId);
@@ -246,8 +233,32 @@ export function blockColorsForVersion(
   return out;
 }
 
+/**
+ * The vanilla asset bundle's id of `id`, a block of `data`: itself, or its
+ * default state translated to the bundle's version. Undefined when the
+ * bundle has no colour for it.
+ */
+export function vanillaBundleId(
+  data: BlockData,
+  id: string,
+): string | undefined {
+  const colors = vanillaBlockColors();
+  if (Object.hasOwn(colors, id)) return id;
+  const info = data.blocks.get(id);
+  if (!info) return undefined;
+  const from = Object.hasOwn(KNOWN_VERSIONS, data.sourceVersion)
+    ? KNOWN_VERSIONS[data.sourceVersion]
+    : MINECRAFT_1_13_2;
+  const translated = translateBlockState(
+    new BlockState({ Name: id, Properties: info.defaults }),
+    from,
+    BUNDLE_MINECRAFT_VERSION,
+  ).Name;
+  return Object.hasOwn(colors, translated) ? translated : undefined;
+}
+
 /** Kind, mod, shape and colour of a block of `scope`. */
-function lookOf(scope: SearchScope, id: string): BlockLook {
+export function lookOf(scope: SearchScope, id: string): BlockLook {
   const mod = scope.modpack?.modBlock(id);
   if (mod) {
     const appearance = mod.appearance;
@@ -360,7 +371,9 @@ export function splitShapeQuery(query: string): {
 }
 
 /** The pack's camo materials with their colours. */
-function camoMaterialsOf(scope: SearchScope & { modpack: ModpackBlocks }) {
+export function camoMaterialsOf(
+  scope: SearchScope & { modpack: ModpackBlocks },
+) {
   return modpackCamoMaterials(scope.modpack, blockColorsForVersion(scope.data));
 }
 

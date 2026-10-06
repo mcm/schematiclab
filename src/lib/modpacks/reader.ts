@@ -186,8 +186,11 @@ function validate<T>(path: string, schema: z.ZodType<T>, value: unknown): T {
   return result.data;
 }
 
-/** A private blob's bytes, null when it doesn't exist; capped and timed. */
-async function readBlob(
+/**
+ * A private blob's bytes, null when it doesn't exist; capped at `maxBytes`
+ * and held to `MODPACK_READ_TIMEOUT_MS`.
+ */
+export async function readBlob(
   blob: BlobClient,
   pathname: string,
   maxBytes: number,
