@@ -95,15 +95,16 @@ The modpacks the operator uploaded with `pnpm modpack:upload`, with the refs the
 
 Reads a schematic and reports what is in it.
 
-- Input: a [schematic input](#schematic-inputs).
+- Input: a [schematic input](#schematic-inputs) and an optional `modpack` ref (see `list_modpacks`).
 - Output: `format` (detected format id), `minecraft_version`, `size` (`[x, y, z]` of the box enclosing every region), `total_blocks` (non-air blocks), `palette_size` (distinct non-air block states), `palette` (the 30 most common block states, `{ block_state, count }`), `blocks_not_listed` (blocks whose state is not in `palette`) and `regions` (`{ origin, size, blocks }` per region).
+- With a `modpack`, each palette row also has `mod` (the pack mod's name, `minecraft` for vanilla, or the namespace of a block the pack lacks), `in_modpack` and, for camo blocks, `camo_materials` (`{ block_state, count, in_modpack }`, `empty` for empty slots). `missing_from_modpack` is `{ block_states, states_not_listed }`: the block states the pack lacks with counts, most common first, at most 50, and how many more there are. A schematic of another Minecraft version is compared after translation to the pack's version: rows whose state translation changed get `translated_state`, and `note` says so.
 
 ### `convert_schematic`
 
 Converts a schematic to another format and, optionally, another Minecraft version.
 
-- Input: a [schematic input](#schematic-inputs), `output_format` (a format id) and optional `target_version` (defaults to the schematic's own version; Building Gadgets formats move it into their supported range).
-- Output: an [output file](#output-files) plus `warnings`: what translating block states between versions lost (for example a block missing from the target version), each prefixed with its source state, at most 50 plus a line counting the rest.
+- Input: a [schematic input](#schematic-inputs), `output_format` (a format id), optional `target_version` (defaults to the schematic's own version; Building Gadgets formats move it into their supported range) and an optional `modpack` ref.
+- Output: an [output file](#output-files) plus `warnings`: what translating block states between versions lost (for example a block missing from the target version), each prefixed with its source state, and with a `modpack` one line per block state the pack lacks; at most 50 in all plus a line counting the rest. The modpack doesn't change the conversion. A schematic of another Minecraft version than the pack's is compared after translation to the pack's version, and `note` says so.
 
 ### `render_schematic`
 
