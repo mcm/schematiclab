@@ -26,6 +26,8 @@ function parsed(blocks = 1): ParsedModAssets {
     textures: {},
     textureMeta: {},
     templates: {},
+    modIds: [],
+    nestedJars: [],
     warnings: [],
   };
 }

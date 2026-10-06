@@ -47,6 +47,17 @@ export interface ParsedModAssets {
    * Absent or empty for jars no provider reads.
    */
   providerData?: ProviderData;
+  /**
+   * Mod ids the outer jar declares (`[[mods]] modId` in
+   * `META-INF/neoforge.mods.toml` / `META-INF/mods.toml`), sorted. Empty when
+   * it has neither.
+   */
+  modIds: string[];
+  /**
+   * Jars nested in `META-INF/jarjar/` (jar-in-jar), recursively, whose assets
+   * are merged into the fields above (`blocks` includes their blocks).
+   */
+  nestedJars: NestedModJar[];
   /** Non-fatal problems encountered while parsing (malformed JSON, …). */
   warnings: string[];
   /**
@@ -54,6 +65,26 @@ export interface ParsedModAssets {
    * available (so vanilla parents and textures resolved).
    */
   appearancesComputed?: boolean;
+}
+
+/** One jar nested in a mod jar's `META-INF/jarjar/` (see `ParsedModAssets`). */
+export interface NestedModJar {
+  /**
+   * Entry path inside its parent jar; for deeper jars the chain of paths from
+   * the outer jar joined with `!/`.
+   */
+  path: string;
+  /** `identifier.group` / `identifier.artifact` from the parent's `META-INF/jarjar/metadata.json`; null when it doesn't list the jar. */
+  group: string | null;
+  artifact: string | null;
+  /** `version.artifactVersion` from the same metadata; null when absent. */
+  version: string | null;
+  /** Mod ids the nested jar's own mods.toml declares, sorted. */
+  modIds: string[];
+  /** Ids of the blocks whose assets came from this jar, sorted. */
+  blockIds: string[];
+  /** 1 for a jar in the outer jar, 2 for a jar in that one, and so on. */
+  depth: number;
 }
 
 /** CurseForge mod loaders the Mods tab can filter by. */
