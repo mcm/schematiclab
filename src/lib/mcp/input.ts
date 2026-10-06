@@ -47,7 +47,7 @@ export const modpackInput = z
   .string()
   .optional()
   .describe(
-    `A modpack uploaded to this server, as ${MODPACK_REF_FORM}; list_modpacks lists them. The bare slug is the latest upload. With a modpack, only the pack's blocks are accepted (vanilla blocks of its Minecraft version plus its mods' blocks), and version may be left out: it is the pack's Minecraft version.`,
+    `A modpack uploaded to this server, as ${MODPACK_REF_FORM}; list_modpacks lists them. The bare slug is the latest upload. When the user names a modpack, find its ref with list_modpacks and pass it here on every block tool call. With a modpack, only the pack's blocks are accepted (vanilla blocks of its Minecraft version plus its mods' blocks), and version may be left out where it is optional: it is the pack's Minecraft version.`,
   );
 
 export interface SchematicInputArgs {

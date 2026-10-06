@@ -278,7 +278,7 @@ type Entry =
 export const showBlocksTool = defineTool({
   name: "show_blocks",
   title: "Show blocks",
-  description: `See up to ${MAX_SHOW_BLOCKS} blocks of a Minecraft version or a modpack as one PNG: per block, two textured isometric views (front-left and back-right) of its shape and its flat top and side faces, built from the blocks' face swatches. Give block states, or { frame, camo } pairs to see a camo frame (FramedBlocks, Copycats+, Create copycats) holding a camo material. Also returns each block's mod, kind, average colour (hex), dominant colours and texture variance; ids the version or pack lacks are listed under not_found with close names and aren't drawn. Use it to check a block looks right before building with it.`,
+  description: `See up to ${MAX_SHOW_BLOCKS} blocks of a Minecraft version or a modpack as one PNG: per block, two textured isometric views (front-left and back-right) of its shape and its flat top and side faces, built from the blocks' face swatches. Give block states, or { frame, camo } pairs to see a camo frame (FramedBlocks, Copycats+, Create copycats) holding a camo material. Also returns each block's mod, kind, average colour (hex), dominant colours and texture variance; ids the version or pack lacks are listed under not_found with close names and aren't drawn. Use it to check a block looks right before building with it: block names (black_terracotta, brass_block) don't reliably say how a block looks, least of all mod blocks. When the user names a modpack, pass its ref (from list_modpacks) as modpack.`,
   inputSchema: showBlocksInput,
   outputSchema: z.object({
     version: z.string(),

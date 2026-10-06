@@ -380,6 +380,7 @@ describe("over MCP", () => {
     expect(prompt?.arguments?.map((a) => [a.name, a.required])).toEqual([
       ["request", true],
       ["version", true],
+      ["modpack", false],
     ]);
 
     const result = await client.getPrompt({
@@ -401,6 +402,87 @@ describe("over MCP", () => {
     expect(workflow).toMatch(/^## 6\. Workflow\n/);
     expect(workflow).toContain("**Plan first**");
     expect(text.indexOf(workflow)).toBeLessThan(text.length - spec.length);
+  });
+
+  it("design_build adds the modpack instructions with a modpack", async () => {
+    const client = await connect(makeDeps());
+    const result = await client.getPrompt({
+      name: "design_build",
+      arguments: {
+        request: "A starter base",
+        version: "1.21.1",
+        modpack: " all-the-mods-10@5678901 ",
+      },
+    });
+    const [message] = result.messages;
+    if (message.content.type !== "text") throw new Error("expected text");
+    const text = message.content.text;
+    const spec = readFileSync(SPEC_FILE, "utf8");
+    expect(result.description).toContain("all-the-mods-10@5678901");
+    expect(text).toContain(
+      '`compile_build` (version "1.21.1", modpack "all-the-mods-10@5678901")',
+    );
+    expect(text).toContain('`modpack: "all-the-mods-10@5678901"`');
+    expect(text).toContain("`list_modpacks`");
+    expect(text).toContain("`show_blocks`");
+    expect(text).toContain("{camo=<block>}");
+    expect(text).toContain("`writable: true`");
+    expect(text.endsWith(spec)).toBe(true);
+    // The instructions come before the workflow and the spec.
+    expect(text.indexOf("Only use blocks the pack has")).toBeLessThan(
+      text.indexOf(buildlangWorkflow()),
+    );
+
+    const plain = await client.getPrompt({
+      name: "design_build",
+      arguments: { request: "A starter base", version: "1.21.1" },
+    });
+    if (plain.messages[0].content.type !== "text") throw new Error("text");
+    expect(plain.messages[0].content.text).not.toContain(
+      "Only use blocks the pack has",
+    );
+  });
+
+  it("design_build rejects an invalid modpack ref", async () => {
+    const client = await connect(makeDeps());
+    await expect(
+      client.getPrompt({
+        name: "design_build",
+        arguments: { request: "A tower", version: "1.21.1", modpack: "A B" },
+      }),
+    ).rejects.toThrow(/Invalid modpack reference 'A B'/);
+  });
+
+  it("tool descriptions point agents at list_modpacks and show_blocks", async () => {
+    const client = await connect(makeDeps());
+    const { tools } = await client.listTools();
+    const byName = new Map(tools.map((t) => [t.name, t]));
+    expect(byName.get("list_modpacks")?.description).toMatch(
+      /whenever the user names a modpack/,
+    );
+    expect(byName.get("list_modpacks")?.description).toContain("show_blocks");
+    for (const tool of tools) {
+      const modpack = (
+        tool.inputSchema.properties as Record<string, { description?: string }>
+      )?.modpack;
+      if (!modpack) continue;
+      expect(modpack.description, tool.name).toContain("list_modpacks");
+      expect(modpack.description, tool.name).toContain("every block tool call");
+    }
+    for (const name of ["search_blocks", "suggest_palette"]) {
+      expect(byName.get(name)?.description, name).toContain("show_blocks");
+    }
+    for (const name of [
+      "search_blocks",
+      "suggest_palette",
+      "show_blocks",
+      "generate_shape",
+      "compile_build",
+      "check_build",
+      "render_schematic",
+    ]) {
+      expect(byName.get(name)?.description, name).toContain("list_modpacks");
+    }
   });
 
   it("design_build rejects an unknown version", async () => {

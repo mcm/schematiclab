@@ -164,7 +164,7 @@ function withCamo(
 export const generateShapeTool = defineTool({
   name: "generate_shape",
   title: "Generate a shape",
-  description: `Generate a primitive shape (cuboid, ellipsoid, dome, cylinder, cone, pyramid) of one material, solid or hollow, and write it as a schematic file. Returns a download URL that expires after 24 hours and the block count; with render, also a PNG contact sheet. At most ${MAX_SHAPE_BLOCKS.toLocaleString("en-US")} blocks.`,
+  description: `Generate a primitive shape (cuboid, ellipsoid, dome, cylinder, cone, pyramid) of one material, solid or hollow, and write it as a schematic file. Returns a download URL that expires after 24 hours and the block count; with render, also a PNG contact sheet. At most ${MAX_SHAPE_BLOCKS.toLocaleString("en-US")} blocks. When the user names a modpack, pass its ref (from list_modpacks) as modpack: the material must then be one of the pack's blocks, and a camo frame can hold a camo material (frame{camo=block}).`,
   inputSchema: generateShapeInput,
   outputSchema: z.object({
     url: z.string(),
