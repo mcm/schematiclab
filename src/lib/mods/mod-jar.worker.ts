@@ -75,6 +75,8 @@ async function handle(request: ModJarWorkerRequest): Promise<void> {
     if (type === "parseJar") {
       const vanilla = await loadVanillaAppearanceSources();
       const result = parseModJar(request.payload.bytes, vanilla);
+      // Only the modpack upload reads compat packs; don't copy their textures.
+      result.compatPacks = {};
       ctx.postMessage(
         { id, ok: true, type: "parseJar", result },
         textureTransferables(result),

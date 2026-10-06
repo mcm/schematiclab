@@ -58,6 +58,13 @@ export interface ParsedModAssets {
    * are merged into the fields above (`blocks` includes their blocks).
    */
   nestedJars: NestedModJar[];
+  /**
+   * Mod id → the blocks of the jar's built-in `compat_packs/<modid>/`
+   * resource pack (Dyenamics and Friends), which the game enables only when
+   * that mod is loaded. Not part of `blocks`; only the modpack upload reads
+   * them. Packs without blockstates are left out.
+   */
+  compatPacks: Record<string, CompatPackAssets>;
   /** Non-fatal problems encountered while parsing (malformed JSON, …). */
   warnings: string[];
   /**
@@ -65,6 +72,20 @@ export interface ParsedModAssets {
    * available (so vanilla parents and textures resolved).
    */
   appearancesComputed?: boolean;
+}
+
+/**
+ * One compat pack's blocks, with the models and textures they reach (the
+ * jar's own included, under the pack's).
+ */
+export interface CompatPackAssets {
+  /** Non-`minecraft` asset namespaces of the pack, sorted. */
+  namespaces: string[];
+  blocks: ModBlock[];
+  blockstates: Record<string, unknown>;
+  models: Record<string, unknown>;
+  textures: Record<string, Uint8Array>;
+  textureMeta: Record<string, unknown>;
 }
 
 /** One jar nested in a mod jar's `META-INF/jarjar/` (see `ParsedModAssets`). */

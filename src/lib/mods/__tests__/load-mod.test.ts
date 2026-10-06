@@ -52,6 +52,7 @@ function parsed(overrides: Partial<ParsedModAssets> = {}): ParsedModAssets {
     templates: {},
     modIds: [],
     nestedJars: [],
+    compatPacks: {},
     warnings: ["skipped bad.json"],
     appearancesComputed: true,
     ...overrides,
