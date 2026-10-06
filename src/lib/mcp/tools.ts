@@ -11,6 +11,7 @@ import {
   inspectSchematicTool,
   renderSchematicTool,
 } from "./schematic-tools";
+import { showBlocksTool } from "./show-blocks";
 import { type McpDeps, type McpTool, toolError } from "./types";
 
 export const TOOLS: readonly McpTool[] = [
@@ -21,6 +22,7 @@ export const TOOLS: readonly McpTool[] = [
   generateShapeTool,
   searchBlocksTool,
   suggestPaletteTool,
+  showBlocksTool,
   compileBuildTool,
   checkBuildTool,
 ];

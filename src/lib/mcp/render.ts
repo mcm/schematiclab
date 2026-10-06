@@ -42,7 +42,8 @@ export const MAX_RENDER_EDGE = 1568;
  */
 export const MAX_RENDER_FACE_CELLS = 2048 * 2048;
 
-const FONT_FAMILY = "Geist";
+/** The bundled font family renders draw text with (`registerRenderFonts`). */
+export const FONT_FAMILY = "Geist";
 const FONT_DIR = path.join(process.cwd(), "src", "lib", "mcp", "fonts");
 const FONT_FILES = ["Geist-Regular.ttf", "Geist-SemiBold.ttf"];
 const BLOCK_COLORS_PATH = path.join(
@@ -54,7 +55,8 @@ const BLOCK_COLORS_PATH = path.join(
 
 let fontsRegistered = false;
 
-function registerFonts(): void {
+/** Registers the bundled render font once per instance. */
+export function registerRenderFonts(): void {
   if (fontsRegistered) return;
   for (const file of FONT_FILES) {
     if (GlobalFonts.registerFromPath(path.join(FONT_DIR, file)) === null) {
@@ -148,7 +150,7 @@ export function renderProjectionPng(
   projection: ParsedSchematicProjection,
   options: RenderOptions = {},
 ): RenderedPng {
-  registerFonts();
+  registerRenderFonts();
   const colorsById = vanillaBlockColors();
   // Legacy and renamed ids are translated to the colour bundle's version.
   const display = toDisplayProjection(projection);
