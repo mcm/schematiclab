@@ -11,8 +11,12 @@ import type { ModJarIndex } from "../mods/parse-mod-jar.ts";
 export interface NestedJarOwner {
   /** The jar's label in messages (its file name, else the mod's name). */
   outer: string;
-  /** Null when the jar couldn't be read. */
-  index: ModJarIndex | null;
+  /** Null when the jar couldn't be read. Its asset ids aren't needed. */
+  index:
+    | (Pick<ModJarIndex, "modIds"> & {
+        nestedJars: Omit<ModJarIndex["nestedJars"][number], "assets">[];
+      })
+    | null;
 }
 
 /** What happens to one nested jar of the pack. */

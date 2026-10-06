@@ -107,16 +107,16 @@ function kubejsAssets(): Record<string, Uint8Array> {
   };
 }
 
-/** The kubejs sheet's key: from its PNG's SHA-256. */
+/** The per-upload sheet's key: from its PNG's SHA-256. */
 function kubejsKey(png: Uint8Array | undefined): string {
   expect(png).toBeDefined();
   const hex = createHash("sha256").update(png!).digest("hex");
-  return `kubejs-${hex.slice(0, 16)}`;
+  return `pack-${hex.slice(0, 16)}`;
 }
 
-/** The key of the one `kubejs-` sheet among `swatches`. */
+/** The key of the one `pack-` sheet among `swatches`. */
 function kubejsSheet(swatches: Map<string, Uint8Array>): string {
-  const keys = [...swatches.keys()].filter((k) => k.startsWith("kubejs-"));
+  const keys = [...swatches.keys()].filter((k) => k.startsWith("pack-"));
   expect(keys).toHaveLength(1);
   return keys[0];
 }
@@ -196,10 +196,11 @@ describe("extractModpack with kubejs/assets", () => {
     expect(plain.kubejs).toBeUndefined();
     const before = new Map(plain.data.blocks.map((b) => [b.id, b]));
 
-    const { data, swatches, kubejs, warnings } = await extractModpack(
-      pack([mod("Industry", 1, industry())], files),
-      { vanilla, now: NOW },
-    );
+    const { data, swatches, kubejs, packSheets, warnings } =
+      await extractModpack(pack([mod("Industry", 1, industry())], files), {
+        vanilla,
+        now: NOW,
+      });
     const key = kubejsSheet(swatches);
     expect(key).toBe(kubejsKey(swatches.get(key)));
     expect(() => modpackDataSchema.parse(data)).not.toThrow();
@@ -238,14 +239,14 @@ describe("extractModpack with kubejs/assets", () => {
     // The jar's sheet is the same as without kubejs/assets.
     expect(swatches.get("cf-1")).toEqual(plain.swatches.get("cf-1"));
     expect(swatches.has(key)).toBe(true);
-    expect(kubejs).toEqual({ sheet: key, overridden: 2, added: 0, ignored: 1 });
+    expect(kubejs).toEqual({ overridden: 2, added: 0, ignored: 1 });
+    expect(packSheets).toEqual([key]);
   });
 
   it("adds a listed block from kubejs/assets with its look", async () => {
     const files = kubejsAssets();
-    const { data, swatches, kubejs, blockList } = await extractModpack(
-      pack([mod("Industry", 1, industry())], files),
-      {
+    const { data, swatches, kubejs, packSheets, blockList } =
+      await extractModpack(pack([mod("Industry", 1, industry())], files), {
         vanilla,
         now: NOW,
         blockList: list([
@@ -253,8 +254,7 @@ describe("extractModpack with kubejs/assets", () => {
           "kubejs:magical_soil",
           "kubejs:no_assets",
         ]),
-      },
-    );
+      });
     const key = kubejsSheet(swatches);
     expect(() => modpackDataSchema.parse(data)).not.toThrow();
     const soil = data.blocks.find((b) => b.id === "kubejs:magical_soil");
@@ -273,7 +273,8 @@ describe("extractModpack with kubejs/assets", () => {
       "unknown",
     );
     expect(blockList?.added).toBe(1);
-    expect(kubejs).toEqual({ sheet: key, overridden: 1, added: 1, ignored: 0 });
+    expect(kubejs).toEqual({ overridden: 1, added: 1, ignored: 0 });
+    expect(packSheets).toEqual([key]);
   });
 
   it("gives an added block to the mod of its namespace", async () => {
@@ -306,14 +307,14 @@ describe("extractModpack with kubejs/assets", () => {
     const b = kubejsSheet(both.swatches);
     expect(machineOnly.swatches.get(a)).not.toEqual(both.swatches.get(b));
     expect(a).not.toBe(b);
-    expect(machineOnly.kubejs?.sheet).toBe(a);
-    expect(both.kubejs?.sheet).toBe(b);
+    expect(machineOnly.packSheets).toEqual([a]);
+    expect(both.packSheets).toEqual([b]);
     // Identical inputs share the key.
     expect(kubejsSheet(again.swatches)).toBe(b);
   });
 
   it("has no kubejs sheet when kubejs/assets gives no look", async () => {
-    const { kubejs, swatches } = await extractModpack(
+    const { packSheets, swatches } = await extractModpack(
       pack([mod("Industry", 1, industry())], {
         "assets/industry/lang/en_us.json": json({
           "block.industry.plain": "Plain",
@@ -321,7 +322,7 @@ describe("extractModpack with kubejs/assets", () => {
       }),
       { vanilla, now: NOW },
     );
-    expect(kubejs?.sheet).toBeNull();
+    expect(packSheets).toEqual([]);
     expect([...swatches.keys()]).toEqual(["cf-1"]);
   });
 

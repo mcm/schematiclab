@@ -359,6 +359,13 @@ function atmPack(version: ModpackIndexVersion): ModpackExtraction {
     nestedJars: [],
     compatPacks: [],
     droppedCompatBlocks: [],
+    packSheets: [],
+    crossJar: {
+      looks: 0,
+      redescribed: 0,
+      jarsRead: 0,
+      unresolved: { count: 0, namespaces: [] },
+    },
     warnings: [],
   };
 }

@@ -1022,8 +1022,8 @@ describe("FR-10: kubejs/assets overrides the jars' assets", () => {
     const after = await extract(
       pack([mod("Industry", 1, industry())], kubejsAssets()),
     );
-    const sheet = after.kubejs?.sheet;
-    expect(sheet).toMatch(/^kubejs-[0-9a-f]{16}$/);
+    const sheet = after.packSheets[0];
+    expect(sheet).toMatch(/^pack-[0-9a-f]{16}$/);
     expect(blockOf(after.data, "industry:machine")).toMatchObject({
       properties: { lit: ["false", "true"] },
       defaults: { lit: "false" },
@@ -1093,7 +1093,7 @@ describe("FR-11: kubejs/assets-only ids need the block list", () => {
       displayName: "Magical Soil",
       kind: "block",
       fullCube: true,
-      swatch: { file: listed.kubejs?.sheet },
+      swatch: { file: listed.packSheets[0] },
     });
     expect(soil.appearance).toBeDefined();
     expect(listed.kubejs).toMatchObject({ added: 1, ignored: 0 });
@@ -1103,14 +1103,14 @@ describe("FR-11: kubejs/assets-only ids need the block list", () => {
 });
 
 describe("FR-12: a content-keyed kubejs swatch sheet", () => {
-  it("writes mod-files/kubejs-<hash>/swatches.png", async () => {
+  it("writes mod-files/pack-<hash>/swatches.png", async () => {
     const extraction = await extract(
       pack([mod("Industry", 1, industry())], kubejsAssets()),
     );
-    const key = extraction.kubejs!.sheet!;
+    const key = extraction.packSheets[0];
     const png = extraction.swatches.get(key)!;
     expect(key).toBe(
-      `kubejs-${createHash("sha256").update(png).digest("hex").slice(0, 16)}`,
+      `pack-${createHash("sha256").update(png).digest("hex").slice(0, 16)}`,
     );
     const blob = await published(extraction);
     expect(blob.objects.get(modFileSwatchesPath(key))?.body).toEqual(png);
@@ -1272,6 +1272,9 @@ describe("FR-15: the CLI summary", () => {
       "kubejs/assets:\n  Blocks overridden: 1\n  Blocks added: 0\n  Blockstates of blocks no jar has, ignored without --block-list: 2",
     );
     expect(plain).not.toContain("Block list:");
+    expect(plain).toMatch(
+      /Models and textures from other jars:\n {2}Blocks given a look from another jar: \d+\n {2}Jars re-read: \d+\n {2}Ids no jar has: \d+\n/,
+    );
 
     const listed = cliListed.stdout;
     expect(listed).toContain(
@@ -1298,7 +1301,7 @@ describe("FR-16: docs, USAGE and tool descriptions", () => {
       "modpacks/compat-blocks.ts",
       "--block-list <file>",
       "kubejs/assets/",
-      "kubejs-<first 16 hex",
+      "pack-<first 16 hex",
       "inferLangModelBlockstates",
       "visual_info: false",
     ]) {

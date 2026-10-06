@@ -23,6 +23,9 @@
 // resource pack over the jars: its blockstates, models and textures replace
 // theirs, and with `--block-list` its blockstates of listed ids no jar has
 // add those blocks with their looks; without one they are left out.
+// Models and textures a jar's blocks use but another jar of the pack ships
+// are read from that jar, and those blocks described again; their looks go
+// in per-upload `pack-<hash>` swatch sheets, apart from the jars' own.
 // Every jar goes through the browser's jar parser; only derived block data
 // and face swatches are uploaded (see `src/lib/modpacks/extract.ts`), to the
 // private Vercel Blob store under `modpacks/` and `mod-files/`.
@@ -353,6 +356,22 @@ async function upload(
         `  Blockstates of blocks no jar has, ignored without --block-list: ${ignored}`,
       );
     }
+  }
+  const { crossJar } = extraction;
+  console.log("Models and textures from other jars:");
+  console.log(`  Blocks given a look from another jar: ${crossJar.looks}`);
+  console.log(`  Jars re-read: ${crossJar.jarsRead}`);
+  console.log(`  Ids no jar has: ${crossJar.unresolved.count}`);
+  for (const { namespace, count } of crossJar.unresolved.namespaces.slice(
+    0,
+    10,
+  )) {
+    console.log(`    ${namespace}: ${count}`);
+  }
+  if (crossJar.unresolved.namespaces.length > 10) {
+    console.log(
+      `    …and ${crossJar.unresolved.namespaces.length - 10} more namespaces`,
+    );
   }
   console.log(`Blocks: ${data.blocks.length}`);
   for (const runtime of data.runtimeBlockSources) {
