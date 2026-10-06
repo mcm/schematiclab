@@ -5,6 +5,7 @@ import { searchBlocksTool, suggestPaletteTool } from "./block-tools";
 import { checkBuildTool, compileBuildTool } from "./build-tools";
 import { generateShapeTool } from "./generate-shape";
 import { resolveLimits, withToolTimeout } from "./limits";
+import { listModpacksTool } from "./list-modpacks";
 import { listVersionsTool } from "./list-versions";
 import {
   convertSchematicTool,
@@ -16,6 +17,7 @@ import { type McpDeps, type McpTool, toolError } from "./types";
 
 export const TOOLS: readonly McpTool[] = [
   listVersionsTool,
+  listModpacksTool,
   inspectSchematicTool,
   convertSchematicTool,
   renderSchematicTool,
