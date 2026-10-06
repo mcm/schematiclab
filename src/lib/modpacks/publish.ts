@@ -2,6 +2,9 @@
 // `swatches.png` (skipped when already stored, since mod files are shared
 // between packs), the version's `pack.json.gz`, and last the updated
 // `modpacks/index.json`, so the index never names data that isn't there.
+// The index is read from origin (past the CDN cache) and written back with
+// `ifMatch` on the ETag read, so two uploads in a row can't roll back or
+// drop each other's entries: on a conflict the upload re-reads and re-merges.
 // The store is the private Vercel Blob store, or a folder for `--dry-run`.
 //
 // Node only. Imports carry their `.ts` extension so node's strip-types can
@@ -11,9 +14,18 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import { BlobNotFoundError, head, put } from "@vercel/blob";
+import {
+  BlobNotFoundError,
+  BlobPreconditionFailedError,
+  head,
+  put,
+} from "@vercel/blob";
 
-import { blobCredentialsConfigured, vercelBlobClient } from "../mcp/blob.ts";
+import {
+  blobCredentialsConfigured,
+  vercelBlobClient,
+  type BlobClient,
+} from "../mcp/blob.ts";
 import { BLOCK_LIST_MOD_KEY } from "./block-list.ts";
 import type { ModpackExtraction } from "./extract.ts";
 import {
@@ -21,11 +33,7 @@ import {
   modpackDataPath,
   modpackIndexPath,
 } from "./paths.ts";
-import {
-  clearModpackCache,
-  encodeModpackData,
-  loadModpackIndex,
-} from "./reader.ts";
+import { encodeModpackData, readModpackIndexFromOrigin } from "./reader.ts";
 import {
   MODPACK_FORMAT_VERSION,
   modpackIndexSchema,
@@ -37,12 +45,31 @@ import {
 export interface ModpackStore {
   /** Where the store writes, for messages (`Vercel Blob`, a folder). */
   description: string;
-  /** The current index; an empty one when nothing was uploaded yet. */
-  readIndex(): Promise<ModpackIndex>;
+  /**
+   * The latest index and its version tag (null when nothing was uploaded
+   * yet); an empty index then.
+   */
+  readIndex(): Promise<StoredModpackIndex>;
   exists(pathname: string): Promise<boolean>;
   /** Writes (or overwrites) `pathname`. */
   write(pathname: string, body: Uint8Array, contentType: string): Promise<void>;
+  /**
+   * Writes the index only if it is still the one `readIndex` returned with
+   * `etag` (none stored when `etag` is null); else throws
+   * `BlobPreconditionFailedError`.
+   */
+  writeIndex(body: Uint8Array, etag: string | null): Promise<void>;
 }
+
+export interface StoredModpackIndex {
+  index: ModpackIndex;
+  etag: string | null;
+}
+
+/** Index writes tried before an upload gives up on a busy index. */
+export const MAX_INDEX_WRITE_ATTEMPTS = 3;
+
+export const INDEX_CONFLICT_MESSAGE = `Another upload changed ${modpackIndexPath()} ${MAX_INDEX_WRITE_ATTEMPTS} times while this one tried to add its version. The pack data is written; run the upload again to add it to the index.`;
 
 export interface PublishResult {
   bytesWritten: number;
@@ -80,7 +107,7 @@ export async function publishModpack(
 ): Promise<PublishResult> {
   const { data, swatches } = extraction;
   // Read first: an unreadable index stops the upload before anything is written.
-  const index = await store.readIndex();
+  let stored = await store.readIndex();
   const result: PublishResult = {
     bytesWritten: 0,
     swatchesWritten: 0,
@@ -109,34 +136,55 @@ export async function publishModpack(
     encodeModpackData(data),
     "application/gzip",
   );
-  const merged = mergeModpackIndex(index, data);
-  await write(
-    modpackIndexPath(),
-    new TextEncoder().encode(`${JSON.stringify(merged, null, 2)}\n`),
-    "application/json",
-  );
-  return result;
+  // Merge into the index as it is now, and only write it if no other upload
+  // changed it since; on a conflict re-read and merge again.
+  for (let attempt = 1; ; attempt++) {
+    const merged = mergeModpackIndex(stored.index, data);
+    const body = new TextEncoder().encode(
+      `${JSON.stringify(merged, null, 2)}\n`,
+    );
+    try {
+      await store.writeIndex(body, stored.etag);
+      result.bytesWritten += body.byteLength;
+      return result;
+    } catch (err) {
+      if (!(err instanceof BlobPreconditionFailedError)) throw err;
+      if (attempt >= MAX_INDEX_WRITE_ATTEMPTS) {
+        throw new Error(INDEX_CONFLICT_MESSAGE, { cause: err });
+      }
+    }
+    stored = await store.readIndex();
+  }
 }
 
 /** A folder laid out like the Blob store, for `--dry-run --out <dir>`. */
 export function directoryModpackStore(root: string): ModpackStore {
   const file = (pathname: string) => path.join(root, ...pathname.split("/"));
+  const write = async (pathname: string, body: Uint8Array) => {
+    await mkdir(path.dirname(file(pathname)), { recursive: true });
+    await writeFile(file(pathname), body);
+  };
   return {
     description: root,
     async readIndex() {
       const indexFile = file(modpackIndexPath());
       if (!existsSync(indexFile)) {
-        return { formatVersion: MODPACK_FORMAT_VERSION, packs: [] };
+        return {
+          index: { formatVersion: MODPACK_FORMAT_VERSION, packs: [] },
+          etag: null,
+        };
       }
-      return modpackIndexSchema.parse(
-        JSON.parse(await readFile(indexFile, "utf8")),
-      );
+      return {
+        index: modpackIndexSchema.parse(
+          JSON.parse(await readFile(indexFile, "utf8")),
+        ),
+        etag: null,
+      };
     },
     exists: async (pathname) => existsSync(file(pathname)),
-    async write(pathname, body) {
-      await mkdir(path.dirname(file(pathname)), { recursive: true });
-      await writeFile(file(pathname), body);
-    },
+    write,
+    // A dry run is the only writer of its folder: no conflicts to check.
+    writeIndex: (body) => write(modpackIndexPath(), body),
   };
 }
 
@@ -157,37 +205,84 @@ export function blobUploadCredentialsConfigured(
   );
 }
 
+/** The slice of the Vercel Blob SDK the upload uses, so tests inject a fake. */
+export interface ModpackBlobApi {
+  get: BlobClient["get"];
+  /** Whether `pathname` is stored. */
+  exists(pathname: string): Promise<boolean>;
+  /**
+   * Writes `pathname`: over anything stored when `allowOverwrite`, only over
+   * the blob with ETag `ifMatch` when given (`BlobPreconditionFailedError`
+   * otherwise), and only when nothing is stored when neither is set.
+   */
+  put(
+    pathname: string,
+    body: Uint8Array,
+    options: { contentType: string; allowOverwrite?: true; ifMatch?: string },
+  ): Promise<void>;
+}
+
+export const vercelModpackBlobApi: ModpackBlobApi = {
+  get: vercelBlobClient.get,
+  async exists(pathname) {
+    try {
+      await head(pathname);
+      return true;
+    } catch (err) {
+      if (err instanceof BlobNotFoundError) return false;
+      throw err;
+    }
+  },
+  async put(pathname, body, options) {
+    await put(
+      pathname,
+      Buffer.from(body.buffer, body.byteOffset, body.byteLength),
+      {
+        access: "private",
+        addRandomSuffix: false,
+        contentType: options.contentType,
+        ...(options.ifMatch !== undefined
+          ? { ifMatch: options.ifMatch }
+          : { allowOverwrite: options.allowOverwrite ?? false }),
+      },
+    );
+  },
+};
+
 /**
  * The private Vercel Blob store. Credentials come from the environment, as
  * for the MCP server (`lib/mcp/blob.ts`): the SDK resolves them itself.
  */
-export function blobModpackStore(): ModpackStore {
+export function blobModpackStore(
+  api: ModpackBlobApi = vercelModpackBlobApi,
+): ModpackStore {
   return {
     description: "Vercel Blob",
-    readIndex() {
-      clearModpackCache();
-      return loadModpackIndex(vercelBlobClient);
-    },
-    async exists(pathname) {
+    // From origin: the CDN cache can serve the index an earlier upload
+    // replaced for about a minute.
+    readIndex: () => readModpackIndexFromOrigin(api),
+    exists: (pathname) => api.exists(pathname),
+    write: (pathname, body, contentType) =>
+      api.put(pathname, body, { contentType, allowOverwrite: true }),
+    async writeIndex(body, etag) {
+      const pathname = modpackIndexPath();
+      const contentType = "application/json";
+      if (etag !== null) {
+        await api.put(pathname, body, { contentType, ifMatch: etag });
+        return;
+      }
       try {
-        await head(pathname);
-        return true;
+        await api.put(pathname, body, { contentType });
       } catch (err) {
-        if (err instanceof BlobNotFoundError) return false;
+        // Writing a new blob fails when one appeared since the read: the
+        // same conflict as a stale ETag.
+        if (!(err instanceof BlobPreconditionFailedError)) {
+          if (await api.exists(pathname).catch(() => false)) {
+            throw new BlobPreconditionFailedError();
+          }
+        }
         throw err;
       }
-    },
-    async write(pathname, body, contentType) {
-      await put(
-        pathname,
-        Buffer.from(body.buffer, body.byteOffset, body.byteLength),
-        {
-          access: "private",
-          addRandomSuffix: false,
-          allowOverwrite: true,
-          contentType,
-        },
-      );
     },
   };
 }

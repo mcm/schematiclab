@@ -50,13 +50,16 @@ export interface BlobClient {
   }): Promise<{ blobs: BlobListEntry[]; cursor?: string; hasMore: boolean }>;
   del(pathnames: string[]): Promise<void>;
   // Reads a private blob by pathname; null when it does not exist.
+  // `useCache: false` reads from origin, past the CDN cache (which can serve
+  // an overwritten blob's old content for about a minute).
   get(
     pathname: string,
-    options: { access: "private" },
+    options: { access: "private"; useCache?: boolean },
   ): Promise<{
     stream: ReadableStream<Uint8Array>;
     size: number;
     uploadedAt: Date;
+    etag: string;
   } | null>;
 }
 
@@ -91,6 +94,7 @@ export const vercelBlobClient: BlobClient = {
       stream: result.stream,
       size: result.blob.size,
       uploadedAt: result.blob.uploadedAt,
+      etag: result.blob.etag,
     };
   },
 };

@@ -80,7 +80,12 @@ import {
   MODPACKS_PREFIX,
 } from "../paths";
 import { encodeRgbaPng } from "../png";
-import { publishModpack, type ModpackStore } from "../publish";
+import {
+  blobModpackStore,
+  publishModpack,
+  type ModpackStore,
+} from "../publish";
+import { fakeModpackBlobApi } from "./fake-modpack-blob";
 import { clearModpackCache, loadModpackIndex } from "../reader";
 import { parseModpackRef } from "../ref";
 import {
@@ -374,17 +379,7 @@ function atmPack(version: ModpackIndexVersion): ModpackExtraction {
 
 /** `publishModpack`'s store, writing into the fake Blob store. */
 function fakeBlobStore(blob: FakeBlob): ModpackStore {
-  return {
-    description: "fake Blob",
-    readIndex() {
-      clearModpackCache();
-      return loadModpackIndex(blob);
-    },
-    exists: async (pathname) => blob.objects.has(pathname),
-    async write(pathname, body) {
-      blob.objects.set(pathname, { body, uploadedAt: NOW });
-    },
-  };
+  return blobModpackStore(fakeModpackBlobApi(blob, () => NOW));
 }
 
 let tmp: string;

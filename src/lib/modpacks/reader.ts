@@ -63,18 +63,39 @@ export function loadModpackIndex(
 }
 
 async function readIndex(blob: BlobClient): Promise<ModpackIndex> {
-  const bytes = await readBlob(
+  return (await readModpackIndexFromOrigin(blob, { useCache: true })).index;
+}
+
+/**
+ * The index and its blob's ETag (null when nothing was uploaded yet), read
+ * from origin past the CDN cache unless `useCache`, never from this
+ * instance's cache. The upload merges into it and writes it back with
+ * `ifMatch`, so it must see the latest upload.
+ */
+export async function readModpackIndexFromOrigin(
+  blob: Pick<BlobClient, "get">,
+  options: { useCache?: boolean } = {},
+): Promise<{ index: ModpackIndex; etag: string | null }> {
+  const found = await readBlobWithEtag(
     blob,
     modpackIndexPath(),
     MAX_MODPACK_INDEX_BYTES,
+    options.useCache ?? false,
   );
-  if (bytes === null)
-    return { formatVersion: MODPACK_FORMAT_VERSION, packs: [] };
-  return validate(
-    "modpacks/index.json",
-    modpackIndexSchema,
-    parseJson("modpacks/index.json", bytes),
-  );
+  if (found === null) {
+    return {
+      index: { formatVersion: MODPACK_FORMAT_VERSION, packs: [] },
+      etag: null,
+    };
+  }
+  return {
+    index: validate(
+      "modpacks/index.json",
+      modpackIndexSchema,
+      parseJson("modpacks/index.json", found.bytes),
+    ),
+    etag: found.etag,
+  };
 }
 
 /**
@@ -195,6 +216,17 @@ export async function readBlob(
   pathname: string,
   maxBytes: number,
 ): Promise<Uint8Array | null> {
+  return (
+    (await readBlobWithEtag(blob, pathname, maxBytes, true))?.bytes ?? null
+  );
+}
+
+async function readBlobWithEtag(
+  blob: Pick<BlobClient, "get">,
+  pathname: string,
+  maxBytes: number,
+  useCache: boolean,
+): Promise<{ bytes: Uint8Array; etag: string } | null> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   let stream: ReadableStream<Uint8Array> | undefined;
   const timeout = new Promise<never>((_, reject) => {
@@ -207,10 +239,17 @@ export async function readBlob(
       );
     }, MODPACK_READ_TIMEOUT_MS);
   });
-  const read = async (): Promise<Uint8Array | null> => {
+  const read = async (): Promise<{
+    bytes: Uint8Array;
+    etag: string;
+  } | null> => {
     let found: Awaited<ReturnType<BlobClient["get"]>>;
     try {
-      found = await blob.get(pathname, { access: "private" });
+      // The MCP server's reads keep the SDK's default (CDN cache on).
+      found = await blob.get(
+        pathname,
+        useCache ? { access: "private" } : { access: "private", useCache },
+      );
     } catch (err) {
       throw new Error(
         `Could not read ${pathname} from Blob storage: ${message(err)}`,
@@ -222,7 +261,10 @@ export async function readBlob(
       await found.stream.cancel();
       throw new Error(`${pathname} is larger than ${maxBytes} bytes.`);
     }
-    return readCapped(found.stream, pathname, maxBytes);
+    return {
+      bytes: await readCapped(found.stream, pathname, maxBytes),
+      etag: found.etag,
+    };
   };
   try {
     return await Promise.race([read(), timeout]);

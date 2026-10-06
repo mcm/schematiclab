@@ -3,15 +3,26 @@
 import type { BlobClient, BlobListEntry } from "../blob";
 
 export interface FakeBlob extends BlobClient {
-  objects: Map<string, { body: Uint8Array; uploadedAt: Date }>;
+  objects: Map<string, FakeBlobObject>;
   calls: { method: string; args: unknown[] }[];
+}
+
+export interface FakeBlobObject {
+  body: Uint8Array;
+  uploadedAt: Date;
+  /** The blob's ETag; `get` makes one up from the body when unset. */
+  etag?: string;
+}
+
+export function fakeBlobEtag(object: FakeBlobObject): string {
+  return object.etag ?? `"${object.body.byteLength}"`;
 }
 
 export function createFakeBlob(
   now: () => Date,
   options: { pageSize?: number; putError?: Error } = {},
 ): FakeBlob {
-  const objects = new Map<string, { body: Uint8Array; uploadedAt: Date }>();
+  const objects = new Map<string, FakeBlobObject>();
   const calls: { method: string; args: unknown[] }[] = [];
   let suffix = 0;
   const pageSize = options.pageSize ?? 1000;
@@ -69,6 +80,7 @@ export function createFakeBlob(
         stream: new Blob([new Uint8Array(object.body)]).stream(),
         size: object.body.byteLength,
         uploadedAt: object.uploadedAt,
+        etag: fakeBlobEtag(object),
       };
     },
   };
