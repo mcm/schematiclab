@@ -107,13 +107,18 @@ function kubejsAssets(): Record<string, Uint8Array> {
   };
 }
 
-function kubejsKey(files: Record<string, Uint8Array>): string {
-  const hash = createHash("sha256");
-  for (const name of Object.keys(files).sort()) {
-    hash.update(`${name}\n${files[name].byteLength}\n`);
-    hash.update(files[name]);
-  }
-  return `kubejs-${hash.digest("hex").slice(0, 16)}`;
+/** The kubejs sheet's key: from its PNG's SHA-256. */
+function kubejsKey(png: Uint8Array | undefined): string {
+  expect(png).toBeDefined();
+  const hex = createHash("sha256").update(png!).digest("hex");
+  return `kubejs-${hex.slice(0, 16)}`;
+}
+
+/** The key of the one `kubejs-` sheet among `swatches`. */
+function kubejsSheet(swatches: Map<string, Uint8Array>): string {
+  const keys = [...swatches.keys()].filter((k) => k.startsWith("kubejs-"));
+  expect(keys).toHaveLength(1);
+  return keys[0];
 }
 
 function mod(
@@ -184,7 +189,6 @@ describe("parseResourcePack", () => {
 describe("extractModpack with kubejs/assets", () => {
   it("overrides a jar block's blockstate, models and textures", async () => {
     const files = kubejsAssets();
-    const key = kubejsKey(files);
     const plain = await extractModpack(
       pack([mod("Industry", 1, industry())], null),
       { vanilla, now: NOW },
@@ -196,6 +200,8 @@ describe("extractModpack with kubejs/assets", () => {
       pack([mod("Industry", 1, industry())], files),
       { vanilla, now: NOW },
     );
+    const key = kubejsSheet(swatches);
+    expect(key).toBe(kubejsKey(swatches.get(key)));
     expect(() => modpackDataSchema.parse(data)).not.toThrow();
     expect(warnings).toEqual([]);
     const blocks = new Map(data.blocks.map((b) => [b.id, b]));
@@ -237,8 +243,7 @@ describe("extractModpack with kubejs/assets", () => {
 
   it("adds a listed block from kubejs/assets with its look", async () => {
     const files = kubejsAssets();
-    const key = kubejsKey(files);
-    const { data, kubejs, blockList } = await extractModpack(
+    const { data, swatches, kubejs, blockList } = await extractModpack(
       pack([mod("Industry", 1, industry())], files),
       {
         vanilla,
@@ -250,6 +255,7 @@ describe("extractModpack with kubejs/assets", () => {
         ]),
       },
     );
+    const key = kubejsSheet(swatches);
     expect(() => modpackDataSchema.parse(data)).not.toThrow();
     const soil = data.blocks.find((b) => b.id === "kubejs:magical_soil");
     expect(soil).toMatchObject({
@@ -282,6 +288,41 @@ describe("extractModpack with kubejs/assets", () => {
     expect(data.blocks.map((b) => [b.id, b.mod])).toEqual([
       ["industry:runtime_press", "cf-1"],
     ]);
+  });
+
+  it("keys the kubejs sheet by its content", async () => {
+    const extract = (ids: string[]) =>
+      extractModpack(pack([mod("Industry", 1, industry())], kubejsAssets()), {
+        vanilla,
+        now: NOW,
+        blockList: list(ids),
+      });
+    const machineOnly = await extract(["industry:machine"]);
+    const both = await extract(["industry:machine", "industry:casing"]);
+    const again = await extract(["industry:machine", "industry:casing"]);
+
+    // Same folder, different block lists: different sheets and keys.
+    const a = kubejsSheet(machineOnly.swatches);
+    const b = kubejsSheet(both.swatches);
+    expect(machineOnly.swatches.get(a)).not.toEqual(both.swatches.get(b));
+    expect(a).not.toBe(b);
+    expect(machineOnly.kubejs?.sheet).toBe(a);
+    expect(both.kubejs?.sheet).toBe(b);
+    // Identical inputs share the key.
+    expect(kubejsSheet(again.swatches)).toBe(b);
+  });
+
+  it("has no kubejs sheet when kubejs/assets gives no look", async () => {
+    const { kubejs, swatches } = await extractModpack(
+      pack([mod("Industry", 1, industry())], {
+        "assets/industry/lang/en_us.json": json({
+          "block.industry.plain": "Plain",
+        }),
+      }),
+      { vanilla, now: NOW },
+    );
+    expect(kubejs?.sheet).toBeNull();
+    expect([...swatches.keys()]).toEqual(["cf-1"]);
   });
 
   it("uploads the kubejs sheet once", async () => {

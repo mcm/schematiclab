@@ -9,7 +9,8 @@
 // business: it hands over a `ModpackSource` whose mods read their own bytes.
 // Every mod ends with a status, so the pack record accounts for all of them.
 //
-// Pure apart from `crypto.subtle` (hashing jars without CurseForge ids).
+// Pure apart from `crypto.subtle` (hashing jars without CurseForge ids and
+// the kubejs swatch sheet).
 // Imports carry their `.ts` extension so node's strip-types can load it.
 
 import {
@@ -158,8 +159,8 @@ export interface ModpackExtraction {
   };
   /** What the pack's `kubejs/assets/` changed, when it has one. */
   kubejs?: {
-    /** Its swatch sheet's key (`kubejs-<hash>`). */
-    sheet: string;
+    /** Its swatch sheet's key (`kubejs-<hash of the PNG>`), null without one. */
+    sheet: string | null;
     /** Pack blocks whose look or states it changed. */
     overridden: number;
     /** Listed blocks added from it (with a block list). */
@@ -223,6 +224,17 @@ export function modpackVersionKey(
   return key;
 }
 
+/** SHA-256 of `bytes`, in hex. */
+async function sha256Hex(bytes: Uint8Array): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    bytes as Uint8Array<ArrayBuffer>,
+  );
+  return [...new Uint8Array(digest)]
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 /** Mod-file key: `cf-<file id>`, or `sha256-<hex>` of the jar. */
 async function modFileKey(
   source: ModpackModSource,
@@ -230,14 +242,7 @@ async function modFileKey(
 ): Promise<string | null> {
   if (source.curseForgeFileId !== null) return `cf-${source.curseForgeFileId}`;
   if (bytes === null) return null;
-  const digest = await crypto.subtle.digest(
-    "SHA-256",
-    bytes as Uint8Array<ArrayBuffer>,
-  );
-  const hex = [...new Uint8Array(digest)]
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-  return `sha256-${hex}`;
+  return `sha256-${await sha256Hex(bytes)}`;
 }
 
 /** Default property values: the first variant's, else each first value. */
@@ -438,34 +443,16 @@ function describeBlocks(
 }
 
 /** The pack's `kubejs/assets/` resource pack, parsed. */
-interface KubeJsPack extends ResourcePackAssets {
-  /** Swatch sheet key: `kubejs-<first 16 hex of the files' SHA-256>`. */
-  key: string;
-}
+type KubeJsPack = ResourcePackAssets;
 
 /**
- * SHA-256 over a folder's files: each file's name, length and bytes, in
- * name order.
+ * Swatch sheet key of the `kubejs/assets` looks:
+ * `kubejs-<first 16 hex of the sheet PNG's SHA-256>`. Which blocks the sheet
+ * holds also depends on the jars and the block list, so it is keyed by its
+ * content: a sheet already stored under the key is the same sheet.
  */
-async function hashFiles(
-  files: Readonly<Record<string, Uint8Array>>,
-): Promise<string> {
-  const encoder = new TextEncoder();
-  const parts: Uint8Array[] = [];
-  for (const name of Object.keys(files).sort()) {
-    parts.push(encoder.encode(`${name}\n${files[name].byteLength}\n`));
-    parts.push(files[name]);
-  }
-  const all = new Uint8Array(parts.reduce((n, part) => n + part.byteLength, 0));
-  let offset = 0;
-  for (const part of parts) {
-    all.set(part, offset);
-    offset += part.byteLength;
-  }
-  const digest = await crypto.subtle.digest("SHA-256", all);
-  return [...new Uint8Array(digest)]
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
+async function kubeJsSheetKey(png: Uint8Array): Promise<string> {
+  return `kubejs-${(await sha256Hex(png)).slice(0, 16)}`;
 }
 
 /** Reads and parses the source's `kubejs/assets/`; null without one. */
@@ -484,7 +471,7 @@ async function readKubeJsPack(
   if (files === null) return null;
   const pack = parseResourcePack(files);
   for (const warning of pack.warnings) warnings.push(`kubejs/: ${warning}`);
-  return { ...pack, key: `kubejs-${(await hashFiles(files)).slice(0, 16)}` };
+  return pack;
 }
 
 /** A block's name from the `kubejs/assets` lang file, else `fallback`. */
@@ -952,17 +939,22 @@ export async function extractModpack(
         return faces === undefined ? [] : [{ id: block.id, faces }];
       }),
     );
+    const key = sheet === null ? null : await kubeJsSheetKey(sheet.png);
     for (const block of final) {
       const faces = sheet?.uvs[block.id];
-      if (faces !== undefined && Object.keys(faces).length > 0) {
-        block.swatch = { file: kubejs.key, faces };
+      if (
+        key !== null &&
+        faces !== undefined &&
+        Object.keys(faces).length > 0
+      ) {
+        block.swatch = { file: key, faces };
       } else {
         delete block.swatch;
       }
     }
-    if (sheet !== null) swatches.set(kubejs.key, sheet.png);
+    if (sheet !== null && key !== null) swatches.set(key, sheet.png);
     kubejsResult = {
-      sheet: kubejs.key,
+      sheet: key,
       overridden: final.length - kubejsAdded,
       added: kubejsAdded,
       ignored: blockList === undefined ? kubejsOnly.length : 0,
