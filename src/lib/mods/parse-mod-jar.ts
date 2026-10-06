@@ -17,6 +17,11 @@ import {
 } from "./generated/jar-data.ts";
 import { computeModAppearances } from "./mod-appearance.ts";
 import {
+  COPYCAT_TEXTURE,
+  FRAMED_ALT_TEXTURE,
+  FRAMED_TEXTURE,
+} from "../camo/frame-textures.ts";
+import {
   parseFramedTemplate,
   type TemplateCube,
 } from "../render/camo/shape-pack.ts";
@@ -176,9 +181,14 @@ export function parseModJar(
   }
 
   // Keep only models reachable from a blockstate, and only textures those
-  // models (or their in-mod parents) reference.
+  // models (or their in-mod parents) reference, plus the camo frame textures
+  // (empty camo slots, and frames whose placeholder model draws nothing).
   const models: Record<string, unknown> = {};
-  const textureRefs = new Set<string>();
+  const textureRefs = new Set<string>([
+    FRAMED_TEXTURE,
+    FRAMED_ALT_TEXTURE,
+    COPYCAT_TEXTURE,
+  ]);
   const visit = (modelId: string, depth: number): void => {
     if (depth > MAX_PARENT_DEPTH || modelId in models) return;
     const model = allModels[modelId];

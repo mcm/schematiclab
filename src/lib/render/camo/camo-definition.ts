@@ -33,6 +33,7 @@ import {
 import { mat4 } from "gl-matrix";
 
 import type { CamoSlot, CamoState } from "../../camo/extract";
+import { camoFrameTexture } from "../../camo/frame-textures";
 import { MISSING_TEXTURE_ID } from "../atlas-layout";
 import {
   boundaryFaceDirection,
@@ -50,10 +51,6 @@ import {
   type ShapeRule,
 } from "./shape-pack";
 
-const FRAMED_TEXTURE = "framedblocks:block/framed_block";
-const FRAMED_ALT_TEXTURE = "framedblocks:block/framed_block_alt";
-const COPYCAT_TEXTURE = "create:block/copycat_base";
-
 /** What camo definitions need from the surrounding resources. */
 export interface CamoRenderContext {
   /** Definition used to mesh a camo block (unknown ids: the placeholder). */
@@ -66,8 +63,7 @@ export interface CamoRenderContext {
 
 /** Texture of an empty camo slot on `blockId`. */
 export function frameTexture(blockId: string, slot: string): string {
-  if (!blockId.startsWith("framedblocks:")) return COPYCAT_TEXTURE;
-  return slot === "camo_two" ? FRAMED_ALT_TEXTURE : FRAMED_TEXTURE;
+  return camoFrameTexture(blockId, slot);
 }
 
 const FULL_CUBE_FACES = Object.fromEntries(

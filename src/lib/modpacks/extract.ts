@@ -16,6 +16,7 @@ import {
   CAMO_BLOCK_IDS,
   DOUBLE_CAMO_BLOCK_IDS,
 } from "../camo/camo-blocks.generated.ts";
+import { camoFrameTexture } from "../camo/frame-textures.ts";
 import { modernizeLegacyModAssets } from "../mods/generated/legacy-blockstate.ts";
 import { parseModJar } from "../mods/parse-mod-jar.ts";
 import { completeBlockProperties } from "../mods/property-domains.ts";
@@ -23,6 +24,7 @@ import {
   appearanceRecord,
   describeModBlocks,
   packSwatches,
+  type BlockDescriptor,
   type DescriptorSources,
 } from "./appearance.ts";
 import { classifyModBlock } from "./classify.ts";
@@ -212,6 +214,43 @@ interface ExtractedMod {
   templates?: ModpackData["framedTemplates"];
 }
 
+// A model drawing a frame texture on every side (no elements: its texture
+// variables are drawn on every face).
+const FRAME_MODEL = "schematiclab:block/camo_frame";
+
+/**
+ * Descriptors of the jar's camo frames that its own models give no look
+ * (their blockstates point at a placeholder model), from the frame texture
+ * an empty slot shows, when the jar ships it. Copycats+ frames show Create's
+ * texture; `withCamoFrameLooks` gives those theirs when the pack is read.
+ */
+function describeBareCamoFrames(
+  parsed: ReturnType<typeof parseModJar>,
+  described: Readonly<Record<string, unknown>>,
+): Record<string, BlockDescriptor> {
+  const blockstates: Record<string, unknown> = {};
+  const models: Record<string, unknown> = {};
+  for (const { id } of parsed.blocks) {
+    if (!CAMO_BLOCKS.has(id) || Object.hasOwn(described, id)) continue;
+    const texture = camoFrameTexture(id);
+    if (!Object.hasOwn(parsed.textures, texture)) continue;
+    const model = `${FRAME_MODEL}/${texture.replace(/[:/]/g, "_")}`;
+    models[model] = { textures: { particle: texture } };
+    blockstates[id] = { variants: { "": { model } } };
+  }
+  if (Object.keys(blockstates).length === 0) return {};
+  return describeModBlocks(
+    {
+      blockIds: Object.keys(blockstates),
+      blockstates,
+      models,
+      textures: parsed.textures,
+      textureMeta: parsed.textureMeta,
+    },
+    null,
+  );
+}
+
 async function extractMod(
   source: ModpackModSource,
   vanilla: DescriptorSources | null,
@@ -298,6 +337,7 @@ async function extractMod(
       },
       vanilla,
     );
+    Object.assign(descriptors, describeBareCamoFrames(parsed, descriptors));
     const sheet = packSwatches(
       Object.entries(descriptors).map(([id, d]) => ({ id, faces: d.faces })),
     );

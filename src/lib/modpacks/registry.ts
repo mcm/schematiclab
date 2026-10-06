@@ -5,8 +5,9 @@
 // `createBlockRegistry` (state validation, families, name repair); unknown
 // ids get suggestions from the whole pack.
 //
-// Camo frames are corrected first (`withCamoFrameState`): their stored
-// properties and kind come from placeholder jar models.
+// Camo frames are corrected first (`withCamoFrameState`,
+// `withCamoFrameLooks`): their stored properties, kind and look come from
+// placeholder jar models.
 //
 // What the `BlockRegistry` interface has no room for (mod name, namespace,
 // appearance, swatch, camo slots, an `unknown` kind) is in `modBlock`.
@@ -26,7 +27,7 @@ import {
   type StateValidation,
   type VariantResult,
 } from "../blockdata/registry.ts";
-import { withCamoFrameState } from "./camo-frames.ts";
+import { withCamoFrameLooks, withCamoFrameState } from "./camo-frames.ts";
 import type {
   ModBlockAppearance,
   ModBlockKind,
@@ -81,10 +82,13 @@ export function createModpackRegistry(
   stored: ModpackData,
   ref: string,
 ): ModpackBlocks {
-  // Camo frames get their real state properties and shape (camo-frames.ts).
+  // Camo frames get their real state properties, shape and look
+  // (camo-frames.ts).
   const data: ModpackData = {
     ...stored,
-    blocks: stored.blocks.map((block) => withCamoFrameState(block, vanilla)),
+    blocks: withCamoFrameLooks(
+      stored.blocks.map((block) => withCamoFrameState(block, vanilla)),
+    ),
   };
   const minecraftVersion = vanilla.version;
   const source = `modpack '${ref}' (Minecraft ${minecraftVersion})`;
