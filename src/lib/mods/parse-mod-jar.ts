@@ -9,7 +9,10 @@
 import { strFromU8, unzipSync, type UnzipFileInfo } from "fflate";
 
 import type { AppearanceSources } from "../render/block-appearance";
-import { legacyBlockstateRefs } from "./generated/legacy-blockstate.ts";
+import {
+  legacyBlockstateRefs,
+  legacyModelId,
+} from "./generated/legacy-blockstate.ts";
 import {
   providerDataGeneratesBlocks,
   providerJarEntry,
@@ -156,14 +159,18 @@ export function parseResourcePack(
  */
 export function blockstateAssetRefs(
   blockstate: unknown,
-  models: Readonly<Record<string, unknown>>,
+  models: Readonly<Record<string, unknown>> | ((id: string) => unknown),
 ): { models: Set<string>; textures: Set<string> } {
   const modelIds = new Set<string>();
   const textures = new Set<string>();
+  const getModel =
+    typeof models === "function"
+      ? models
+      : (id: string) => (Object.hasOwn(models, id) ? models[id] : undefined);
   const visit = (modelId: string, depth: number): void => {
     if (depth > MAX_PARENT_DEPTH || modelIds.has(modelId)) return;
     modelIds.add(modelId);
-    const model = Object.hasOwn(models, modelId) ? models[modelId] : undefined;
+    const model = getModel(modelId);
     if (!isRecord(model)) return;
     if (isRecord(model.textures)) {
       for (const value of Object.values(model.textures)) {
@@ -180,6 +187,90 @@ export function blockstateAssetRefs(
   for (const modelId of legacy.models) visit(modelId, 0);
   for (const texture of legacy.textures) textures.add(texture);
   return { models: modelIds, textures };
+}
+
+/** A model's parent id and the literal texture ids it names. */
+export function modelAssetRefs(model: unknown): {
+  parent: string | null;
+  textures: string[];
+} {
+  if (!isRecord(model)) return { parent: null, textures: [] };
+  const textures: string[] = [];
+  if (isRecord(model.textures)) {
+    for (const value of Object.values(model.textures)) {
+      const ref = textureRefOf(value);
+      if (ref !== null) textures.push(ref);
+    }
+  }
+  return {
+    parent:
+      typeof model.parent === "string"
+        ? normalizeResourceId(model.parent)
+        : null,
+    textures,
+  };
+}
+
+/**
+ * The model ids a blockstate (and the parents of its models) reaches, and
+ * the literal texture ids those name, that `getModel` / `hasTexture` don't
+ * have; `minecraft:` ids are never listed. A model name is found in its
+ * 1.13+ form or its 1.12 `block/` form (`legacyModelId`); when neither
+ * exists, the form its format uses is listed (1.12 for Forge files).
+ */
+export function missingAssetRefs(
+  blockstate: unknown,
+  getModel: (id: string) => unknown,
+  hasTexture: (id: string) => boolean,
+): { models: Set<string>; textures: Set<string> } {
+  const models = new Set<string>();
+  const textures = new Set<string>();
+  const vanillaId = (id: string) => id.startsWith("minecraft:");
+  const checkTexture = (id: string) => {
+    if (!vanillaId(id) && !hasTexture(id)) textures.add(id);
+  };
+  const seen = new Set<string>();
+  const visit = (modelId: string, depth: number): void => {
+    if (depth > MAX_PARENT_DEPTH || seen.has(modelId)) return;
+    seen.add(modelId);
+    const model = getModel(modelId);
+    if (!isRecord(model)) return;
+    if (isRecord(model.textures)) {
+      for (const value of Object.values(model.textures)) {
+        const ref = textureRefOf(value);
+        if (ref !== null) checkTexture(ref);
+      }
+    }
+    if (typeof model.parent === "string") {
+      const parent = normalizeResourceId(model.parent);
+      if (getModel(parent) === undefined) {
+        if (!vanillaId(parent)) models.add(parent);
+      } else {
+        visit(parent, depth + 1);
+      }
+    }
+  };
+  const refs = legacyBlockstateRefs(blockstate);
+  const named = new Set(refs.models);
+  const forge = isRecord(blockstate) && blockstate.forge_marker !== undefined;
+  for (const id of named) {
+    // Skip the `block/` forms `legacyBlockstateRefs` adds.
+    const colon = id.indexOf(":");
+    if (
+      id.startsWith("block/", colon + 1) &&
+      named.has(
+        `${id.slice(0, colon)}:${id.slice(colon + "block/".length + 1)}`,
+      )
+    ) {
+      continue;
+    }
+    const legacy = legacyModelId(id);
+    if (getModel(id) !== undefined) visit(id, 0);
+    else if (getModel(legacy) !== undefined) visit(legacy, 0);
+    else if (!vanillaId(id)) models.add(forge ? legacy : id);
+  }
+  for (const texture of refs.textures) checkTexture(texture);
+  return { models, textures };
 }
 
 /** Jars nested in a jar (NeoForge / Forge jar-in-jar). */
@@ -200,15 +291,35 @@ export interface ParseModJarOptions {
   skipNestedJar?: (path: string) => boolean;
 }
 
-/** A jar's mod ids and nested jars, without its assets. */
+/** Model ids (`ns:block/x`) and texture ids a jar ships. */
+export interface JarAssetIds {
+  models: string[];
+  textures: string[];
+}
+
+/** The asset ids of one jar (outer or nested), by entry name. */
+export interface JarAssetIndex extends JarAssetIds {
+  /**
+   * Namespaces it ships blockstates in (its blocks'), sorted: shipping a
+   * model or texture of a namespace doesn't make it the namespace's jar.
+   */
+  blockNamespaces: string[];
+  /** Its `compat_packs/<modid>/` packs' ids, by mod id. */
+  compatPacks: Record<string, JarAssetIds>;
+}
+
+/** A jar's mod ids, nested jars and asset ids, without its assets. */
 export interface ModJarIndex {
   modIds: string[];
-  nestedJars: Omit<NestedModJar, "blockIds">[];
+  /** The outer jar's own asset ids. */
+  assets: JarAssetIndex;
+  nestedJars: (Omit<NestedModJar, "blockIds"> & { assets: JarAssetIndex })[];
 }
 
 /**
- * Reads only the mod ids and nested jars of a mod jar (no assets), e.g. to
- * pick which copy of a nested mod to read before `parseModJar`. Throws like
+ * Reads only the mod ids, nested jars and the model and texture ids of a mod
+ * jar, from its zip entry names (no assets are inflated), e.g. to pick which
+ * copy of a nested mod to read before `parseModJar`. Throws like
  * `parseModJar` does.
  */
 export function readModJarIndex(bytes: Uint8Array): ModJarIndex {
@@ -222,8 +333,156 @@ export function readModJarIndex(bytes: Uint8Array): ModJarIndex {
   );
   return {
     modIds: layers[0].modIds,
-    nestedJars: layers.slice(1).map(nestedModJarOf),
+    assets: assetIndexOf(layers[0].assetNames),
+    nestedJars: layers.slice(1).map((layer) => ({
+      ...nestedModJarOf(layer),
+      assets: assetIndexOf(layer.assetNames),
+    })),
   };
+}
+
+/** The model and texture ids of a layer's asset entry names. */
+function assetIndexOf(names: readonly string[]): JarAssetIndex {
+  const namespaces = new Set<string>();
+  const own: { models: Set<string>; textures: Set<string> } = {
+    models: new Set(),
+    textures: new Set(),
+  };
+  const compat = new Map<string, typeof own>();
+  for (const name of names) {
+    const prefix = COMPAT_PACK_PATH_RE.exec(name);
+    const match = ASSET_PATH_RE.exec(
+      prefix === null ? name : name.slice(prefix[0].length),
+    );
+    if (match === null || match[1] === "minecraft") continue;
+    let ids = own;
+    if (prefix === null) {
+      if (match[2].startsWith("blockstates/")) namespaces.add(match[1]);
+    } else {
+      ids = compat.get(prefix[1]) ?? { models: new Set(), textures: new Set() };
+      compat.set(prefix[1], ids);
+    }
+    const rest = match[2];
+    if (rest.startsWith("models/")) {
+      ids.models.add(
+        `${match[1]}:${rest.slice("models/".length, -".json".length)}`,
+      );
+    } else if (rest.startsWith("textures/") && rest.endsWith(".png")) {
+      ids.textures.add(
+        `${match[1]}:${rest.slice("textures/".length, -".png".length)}`,
+      );
+    }
+  }
+  const sorted = (ids: typeof own): JarAssetIds => ({
+    models: [...ids.models].sort(),
+    textures: [...ids.textures].sort(),
+  });
+  return {
+    ...sorted(own),
+    blockNamespaces: [...namespaces].sort(),
+    compatPacks: Object.fromEntries(
+      [...compat.keys()]
+        .sort()
+        .map((modId) => [modId, sorted(compat.get(modId)!)]),
+    ),
+  };
+}
+
+export interface ReadJarAssetsOptions extends ParseModJarOptions {
+  /** The `compat_packs/<modid>/` packs read (none when absent). */
+  compatPacks?: ReadonlySet<string>;
+}
+
+/** Models and textures `readJarAssets` read. */
+export interface JarAssets {
+  models: Record<string, unknown>;
+  textures: Record<string, Uint8Array>;
+  textureMeta: Record<string, unknown>;
+  warnings: string[];
+}
+
+/**
+ * Reads only the models and textures `ids` names from a mod jar: its own
+ * `assets/`, its nested jars' (but those `skipNestedJar` skips) and its
+ * `compatPacks`' packs, layered as `parseModJar` layers them (the outer jar
+ * over nested ones, compat packs over the jar). Same entry filter and
+ * zip-bomb budget as `parseModJar`; ids the jar lacks are left out.
+ */
+export function readJarAssets(
+  bytes: Uint8Array,
+  ids: { models: Iterable<string>; textures: Iterable<string> },
+  options: ReadJarAssetsOptions = {},
+): JarAssets {
+  const wanted = new Set<string>();
+  for (const id of ids.models) {
+    const colon = id.indexOf(":");
+    wanted.add(
+      `assets/${id.slice(0, colon)}/models/${id.slice(colon + 1)}.json`,
+    );
+  }
+  for (const id of ids.textures) {
+    const colon = id.indexOf(":");
+    const path = `assets/${id.slice(0, colon)}/textures/${id.slice(colon + 1)}.png`;
+    wanted.add(path);
+    wanted.add(`${path}.mcmeta`);
+  }
+  const compatPacks = options.compatPacks ?? new Set<string>();
+  const warnings: string[] = [];
+  const layers: JarLayer[] = [];
+  const skip = options.skipNestedJar;
+  readJarLayers(
+    bytes,
+    { path: "", depth: 0, metadata: null },
+    {
+      budget: { entries: 0, bytes: 0 },
+      readAssets: (path) => path === "" || skip === undefined || !skip(path),
+      wantEntry: (name) => {
+        const compat = COMPAT_PACK_PATH_RE.exec(name);
+        if (compat === null) return wanted.has(name);
+        return (
+          compatPacks.has(compat[1]) && wanted.has(name.slice(compat[0].length))
+        );
+      },
+    },
+    layers,
+    warnings,
+  );
+  const entries: Record<string, Uint8Array> = {};
+  for (const layer of layers) {
+    for (const name of Object.keys(layer.entries)) {
+      if (!Object.hasOwn(entries, name)) entries[name] = layer.entries[name];
+    }
+  }
+  const outer: Record<string, Uint8Array> = {};
+  const compat = new Map<string, Record<string, Uint8Array>>();
+  for (const name of Object.keys(entries)) {
+    const prefix = COMPAT_PACK_PATH_RE.exec(name);
+    if (prefix === null) {
+      outer[name] = entries[name];
+    } else {
+      const pack = compat.get(prefix[1]) ?? {};
+      pack[name] = entries[name];
+      compat.set(prefix[1], pack);
+    }
+  }
+  const out: JarAssets = {
+    models: {},
+    textures: {},
+    textureMeta: {},
+    warnings,
+  };
+  const reads = [readAssetEntries(outer, "", warnings)];
+  for (const modId of [...compat.keys()].sort()) {
+    reads.push(
+      readAssetEntries(compat.get(modId)!, `compat_packs/${modId}/`, warnings),
+    );
+  }
+  for (const read of reads) {
+    Object.assign(out.models, read.allModels);
+    Object.assign(out.textures, read.allTextures);
+    Object.assign(out.textureMeta, read.allTextureMeta);
+  }
+  return out;
 }
 
 /**
@@ -305,7 +564,7 @@ export function parseModJar(
 
   const read = readAssetEntries(outerEntries, "", warnings);
   const inferred = inferLangModelBlockstates(read);
-  const assets = collectBlockAssets(read, vanilla);
+  const { unresolvedRefs, ...assets } = collectBlockAssets(read, vanilla);
   const { blocks } = assets;
 
   const nestedBlockIds = layers.map((): string[] => []);
@@ -383,6 +642,7 @@ export function parseModJar(
   return {
     namespaces: [...read.namespaces].sort(),
     ...assets,
+    unresolvedRefs,
     templates: read.templates,
     ...(read.providerEntries.size > 0 ? { providerData } : {}),
     modIds: layers[0].modIds,
@@ -539,7 +799,8 @@ function collectBlockAssets(
     "blockstates" | "allModels" | "allTextures" | "allTextureMeta" | "lang"
   >,
   vanilla: AppearanceSources | null,
-): Omit<CompatPackAssets, "namespaces"> {
+): Omit<CompatPackAssets, "namespaces"> &
+  Required<Pick<CompatPackAssets, "unresolvedRefs">> {
   const { blockstates, allModels, allTextures, allTextureMeta, lang } = read;
   const blocks: ModBlock[] = Object.keys(blockstates)
     .sort()
@@ -593,6 +854,24 @@ function collectBlockAssets(
     if (ref in allTextureMeta) textureMeta[ref] = allTextureMeta[ref];
   }
 
+  // Ids the blockstates reach that neither the jar nor vanilla has.
+  const missingModels = new Set<string>();
+  const missingTextures = new Set<string>();
+  for (const id of Object.keys(blockstates)) {
+    const missing = missingAssetRefs(
+      blockstates[id],
+      (modelId) =>
+        Object.hasOwn(allModels, modelId)
+          ? allModels[modelId]
+          : vanilla?.getModel(modelId),
+      (texture) =>
+        Object.hasOwn(allTextures, texture) ||
+        (vanilla?.getTextureColor(texture) ?? null) !== null,
+    );
+    for (const ref of missing.models) missingModels.add(ref);
+    for (const ref of missing.textures) missingTextures.add(ref);
+  }
+
   const appearances = computeModAppearances(
     {
       blockIds: blocks.map((block) => block.id),
@@ -608,7 +887,17 @@ function collectBlockAssets(
       block.appearance = appearances[block.id];
     }
   }
-  return { blocks, blockstates, models, textures, textureMeta };
+  return {
+    blocks,
+    blockstates,
+    models,
+    textures,
+    textureMeta,
+    unresolvedRefs: {
+      models: [...missingModels].sort(),
+      textures: [...missingTextures].sort(),
+    },
+  };
 }
 
 /**
@@ -644,6 +933,8 @@ interface JarLayer {
   modIds: string[];
   /** Asset entries only (`isModAssetEntry`). */
   entries: Record<string, Uint8Array>;
+  /** The names of its asset entries, read or not. */
+  assetNames: string[];
 }
 
 interface NestedJarMetadata {
@@ -665,6 +956,8 @@ interface ReadLayersOptions {
   budget: AssetBudget;
   /** False for jars (by path, "" for the outer jar) whose assets are skipped. */
   readAssets: (path: string) => boolean;
+  /** Which asset entries are read (all when absent). */
+  wantEntry?: (name: string) => boolean;
 }
 
 function nestedModJarOf(layer: JarLayer): Omit<NestedModJar, "blockIds"> {
@@ -692,12 +985,19 @@ function readJarLayers(
 ): void {
   const { budget } = options;
   const readAssets = options.readAssets(jar.path);
+  const assetNames: string[] = [];
   const entries = unzipSync(bytes, {
     filter: (file: UnzipFileInfo) => {
       const nested = NESTED_JAR_RE.test(file.name);
+      const asset = !nested && isModAssetEntry(file.name);
+      if (asset) assetNames.push(file.name);
       if (
         !nested &&
-        !(readAssets && isModAssetEntry(file.name)) &&
+        !(
+          readAssets &&
+          asset &&
+          (options.wantEntry === undefined || options.wantEntry(file.name))
+        ) &&
         file.name !== JARJAR_METADATA_PATH &&
         !MODS_TOML_PATHS.includes(file.name)
       ) {
@@ -744,7 +1044,7 @@ function readJarLayers(
   const nestedBytes = nestedNames.map((name) => entries[name]);
   for (const name of nestedNames) delete entries[name];
 
-  layers.push({ ...jar, modIds: [...modIds].sort(), entries });
+  layers.push({ ...jar, modIds: [...modIds].sort(), entries, assetNames });
 
   for (const [i, name] of nestedNames.entries()) {
     const path = nestedPath(jar.path, name);

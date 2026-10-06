@@ -762,6 +762,7 @@ export interface SwatchBlock {
  */
 export function packSwatches(
   blocks: readonly SwatchBlock[],
+  options: { posterize?: boolean } = {},
 ): SwatchSheet | null {
   const cells: Uint8Array[] = [];
   const cellOf = new Map<string, number>();
@@ -806,10 +807,35 @@ export function packSwatches(
     }
   });
   let png = encodeRgbaPng(width, height, data);
-  for (let bits = 6; bits >= 4 && png.length > MAX_SWATCH_SHEET_BYTES; bits--) {
+  const posterizes = options.posterize ?? true;
+  for (
+    let bits = 6;
+    posterizes && bits >= 4 && png.length > MAX_SWATCH_SHEET_BYTES;
+    bits--
+  ) {
     png = encodeRgbaPng(width, height, posterize(data, bits));
   }
   return { png, width, height, uvs };
+}
+
+/**
+ * Lays `blocks`' swatches into as few sheets as fit in `maxBytes` each, at
+ * full colour depth: a sheet over it is split in two halves of its blocks,
+ * in order, until each fits (a single block's sheet is kept whatever its
+ * size). No sheets when no block has a swatch.
+ */
+export function packSwatchSheets(
+  blocks: readonly SwatchBlock[],
+  maxBytes: number = MAX_SWATCH_SHEET_BYTES,
+): SwatchSheet[] {
+  const sheet = packSwatches(blocks, { posterize: false });
+  if (sheet === null) return [];
+  if (sheet.png.length <= maxBytes || blocks.length <= 1) return [sheet];
+  const half = Math.ceil(blocks.length / 2);
+  return [
+    ...packSwatchSheets(blocks.slice(0, half), maxBytes),
+    ...packSwatchSheets(blocks.slice(half), maxBytes),
+  ];
 }
 
 /** RGBA with each colour channel cut to its top `bits` bits (alpha kept). */

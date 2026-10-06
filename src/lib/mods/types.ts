@@ -66,6 +66,11 @@ export interface ParsedModAssets {
    */
   compatPacks: Record<string, CompatPackAssets>;
   /**
+   * The jar's refs to models and textures it doesn't ship (not its compat
+   * packs'; theirs are on each pack). Only the modpack upload reads them.
+   */
+  unresolvedRefs?: UnresolvedAssetRefs;
+  /**
    * `block.<ns>.<path>` lang key → English name, for the names in the jar's
    * (and its compat packs') `en_us.json` that no block read from it uses.
    * Only the modpack upload reads them.
@@ -92,6 +97,18 @@ export interface CompatPackAssets {
   models: Record<string, unknown>;
   textures: Record<string, Uint8Array>;
   textureMeta: Record<string, unknown>;
+  /** See `ParsedModAssets.unresolvedRefs`. */
+  unresolvedRefs?: UnresolvedAssetRefs;
+}
+
+/**
+ * Model ids a jar's blockstates and model parents reach, and texture ids
+ * those models name, that neither the jar nor the vanilla sources have
+ * (`minecraft:` ids aren't listed). Another jar of a modpack may ship them.
+ */
+export interface UnresolvedAssetRefs {
+  models: string[];
+  textures: string[];
 }
 
 /** One jar nested in a mod jar's `META-INF/jarjar/` (see `ParsedModAssets`). */

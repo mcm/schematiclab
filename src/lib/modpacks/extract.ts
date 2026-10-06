@@ -3,6 +3,9 @@
 // per mod file. Each jar goes through the browser's jar parser
 // (`parseModJar`), then `classifyModBlock`, the appearance descriptors and
 // `packSwatches`; properties are completed with `completeBlockProperties`.
+// Blocks whose models or textures are in other jars of the pack are then
+// described again with those (`resolveCrossJarLooks`), and their looks and
+// the `kubejs/assets` looks go in per-upload `pack-<hash>` sheets.
 // Only derived data comes out: no textures, models or jars.
 //
 // Where the jars come from (an instance folder, CurseForge) is the caller's
@@ -10,7 +13,7 @@
 // Every mod ends with a status, so the pack record accounts for all of them.
 //
 // Pure apart from `crypto.subtle` (hashing jars without CurseForge ids and
-// the kubejs swatch sheet).
+// the per-upload swatch sheets).
 // Imports carry their `.ts` extension so node's strip-types can load it.
 
 import {
@@ -24,9 +27,14 @@ import {
   displayNameFor,
   extractProperties,
   langBlockKey,
+  missingAssetRefs,
+  modelAssetRefs,
   parseModJar,
   parseResourcePack,
+  readJarAssets,
   readModJarIndex,
+  type ModJarIndex,
+  type ReadJarAssetsOptions,
   type ResourcePackAssets,
 } from "../mods/parse-mod-jar.ts";
 import type { ModBlock, ParsedModAssets } from "../mods/types.ts";
@@ -35,6 +43,7 @@ import {
   appearanceRecord,
   describeModBlocks,
   packSwatches,
+  packSwatchSheets,
   type BlockDescriptor,
   type DescriptorSources,
   type SwatchBlock,
@@ -157,10 +166,24 @@ export interface ModpackExtraction {
     /** Listed modded ids added without a look. */
     added: number;
   };
+  /**
+   * Keys of the per-upload swatch sheets (`pack-<hash of the PNG>`): the
+   * looks that use another jar's assets or `kubejs/assets`.
+   */
+  packSheets: string[];
+  /** What other jars' models and textures gave the pack's blocks. */
+  crossJar: {
+    /** Blocks described again that got a look. */
+    looks: number;
+    /** Blocks described again with another jar's assets. */
+    redescribed: number;
+    /** Jars re-read for their models and textures. */
+    jarsRead: number;
+    /** Model and texture ids still missing, per namespace, largest first. */
+    unresolved: { count: number; namespaces: NamespaceCount[] };
+  };
   /** What the pack's `kubejs/assets/` changed, when it has one. */
   kubejs?: {
-    /** Its swatch sheet's key (`kubejs-<hash of the PNG>`), null without one. */
-    sheet: string | null;
     /** Pack blocks whose look or states it changed. */
     overridden: number;
     /** Listed blocks added from it (with a block list). */
@@ -169,6 +192,11 @@ export interface ModpackExtraction {
     ignored: number;
   };
   warnings: string[];
+}
+
+export interface NamespaceCount {
+  namespace: string;
+  count: number;
 }
 
 /**
@@ -295,6 +323,17 @@ interface ExtractedMod {
     blocks: ReadonlySet<ModpackBlock>;
     faces: ReadonlyMap<string, SwatchBlock["faces"]>;
   };
+  /** Blocks whose models or textures the jar lacks (`crossJarPending`). */
+  crossJar?: CrossJarPending;
+}
+
+/**
+ * A jar's blocks whose models or textures it doesn't ship, as described
+ * (`kubejs/assets` applied), with the jar's own assets they reach.
+ */
+interface CrossJarPending {
+  blocks: ModBlock[];
+  assets: DescribeAssets;
 }
 
 type JarBlockAssets = Pick<
@@ -446,13 +485,14 @@ function describeBlocks(
 type KubeJsPack = ResourcePackAssets;
 
 /**
- * Swatch sheet key of the `kubejs/assets` looks:
- * `kubejs-<first 16 hex of the sheet PNG's SHA-256>`. Which blocks the sheet
- * holds also depends on the jars and the block list, so it is keyed by its
- * content: a sheet already stored under the key is the same sheet.
+ * Swatch sheet key of the looks that depend on more than one jar (another
+ * jar's assets, `kubejs/assets`): `pack-<first 16 hex of the sheet PNG's
+ * SHA-256>`. Which blocks the sheet holds depends on the whole pack and the
+ * block list, so it is keyed by its content: a sheet already stored under
+ * the key is the same sheet.
  */
-async function kubeJsSheetKey(png: Uint8Array): Promise<string> {
-  return `kubejs-${(await sha256Hex(png)).slice(0, 16)}`;
+async function packSheetKey(png: Uint8Array): Promise<string> {
+  return `pack-${(await sha256Hex(png)).slice(0, 16)}`;
 }
 
 /** Reads and parses the source's `kubejs/assets/`; null without one. */
@@ -491,7 +531,11 @@ function overrideWithKubeJs(
   kubejs: KubeJsPack,
   vanilla: DescriptorSources | null,
   key: string,
-): { blocks: ModpackBlock[]; faces: Map<string, SwatchBlock["faces"]> } {
+): {
+  blocks: ModpackBlock[];
+  faces: Map<string, SwatchBlock["faces"]>;
+  changed: ModBlock[];
+} {
   const merged: DescribeAssets = {
     blockstates: { ...parsed.blockstates },
     models: { ...parsed.models, ...kubejs.models },
@@ -524,12 +568,69 @@ function overrideWithKubeJs(
       });
     }
   }
-  if (changed.length === 0) return { blocks: [], faces: new Map() };
+  if (changed.length === 0) return { blocks: [], faces: new Map(), changed };
   const { blocks, descriptors } = describeBlocks(changed, merged, vanilla, key);
   return {
     blocks,
     faces: new Map(Object.entries(descriptors).map(([id, d]) => [id, d.faces])),
+    changed,
   };
+}
+
+/**
+ * The jar's blocks (`kubejs/assets` applied) whose blockstate reaches a
+ * model or texture neither the jar nor `kubejs/assets` has, with the jar's
+ * own assets they reach. Camo frames are left out: their looks come from
+ * their frame textures. Null when there are none.
+ */
+function crossJarPending(
+  parsed: JarBlockAssets,
+  kubejs: KubeJsPack | null,
+  kubejsChanged: readonly ModBlock[],
+): CrossJarPending | null {
+  const changed = new Map(kubejsChanged.map((block) => [block.id, block]));
+  const kubeModels = kubejs?.models ?? {};
+  const kubeTextures = kubejs?.textures ?? {};
+  const getModel = (id: string): unknown =>
+    Object.hasOwn(kubeModels, id)
+      ? kubeModels[id]
+      : Object.hasOwn(parsed.models, id)
+        ? parsed.models[id]
+        : undefined;
+  const hasTexture = (id: string): boolean =>
+    Object.hasOwn(kubeTextures, id) || Object.hasOwn(parsed.textures, id);
+  const blocks: ModBlock[] = [];
+  const assets: DescribeAssets = {
+    blockstates: {},
+    models: {},
+    textures: {},
+    textureMeta: {},
+  };
+  for (const block of parsed.blocks) {
+    if (CAMO_BLOCKS.has(block.id)) continue;
+    const blockstate =
+      kubejs !== null && Object.hasOwn(kubejs.blockstates, block.id)
+        ? kubejs.blockstates[block.id]
+        : parsed.blockstates[block.id];
+    const missing = missingAssetRefs(blockstate, getModel, hasTexture);
+    if (missing.models.size + missing.textures.size === 0) continue;
+    const refs = blockstateAssetRefs(blockstate, getModel);
+    blocks.push(changed.get(block.id) ?? block);
+    assets.blockstates[block.id] = blockstate;
+    for (const id of refs.models) {
+      if (Object.hasOwn(parsed.models, id)) {
+        assets.models[id] = parsed.models[id];
+      }
+    }
+    for (const id of refs.textures) {
+      if (!Object.hasOwn(parsed.textures, id)) continue;
+      assets.textures[id] = parsed.textures[id];
+      if (Object.hasOwn(parsed.textureMeta, id)) {
+        assets.textureMeta[id] = parsed.textureMeta[id];
+      }
+    }
+  }
+  return blocks.length === 0 ? null : { blocks, assets };
 }
 
 async function extractMod(
@@ -647,6 +748,22 @@ async function extractMod(
     }
     const overrides =
       kubejs === null ? null : overrideWithKubeJs(parsed, kubejs, vanilla, key);
+    // Refs the jar (and its enabled compat packs) leave unresolved, or
+    // `kubejs/assets` may add: those blocks may get their look from
+    // another jar of the pack.
+    const unresolved = [
+      jar.unresolvedRefs,
+      ...Object.keys(withPacks.read).map(
+        (modId) => jar.compatPacks[modId].unresolvedRefs,
+      ),
+    ].some(
+      (refs) =>
+        refs !== undefined && refs.models.length + refs.textures.length > 0,
+    );
+    const crossJar =
+      unresolved || kubejs !== null
+        ? crossJarPending(parsed, kubejs, overrides?.changed ?? [])
+        : null;
     if (overrides !== null && overrides.blocks.length > 0) {
       const byId = new Map(overrides.blocks.map((b) => [b.id, b]));
       for (const [i, block] of blocks.entries()) {
@@ -664,6 +781,7 @@ async function extractMod(
         overrides.blocks.length > 0 && {
           kubejs: { blocks: new Set(overrides.blocks), faces: overrides.faces },
         }),
+      ...(crossJar !== null && { crossJar }),
       ...compat,
     };
   } catch (err) {
@@ -687,16 +805,33 @@ function readable(
   );
 }
 
+/** Which jar of the pack ships each model and texture id. */
+interface PackAssetIndex {
+  /** Per jar (by index in the pack), the ids it ships; null when unread. */
+  jars: ({ models: Set<string>; textures: Set<string> } | null)[];
+  /** `model:<id>` / `texture:<id>` → the jar providing it. */
+  providers: Map<string, number>;
+}
+
 /**
- * Reads each jar's mod ids and nested jars (not their assets) and decides
- * which copy of each nested mod is read, as NeoForge loads one.
+ * Reads each jar's mod ids, nested jars and asset ids (not their assets)
+ * and decides which copy of each nested mod is read, as NeoForge loads one.
+ * Indexes the model and texture ids of the jars, their kept nested jars and
+ * their enabled compat packs: of several jars shipping an id, the first
+ * whose mod ids or block namespaces (of its blockstates) include its
+ * namespace provides it, else the first in pack order.
  */
 async function chooseModpackNestedJars(
   mods: readonly ModpackModSource[],
-): Promise<{ decisions: NestedJarDecision[]; modIds: Set<string> }> {
+): Promise<{
+  decisions: NestedJarDecision[];
+  modIds: Set<string>;
+  assets: PackAssetIndex;
+}> {
   const owners: NestedJarOwner[] = [];
+  const indexes: (ModJarIndex | null)[] = [];
   for (const source of mods) {
-    let index: NestedJarOwner["index"] = null;
+    let index: ModJarIndex | null = null;
     if (readable(source)) {
       try {
         index = readModJarIndex(await source.read());
@@ -705,6 +840,7 @@ async function chooseModpackNestedJars(
       }
     }
     owners.push({ outer: source.fileName ?? source.name, index });
+    indexes.push(index);
   }
   const decisions = chooseNestedJars(owners);
   // The mods the pack loads: its jars' and the nested copies read.
@@ -712,7 +848,288 @@ async function chooseModpackNestedJars(
   for (const jar of decisions) {
     if (jar.kept) for (const id of jar.modIds) modIds.add(id);
   }
-  return { decisions, modIds };
+
+  const assets: PackAssetIndex = { jars: [], providers: new Map() };
+  const namespacesOf: Set<string>[] = [];
+  for (const [i, index] of indexes.entries()) {
+    namespacesOf.push(new Set());
+    if (index === null) {
+      assets.jars.push(null);
+      continue;
+    }
+    const kept = new Set(
+      decisions
+        .filter((jar) => jar.owner === i && jar.kept)
+        .map((jar) => jar.path),
+    );
+    const nested = index.nestedJars.filter((jar) => kept.has(jar.path));
+    const namespaces = namespacesOf[i];
+    for (const id of index.modIds) namespaces.add(id);
+    const ids = { models: new Set<string>(), textures: new Set<string>() };
+    for (const layer of [index.assets, ...nested.map((jar) => jar.assets)]) {
+      for (const ns of layer.blockNamespaces) namespaces.add(ns);
+      const packs = Object.entries(layer.compatPacks)
+        .filter(([modId]) => modIds.has(modId))
+        .map(([, pack]) => pack);
+      for (const part of [layer, ...packs]) {
+        for (const id of part.models) ids.models.add(id);
+        for (const id of part.textures) ids.textures.add(id);
+      }
+    }
+    for (const jar of nested) {
+      for (const id of jar.modIds) namespaces.add(id);
+    }
+    assets.jars.push(ids);
+    const owns = (jar: number, id: string) =>
+      namespacesOf[jar].has(id.slice(0, id.indexOf(":")));
+    for (const kind of ["model", "texture"] as const) {
+      for (const id of kind === "model" ? ids.models : ids.textures) {
+        const ref = `${kind}:${id}`;
+        const current = assets.providers.get(ref);
+        if (current === undefined || (!owns(current, id) && owns(i, id))) {
+          assets.providers.set(ref, i);
+        }
+      }
+    }
+  }
+  return { decisions, modIds, assets };
+}
+
+/** Most rounds of re-reading jars for models and textures other jars need. */
+export const MAX_CROSS_JAR_ROUNDS = 8;
+
+/** A jar's blocks whose models or textures are in other jars. */
+interface CrossJarRequester extends CrossJarPending {
+  /** Index of the jar in the pack. */
+  jar: number;
+  /** Its mod-file key. */
+  key: string;
+}
+
+/** Assets read from one jar for other jars' blocks. */
+interface FetchedAssets {
+  models: Record<string, unknown>;
+  textures: Record<string, Uint8Array>;
+  textureMeta: Record<string, unknown>;
+  /** `model:<id>` / `texture:<id>` refs already asked of it. */
+  asked: Set<string>;
+}
+
+/** `model:ns:path` → `["model", "ns:path"]`. */
+function splitRef(ref: string): ["model" | "texture", string] {
+  const colon = ref.indexOf(":");
+  return [ref.slice(0, colon) as "model" | "texture", ref.slice(colon + 1)];
+}
+
+/**
+ * Finds the models and textures `requesters`' blocks reach but their jars
+ * lack in the pack's other jars (`assets`), reading each providing jar once
+ * per round for just those entries (`readJarAssets`), and the models those
+ * reach in turn, for up to `MAX_CROSS_JAR_ROUNDS` rounds. A jar's own copy
+ * of an id wins over another jar's, and `kubejs/assets` over all jars.
+ * Every block that reaches a model or texture so found is described again
+ * from its jar's assets, the found ones, then vanilla.
+ */
+async function resolveCrossJarLooks(
+  requesters: readonly CrossJarRequester[],
+  assets: PackAssetIndex,
+  mods: readonly ModpackModSource[],
+  readOptions: (jar: number) => ReadJarAssetsOptions,
+  kubejs: KubeJsPack | null,
+  vanilla: DescriptorSources | null,
+  warnings: string[],
+): Promise<{
+  described: {
+    blocks: ModpackBlock[];
+    descriptors: Record<string, BlockDescriptor>;
+  }[];
+  jarsRead: number;
+  unresolved: string[];
+}> {
+  const fetched = new Map<number, FetchedAssets>();
+  const resolution = requesters.map(() => new Map<string, number>());
+  const jarsRead = new Set<number>();
+
+  // Asset lookups of requester `r`: `kubejs/assets`, its jar, other jars.
+  type Field = "models" | "textures" | "textureMeta";
+  const lookup = (r: number) => {
+    const own = requesters[r].assets;
+    const layered = (field: Field, kind: "model" | "texture") => {
+      const kube: Readonly<Record<string, unknown>> = kubejs?.[field] ?? {};
+      const mine: Readonly<Record<string, unknown>> = own[field];
+      return (id: string): unknown => {
+        if (Object.hasOwn(kube, id)) return kube[id];
+        if (Object.hasOwn(mine, id)) return mine[id];
+        const provider = resolution[r].get(`${kind}:${id}`);
+        const from = provider === undefined ? undefined : fetched.get(provider);
+        const theirs: Readonly<Record<string, unknown>> = from?.[field] ?? {};
+        return Object.hasOwn(theirs, id) ? theirs[id] : undefined;
+      };
+    };
+    const texture = layered("textures", "texture");
+    return {
+      model: layered("models", "model"),
+      texture: (id: string) => texture(id) as Uint8Array | undefined,
+      textureMeta: layered("textureMeta", "texture"),
+      local: (field: "models" | "textures", id: string) =>
+        Object.hasOwn(kubejs?.[field] ?? {}, id) ||
+        Object.hasOwn(own[field], id),
+    };
+  };
+
+  // The refs block `id` of requester `r` reaches that nothing provides yet.
+  const reach = (r: number, id: string) => {
+    const look = lookup(r);
+    return blockstateAssetRefs(
+      requesters[r].assets.blockstates[id],
+      look.model,
+    );
+  };
+  const missing = (r: number): Set<string> => {
+    const look = lookup(r);
+    const out = new Set<string>();
+    for (const block of requesters[r].blocks) {
+      const refs = missingAssetRefs(
+        requesters[r].assets.blockstates[block.id],
+        look.model,
+        (id) => look.texture(id) !== undefined,
+      );
+      for (const id of refs.models) out.add(`model:${id}`);
+      for (const id of refs.textures) out.add(`texture:${id}`);
+    }
+    return out;
+  };
+
+  for (let round = 0; round < MAX_CROSS_JAR_ROUNDS; round++) {
+    const wanted = new Map<number, Set<string>>();
+    for (const [r, requester] of requesters.entries()) {
+      const ownIds = assets.jars[requester.jar];
+      for (const ref of missing(r)) {
+        if (resolution[r].has(ref)) continue;
+        const [kind, id] = splitRef(ref);
+        const ships =
+          kind === "model" ? ownIds?.models.has(id) : ownIds?.textures.has(id);
+        const provider = ships ? requester.jar : assets.providers.get(ref);
+        if (provider === undefined) continue;
+        resolution[r].set(ref, provider);
+        if (fetched.get(provider)?.asked.has(ref)) continue;
+        const refs = wanted.get(provider) ?? new Set<string>();
+        refs.add(ref);
+        wanted.set(provider, refs);
+      }
+    }
+    if (wanted.size === 0) break;
+    for (const provider of [...wanted.keys()].sort((a, b) => a - b)) {
+      const refs = wanted.get(provider)!;
+      let into = fetched.get(provider);
+      if (into === undefined) {
+        into = { models: {}, textures: {}, textureMeta: {}, asked: new Set() };
+        fetched.set(provider, into);
+      }
+      for (const ref of refs) into.asked.add(ref);
+      const source = mods[provider];
+      if (source.read === null) continue;
+      let ids = { models: [] as string[], textures: [] as string[] };
+      for (const ref of refs) {
+        const [kind, id] = splitRef(ref);
+        (kind === "model" ? ids.models : ids.textures).push(id);
+      }
+      jarsRead.add(provider);
+      const ships = assets.jars[provider];
+      try {
+        const bytes = await source.read();
+        // The parents and textures of the models read that the jar ships
+        // itself are read from the same bytes, not in a later round.
+        while (ids.models.length + ids.textures.length > 0) {
+          const read = readJarAssets(bytes, ids, readOptions(provider));
+          Object.assign(into.models, read.models);
+          Object.assign(into.textures, read.textures);
+          Object.assign(into.textureMeta, read.textureMeta);
+          const next = { models: [] as string[], textures: [] as string[] };
+          const ask = (kind: "model" | "texture", id: string) => {
+            const shipped = kind === "model" ? ships?.models : ships?.textures;
+            const ref = `${kind}:${id}`;
+            if (shipped?.has(id) !== true || into.asked.has(ref)) return;
+            into.asked.add(ref);
+            (kind === "model" ? next.models : next.textures).push(id);
+          };
+          for (const model of Object.values(read.models)) {
+            const refs = modelAssetRefs(model);
+            if (refs.parent !== null) ask("model", refs.parent);
+            for (const texture of refs.textures) ask("texture", texture);
+          }
+          ids = next;
+        }
+      } catch (err) {
+        warnings.push(
+          `${source.name} couldn't be read again for other jars' models and textures: ${errorMessage(err)}`,
+        );
+      }
+    }
+  }
+
+  const unresolved = new Set<string>();
+  const described: {
+    blocks: ModpackBlock[];
+    descriptors: Record<string, BlockDescriptor>;
+  }[] = [];
+  for (const [r, requester] of requesters.entries()) {
+    for (const ref of missing(r)) unresolved.add(ref);
+    if (resolution[r].size === 0) continue;
+    const look = lookup(r);
+    const merged: DescribeAssets = {
+      blockstates: {},
+      models: {},
+      textures: {},
+      textureMeta: {},
+    };
+    const redo: ModBlock[] = [];
+    for (const block of requester.blocks) {
+      const refs = reach(r, block.id);
+      const usesFetched =
+        [...refs.models].some(
+          (id) => !look.local("models", id) && look.model(id) !== undefined,
+        ) ||
+        [...refs.textures].some(
+          (id) => !look.local("textures", id) && look.texture(id) !== undefined,
+        );
+      if (!usesFetched) continue;
+      redo.push(block);
+      merged.blockstates[block.id] = requester.assets.blockstates[block.id];
+      for (const id of refs.models) {
+        const model = look.model(id);
+        if (model !== undefined) merged.models[id] = model;
+      }
+      for (const id of refs.textures) {
+        const png = look.texture(id);
+        if (png === undefined) continue;
+        merged.textures[id] = png;
+        const meta = look.textureMeta(id);
+        if (meta !== undefined) merged.textureMeta[id] = meta;
+      }
+    }
+    if (redo.length === 0) continue;
+    described.push(describeBlocks(redo, merged, vanilla, requester.key));
+  }
+  return { described, jarsRead: jarsRead.size, unresolved: [...unresolved] };
+}
+
+/** Ids per namespace, largest first (ties by name). */
+function countNamespaces(ids: Iterable<string>): NamespaceCount[] {
+  const counts = new Map<string, number>();
+  for (const id of ids) {
+    const ns = id.slice(0, id.indexOf(":"));
+    counts.set(ns, (counts.get(ns) ?? 0) + 1);
+  }
+  return [...counts]
+    .map(([namespace, count]) => ({ namespace, count }))
+    .sort((a, b) =>
+      b.count !== a.count
+        ? b.count - a.count
+        : a.namespace < b.namespace
+          ? -1
+          : 1,
+    );
 }
 
 /**
@@ -765,14 +1182,19 @@ export async function extractModpack(
     });
   }
   const kubejs = await readKubeJsPack(source, warnings);
-  // Blocks `kubejs/assets` changed, and the swatch faces of those and of
-  // the blocks added from it.
+  // Blocks `kubejs/assets` changed or added.
   const kubejsBlocks = new Set<ModpackBlock>();
-  const kubejsFaces = new Map<ModpackBlock, SwatchBlock["faces"]>();
+  // Blocks whose looks go in the per-upload sheets, and their swatch faces.
+  const packLookBlocks = new Set<ModpackBlock>();
+  const packLookFaces = new Map<ModpackBlock, SwatchBlock["faces"]>();
+  const crossJarRequesters: CrossJarRequester[] = [];
   // `block.<ns>.<path>` → name, from every jar (the first wins).
   const langBlockNames: Record<string, string> = {};
-  const { decisions: nestedJars, modIds: packModIds } =
-    await chooseModpackNestedJars(source.mods);
+  const {
+    decisions: nestedJars,
+    modIds: packModIds,
+    assets: packAssets,
+  } = await chooseModpackNestedJars(source.mods);
   const compatPacks: ModpackExtraction["compatPacks"] = [];
   const droppedCompatBlocks = new Map<string, DroppedCompatBlocks>();
   const skippedNestedJars = source.mods.map(() => new Set<string>());
@@ -827,9 +1249,13 @@ export async function extractModpack(
       blocks.set(block.id, block);
       if (result.kubejs?.blocks.has(block)) {
         kubejsBlocks.add(block);
+        packLookBlocks.add(block);
         const faces = result.kubejs.faces.get(block.id);
-        if (faces !== undefined) kubejsFaces.set(block, faces);
+        if (faces !== undefined) packLookFaces.set(block, faces);
       }
+    }
+    if (result.crossJar !== undefined) {
+      crossJarRequesters.push({ ...result.crossJar, jar: index, key: mod.key });
     }
     for (const [langKey, name] of Object.entries(result.langBlockNames ?? {})) {
       if (!Object.hasOwn(langBlockNames, langKey)) {
@@ -857,6 +1283,55 @@ export async function extractModpack(
       });
     }
     options.onMod?.(mod, index, total);
+  }
+
+  // Blocks whose models or textures are in other jars, described again
+  // with them. Only blocks the pack keeps: not duplicates, and with a block
+  // list only listed ones.
+  const listed = blockList === undefined ? null : new Set(blockList.ids);
+  const requesters = crossJarRequesters.flatMap((requester) => {
+    const kept = requester.blocks.filter(
+      (block) =>
+        blocks.get(block.id)?.mod === requester.key &&
+        (listed === null || listed.has(block.id)),
+    );
+    return kept.length === 0 ? [] : [{ ...requester, blocks: kept }];
+  });
+  const crossJar = await resolveCrossJarLooks(
+    requesters,
+    packAssets,
+    source.mods,
+    (jar) => ({
+      skipNestedJar: (path) => skippedNestedJars[jar].has(path),
+      compatPacks: packModIds,
+    }),
+    kubejs,
+    options.vanilla,
+    warnings,
+  );
+  let crossJarLooks = 0;
+  let redescribed = 0;
+  for (const { blocks: described, descriptors } of crossJar.described) {
+    for (const block of described) {
+      const existing = blocks.get(block.id)!;
+      redescribed += 1;
+      existing.properties = block.properties;
+      existing.defaults = block.defaults;
+      existing.kind = block.kind;
+      existing.fullCube = block.fullCube;
+      delete existing.swatch;
+      if (block.appearance !== undefined) {
+        existing.appearance = block.appearance;
+        crossJarLooks += 1;
+      } else {
+        delete existing.appearance;
+      }
+      packLookBlocks.add(existing);
+      const descriptor = descriptors[block.id];
+      if (descriptor !== undefined)
+        packLookFaces.set(existing, descriptor.faces);
+      else packLookFaces.delete(existing);
+    }
   }
 
   const modCount = mods.length;
@@ -915,8 +1390,9 @@ export async function extractModpack(
     for (const block of packBlocks) {
       if (described.has(block.id)) {
         kubejsBlocks.add(block);
+        packLookBlocks.add(block);
         const faces = addedFaces.get(block.id);
-        if (faces !== undefined) kubejsFaces.set(block, faces);
+        if (faces !== undefined) packLookFaces.set(block, faces);
       }
     }
     if (options.vanillaBlockIds !== undefined) {
@@ -929,32 +1405,45 @@ export async function extractModpack(
     }
   }
 
+  // The looks that use another jar's assets or `kubejs/assets` go in
+  // per-upload sheets: the jars' own sheets are shared between packs.
+  const packLooks = packBlocks.filter((block) => packLookBlocks.has(block));
+  const sheets = packSwatchSheets(
+    packLooks.flatMap((block) => {
+      const faces = packLookFaces.get(block);
+      return faces === undefined ? [] : [{ id: block.id, faces }];
+    }),
+  );
+  const packSheets: string[] = [];
+  const sheetOf = new Map<string, string>();
+  const uvsOf = new Map<string, NonNullable<ModpackBlock["swatch"]>["faces"]>();
+  for (const sheet of sheets) {
+    const key = await packSheetKey(sheet.png);
+    swatches.set(key, sheet.png);
+    packSheets.push(key);
+    for (const [id, faces] of Object.entries(sheet.uvs)) {
+      sheetOf.set(id, key);
+      uvsOf.set(id, faces);
+    }
+  }
+  for (const block of packLooks) {
+    const key = sheetOf.get(block.id);
+    const faces = uvsOf.get(block.id);
+    if (
+      key !== undefined &&
+      faces !== undefined &&
+      Object.keys(faces).length > 0
+    ) {
+      block.swatch = { file: key, faces };
+    } else {
+      delete block.swatch;
+    }
+  }
+
   let kubejsResult: ModpackExtraction["kubejs"];
   if (kubejs !== null) {
-    // One sheet for every look `kubejs/assets` gives the pack's blocks.
     const final = packBlocks.filter((block) => kubejsBlocks.has(block));
-    const sheet = packSwatches(
-      final.flatMap((block) => {
-        const faces = kubejsFaces.get(block);
-        return faces === undefined ? [] : [{ id: block.id, faces }];
-      }),
-    );
-    const key = sheet === null ? null : await kubeJsSheetKey(sheet.png);
-    for (const block of final) {
-      const faces = sheet?.uvs[block.id];
-      if (
-        key !== null &&
-        faces !== undefined &&
-        Object.keys(faces).length > 0
-      ) {
-        block.swatch = { file: key, faces };
-      } else {
-        delete block.swatch;
-      }
-    }
-    if (sheet !== null && key !== null) swatches.set(key, sheet.png);
     kubejsResult = {
-      sheet: key,
       overridden: final.length - kubejsAdded,
       added: kubejsAdded,
       ignored: blockList === undefined ? kubejsOnly.length : 0,
@@ -991,6 +1480,18 @@ export async function extractModpack(
     compatPacks,
     droppedCompatBlocks: [...droppedCompatBlocks.values()],
     ...(blockListResult !== undefined && { blockList: blockListResult }),
+    packSheets,
+    crossJar: {
+      looks: crossJarLooks,
+      redescribed,
+      jarsRead: crossJar.jarsRead,
+      unresolved: {
+        count: crossJar.unresolved.length,
+        namespaces: countNamespaces(
+          crossJar.unresolved.map((ref) => splitRef(ref)[1]),
+        ),
+      },
+    },
     ...(kubejsResult !== undefined && { kubejs: kubejsResult }),
     warnings,
   };
