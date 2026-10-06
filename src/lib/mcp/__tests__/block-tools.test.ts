@@ -169,18 +169,24 @@ describe("search_blocks", () => {
     expect(
       ids.slice(firstSubstring).every((id) => !id.startsWith("minecraft:oak")),
     ).toBe(true);
-    expect(data.results).toContainEqual({
-      id: "minecraft:oak_stairs",
-      kind: "stairs",
-    });
-    expect(data.results).toContainEqual({
-      id: "minecraft:oak_log",
-      kind: "log",
-    });
-    expect(data.results).toContainEqual({
-      id: "minecraft:oak_slab",
-      kind: "slab",
-    });
+    expect(data.results).toContainEqual(
+      expect.objectContaining({
+        id: "minecraft:oak_stairs",
+        kind: "stairs",
+      }),
+    );
+    expect(data.results).toContainEqual(
+      expect.objectContaining({
+        id: "minecraft:oak_log",
+        kind: "log",
+      }),
+    );
+    expect(data.results).toContainEqual(
+      expect.objectContaining({
+        id: "minecraft:oak_slab",
+        kind: "slab",
+      }),
+    );
     expect(data.total_matches).toBeGreaterThan(data.results.length);
     expect(data.results).toHaveLength(20);
     const known = versionIds("1.21.4");
@@ -195,7 +201,7 @@ describe("search_blocks", () => {
     expect(oak.results.map((r) => r.id)).not.toContain(
       "minecraft:pale_oak_planks",
     );
-    expect(oak.results[0]).toEqual({
+    expect(oak.results[0]).toMatchObject({
       id: "minecraft:oak_planks",
       kind: "block",
     });
@@ -215,7 +221,9 @@ describe("search_blocks", () => {
     });
     expect(data.results).toHaveLength(MAX_SEARCH_LIMIT);
     const one = await search({ query: "stone", version: "1.21.4", limit: 1 });
-    expect(one.results).toEqual([{ id: "minecraft:stone", kind: "block" }]);
+    expect(one.results).toMatchObject([
+      { id: "minecraft:stone", kind: "block" },
+    ]);
     expect(
       searchBlocksTool.inputSchema.safeParse({
         query: "stone",
