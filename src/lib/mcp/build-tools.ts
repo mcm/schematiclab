@@ -21,6 +21,11 @@ import {
   compileProgram,
 } from "../buildlang/build";
 import type { ModpackBlocks } from "../modpacks/registry";
+import {
+  formatModpackRef,
+  MODPACK_REF_FORM,
+  parseModpackRef,
+} from "../modpacks/ref";
 import { MAX_BUILD_SIZE } from "../buildlang/program";
 import { serializeSchematic, type SchematicFormatId } from "../convert";
 import { KNOWN_VERSIONS } from "../schemlib/schematic-formats/known-versions";
@@ -163,7 +168,7 @@ export function buildFileStem(name: string): string {
 export const checkBuildTool = defineTool({
   name: "check_build",
   title: "Check a build program",
-  description: `Compile a build-language program for a Minecraft version and return only its report: errors, warnings and notes at their program paths, then geometry (floating pieces, sealed rooms), features (doors, windows, blocked doors), symmetry and materials. No render and no file. The language is the resource ${BUILDLANG_SPEC_URI}.`,
+  description: `Compile a build-language program for a Minecraft version and return only its report: errors, warnings and notes at their program paths, then geometry (floating pieces, sealed rooms), features (doors, windows, blocked doors), symmetry and materials. No render and no file. When the user names a modpack, pass its ref (from list_modpacks) as modpack: only the pack's blocks are accepted, mod ids are written namespaced (create:brass_block) and camo frames take a camo (frame{camo=block}). The language is the resource ${BUILDLANG_SPEC_URI}.`,
   inputSchema: z.object({
     program: programInput,
     version: versionInput,
@@ -184,7 +189,7 @@ export const checkBuildTool = defineTool({
 export const compileBuildTool = defineTool({
   name: "compile_build",
   title: "Compile a build program",
-  description: `Compile a build-language program for a Minecraft version. Returns the report (errors, warnings and notes at their program paths, then geometry, features, symmetry and materials) as text and, unless render is false, a PNG contact sheet of the build. With output_format, also writes the build as a schematic file and returns a download URL that expires after 24 hours. Send the whole program each time. The language is the resource ${BUILDLANG_SPEC_URI}; the design_build prompt has the workflow.`,
+  description: `Compile a build-language program for a Minecraft version. Returns the report (errors, warnings and notes at their program paths, then geometry, features, symmetry and materials) as text and, unless render is false, a PNG contact sheet of the build. With output_format, also writes the build as a schematic file and returns a download URL that expires after 24 hours. Send the whole program each time. When the user names a modpack, pass its ref (from list_modpacks) as modpack: only the pack's blocks are accepted, mod ids are written namespaced (create:brass_block) and camo frames take a camo (frame{camo=block}). The language is the resource ${BUILDLANG_SPEC_URI}; the design_build prompt has the workflow.`,
   inputSchema: z.object({
     program: programInput,
     version: versionInput,
@@ -320,28 +325,67 @@ export function registerBuildlangResources(server: McpServer): void {
         version: z
           .string()
           .describe("The Minecraft version, as listed by list_versions."),
+        modpack: z
+          .string()
+          .optional()
+          .describe(
+            `A modpack to build with, as ${MODPACK_REF_FORM} (see list_modpacks). Its Minecraft version must be version.`,
+          ),
       }),
     },
-    ({ request, version }) => designBuildPrompt(request, version),
+    ({ request, version, modpack }) =>
+      designBuildPrompt(request, version, modpack),
   );
 }
 
-/** The `design_build` prompt: the request, the workflow, then the whole spec. */
+/** The instructions `design_build` adds for a modpack (`ref`). */
+export function modpackInstructions(ref: string): string {
+  return [
+    `Build with the modpack "${ref}". Pass \`modpack: "${ref}"\` on every call to a block tool ` +
+      "(`search_blocks`, `suggest_palette`, `show_blocks`, `compile_build`, `check_build`, " +
+      "`generate_shape`, `render_schematic`). If a call says the pack's Minecraft version isn't " +
+      "the version above, call `list_modpacks` and use the pack's version.",
+    "",
+    "- Only use blocks the pack has. Find ids with `search_blocks` (filter by `shape`: stairs, " +
+      "slab, wall, full_cube...) and `suggest_palette` (by colour); never guess a mod block id " +
+      "(`create:brass_stairs` may not exist). Mod ids are written namespaced in the program " +
+      "(`create:brass_block`), and `compile_build` reports any id the pack lacks at its program path.",
+    "- Don't trust names for looks: check the palette with `show_blocks` (a picture plus each " +
+      "block's colours and texture variance) before building with it.",
+    "- For a shape the pack has no plain block of, use a camo frame from `camo_options` in the " +
+      "search results: write it as `<frame>{camo=<block>}` (`{camo=<a>,camo_two=<b>}` for " +
+      "FramedBlocks double blocks), and only use options with `writable: true`. Camo materials " +
+      "are approximate: full-cube blocks that aren't camo frames or block-entity blocks.",
+  ].join("\n");
+}
+
+/**
+ * The `design_build` prompt: the request, the workflow (with the modpack
+ * instructions when `modpack` is given), then the whole spec.
+ */
 export function designBuildPrompt(
   request: string,
   version: string,
+  modpack?: string,
 ): GetPromptResult {
   const versionId = checkVersion(version);
+  const ref = modpack?.trim()
+    ? formatModpackRef(parseModpackRef(modpack))
+    : null;
+  const tools = ref
+    ? `(version "${versionId}", modpack "${ref}")`
+    : `(version "${versionId}")`;
   const text = [
     `Design this Minecraft build for Minecraft Java ${versionId} with Schematiclab's build language:`,
     "",
     request.trim(),
     "",
     "Work plan-first, following the workflow below. Compile every revision with `compile_build` " +
-      `(version "${versionId}"), or \`check_build\` for the report alone, and keep revising until ` +
+      `${tools}, or \`check_build\` for the report alone, and keep revising until ` +
       "the report has no errors and no unintended warnings. Then compile once more with an " +
       "`output_format` to get the schematic file.",
     "",
+    ...(ref ? [modpackInstructions(ref), ""] : []),
     buildlangWorkflow(),
     "",
     "The full language reference follows.",
@@ -349,7 +393,9 @@ export function designBuildPrompt(
     buildlangSpec(),
   ].join("\n");
   return {
-    description: `Design a build for Minecraft ${versionId}`,
+    description: ref
+      ? `Design a build for Minecraft ${versionId} with modpack ${ref}`
+      : `Design a build for Minecraft ${versionId}`,
     messages: [{ role: "user", content: { type: "text", text } }],
   };
 }

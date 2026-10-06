@@ -107,6 +107,15 @@ Some mods register blocks at runtime instead of shipping them in their jar, so t
 - **Fixture-coverage test:** `mods/generated/__tests__/ucw-fixture-coverage.test.ts` parses `ucw_1_12_2.nbt` (documented in `GENERATED_FIXTURES.md`; there is no Litematica save) with hand-written rules and a synthetic loaded-file set, and checks every UCW placement resolves to the `from` state saved at x=0 of its row. A mismatch gets a `meta-overrides.ts` entry naming the fixture.
 - **Per-release steps (UCW):** update the UCW checkout (`UCW_PATH`). If `UCWMagic`, `UCWColorspaceUtils`, `UCWBlockRule`, `UCWProxyClient` or the rule parsing changed, update the ports (`recolour.ts`, `colorspace.ts`, `source-texture.ts`, `rules.ts`, `model.ts`) and their goldens, and update `ucw/chisel.ts` if Chisel's `Features.java` changed. Then run `pnpm gen:ucw-fixture-functions`, re-save the fixtures in-game with the function (see its README), copy them into `src/lib/__tests__/fixtures/`, add override entries for any meta mismatch, and run `pnpm test`.
 
+### Modpacks (MCP)
+
+The MCP server (`src/lib/mcp/`, documented in `docs/mcp.md`) reads modpacks the operator uploads; it never loads one itself.
+
+- **Storage** (private Blob store, paths only built in `modpacks/paths.ts`): `modpacks/index.json` (every pack and version), `modpacks/<slug>/<version key>/pack.json.gz` (one merged record per pack version: mods with statuses, every mod block with properties, `kind`, `full_cube`, appearance, swatch rects and camo slots; key `cf-<pack file id>` else `v-<display version>`) and `mod-files/<key>/swatches.png` (face swatches per mod file, shared between packs, read only by `show_blocks`). Schemas and `MODPACK_FORMAT_VERSION` are in `modpacks/schema.ts`; bump it on incompatible changes. The cleanup cron only lists `mcp/`, so these prefixes must stay outside it. The server caches the index and each pack per instance (`modpacks/reader.ts`).
+- **CLI:** `pnpm modpack:upload` (see [Modpack upload](#modpack-upload)) is the only writer. Block-aware tools take a `modpack` ref (`<slug>` or `<slug>@<file id or version>`) and resolve it with `resolveToolBlocks` (`mcp/tool-blocks.ts`), whose registry layers the pack's mod blocks over the vanilla registry of its version (`modpacks/registry.ts`).
+- **Camo writes:** the server writes camo NBT only for the (namespace, Minecraft version) pairs in `CAMO_WRITE_VERSIONS` (`camo/write-versions.ts`). Add a pair only together with a camo fixture saved in-game by the mod on that version (listed in `CAMO_FIXTURES.md`); other versions get camo options with `writable: false`.
+- Tool descriptions, the shared `modpackInput` description and the `design_build` prompt (`modpackInstructions`) tell agents to call `list_modpacks`, pass `modpack` to every block tool and check looks with `show_blocks`; keep them in step with `docs/mcp.md`.
+
 ### Other
 
 - `/api/import-url` fetches pastebin.com or gist.github.com URLs server-side, using a hostname-equality allowlist.

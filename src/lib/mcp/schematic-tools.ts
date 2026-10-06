@@ -525,7 +525,7 @@ export const renderSchematicTool = defineTool({
   name: "render_schematic",
   title: "Render a schematic",
   description:
-    "Render a schematic as a PNG contact sheet: four isometric views, front/side/top elevations, two plan slices and a cutaway, with flat-coloured blocks. Use it to see what a build looks like. With a modpack, mod blocks take the pack's colours and shapes, and the summary counts the block states the pack lacks.",
+    "Render a schematic as a PNG contact sheet: four isometric views, front/side/top elevations, two plan slices and a cutaway, with flat-coloured blocks. Use it to see what a build looks like. With a modpack, mod blocks take the pack's colours and shapes, and the summary counts the block states the pack lacks; without one, mod blocks get stand-in colours, so pass the modpack (from list_modpacks) for a modded schematic.",
   inputSchema: z.object({ ...schematicInputShape, modpack: modpackInput }),
   annotations: { readOnlyHint: true, openWorldHint: true },
   timeoutHint: SCHEMATIC_TIMEOUT_HINT,
