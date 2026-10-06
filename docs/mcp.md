@@ -61,7 +61,7 @@ Every block-aware tool (`search_blocks`, `suggest_palette`, `show_blocks`, `insp
 | `all-the-mods-10@5678901` | A specific upload, by its CurseForge pack file id.                        |
 | `all-the-mods-10@1.2.3`   | A specific upload, by its display version (used when no file id matches). |
 
-`list_modpacks` lists the packs and their refs. With a `modpack`, a tool accepts exactly the pack's blocks: the vanilla blocks of the pack's Minecraft version plus its mods' blocks. Anything else is rejected (`generate_shape`, `show_blocks`, `suggest_palette`'s `reference_block`), reported at its program path (`compile_build`, `check_build`) or flagged (`inspect_schematic`, `convert_schematic`, `render_schematic`). `version` may be left out where it is optional: it is the pack's Minecraft version. A `version` that differs from the pack's is a tool error. Mods the upload skipped or failed, and blocks registered at runtime (KubeJS scripts, Every Compat, Unlimited Chisel Works), aren't in the pack; `list_modpacks` reports both.
+`list_modpacks` lists the packs and their refs. With a `modpack`, a tool accepts exactly the pack's blocks: the vanilla blocks of the pack's Minecraft version plus its mods' blocks. Anything else is rejected (`generate_shape`, `show_blocks`, `suggest_palette`'s `reference_block`), reported at its program path (`compile_build`, `check_build`) or flagged (`inspect_schematic`, `convert_schematic`, `render_schematic`). `version` may be left out where it is optional: it is the pack's Minecraft version. A `version` that differs from the pack's is a tool error. Mods the upload skipped or failed aren't in the pack. Blocks registered at runtime (KubeJS scripts, Every Compat, Unlimited Chisel Works) are in it only when the upload was given the server's block list (`list_modpacks` reports `block_list: true`); without one they're missing. `list_modpacks` reports both the skipped mods and the runtime sources. A pack block with no visual information (listed by the server but described by no jar or `kubejs/assets/`) has `visual_info: false` in `search_blocks` and `show_blocks`.
 
 The tool descriptions tell agents to call `list_modpacks` when a user names a pack, to pass `modpack` to every block tool, and to check how blocks look with `show_blocks` rather than trusting their names. The `design_build` prompt adds the same instructions when given a `modpack`.
 
@@ -266,6 +266,7 @@ Modpacks are uploaded by the operator with a CLI; the MCP server only reads them
 pnpm modpack:upload --instance <dir> [--slug <slug>] [--version <label>]
 pnpm modpack:upload --curseforge <slug|id> [--file <id>] [--mods-dir <dir>] [--slug <slug>] [--version <label>]
 pnpm modpack:upload --instance <dir> --dry-run --out <dir>
+pnpm modpack:upload --instance ~/curseforge/Instances/ATM10 --block-list blocks.txt
 ```
 
 | Option                    | Meaning                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
@@ -280,6 +281,19 @@ pnpm modpack:upload --instance <dir> --dry-run --out <dir>
 | `--dry-run --out <dir>`   | Write the same files under `<dir>` instead of the Blob store. Needs no credentials.                                                                                                                                                                                                                                                                                                                                                                          |
 
 **Credentials.** The Blob store's credentials come from the environment as for the server: `vercel env pull .env.local` writes them, and the CLI reads `.env.local`. Without them it exits with a message saying so. `--curseforge` also needs `CURSEFORGE_API_KEY` (environment or `.env.local`).
+
+**Where blocks come from.** Each jar's `assets/<namespace>/blockstates/*.json` names its blocks, read leniently as Minecraft does (comments and trailing text after the JSON are ignored). A `block.<namespace>.<id>` lang name with a `<namespace>:block/<id>` model but no blockstate is a block too. Mods nested in jars (`META-INF/jarjar/`) are read once per pack, as NeoForge loads them: the highest version of each, and none when a top-level jar is the same mod. A jar's built-in `compat_packs/<modid>/` resource packs (Dyenamics and Friends) are read when the pack has `<modid>`, and compat blocks for mods the pack lacks are dropped. The pack's `kubejs/assets/` folder sits over the jars as a resource pack: it changes the look of the jar blocks it retextures, and its blockstates of blocks no jar has are added only when the block list names them.
+
+**Block list.** Blocks registered at runtime (KubeJS scripts, config-gated blocks, Every Compat, Unlimited Chisel Works) exist only in the running game, so only the server's registry knows exactly which blocks a pack has. `--block-list <file>` takes a dump of it: any export of the block registry with one id per line will do (for example a server command or mod that writes every key of the block registry to a file). For example:
+
+```text
+# blocks of All the Mods 10 0.5.1
+minecraft:stone
+aeronautics:propeller_bearing
+kubejs:magical_soil
+```
+
+With a list, the pack's modded blocks are exactly the list's modded ids. Listed blocks no jar or `kubejs/assets/` describes are added with `kind: "unknown"` and no look, so the tools report them with `visual_info: false`. The `minecraft:` ids only check that the dump matches the pack's Minecraft version.
 
 **Mod statuses.** The summary counts every mod by status, and `list_modpacks` reports the non-`ok` ones:
 
