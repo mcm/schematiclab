@@ -102,6 +102,15 @@ export interface Analysis {
 
 const shortId = (id: string) => id.replace(/^minecraft:/, "");
 
+// A camo frame's camo as the material syntax writes it, states left out.
+function camoLabel({ camo }: PlacedBlock): string {
+  if (!camo) return "";
+  const two = camo.camo_two
+    ? `,camo_two=${shortId(camo.camo_two.blockId)}`
+    : "";
+  return `{camo=${shortId(camo.camo.blockId)}${two}}`;
+}
+
 // 18-neighbourhood (faces and edges): roof stairs and slabs legitimately touch
 // only along edges.
 const N18: readonly Pos[] = (() => {
@@ -425,14 +434,15 @@ export function analyze(
   ];
   analysis.bbox = { min, max, dims };
 
+  // Camo frames count per camo: `framed_stairs{camo=create:brass_block}`.
   const counts = new Map<string, number>();
   for (const [, block] of blocks) {
-    counts.set(block.id, (counts.get(block.id) ?? 0) + 1);
+    const key = shortId(block.id) + camoLabel(block);
+    counts.set(key, (counts.get(key) ?? 0) + 1);
   }
   analysis.materials = [...counts]
     .sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))
-    .slice(0, MAX_MATERIALS)
-    .map(([id, n]) => [shortId(id), n]);
+    .slice(0, MAX_MATERIALS);
 
   // Connectivity (T2BM completeness): pieces through faces and edges, and
   // pieces that never reach the lowest layer.

@@ -109,7 +109,7 @@ export function postprocess(grid: BlockGrid, registry: BlockRegistry): void {
       next[name] = value;
       changed = true;
     }
-    if (changed) grid.set(pos, { id: block.id, states: next });
+    if (changed) grid.set(pos, { ...block, states: next });
   };
 
   // Stairs first, against the placed stairs, so connections see the corners.

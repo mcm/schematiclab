@@ -4,7 +4,19 @@
 
 import type { CallToolResult } from "@modelcontextprotocol/server";
 import { z } from "zod";
-import { serializeSchematic, type SchematicFormatId } from "../convert";
+import type { CamoSpec } from "../buildlang/materials";
+import {
+  camoChoiceForFrame,
+  formatCamoSuffix,
+  splitCamoMaterial,
+} from "../camo/material-syntax";
+import { withCamoMaterials } from "../camo/materials";
+import { camoWriteOptionsFor, writeCamoChoice } from "../camo/write";
+import {
+  serializeSchematic,
+  type ParsedSchematicProjection,
+  type SchematicFormatId,
+} from "../convert";
 import type { ModpackBlocks } from "../modpacks/registry";
 import {
   buildShapeProjection,
@@ -16,12 +28,17 @@ import {
 import { MAX_DIMENSION, MAX_THICKNESS, SHAPE_KINDS } from "../shapes/shapes";
 import { KNOWN_VERSIONS } from "../schemlib/schematic-formats/known-versions";
 import { versionName } from "../schemlib/schematic-formats/version-mapping";
+import {
+  assertCamoFrame,
+  camoTargetsOf,
+  modpackCamoRules,
+} from "./camo-materials";
 import { modpackInput } from "./input";
 import { assertProjectionBlocks, resolveLimits } from "./limits";
 import { assertBlobConfigured, publishFile } from "./output";
 import { modpackRenderSource, renderProjectionPng } from "./render";
 import { OUTPUT_FORMATS } from "./schematic-tools";
-import { resolveToolBlocks } from "./tool-blocks";
+import { resolveToolBlocks, type ToolBlocks } from "./tool-blocks";
 import { defineTool, jsonResult } from "./types";
 
 // Ranges are described but not enforced by the schema, so out-of-range
@@ -56,7 +73,7 @@ const generateShapeInput = z.object({
   material: z
     .string()
     .describe(
-      "Block state, e.g. minecraft:oak_log[axis=x]; minecraft: may be left off. Use flattened (1.13+) ids for every version: 1.12.2 shapes are written as the material's Forge 1.12 state. With modpack, a mod block must be one of the pack's blocks; without it, mod ids are written as typed.",
+      "Block state, e.g. minecraft:oak_log[axis=x]; minecraft: may be left off. Use flattened (1.13+) ids for every version: 1.12.2 shapes are written as the material's Forge 1.12 state. With modpack, a mod block must be one of the pack's blocks; without it, mod ids are written as typed. With modpack, a camo frame takes a camo: framedblocks:framed_cube{camo=create:brass_block}, or {camo=<a>,camo_two=<b>} for FramedBlocks double blocks.",
     ),
   version: z
     .string()
@@ -89,6 +106,61 @@ function assertModpackMaterial(material: string, modpack: ModpackBlocks) {
   if (!result.ok) throw new Error(result.error);
 }
 
+/**
+ * The camo of a `{camo=...}` material on the frame `material`, checked
+ * against the pack's camo rules. Throws without a modpack.
+ */
+function camoOf(
+  camo: { camo: string; camo_two?: string },
+  material: string,
+  blocks: ToolBlocks | null,
+): CamoSpec {
+  if (!blocks?.modpack) {
+    throw new Error(
+      "A camo material ({camo=...}) needs a modpack with camo frames.",
+    );
+  }
+  const parsed = parseMaterial(material);
+  if (!parsed.ok) throw new Error(parsed.error);
+  const { blockId, properties } = parsed.material;
+  const rules = modpackCamoRules(blocks.modpack, blocks.data);
+  assertCamoFrame(
+    blockId,
+    { ...blocks.registry.defaults(blockId), ...properties },
+    camo.camo_two === undefined ? ["camo"] : ["camo", "camo_two"],
+    rules,
+  );
+  return camoTargetsOf(camo, blocks.modpack, rules);
+}
+
+/**
+ * `projection` (one frame block) with the block entity holding `camo` on
+ * every placement; they share one NBT compound.
+ */
+function withCamo(
+  projection: ParsedSchematicProjection,
+  camo: CamoSpec,
+): ParsedSchematicProjection {
+  const [frame] = projection.palette;
+  const nbt = writeCamoChoice(
+    frame.blockId,
+    frame.properties,
+    undefined,
+    camoChoiceForFrame(frame.blockId, frame.properties, camo),
+    camoWriteOptionsFor(projection.minecraftVersion),
+  );
+  if (nbt === undefined) return projection;
+  const regions = projection.regions.map((region) => ({
+    ...region,
+    blockEntities: region.blocks.map((block) => ({ pos: block.pos, nbt })),
+  }));
+  return {
+    ...projection,
+    palette: withCamoMaterials(projection.palette, regions),
+    regions,
+  };
+}
+
 export const generateShapeTool = defineTool({
   name: "generate_shape",
   title: "Generate a shape",
@@ -104,6 +176,7 @@ export const generateShapeTool = defineTool({
     size: z.array(z.number()),
     block_count: z.number(),
     block_state: z.string(),
+    camo: z.string().optional(),
   }),
   annotations: { readOnlyHint: false, openWorldHint: true },
   timeoutHint: "Try a smaller shape.",
@@ -117,14 +190,16 @@ export const generateShapeTool = defineTool({
     }
     // The pack's blocks (the material must be one) and its colours and
     // shapes for the render; its Minecraft version must be `version`.
-    const modpack = args.modpack?.trim()
-      ? (
-          await resolveToolBlocks(
-            { version: versionId, modpack: args.modpack },
-            deps,
-          )
-        ).modpack
+    const blocks = args.modpack?.trim()
+      ? await resolveToolBlocks(
+          { version: versionId, modpack: args.modpack },
+          deps,
+        )
       : null;
+    const modpack = blocks?.modpack ?? null;
+    const split = splitCamoMaterial(args.material);
+    if (!split.ok) throw new Error(`Material: ${split.error}.`);
+    const material = split.value.frame;
     const outputFormat = args.output_format as SchematicFormatId;
     const spec: ShapeSpec = {
       shape: args.shape,
@@ -134,14 +209,17 @@ export const generateShapeTool = defineTool({
       axis: args.axis,
       hollow: args.hollow,
       thickness: args.thickness,
-      material: args.material,
+      material,
       versionId,
     };
 
-    if (modpack) assertModpackMaterial(args.material, modpack);
+    if (modpack) assertModpackMaterial(material, modpack);
+    const camo = split.value.camo && camoOf(split.value.camo, material, blocks);
     const built = buildShapeProjection(spec);
     if (!built.ok) throw new Error(built.error);
-    const { projection } = built;
+    const projection = camo
+      ? withCamo(built.projection, camo)
+      : built.projection;
     // The Shape Generator already stops at MAX_SHAPE_BLOCKS; this applies a
     // lower server limit if one is set.
     assertProjectionBlocks(
@@ -181,6 +259,7 @@ export const generateShapeTool = defineTool({
       size: projection.regions[0].size,
       block_count: projection.totalBlocks,
       block_state: projection.palette[0].blockState,
+      ...(camo && { camo: formatCamoSuffix(camo) }),
     });
     if (!png) return result;
     return {

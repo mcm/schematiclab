@@ -28,6 +28,7 @@ import {
 } from "./lengths";
 import {
   AIR,
+  type CamoRules,
   hash01,
   type Material,
   type MaterialEntry,
@@ -99,6 +100,8 @@ export interface CompileResult {
 export interface CompileOptions {
   /** Most placements before the compile stops (default `MAX_PLACEMENTS`). */
   maxPlacements?: number;
+  /** What a modpack allows as camo; without it, camo materials are errors. */
+  camo?: CamoRules;
 }
 
 /** Stops the whole compile (too many placements), not just one operation. */
@@ -210,7 +213,11 @@ export class Compiler {
   ) {
     this.maxPlacements = options.maxPlacements ?? MAX_PLACEMENTS;
     this.log = new WriteLog(program.size);
-    this.resolver = new MaterialResolver(registry, program.palette ?? {});
+    this.resolver = new MaterialResolver(
+      registry,
+      program.palette ?? {},
+      options.camo,
+    );
     this.seed = program.seed ?? 0;
   }
 
@@ -1078,7 +1085,16 @@ export class Compiler {
           if (!WALL_KINDS.has(this.registry.kind(block.id))) return false;
           const states: Record<string, string> =
             block.states.axis === undefined ? {} : { axis: block.states.axis };
-          return { entries: [{ weight: 1, id: block.id, states }] };
+          return {
+            entries: [
+              {
+                weight: 1,
+                id: block.id,
+                states,
+                ...(block.camo && { camo: block.camo }),
+              },
+            ],
+          };
         },
       });
       this.notes.push(...notes);
@@ -1163,7 +1179,11 @@ export class Compiler {
     for (const [partPos, partStates] of parts) {
       this.log.write(partPos, {
         ...write,
-        block: { id: entry.id, states: partStates },
+        block: {
+          id: entry.id,
+          states: partStates,
+          ...(entry.camo && { camo: entry.camo }),
+        },
       });
     }
   }
