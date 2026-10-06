@@ -19,6 +19,7 @@ import {
 import { camoFrameTexture } from "../camo/frame-textures.ts";
 import { modernizeLegacyModAssets } from "../mods/generated/legacy-blockstate.ts";
 import { parseModJar, readModJarIndex } from "../mods/parse-mod-jar.ts";
+import type { ParsedModAssets } from "../mods/types.ts";
 import { completeBlockProperties } from "../mods/property-domains.ts";
 import {
   appearanceRecord,
@@ -28,6 +29,10 @@ import {
   type DescriptorSources,
 } from "./appearance.ts";
 import { classifyModBlock } from "./classify.ts";
+import {
+  dropAbsentModCompatBlocks,
+  type DroppedCompatBlocks,
+} from "./compat-blocks.ts";
 import {
   chooseNestedJars,
   type NestedJarDecision,
@@ -106,6 +111,10 @@ export interface ModpackExtraction {
   swatches: Map<string, Uint8Array>;
   /** Every nested jar of the pack's jars: read (`kept`) or skipped, and why. */
   nestedJars: NestedJarDecision[];
+  /** The `compat_packs/<modid>/` resource packs read, per mod. */
+  compatPacks: { mod: string; modId: string; blocks: number }[];
+  /** Compat blocks left out because the pack lacks their mod, per prefix. */
+  droppedCompatBlocks: DroppedCompatBlocks[];
   warnings: string[];
 }
 
@@ -219,6 +228,51 @@ interface ExtractedMod {
   namespaces: string[];
   /** FramedBlocks geometry templates the jar ships. */
   templates?: ModpackData["framedTemplates"];
+  /** Compat packs read: mod id → their block count. */
+  compatPacks?: Record<string, number>;
+  droppedCompatBlocks?: DroppedCompatBlocks[];
+}
+
+type JarBlockAssets = Pick<
+  ParsedModAssets,
+  "blocks" | "blockstates" | "models" | "textures" | "textureMeta"
+>;
+
+/**
+ * The jar's assets with its `compat_packs/<modid>/` packs enabled for the
+ * mod ids in `modIds` layered on top, as the game enables them.
+ */
+function withCompatPacks(
+  parsed: ParsedModAssets,
+  modIds: ReadonlySet<string>,
+): JarBlockAssets & { namespaces: string[]; read: Record<string, number> } {
+  const blocks = new Map(parsed.blocks.map((block) => [block.id, block]));
+  const merged = {
+    blockstates: { ...parsed.blockstates },
+    models: { ...parsed.models },
+    textures: { ...parsed.textures },
+    textureMeta: { ...parsed.textureMeta },
+  };
+  const namespaces = new Set(parsed.namespaces);
+  const read: Record<string, number> = {};
+  for (const [modId, pack] of Object.entries(parsed.compatPacks)) {
+    if (!modIds.has(modId)) continue;
+    read[modId] = pack.blocks.length;
+    for (const block of pack.blocks) blocks.set(block.id, block);
+    Object.assign(merged.blockstates, pack.blockstates);
+    Object.assign(merged.models, pack.models);
+    Object.assign(merged.textures, pack.textures);
+    Object.assign(merged.textureMeta, pack.textureMeta);
+    for (const ns of pack.namespaces) namespaces.add(ns);
+  }
+  return {
+    ...merged,
+    blocks: [...blocks.values()].sort((a, b) =>
+      a.id < b.id ? -1 : a.id > b.id ? 1 : 0,
+    ),
+    namespaces: [...namespaces].sort(),
+    read,
+  };
 }
 
 // A model drawing a frame texture on every side (no elements: its texture
@@ -232,7 +286,7 @@ const FRAME_MODEL = "schematiclab:block/camo_frame";
  * texture; `withCamoFrameLooks` gives those theirs when the pack is read.
  */
 function describeBareCamoFrames(
-  parsed: ReturnType<typeof parseModJar>,
+  parsed: JarBlockAssets,
   described: Readonly<Record<string, unknown>>,
 ): Record<string, BlockDescriptor> {
   const blockstates: Record<string, unknown> = {};
@@ -262,6 +316,7 @@ async function extractMod(
   source: ModpackModSource,
   vanilla: DescriptorSources | null,
   skippedNestedJars: ReadonlySet<string>,
+  packModIds: ReadonlySet<string>,
 ): Promise<ExtractedMod> {
   const base = {
     name: source.name,
@@ -315,9 +370,9 @@ async function extractMod(
   }
   const key = (await modFileKey(source, bytes)) as string;
 
-  let parsed: ReturnType<typeof parseModJar>;
+  let jar: ParsedModAssets;
   try {
-    parsed = parseModJar(bytes, null, {
+    jar = parseModJar(bytes, null, {
       skipNestedJar: (path) => skippedNestedJars.has(path),
     });
   } catch (err) {
@@ -326,9 +381,25 @@ async function extractMod(
       ? ended(key, "skipped-too-large", message)
       : ended(key, "failed", message);
   }
+  const withPacks = withCompatPacks(jar, packModIds);
+  const { kept, dropped } = dropAbsentModCompatBlocks(
+    withPacks.blocks,
+    packModIds,
+  );
+  const parsed = { ...withPacks, blocks: kept };
+  const compat = {
+    ...(Object.keys(withPacks.read).length > 0 && {
+      compatPacks: withPacks.read,
+    }),
+    ...(dropped.length > 0 && { droppedCompatBlocks: dropped }),
+  };
   base.namespaces = parsed.namespaces;
   if (parsed.blocks.length === 0) {
-    return { ...ended(key, "no-blocks"), namespaces: parsed.namespaces };
+    return {
+      ...ended(key, "no-blocks"),
+      namespaces: parsed.namespaces,
+      ...compat,
+    };
   }
 
   try {
@@ -387,7 +458,8 @@ async function extractMod(
       blocks,
       swatches: sheet?.png ?? null,
       namespaces: parsed.namespaces,
-      templates: parsed.templates,
+      templates: jar.templates,
+      ...compat,
     };
   } catch (err) {
     return {
@@ -413,7 +485,7 @@ function readable(
  */
 async function chooseModpackNestedJars(
   mods: readonly ModpackModSource[],
-): Promise<NestedJarDecision[]> {
+): Promise<{ decisions: NestedJarDecision[]; modIds: Set<string> }> {
   const owners: NestedJarOwner[] = [];
   for (const source of mods) {
     let index: NestedJarOwner["index"] = null;
@@ -426,14 +498,22 @@ async function chooseModpackNestedJars(
     }
     owners.push({ outer: source.fileName ?? source.name, index });
   }
-  return chooseNestedJars(owners);
+  const decisions = chooseNestedJars(owners);
+  // The mods the pack loads: its jars' and the nested copies read.
+  const modIds = new Set(owners.flatMap((owner) => owner.index?.modIds ?? []));
+  for (const jar of decisions) {
+    if (jar.kept) for (const id of jar.modIds) modIds.add(id);
+  }
+  return { decisions, modIds };
 }
 
 /**
  * Extracts every mod of `source`, one at a time (only derived data is kept),
  * into the pack record and its swatch sheets. Of each mod nested in the
  * pack's jars only one copy is read (`chooseNestedJars`); its blocks belong
- * to the jar that holds it. Throws when the pack's
+ * to the jar that holds it. A jar's `compat_packs/<modid>/` packs are read
+ * when the pack loads `<modid>`, and compat blocks for mods it lacks
+ * (`compat-blocks.ts`) are dropped. Throws when the pack's
  * Minecraft version, display version or slug can't be determined.
  */
 export async function extractModpack(
@@ -472,7 +552,10 @@ export async function extractModpack(
         "The pack has a kubejs/ folder: blocks its startup scripts register aren't in the pack data.",
     });
   }
-  const nestedJars = await chooseModpackNestedJars(source.mods);
+  const { decisions: nestedJars, modIds: packModIds } =
+    await chooseModpackNestedJars(source.mods);
+  const compatPacks: ModpackExtraction["compatPacks"] = [];
+  const droppedCompatBlocks = new Map<string, DroppedCompatBlocks>();
   const skippedNestedJars = source.mods.map(() => new Set<string>());
   for (const jar of nestedJars) {
     if (!jar.kept) skippedNestedJars[jar.owner].add(jar.path);
@@ -484,6 +567,7 @@ export async function extractModpack(
       modSource,
       options.vanilla,
       skippedNestedJars[index],
+      packModIds,
     );
     const { mod } = result;
     const earlier = seenKeys.get(mod.key);
@@ -495,6 +579,15 @@ export async function extractModpack(
     }
     seenKeys.set(mod.key, mod.name);
     mods.push(mod);
+    for (const [modId, count] of Object.entries(result.compatPacks ?? {})) {
+      compatPacks.push({ mod: mod.name, modId, blocks: count });
+    }
+    for (const dropped of result.droppedCompatBlocks ?? []) {
+      const dropKey = `${dropped.namespace}:${dropped.prefix}`;
+      const sum = droppedCompatBlocks.get(dropKey);
+      if (sum === undefined) droppedCompatBlocks.set(dropKey, { ...dropped });
+      else sum.count += dropped.count;
+    }
     for (const block of result.blocks) {
       // A leftover blockstate file can be named something Minecraft
       // couldn't register (`vs_clockwork:OLD_flap_bearing`).
@@ -555,5 +648,12 @@ export async function extractModpack(
     runtimeBlockSources,
     ...(Object.keys(framedTemplates).length > 0 && { framedTemplates }),
   };
-  return { data, swatches, nestedJars, warnings };
+  return {
+    data,
+    swatches,
+    nestedJars,
+    compatPacks,
+    droppedCompatBlocks: [...droppedCompatBlocks.values()],
+    warnings,
+  };
 }

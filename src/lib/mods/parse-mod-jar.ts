@@ -27,6 +27,7 @@ import {
   type TemplateCube,
 } from "../render/camo/shape-pack.ts";
 import type {
+  CompatPackAssets,
   ModBlock,
   NestedModJar,
   ParsedModAssets,
@@ -54,11 +55,20 @@ export const MAX_ASSET_BYTES = 512 * 1024 * 1024;
 
 export const NO_BLOCKS_WARNING = "No blocks found in this mod";
 
+/**
+ * Built-in resource packs a mod enables when mod `<modid>` is loaded
+ * (Dyenamics and Friends' `compat_packs/<modid>/assets/…`).
+ */
+const COMPAT_PACK_PATH_RE = /^compat_packs\/([^/]+)\/(?=assets\/)/;
+
 /** True if a zip entry should be inflated by `parseModJar`. */
 export function isModAssetEntry(name: string): boolean {
   if (TEMPLATE_PATH_RE.test(name)) return true;
   if (providerJarEntry(name) !== null) return true;
-  const match = ASSET_PATH_RE.exec(name);
+  const compat = COMPAT_PACK_PATH_RE.exec(name);
+  const match = ASSET_PATH_RE.exec(
+    compat === null ? name : name.slice(compat[0].length),
+  );
   return match !== null && match[1] !== "minecraft";
 }
 
@@ -113,6 +123,9 @@ export function readModJarIndex(bytes: Uint8Array): ModJarIndex {
  * `MAX_NESTED_JAR_DEPTH` deep, and their assets merged in as if they were the
  * outer jar's; where both define the same asset, the shallower jar's wins.
  *
+ * Built-in `compat_packs/<modid>/` resource packs are returned in
+ * `compatPacks`, not merged into `blocks`.
+ *
  * Block appearances resolve vanilla parent models and textures through
  * `vanilla` (see `vanilla-appearance-sources.ts`); without it only what the jar
  * itself defines is used.
@@ -162,6 +175,107 @@ export function parseModJar(
     }
   }
 
+  // Built-in resource packs (`compat_packs/<modid>/assets/…`) are read on
+  // their own: only the modpack upload enables them.
+  const outerEntries: Record<string, Uint8Array> = {};
+  const compatEntries = new Map<string, Record<string, Uint8Array>>();
+  for (const name of Object.keys(entries)) {
+    const compat = COMPAT_PACK_PATH_RE.exec(name);
+    if (compat === null) {
+      outerEntries[name] = entries[name];
+      continue;
+    }
+    let pack = compatEntries.get(compat[1]);
+    if (pack === undefined) {
+      pack = {};
+      compatEntries.set(compat[1], pack);
+    }
+    pack[name] = entries[name];
+  }
+
+  const read = readAssetEntries(outerEntries, "", warnings);
+  const assets = collectBlockAssets(read, vanilla);
+  const { blocks } = assets;
+
+  const nestedBlockIds = layers.map((): string[] => []);
+  for (const block of blocks) {
+    const colon = block.id.indexOf(":");
+    const entry = `assets/${block.id.slice(0, colon)}/blockstates/${block.id.slice(colon + 1)}.json`;
+    nestedBlockIds[entryLayer.get(entry) ?? 0].push(block.id);
+  }
+  const nestedJars: NestedModJar[] = layers.slice(1).map((layer, i) => ({
+    ...nestedModJarOf(layer),
+    blockIds: nestedBlockIds[i + 1],
+  }));
+
+  const providerData: ProviderData = {};
+  for (const [reader, readerEntries] of read.providerEntries) {
+    providerData[reader.namespace] = reader.read(readerEntries, warnings);
+  }
+
+  if (blocks.length === 0 && !providerDataGeneratesBlocks(providerData)) {
+    warnings.push(NO_BLOCKS_WARNING);
+  }
+
+  // A compat pack sits on top of the jar's own assets, as an enabled
+  // resource pack does: its blockstates may use the jar's models and
+  // textures, and its own replace the jar's.
+  const compatPacks: Record<string, CompatPackAssets> = {};
+  for (const modId of [...compatEntries.keys()].sort()) {
+    const prefix = `compat_packs/${modId}/`;
+    const pack = readAssetEntries(compatEntries.get(modId)!, prefix, warnings);
+    const packAssets = collectBlockAssets(
+      {
+        ...pack,
+        allModels: { ...read.allModels, ...pack.allModels },
+        allTextures: { ...read.allTextures, ...pack.allTextures },
+        allTextureMeta: { ...read.allTextureMeta, ...pack.allTextureMeta },
+        lang: { ...read.lang, ...pack.lang },
+      },
+      vanilla,
+    );
+    if (packAssets.blocks.length === 0) continue;
+    compatPacks[modId] = {
+      namespaces: [...pack.namespaces].sort(),
+      ...packAssets,
+    };
+  }
+
+  return {
+    namespaces: [...read.namespaces].sort(),
+    ...assets,
+    templates: read.templates,
+    ...(read.providerEntries.size > 0 ? { providerData } : {}),
+    modIds: layers[0].modIds,
+    nestedJars,
+    compatPacks,
+    warnings,
+    appearancesComputed: vanilla !== null,
+  };
+}
+
+/** The asset entries of a jar (or of a compat pack in it), parsed. */
+interface ReadAssets {
+  namespaces: Set<string>;
+  blockstates: Record<string, unknown>;
+  allModels: Record<string, unknown>;
+  allTextures: Record<string, Uint8Array>;
+  allTextureMeta: Record<string, unknown>;
+  lang: Record<string, string>;
+  templates: Record<string, TemplateCube[]>;
+  providerEntries: Map<ProviderJarReader, Map<string, unknown>>;
+}
+
+/**
+ * Parses `entries` (named `<prefix>assets/…`; the prefix is "" for the jar's
+ * own assets) into blockstates, models, textures, lang, templates and
+ * provider data.
+ */
+function readAssetEntries(
+  entries: Record<string, Uint8Array>,
+  prefix: string,
+  warnings: string[],
+): ReadAssets {
   const namespaces = new Set<string>();
   const blockstates: Record<string, unknown> = {};
   const allModels: Record<string, unknown> = {};
@@ -173,31 +287,34 @@ export function parseModJar(
 
   const names = Object.keys(entries).sort();
   for (const name of names) {
-    const providerEntry = providerJarEntry(name);
-    if (providerEntry !== null) {
-      const { reader, key } = providerEntry;
-      let readerEntries = providerEntries.get(reader);
-      if (readerEntries === undefined) {
-        readerEntries = new Map();
-        providerEntries.set(reader, readerEntries);
+    const path = name.slice(prefix.length);
+    if (prefix === "") {
+      const providerEntry = providerJarEntry(path);
+      if (providerEntry !== null) {
+        const { reader, key } = providerEntry;
+        let readerEntries = providerEntries.get(reader);
+        if (readerEntries === undefined) {
+          readerEntries = new Map();
+          providerEntries.set(reader, readerEntries);
+        }
+        readerEntries.set(key, parseJson(name, entries[name], warnings));
+        namespaces.add(reader.namespace);
+        continue;
       }
-      readerEntries.set(key, parseJson(name, entries[name], warnings));
-      namespaces.add(reader.namespace);
-      continue;
-    }
-    const template = TEMPLATE_PATH_RE.exec(name);
-    if (template !== null) {
-      const json = parseJson(name, entries[name], warnings);
-      if (json === undefined) continue;
-      try {
-        templates[`framedblocks:${template[1]}`] = parseFramedTemplate(json);
-      } catch (err) {
-        const reason = err instanceof Error ? err.message : String(err);
-        warnings.push(`Skipped ${name}: ${reason}`);
+      const template = TEMPLATE_PATH_RE.exec(path);
+      if (template !== null) {
+        const json = parseJson(name, entries[name], warnings);
+        if (json === undefined) continue;
+        try {
+          templates[`framedblocks:${template[1]}`] = parseFramedTemplate(json);
+        } catch (err) {
+          const reason = err instanceof Error ? err.message : String(err);
+          warnings.push(`Skipped ${name}: ${reason}`);
+        }
+        continue;
       }
-      continue;
     }
-    const match = ASSET_PATH_RE.exec(name);
+    const match = ASSET_PATH_RE.exec(path);
     if (match === null) continue;
     const ns = match[1];
     const rest = match[2];
@@ -222,11 +339,11 @@ export function parseModJar(
     if (json === undefined) continue;
 
     if (rest.startsWith("blockstates/")) {
-      const path = rest.slice("blockstates/".length, -".json".length);
-      blockstates[`${ns}:${path}`] = json;
+      const id = rest.slice("blockstates/".length, -".json".length);
+      blockstates[`${ns}:${id}`] = json;
     } else if (rest.startsWith("models/")) {
-      const path = rest.slice("models/".length, -".json".length);
-      allModels[`${ns}:${path}`] = json;
+      const id = rest.slice("models/".length, -".json".length);
+      allModels[`${ns}:${id}`] = json;
     } else if (isRecord(json)) {
       // lang/en_us.json
       for (const [key, value] of Object.entries(json)) {
@@ -236,7 +353,30 @@ export function parseModJar(
       warnings.push(`Skipped ${name}: expected a JSON object`);
     }
   }
+  return {
+    namespaces,
+    blockstates,
+    allModels,
+    allTextures,
+    allTextureMeta,
+    lang,
+    templates,
+    providerEntries,
+  };
+}
 
+/**
+ * The blocks of `read`'s blockstates, with the models they reach, the
+ * textures those use and the blocks' appearances.
+ */
+function collectBlockAssets(
+  read: Pick<
+    ReadAssets,
+    "blockstates" | "allModels" | "allTextures" | "allTextureMeta" | "lang"
+  >,
+  vanilla: AppearanceSources | null,
+): Omit<CompatPackAssets, "namespaces"> {
+  const { blockstates, allModels, allTextures, allTextureMeta, lang } = read;
   const blocks: ModBlock[] = Object.keys(blockstates)
     .sort()
     .map((id) => ({
@@ -244,26 +384,6 @@ export function parseModJar(
       displayName: displayNameFor(id, lang),
       properties: extractProperties(blockstates[id]),
     }));
-
-  const nestedBlockIds = layers.map((): string[] => []);
-  for (const block of blocks) {
-    const colon = block.id.indexOf(":");
-    const entry = `assets/${block.id.slice(0, colon)}/blockstates/${block.id.slice(colon + 1)}.json`;
-    nestedBlockIds[entryLayer.get(entry) ?? 0].push(block.id);
-  }
-  const nestedJars: NestedModJar[] = layers.slice(1).map((layer, i) => ({
-    ...nestedModJarOf(layer),
-    blockIds: nestedBlockIds[i + 1],
-  }));
-
-  const providerData: ProviderData = {};
-  for (const [reader, readerEntries] of providerEntries) {
-    providerData[reader.namespace] = reader.read(readerEntries, warnings);
-  }
-
-  if (blocks.length === 0 && !providerDataGeneratesBlocks(providerData)) {
-    warnings.push(NO_BLOCKS_WARNING);
-  }
 
   // Keep only models reachable from a blockstate, and only textures those
   // models (or their in-mod parents) reference, plus the camo frame textures
@@ -324,21 +444,7 @@ export function parseModJar(
       block.appearance = appearances[block.id];
     }
   }
-
-  return {
-    namespaces: [...namespaces].sort(),
-    blocks,
-    blockstates,
-    models,
-    textures,
-    textureMeta,
-    templates,
-    ...(providerEntries.size > 0 ? { providerData } : {}),
-    modIds: layers[0].modIds,
-    nestedJars,
-    warnings,
-    appearancesComputed: vanilla !== null,
-  };
+  return { blocks, blockstates, models, textures, textureMeta };
 }
 
 /**

@@ -240,6 +240,24 @@ async function upload(
       console.log(`  ${nestedJarLabel(jar)} in ${jar.outer}: ${jar.reason}`);
     }
   }
+  if (extraction.compatPacks.length > 0) {
+    console.log(`Compat packs read (${extraction.compatPacks.length}):`);
+    for (const pack of extraction.compatPacks) {
+      console.log(
+        `  compat_packs/${pack.modId} from ${pack.mod}: ${pack.blocks} blocks`,
+      );
+    }
+  }
+  const { droppedCompatBlocks } = extraction;
+  if (droppedCompatBlocks.length > 0) {
+    const dropped = droppedCompatBlocks.reduce((n, d) => n + d.count, 0);
+    console.log(`Compat blocks for absent mods dropped (${dropped}):`);
+    for (const d of droppedCompatBlocks) {
+      console.log(
+        `  ${d.namespace}:${d.prefix}* (needs ${d.modId}): ${d.count}`,
+      );
+    }
+  }
   console.log(`Blocks: ${data.blocks.length}`);
   for (const runtime of data.runtimeBlockSources) {
     console.log(`Unsupported: ${runtime.message}`);

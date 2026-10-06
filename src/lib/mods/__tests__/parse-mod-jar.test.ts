@@ -386,6 +386,7 @@ describe("textureTransferables", () => {
       templates: {},
       modIds: [],
       nestedJars: [],
+      compatPacks: {},
       warnings: [],
     };
 

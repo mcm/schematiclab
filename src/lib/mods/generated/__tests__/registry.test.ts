@@ -360,6 +360,7 @@ describe("provider data", () => {
       templates: {},
       modIds: [],
       nestedJars: [],
+      compatPacks: {},
       warnings: [],
     };
     expect(toLoadedModAssets(parsed)).not.toHaveProperty("providerData");
