@@ -371,7 +371,7 @@ describe("list_modpacks with a block list", () => {
         kind: "kubejs",
         name: "kubejs",
         message: expect.stringMatching(
-          /server block list was applied.*included, with unknown looks/,
+          /server block list was applied.*included, with looks from kubejs\/assets\/ where it has them, else unknown looks/,
         ),
       },
     ]);

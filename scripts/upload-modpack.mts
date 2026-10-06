@@ -19,6 +19,10 @@
 // describes are added without a look (`src/lib/modpacks/block-list.ts`).
 // Its `minecraft:` ids are checked against the pack version's vanilla
 // blocks (a warning when they differ; vanilla data isn't changed).
+// The pack's `kubejs/assets/` (or `overrides/kubejs/assets/`) is read as a
+// resource pack over the jars: its blockstates, models and textures replace
+// theirs, and with `--block-list` its blockstates of listed ids no jar has
+// add those blocks with their looks; without one they are left out.
 // Every jar goes through the browser's jar parser; only derived block data
 // and face swatches are uploaded (see `src/lib/modpacks/extract.ts`), to the
 // private Vercel Blob store under `modpacks/` and `mod-files/`.
@@ -74,7 +78,9 @@ const USAGE = `Usage: pnpm modpack:upload (--instance <dir> | --curseforge <slug
   --block-list <f>  The server's block dump, one block id per line (blank
                     lines and lines starting with # skipped): the pack's
                     blocks become exactly its modded ids, and listed blocks
-                    no jar describes are added with unknown looks
+                    no jar describes are added (from the pack's
+                    kubejs/assets/ when it has their blockstate, else with
+                    unknown looks)
   --dry-run         Write to --out instead of Vercel Blob
   --out <dir>       Output folder for --dry-run`;
 
@@ -336,6 +342,17 @@ async function upload(
       }
     }
     console.log(`  Listed blocks added with unknown looks: ${added}`);
+  }
+  if (extraction.kubejs !== undefined) {
+    const { overridden, added, ignored } = extraction.kubejs;
+    console.log("kubejs/assets:");
+    console.log(`  Blocks overridden: ${overridden}`);
+    console.log(`  Blocks added: ${added}`);
+    if (ignored > 0) {
+      console.log(
+        `  Blockstates of blocks no jar has, ignored without --block-list: ${ignored}`,
+      );
+    }
   }
   console.log(`Blocks: ${data.blocks.length}`);
   for (const runtime of data.runtimeBlockSources) {

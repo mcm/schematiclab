@@ -72,6 +72,116 @@ export function isModAssetEntry(name: string): boolean {
   return match !== null && match[1] !== "minecraft";
 }
 
+/**
+ * True if `name` (relative to a resource pack's root, `assets/<ns>/…`) is an
+ * asset `parseResourcePack` reads: the blockstates, models, textures and
+ * English lang file `parseModJar` reads, outside the `minecraft` namespace.
+ */
+export function isResourcePackAssetEntry(name: string): boolean {
+  const match = ASSET_PATH_RE.exec(name);
+  return match !== null && match[1] !== "minecraft";
+}
+
+/**
+ * Counts files read from a resource pack folder against `parseModJar`'s
+ * zip-bomb limits. `charge` throws once the files read exceed
+ * `MAX_ASSET_ENTRIES` or `MAX_ASSET_BYTES`.
+ */
+export function resourcePackBudget(what: string): {
+  charge: (bytes: number) => void;
+} {
+  const budget: AssetBudget = { entries: 0, bytes: 0 };
+  return {
+    charge(bytes) {
+      budget.entries += 1;
+      budget.bytes += bytes;
+      if (
+        budget.entries > MAX_ASSET_ENTRIES ||
+        budget.bytes > MAX_ASSET_BYTES
+      ) {
+        throw new Error(
+          `${what} is too large to read: its assets exceed ${MAX_ASSET_ENTRIES} files or ${MAX_ASSET_BYTES / (1024 * 1024)} MB`,
+        );
+      }
+    },
+  };
+}
+
+/** A resource pack's assets (`parseResourcePack`), every file kept. */
+export interface ResourcePackAssets {
+  /** Non-`minecraft` asset namespaces, sorted. */
+  namespaces: string[];
+  /** Block id → blockstate JSON. */
+  blockstates: Record<string, unknown>;
+  /** Model id (`ns:block/x`) → model JSON. */
+  models: Record<string, unknown>;
+  /** Texture id → PNG bytes. */
+  textures: Record<string, Uint8Array>;
+  textureMeta: Record<string, unknown>;
+  /** `en_us.json` entries. */
+  lang: Record<string, string>;
+  warnings: string[];
+}
+
+/**
+ * Parses a resource pack's files (named `assets/<ns>/…`, as
+ * `isResourcePackAssetEntry` filters them): every blockstate, model,
+ * texture and lang entry, not just those a blockstate reaches, since they
+ * sit over other packs' assets. Malformed JSON is skipped with a warning
+ * and read leniently as in `parseModJar`.
+ */
+export function parseResourcePack(
+  files: Readonly<Record<string, Uint8Array>>,
+): ResourcePackAssets {
+  const warnings: string[] = [];
+  const entries: Record<string, Uint8Array> = {};
+  for (const [name, bytes] of Object.entries(files)) {
+    if (isResourcePackAssetEntry(name)) entries[name] = bytes;
+  }
+  const read = readAssetEntries(entries, "", warnings);
+  return {
+    namespaces: [...read.namespaces].sort(),
+    blockstates: read.blockstates,
+    models: read.allModels,
+    textures: read.allTextures,
+    textureMeta: read.allTextureMeta,
+    lang: read.lang,
+    warnings,
+  };
+}
+
+/**
+ * The model ids (`parent`s included, followed in `models`) and literal
+ * texture ids a blockstate reaches, read the 1.13+ way and the 1.12 way.
+ */
+export function blockstateAssetRefs(
+  blockstate: unknown,
+  models: Readonly<Record<string, unknown>>,
+): { models: Set<string>; textures: Set<string> } {
+  const modelIds = new Set<string>();
+  const textures = new Set<string>();
+  const visit = (modelId: string, depth: number): void => {
+    if (depth > MAX_PARENT_DEPTH || modelIds.has(modelId)) return;
+    modelIds.add(modelId);
+    const model = Object.hasOwn(models, modelId) ? models[modelId] : undefined;
+    if (!isRecord(model)) return;
+    if (isRecord(model.textures)) {
+      for (const value of Object.values(model.textures)) {
+        const ref = textureRefOf(value);
+        if (ref !== null) textures.add(ref);
+      }
+    }
+    if (typeof model.parent === "string") {
+      visit(normalizeResourceId(model.parent), depth + 1);
+    }
+  };
+  for (const modelId of blockstateModelRefs(blockstate)) visit(modelId, 0);
+  const legacy = legacyBlockstateRefs(blockstate);
+  for (const modelId of legacy.models) visit(modelId, 0);
+  for (const texture of legacy.textures) textures.add(texture);
+  return { models: modelIds, textures };
+}
+
 /** Jars nested in a jar (NeoForge / Forge jar-in-jar). */
 const NESTED_JAR_RE = /^META-INF\/jarjar\/[^/]+\.jar$/;
 /** Lists each nested jar's maven coordinates and version. */
@@ -738,7 +848,7 @@ function titleCase(path: string): string {
 }
 
 /** The lang key of a block's name: `create:a/b` → `block.create.a.b`. */
-function langBlockKey(id: string): string {
+export function langBlockKey(id: string): string {
   const colon = id.indexOf(":");
   return `block.${id.slice(0, colon)}.${id.slice(colon + 1).replace(/\//g, ".")}`;
 }

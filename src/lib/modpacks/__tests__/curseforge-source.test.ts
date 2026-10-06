@@ -70,6 +70,9 @@ function packZip(): Uint8Array<ArrayBuffer> {
     "manifest.json": json(MANIFEST),
     "overrides/mods/local-mod.jar": modJar("local"),
     "overrides/kubejs/startup_scripts/blocks.js": strToU8("// blocks"),
+    // Retextures Brass's block.
+    "overrides/kubejs/assets/brass/textures/block/brass_block.png":
+      encodeRgbaPng(16, 16, new Uint8Array(16 * 16 * 4).fill(90)),
     "overrides/config/x.toml": strToU8("x = 1"),
   });
 }
@@ -312,6 +315,8 @@ describe("CurseForge pack source", () => {
       "local:local_block",
     ]);
     expect(extraction.warnings.join("\n")).toMatch(/Pretty Textures/);
+    // The pack zip's overrides/kubejs/assets is read over the jars.
+    expect(extraction.kubejs).toMatchObject({ overridden: 1, ignored: 0 });
 
     // The undistributable and too-large files were never requested, nor was
     // anything off the allowlist.

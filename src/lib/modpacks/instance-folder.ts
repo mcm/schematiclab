@@ -8,9 +8,13 @@
 // strip-types can load it.
 
 import { existsSync, statSync } from "node:fs";
-import { readdir, readFile } from "node:fs/promises";
+import { readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 
+import {
+  isResourcePackAssetEntry,
+  resourcePackBudget,
+} from "../mods/parse-mod-jar.ts";
 import {
   MODPACK_MANIFEST_NAME,
   parseMinecraftInstance,
@@ -91,6 +95,44 @@ function byName(a: ModpackModSource, b: ModpackModSource): number {
 }
 
 /**
+ * Reads the resource pack in folder `root` (`<root>/assets/<ns>/…`): the
+ * files `isResourcePackAssetEntry` accepts, within `resourcePackBudget`'s
+ * limits. Symbolic links aren't followed.
+ */
+export async function readResourcePackFolder(
+  root: string,
+): Promise<Record<string, Uint8Array>> {
+  const budget = resourcePackBudget(root);
+  const files: Record<string, Uint8Array> = {};
+  const walk = async (dir: string, rel: string): Promise<void> => {
+    const entries = await readdir(dir, { withFileTypes: true });
+    entries.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+    for (const entry of entries) {
+      const name = `${rel}/${entry.name}`;
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        await walk(full, name);
+      } else if (entry.isFile() && isResourcePackAssetEntry(name)) {
+        budget.charge((await stat(full)).size);
+        files[name] = new Uint8Array(await readFile(full));
+      }
+    }
+  };
+  await walk(path.join(root, "assets"), "assets");
+  return files;
+}
+
+/** Reads the first of `dirs/assets` that exists, else null. */
+function kubeJsAssetsReader(
+  dirs: readonly string[],
+): () => Promise<Record<string, Uint8Array> | null> {
+  return async () => {
+    const dir = dirs.find((d) => existsSync(path.join(d, "assets")));
+    return dir === undefined ? null : readResourcePackFolder(dir);
+  };
+}
+
+/**
  * The pack in `dir`. Throws when the folder has neither
  * `minecraftinstance.json` nor `manifest.json`.
  */
@@ -152,6 +194,7 @@ async function readCurseForgeInstance(
     packFileId: positiveInt(installedFile.id),
     mods,
     hasKubeJs: existsSync(path.join(dir, "kubejs")),
+    readKubeJsAssets: kubeJsAssetsReader([path.join(dir, "kubejs")]),
     warnings: [],
   };
 }
@@ -208,6 +251,10 @@ async function readExportedPack(
     hasKubeJs:
       existsSync(path.join(dir, "kubejs")) ||
       existsSync(path.join(overrides, "kubejs")),
+    readKubeJsAssets: kubeJsAssetsReader([
+      path.join(dir, "kubejs"),
+      path.join(overrides, "kubejs"),
+    ]),
     warnings,
   };
 }

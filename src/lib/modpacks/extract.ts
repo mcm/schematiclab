@@ -18,8 +18,17 @@ import {
 } from "../camo/camo-blocks.generated.ts";
 import { camoFrameTexture } from "../camo/frame-textures.ts";
 import { modernizeLegacyModAssets } from "../mods/generated/legacy-blockstate.ts";
-import { parseModJar, readModJarIndex } from "../mods/parse-mod-jar.ts";
-import type { ParsedModAssets } from "../mods/types.ts";
+import {
+  blockstateAssetRefs,
+  displayNameFor,
+  extractProperties,
+  langBlockKey,
+  parseModJar,
+  parseResourcePack,
+  readModJarIndex,
+  type ResourcePackAssets,
+} from "../mods/parse-mod-jar.ts";
+import type { ModBlock, ParsedModAssets } from "../mods/types.ts";
 import { completeBlockProperties } from "../mods/property-domains.ts";
 import {
   appearanceRecord,
@@ -27,6 +36,7 @@ import {
   packSwatches,
   type BlockDescriptor,
   type DescriptorSources,
+  type SwatchBlock,
 } from "./appearance.ts";
 import {
   applyBlockList,
@@ -94,6 +104,13 @@ export interface ModpackSource {
   mods: ModpackModSource[];
   /** True when the pack has a `kubejs/` folder. */
   hasKubeJs: boolean;
+  /**
+   * Reads the pack's `kubejs/assets/` resource pack: its files that
+   * `isResourcePackAssetEntry` accepts, named `assets/<ns>/…`, within
+   * `resourcePackBudget`'s limits (throws past them). Absent, or null from
+   * it, when the pack has no `kubejs/assets/`.
+   */
+  readKubeJsAssets?: () => Promise<Record<string, Uint8Array> | null>;
   /** Problems the source noticed (shown in the CLI's summary). */
   warnings: string[];
 }
@@ -138,6 +155,17 @@ export interface ModpackExtraction {
     dropped: { namespace: string; count: number }[];
     /** Listed modded ids added without a look. */
     added: number;
+  };
+  /** What the pack's `kubejs/assets/` changed, when it has one. */
+  kubejs?: {
+    /** Its swatch sheet's key (`kubejs-<hash>`). */
+    sheet: string;
+    /** Pack blocks whose look or states it changed. */
+    overridden: number;
+    /** Listed blocks added from it (with a block list). */
+    added: number;
+    /** Its blockstates of ids no jar has, left out (without a block list). */
+    ignored: number;
   };
   warnings: string[];
 }
@@ -257,6 +285,11 @@ interface ExtractedMod {
   droppedCompatBlocks?: DroppedCompatBlocks[];
   /** Lang names no block of the jar uses (`ParsedModAssets.langBlockNames`). */
   langBlockNames?: Record<string, string>;
+  /** Blocks of `blocks` `kubejs/assets` changed, and their swatch faces. */
+  kubejs?: {
+    blocks: ReadonlySet<ModpackBlock>;
+    faces: ReadonlyMap<string, SwatchBlock["faces"]>;
+  };
 }
 
 type JarBlockAssets = Pick<
@@ -338,11 +371,186 @@ function describeBareCamoFrames(
   );
 }
 
+type DescribeAssets = Pick<
+  JarBlockAssets,
+  "blockstates" | "models" | "textures" | "textureMeta"
+>;
+
+/**
+ * Pack blocks of `modBlocks` (no `swatch`), owned by mod `key`, with their
+ * descriptors: properties completed, kind and look from `assets`.
+ */
+function describeBlocks(
+  modBlocks: readonly ModBlock[],
+  assets: DescribeAssets,
+  vanilla: DescriptorSources | null,
+  key: string,
+  extraDescriptors?: (
+    described: Readonly<Record<string, BlockDescriptor>>,
+  ) => Record<string, BlockDescriptor>,
+): { blocks: ModpackBlock[]; descriptors: Record<string, BlockDescriptor> } {
+  // 1.12 assets read the way the preview draws them, for classification.
+  const modern = modernizeLegacyModAssets(
+    { blockstates: assets.blockstates, models: assets.models },
+    (id) => vanilla?.getModel(id) !== undefined,
+  );
+  const descriptors = describeModBlocks(
+    {
+      blockIds: modBlocks.map((block) => block.id),
+      blockstates: assets.blockstates,
+      models: assets.models,
+      textures: assets.textures,
+      textureMeta: assets.textureMeta,
+    },
+    vanilla,
+  );
+  if (extraDescriptors !== undefined) {
+    Object.assign(descriptors, extraDescriptors(descriptors));
+  }
+  const blocks = modBlocks.map((block): ModpackBlock => {
+    const properties = completeBlockProperties(block.properties);
+    const blockstate = modern.blockstates[block.id];
+    const { kind, full_cube } = classifyModBlock({
+      id: block.id,
+      properties,
+      blockstate,
+      models: modern.models,
+    });
+    const descriptor = descriptors[block.id];
+    const out: ModpackBlock = {
+      id: block.id,
+      mod: key,
+      displayName: block.displayName,
+      properties,
+      defaults: defaultProperties(blockstate, properties),
+      kind,
+      fullCube: full_cube,
+    };
+    if (descriptor !== undefined) {
+      out.appearance = appearanceRecord(descriptor);
+    }
+    if (CAMO_BLOCKS.has(block.id)) {
+      out.camo = { slots: DOUBLE_CAMO_BLOCKS.has(block.id) ? 2 : 1 };
+    }
+    return out;
+  });
+  return { blocks, descriptors };
+}
+
+/** The pack's `kubejs/assets/` resource pack, parsed. */
+interface KubeJsPack extends ResourcePackAssets {
+  /** Swatch sheet key: `kubejs-<first 16 hex of the files' SHA-256>`. */
+  key: string;
+}
+
+/**
+ * SHA-256 over a folder's files: each file's name, length and bytes, in
+ * name order.
+ */
+async function hashFiles(
+  files: Readonly<Record<string, Uint8Array>>,
+): Promise<string> {
+  const encoder = new TextEncoder();
+  const parts: Uint8Array[] = [];
+  for (const name of Object.keys(files).sort()) {
+    parts.push(encoder.encode(`${name}\n${files[name].byteLength}\n`));
+    parts.push(files[name]);
+  }
+  const all = new Uint8Array(parts.reduce((n, part) => n + part.byteLength, 0));
+  let offset = 0;
+  for (const part of parts) {
+    all.set(part, offset);
+    offset += part.byteLength;
+  }
+  const digest = await crypto.subtle.digest("SHA-256", all);
+  return [...new Uint8Array(digest)]
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+/** Reads and parses the source's `kubejs/assets/`; null without one. */
+async function readKubeJsPack(
+  source: ModpackSource,
+  warnings: string[],
+): Promise<KubeJsPack | null> {
+  if (source.readKubeJsAssets === undefined) return null;
+  let files: Record<string, Uint8Array> | null;
+  try {
+    files = await source.readKubeJsAssets();
+  } catch (err) {
+    warnings.push(`kubejs/assets wasn't read: ${errorMessage(err)}`);
+    return null;
+  }
+  if (files === null) return null;
+  const pack = parseResourcePack(files);
+  for (const warning of pack.warnings) warnings.push(`kubejs/: ${warning}`);
+  return { ...pack, key: `kubejs-${(await hashFiles(files)).slice(0, 16)}` };
+}
+
+/** A block's name from the `kubejs/assets` lang file, else `fallback`. */
+function kubeJsName(id: string, kubejs: KubeJsPack, fallback: string): string {
+  return Object.hasOwn(kubejs.lang, langBlockKey(id))
+    ? displayNameFor(id, kubejs.lang)
+    : fallback;
+}
+
+/**
+ * The jar's blocks `kubejs/assets` changes, redescribed over it: blocks it
+ * has a blockstate for (which replaces the jar's), and blocks whose models
+ * or textures it replaces. Its models and textures sit over the jar's.
+ */
+function overrideWithKubeJs(
+  parsed: JarBlockAssets,
+  kubejs: KubeJsPack,
+  vanilla: DescriptorSources | null,
+  key: string,
+): { blocks: ModpackBlock[]; faces: Map<string, SwatchBlock["faces"]> } {
+  const merged: DescribeAssets = {
+    blockstates: { ...parsed.blockstates },
+    models: { ...parsed.models, ...kubejs.models },
+    textures: { ...parsed.textures, ...kubejs.textures },
+    textureMeta: { ...parsed.textureMeta, ...kubejs.textureMeta },
+  };
+  const changed: ModBlock[] = [];
+  for (const block of parsed.blocks) {
+    if (Object.hasOwn(kubejs.blockstates, block.id)) {
+      const blockstate = kubejs.blockstates[block.id];
+      merged.blockstates[block.id] = blockstate;
+      changed.push({
+        id: block.id,
+        displayName: kubeJsName(block.id, kubejs, block.displayName),
+        properties: extractProperties(blockstate),
+      });
+      continue;
+    }
+    const refs = blockstateAssetRefs(
+      parsed.blockstates[block.id],
+      merged.models,
+    );
+    if (
+      [...refs.models].some((id) => Object.hasOwn(kubejs.models, id)) ||
+      [...refs.textures].some((id) => Object.hasOwn(kubejs.textures, id))
+    ) {
+      changed.push({
+        ...block,
+        displayName: kubeJsName(block.id, kubejs, block.displayName),
+      });
+    }
+  }
+  if (changed.length === 0) return { blocks: [], faces: new Map() };
+  const { blocks, descriptors } = describeBlocks(changed, merged, vanilla, key);
+  return {
+    blocks,
+    faces: new Map(Object.entries(descriptors).map(([id, d]) => [id, d.faces])),
+  };
+}
+
 async function extractMod(
   source: ModpackModSource,
   vanilla: DescriptorSources | null,
   skippedNestedJars: ReadonlySet<string>,
   packModIds: ReadonlySet<string>,
+  kubejs: KubeJsPack | null,
 ): Promise<ExtractedMod> {
   const base = {
     name: source.name,
@@ -432,62 +640,43 @@ async function extractMod(
   }
 
   try {
-    // 1.12 assets read the way the preview draws them, for classification.
-    const modern = modernizeLegacyModAssets(
-      { blockstates: parsed.blockstates, models: parsed.models },
-      (id) => vanilla?.getModel(id) !== undefined,
-    );
-    const descriptors = describeModBlocks(
-      {
-        blockIds: parsed.blocks.map((block) => block.id),
-        blockstates: parsed.blockstates,
-        models: parsed.models,
-        textures: parsed.textures,
-        textureMeta: parsed.textureMeta,
-      },
+    // The jar's own sheet is shared between packs, so it never shows
+    // `kubejs/assets` looks; blocks those change get their own swatches.
+    const { blocks, descriptors } = describeBlocks(
+      parsed.blocks,
+      parsed,
       vanilla,
+      key,
+      (described) => describeBareCamoFrames(parsed, described),
     );
-    Object.assign(descriptors, describeBareCamoFrames(parsed, descriptors));
     const sheet = packSwatches(
       Object.entries(descriptors).map(([id, d]) => ({ id, faces: d.faces })),
     );
-    const blocks = parsed.blocks.map((block): ModpackBlock => {
-      const properties = completeBlockProperties(block.properties);
-      const blockstate = modern.blockstates[block.id];
-      const { kind, full_cube } = classifyModBlock({
-        id: block.id,
-        properties,
-        blockstate,
-        models: modern.models,
-      });
-      const descriptor = descriptors[block.id];
+    for (const block of blocks) {
       const faces = sheet?.uvs[block.id];
-      const out: ModpackBlock = {
-        id: block.id,
-        mod: key,
-        displayName: block.displayName,
-        properties,
-        defaults: defaultProperties(blockstate, properties),
-        kind,
-        fullCube: full_cube,
-      };
-      if (descriptor !== undefined) {
-        out.appearance = appearanceRecord(descriptor);
-      }
       if (faces !== undefined && Object.keys(faces).length > 0) {
-        out.swatch = { file: key, faces };
+        block.swatch = { file: key, faces };
       }
-      if (CAMO_BLOCKS.has(block.id)) {
-        out.camo = { slots: DOUBLE_CAMO_BLOCKS.has(block.id) ? 2 : 1 };
+    }
+    const overrides =
+      kubejs === null ? null : overrideWithKubeJs(parsed, kubejs, vanilla, key);
+    if (overrides !== null && overrides.blocks.length > 0) {
+      const byId = new Map(overrides.blocks.map((b) => [b.id, b]));
+      for (const [i, block] of blocks.entries()) {
+        const override = byId.get(block.id);
+        if (override !== undefined) blocks[i] = override;
       }
-      return out;
-    });
+    }
     return {
       mod: { key, ...base, status: "ok", hasSwatches: sheet !== null },
       blocks,
       swatches: sheet?.png ?? null,
       namespaces: parsed.namespaces,
       templates: jar.templates,
+      ...(overrides !== null &&
+        overrides.blocks.length > 0 && {
+          kubejs: { blocks: new Set(overrides.blocks), faces: overrides.faces },
+        }),
       ...compat,
     };
   } catch (err) {
@@ -585,9 +774,14 @@ export async function extractModpack(
       message:
         blockList === undefined
           ? "The pack has a kubejs/ folder: blocks its startup scripts register aren't in the pack data."
-          : "The pack has a kubejs/ folder: a server block list was applied, so blocks its startup scripts register are included, with unknown looks.",
+          : "The pack has a kubejs/ folder: a server block list was applied, so blocks its startup scripts register are included, with looks from kubejs/assets/ where it has them, else unknown looks.",
     });
   }
+  const kubejs = await readKubeJsPack(source, warnings);
+  // Blocks `kubejs/assets` changed, and the swatch faces of those and of
+  // the blocks added from it.
+  const kubejsBlocks = new Set<ModpackBlock>();
+  const kubejsFaces = new Map<ModpackBlock, SwatchBlock["faces"]>();
   // `block.<ns>.<path>` → name, from every jar (the first wins).
   const langBlockNames: Record<string, string> = {};
   const { decisions: nestedJars, modIds: packModIds } =
@@ -606,6 +800,7 @@ export async function extractModpack(
       options.vanilla,
       skippedNestedJars[index],
       packModIds,
+      kubejs,
     );
     const { mod } = result;
     const earlier = seenKeys.get(mod.key);
@@ -643,6 +838,11 @@ export async function extractModpack(
         continue;
       }
       blocks.set(block.id, block);
+      if (result.kubejs?.blocks.has(block)) {
+        kubejsBlocks.add(block);
+        const faces = result.kubejs.faces.get(block.id);
+        if (faces !== undefined) kubejsFaces.set(block, faces);
+      }
     }
     for (const [langKey, name] of Object.entries(result.langBlockNames ?? {})) {
       if (!Object.hasOwn(langBlockNames, langKey)) {
@@ -676,9 +876,48 @@ export async function extractModpack(
   let packBlocks = [...blocks.values()].sort((a, b) =>
     a.id < b.id ? -1 : a.id > b.id ? 1 : 0,
   );
+  // `kubejs/assets` blockstates of ids no jar has: only a block list says
+  // whether the pack registers them.
+  const kubejsOnly =
+    kubejs === null
+      ? []
+      : Object.keys(kubejs.blockstates)
+          .filter((id) => !blocks.has(id) && BLOCK_ID_PATTERN.test(id))
+          .sort();
+  let kubejsAdded = 0;
   let blockListResult: ModpackExtraction["blockList"];
   if (blockList !== undefined) {
-    const applied = applyBlockList(packBlocks, mods, blockList, langBlockNames);
+    const described = new Map<string, Omit<ModpackBlock, "mod">>();
+    const addedFaces = new Map<string, SwatchBlock["faces"]>();
+    if (kubejs !== null) {
+      const listed = new Set(blockList.ids);
+      const added = describeBlocks(
+        kubejsOnly
+          .filter((id) => listed.has(id))
+          .map((id) => ({
+            id,
+            displayName: displayNameFor(id, kubejs.lang),
+            properties: extractProperties(kubejs.blockstates[id]),
+          })),
+        kubejs,
+        options.vanilla,
+        "",
+      );
+      for (const { mod: _mod, ...block } of added.blocks) {
+        described.set(block.id, block);
+      }
+      for (const [id, d] of Object.entries(added.descriptors)) {
+        addedFaces.set(id, d.faces);
+      }
+    }
+    const applied = applyBlockList(
+      packBlocks,
+      mods,
+      blockList,
+      langBlockNames,
+      described,
+    );
+    kubejsAdded = applied.addedDescribed;
     packBlocks = applied.blocks;
     if (applied.blockListMod !== null) mods.push(applied.blockListMod);
     blockListResult = {
@@ -686,6 +925,13 @@ export async function extractModpack(
       dropped: applied.dropped,
       added: applied.added,
     };
+    for (const block of packBlocks) {
+      if (described.has(block.id)) {
+        kubejsBlocks.add(block);
+        const faces = addedFaces.get(block.id);
+        if (faces !== undefined) kubejsFaces.set(block, faces);
+      }
+    }
     if (options.vanillaBlockIds !== undefined) {
       const mismatch = vanillaMismatchWarning(
         blockList,
@@ -694,6 +940,33 @@ export async function extractModpack(
       );
       if (mismatch !== null) warnings.push(mismatch);
     }
+  }
+
+  let kubejsResult: ModpackExtraction["kubejs"];
+  if (kubejs !== null) {
+    // One sheet for every look `kubejs/assets` gives the pack's blocks.
+    const final = packBlocks.filter((block) => kubejsBlocks.has(block));
+    const sheet = packSwatches(
+      final.flatMap((block) => {
+        const faces = kubejsFaces.get(block);
+        return faces === undefined ? [] : [{ id: block.id, faces }];
+      }),
+    );
+    for (const block of final) {
+      const faces = sheet?.uvs[block.id];
+      if (faces !== undefined && Object.keys(faces).length > 0) {
+        block.swatch = { file: kubejs.key, faces };
+      } else {
+        delete block.swatch;
+      }
+    }
+    if (sheet !== null) swatches.set(kubejs.key, sheet.png);
+    kubejsResult = {
+      sheet: kubejs.key,
+      overridden: final.length - kubejsAdded,
+      added: kubejsAdded,
+      ignored: blockList === undefined ? kubejsOnly.length : 0,
+    };
   }
 
   const packFileId = source.packFileId;
@@ -726,6 +999,7 @@ export async function extractModpack(
     compatPacks,
     droppedCompatBlocks: [...droppedCompatBlocks.values()],
     ...(blockListResult !== undefined && { blockList: blockListResult }),
+    ...(kubejsResult !== undefined && { kubejs: kubejsResult }),
     warnings,
   };
 }
