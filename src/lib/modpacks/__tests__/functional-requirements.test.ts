@@ -353,7 +353,7 @@ function atmPack(version: ModpackIndexVersion): ModpackExtraction {
     blocks: ATM_BLOCKS,
     runtimeBlockSources: [],
   };
-  return { data, swatches: new Map(), warnings: [] };
+  return { data, swatches: new Map(), nestedJars: [], warnings: [] };
 }
 
 // ── Fake Blob store and tool calls ─────────────────────────────────────────

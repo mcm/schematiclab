@@ -18,7 +18,7 @@ import {
 } from "../camo/camo-blocks.generated.ts";
 import { camoFrameTexture } from "../camo/frame-textures.ts";
 import { modernizeLegacyModAssets } from "../mods/generated/legacy-blockstate.ts";
-import { parseModJar } from "../mods/parse-mod-jar.ts";
+import { parseModJar, readModJarIndex } from "../mods/parse-mod-jar.ts";
 import { completeBlockProperties } from "../mods/property-domains.ts";
 import {
   appearanceRecord,
@@ -28,6 +28,11 @@ import {
   type DescriptorSources,
 } from "./appearance.ts";
 import { classifyModBlock } from "./classify.ts";
+import {
+  chooseNestedJars,
+  type NestedJarDecision,
+  type NestedJarOwner,
+} from "./nested-mods.ts";
 import {
   BLOB_KEY_PATTERN,
   BLOCK_ID_PATTERN,
@@ -99,6 +104,8 @@ export interface ModpackExtraction {
   data: ModpackData;
   /** Mod-file key → `swatches.png` bytes, for mods with any swatch. */
   swatches: Map<string, Uint8Array>;
+  /** Every nested jar of the pack's jars: read (`kept`) or skipped, and why. */
+  nestedJars: NestedJarDecision[];
   warnings: string[];
 }
 
@@ -254,6 +261,7 @@ function describeBareCamoFrames(
 async function extractMod(
   source: ModpackModSource,
   vanilla: DescriptorSources | null,
+  skippedNestedJars: ReadonlySet<string>,
 ): Promise<ExtractedMod> {
   const base = {
     name: source.name,
@@ -309,7 +317,9 @@ async function extractMod(
 
   let parsed: ReturnType<typeof parseModJar>;
   try {
-    parsed = parseModJar(bytes);
+    parsed = parseModJar(bytes, null, {
+      skipNestedJar: (path) => skippedNestedJars.has(path),
+    });
   } catch (err) {
     const message = errorMessage(err);
     return /too large/i.test(message)
@@ -387,9 +397,43 @@ async function extractMod(
   }
 }
 
+/** Whether `extractMod` would read the jar. */
+function readable(
+  source: ModpackModSource,
+): source is ModpackModSource & { read: () => Promise<Uint8Array> } {
+  return (
+    source.read !== null &&
+    (source.size === null || source.size <= MAX_MOD_JAR_BYTES)
+  );
+}
+
+/**
+ * Reads each jar's mod ids and nested jars (not their assets) and decides
+ * which copy of each nested mod is read, as NeoForge loads one.
+ */
+async function chooseModpackNestedJars(
+  mods: readonly ModpackModSource[],
+): Promise<NestedJarDecision[]> {
+  const owners: NestedJarOwner[] = [];
+  for (const source of mods) {
+    let index: NestedJarOwner["index"] = null;
+    if (readable(source)) {
+      try {
+        index = readModJarIndex(await source.read());
+      } catch {
+        // `extractMod` reports the unreadable jar.
+      }
+    }
+    owners.push({ outer: source.fileName ?? source.name, index });
+  }
+  return chooseNestedJars(owners);
+}
+
 /**
  * Extracts every mod of `source`, one at a time (only derived data is kept),
- * into the pack record and its swatch sheets. Throws when the pack's
+ * into the pack record and its swatch sheets. Of each mod nested in the
+ * pack's jars only one copy is read (`chooseNestedJars`); its blocks belong
+ * to the jar that holds it. Throws when the pack's
  * Minecraft version, display version or slug can't be determined.
  */
 export async function extractModpack(
@@ -428,10 +472,19 @@ export async function extractModpack(
         "The pack has a kubejs/ folder: blocks its startup scripts register aren't in the pack data.",
     });
   }
+  const nestedJars = await chooseModpackNestedJars(source.mods);
+  const skippedNestedJars = source.mods.map(() => new Set<string>());
+  for (const jar of nestedJars) {
+    if (!jar.kept) skippedNestedJars[jar.owner].add(jar.path);
+  }
   const seenKeys = new Map<string, string>();
   const total = source.mods.length;
   for (const [index, modSource] of source.mods.entries()) {
-    const result = await extractMod(modSource, options.vanilla);
+    const result = await extractMod(
+      modSource,
+      options.vanilla,
+      skippedNestedJars[index],
+    );
     const { mod } = result;
     const earlier = seenKeys.get(mod.key);
     if (earlier !== undefined) {
@@ -502,5 +555,5 @@ export async function extractModpack(
     runtimeBlockSources,
     ...(Object.keys(framedTemplates).length > 0 && { framedTemplates }),
   };
-  return { data, swatches, warnings };
+  return { data, swatches, nestedJars, warnings };
 }

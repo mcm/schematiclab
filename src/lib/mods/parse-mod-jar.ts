@@ -72,6 +72,40 @@ const MODS_TOML_PATHS = ["META-INF/neoforge.mods.toml", "META-INF/mods.toml"];
 /** Jars nested deeper than this (the outer jar is depth 0) are skipped. */
 export const MAX_NESTED_JAR_DEPTH = 3;
 
+export interface ParseModJarOptions {
+  /**
+   * Nested jars (by `NestedModJar.path`) whose assets aren't read; the jars
+   * nested in them still are. They are still listed in `nestedJars`.
+   */
+  skipNestedJar?: (path: string) => boolean;
+}
+
+/** A jar's mod ids and nested jars, without its assets. */
+export interface ModJarIndex {
+  modIds: string[];
+  nestedJars: Omit<NestedModJar, "blockIds">[];
+}
+
+/**
+ * Reads only the mod ids and nested jars of a mod jar (no assets), e.g. to
+ * pick which copy of a nested mod to read before `parseModJar`. Throws like
+ * `parseModJar` does.
+ */
+export function readModJarIndex(bytes: Uint8Array): ModJarIndex {
+  const layers: JarLayer[] = [];
+  readJarLayers(
+    bytes,
+    { path: "", depth: 0, metadata: null },
+    { budget: { entries: 0, bytes: 0 }, readAssets: () => false },
+    layers,
+    [],
+  );
+  return {
+    modIds: layers[0].modIds,
+    nestedJars: layers.slice(1).map(nestedModJarOf),
+  };
+}
+
 /**
  * Parse a mod jar's bytes into block definitions and render assets.
  *
@@ -90,13 +124,18 @@ export const MAX_NESTED_JAR_DEPTH = 3;
 export function parseModJar(
   bytes: Uint8Array,
   vanilla: AppearanceSources | null = null,
+  options: ParseModJarOptions = {},
 ): ParsedModAssets {
   const warnings: string[] = [];
   const layers: JarLayer[] = [];
+  const skip = options.skipNestedJar;
   readJarLayers(
     bytes,
     { path: "", depth: 0, metadata: null },
-    { entries: 0, bytes: 0 },
+    {
+      budget: { entries: 0, bytes: 0 },
+      readAssets: (path) => path === "" || skip === undefined || !skip(path),
+    },
     layers,
     warnings,
   );
@@ -213,13 +252,8 @@ export function parseModJar(
     nestedBlockIds[entryLayer.get(entry) ?? 0].push(block.id);
   }
   const nestedJars: NestedModJar[] = layers.slice(1).map((layer, i) => ({
-    path: layer.path,
-    group: layer.metadata?.group ?? null,
-    artifact: layer.metadata?.artifact ?? null,
-    version: layer.metadata?.version ?? null,
-    modIds: layer.modIds,
+    ...nestedModJarOf(layer),
     blockIds: nestedBlockIds[i + 1],
-    depth: layer.depth,
   }));
 
   const providerData: ProviderData = {};
@@ -357,23 +391,43 @@ interface AssetBudget {
 /** Over the asset budget: never caught as an unreadable nested jar. */
 class AssetBudgetError extends Error {}
 
+interface ReadLayersOptions {
+  budget: AssetBudget;
+  /** False for jars (by path, "" for the outer jar) whose assets are skipped. */
+  readAssets: (path: string) => boolean;
+}
+
+function nestedModJarOf(layer: JarLayer): Omit<NestedModJar, "blockIds"> {
+  return {
+    path: layer.path,
+    group: layer.metadata?.group ?? null,
+    artifact: layer.metadata?.artifact ?? null,
+    version: layer.metadata?.version ?? null,
+    modIds: layer.modIds,
+    depth: layer.depth,
+  };
+}
+
 /**
  * Inflate `bytes`' asset, mods.toml and jar-in-jar entries into `layers`
- * (this jar, then each nested jar's layers in path order), charging `budget`.
+ * (this jar, then each nested jar's layers in path order), charging the
+ * options' budget. Asset entries are only read where `readAssets` says so.
  */
 function readJarLayers(
   bytes: Uint8Array,
   jar: { path: string; depth: number; metadata: NestedJarMetadata | null },
-  budget: AssetBudget,
+  options: ReadLayersOptions,
   layers: JarLayer[],
   warnings: string[],
 ): void {
+  const { budget } = options;
+  const readAssets = options.readAssets(jar.path);
   const entries = unzipSync(bytes, {
     filter: (file: UnzipFileInfo) => {
       const nested = NESTED_JAR_RE.test(file.name);
       if (
         !nested &&
-        !isModAssetEntry(file.name) &&
+        !(readAssets && isModAssetEntry(file.name)) &&
         file.name !== JARJAR_METADATA_PATH &&
         !MODS_TOML_PATHS.includes(file.name)
       ) {
@@ -428,7 +482,7 @@ function readJarLayers(
       readJarLayers(
         nestedBytes[i],
         { path, depth: jar.depth + 1, metadata: metadata.get(name) ?? null },
-        budget,
+        options,
         layers,
         warnings,
       );
