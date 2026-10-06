@@ -14,9 +14,9 @@ import {
   type AppearanceSources,
   type BlockAppearance,
   type TextureColor,
-} from "../render/block-appearance";
-import { modernizeLegacyModAssets } from "./generated/legacy-blockstate";
-import { modernVanillaTextureId } from "./generated/legacy-textures";
+} from "../render/block-appearance.ts";
+import { modernizeLegacyModAssets } from "./generated/legacy-blockstate.ts";
+import { modernVanillaTextureId } from "./generated/legacy-textures.ts";
 
 export interface ModAppearanceInput {
   blockIds: readonly string[];

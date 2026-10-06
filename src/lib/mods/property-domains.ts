@@ -17,7 +17,7 @@
 //
 // Pure TS, no DOM, Worker-safe.
 
-import { VANILLA_PROPERTY_DOMAINS } from "../schemlib/data/vanilla-property-domains.generated";
+import { VANILLA_PROPERTY_DOMAINS } from "../schemlib/data/vanilla-property-domains.generated.ts";
 
 const BOOLEAN_VALUES: readonly string[] = ["false", "true"];
 

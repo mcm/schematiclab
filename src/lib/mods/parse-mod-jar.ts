@@ -9,17 +9,17 @@
 import { strFromU8, unzipSync, type UnzipFileInfo } from "fflate";
 
 import type { AppearanceSources } from "../render/block-appearance";
-import { legacyBlockstateRefs } from "./generated/legacy-blockstate";
+import { legacyBlockstateRefs } from "./generated/legacy-blockstate.ts";
 import {
   providerDataGeneratesBlocks,
   providerJarEntry,
   type ProviderJarReader,
-} from "./generated/jar-data";
-import { computeModAppearances } from "./mod-appearance";
+} from "./generated/jar-data.ts";
+import { computeModAppearances } from "./mod-appearance.ts";
 import {
   parseFramedTemplate,
   type TemplateCube,
-} from "../render/camo/shape-pack";
+} from "../render/camo/shape-pack.ts";
 import type { ModBlock, ParsedModAssets, ProviderData } from "./types";
 
 const ASSET_PATH_RE =

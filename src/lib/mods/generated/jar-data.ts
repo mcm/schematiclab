@@ -15,7 +15,7 @@ import {
   UCW_NAMESPACE,
   UCW_RELOAD_WARNING,
   UCW_RULE_PATH_RE,
-} from "./ucw/rules";
+} from "./ucw/rules.ts";
 
 export interface ProviderJarReader {
   /** Provider namespace; also added to the file's namespaces. */
