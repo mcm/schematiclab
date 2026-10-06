@@ -105,7 +105,7 @@ The Minecraft versions and output formats the other tools accept.
 The modpacks the operator uploaded with `pnpm modpack:upload`, with the refs the block-aware tools take as `modpack`.
 
 - Input: `query` (optional), matched case-insensitively against the slug, the name and their initials (`ATM10` finds `all-the-mods-10`).
-- Output: `packs`, each with `slug` (the ref of its latest upload), `name`, `versions` newest first (`{ ref, display_version, minecraft_version, loader, mod_count, uploaded_at }`, `ref` pinned by pack file id, else display version) and, for the newest version, `skipped_mods` (mods per status other than `ok`), `block_list: true` when the upload applied a server block list, and `unsupported_sources` (KubeJS, generated-block mods; with a block list their blocks are included, with unknown looks), or `details_error` when its data can't be read. When nothing is uploaded or nothing matches, `packs` is empty and `note` says so; that isn't a tool error.
+- Output: `packs`, each with `slug` (the ref of its latest upload), `name`, `versions` newest first (`{ ref, display_version, minecraft_version, loader, mod_count, uploaded_at }`, `ref` pinned by pack file id, else display version) and, for the newest version, `skipped_mods` (mods per status other than `ok`), `block_list: true` when the upload applied a server block list, and `unsupported_sources` (KubeJS, generated-block mods; with a block list their blocks are included, KubeJS blocks with looks from the pack's `kubejs/assets/` where it has them, else unknown looks), or `details_error` when its data can't be read. When nothing is uploaded or nothing matches, `packs` is empty and `note` says so; that isn't a tool error.
 
 ### `inspect_schematic`
 

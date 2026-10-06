@@ -133,20 +133,25 @@ export interface AppliedBlockList {
   dropped: { namespace: string; count: number }[];
   /** How many listed non-`minecraft:` ids were added as bare blocks. */
   added: number;
+  /** How many listed ids were added from `described`. */
+  addedDescribed: number;
 }
 
 /**
  * Makes the pack's blocks the list's: drops the blocks it doesn't name and
- * adds each listed non-`minecraft:` id the pack has no block for, bare (no
- * properties, look or swatch). A bare block is named by a `block.<ns>.<path>`
- * entry of `langBlockNames`, else after its id, and belongs to the mod with
- * its namespace (the first `ok` one, then any), else to the `block-list` mod.
+ * adds each listed non-`minecraft:` id the pack has no block for: from
+ * `described` when it has the id (e.g. from the pack's `kubejs/assets/`),
+ * else bare (no properties, look or swatch). A bare block is named by a
+ * `block.<ns>.<path>` entry of `langBlockNames`, else after its id. An
+ * added block belongs to the mod with its namespace (the first `ok` one,
+ * then any), else to the `block-list` mod.
  */
 export function applyBlockList(
   blocks: readonly ModpackBlock[],
   mods: readonly ModpackMod[],
   list: BlockList,
   langBlockNames: Readonly<Record<string, string>>,
+  described: ReadonlyMap<string, Omit<ModpackBlock, "mod">> = new Map(),
 ): AppliedBlockList {
   const listed = new Set(list.ids);
   const kept = new Map<string, ModpackBlock>();
@@ -167,6 +172,7 @@ export function applyBlockList(
   }
   const orphanNamespaces = new Set<string>();
   let added = 0;
+  let addedDescribed = 0;
   for (const id of list.ids) {
     const ns = blockNamespace(id);
     if (ns === "minecraft" || kept.has(id)) continue;
@@ -174,6 +180,12 @@ export function applyBlockList(
     if (mod === undefined) {
       mod = BLOCK_LIST_MOD_KEY;
       orphanNamespaces.add(ns);
+    }
+    const block = described.get(id);
+    if (block !== undefined) {
+      kept.set(id, { ...block, mod });
+      addedDescribed += 1;
+      continue;
     }
     kept.set(id, {
       id,
@@ -206,5 +218,6 @@ export function applyBlockList(
           },
     dropped: countByNamespace(dropped),
     added,
+    addedDescribed,
   };
 }

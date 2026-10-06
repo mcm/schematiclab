@@ -30,6 +30,10 @@ import {
   isAllowedCdnUrl,
 } from "../curseforge/constants.ts";
 import { forEachLimit } from "../mods/for-each-limit.ts";
+import {
+  isResourcePackAssetEntry,
+  resourcePackBudget,
+} from "../mods/parse-mod-jar.ts";
 import type { ModpackModSource, ModpackSource } from "./extract.ts";
 import { EXPORT_MANIFEST_NAME, parsePackManifest } from "./pack-manifest.ts";
 import { MODPACK_SLUG_PATTERN } from "./schema.ts";
@@ -545,6 +549,37 @@ export async function withCurseForgePack<T>(
   }
 }
 
+/**
+ * The `<overrides>/kubejs/assets/` resource pack of a pack zip, named
+ * `assets/<ns>/…` (the files `isResourcePackAssetEntry` accepts), or null
+ * when the zip has none. Throws past `resourcePackBudget`'s limits, checked
+ * against each entry's declared size before it is inflated.
+ */
+export function readPackZipKubeJsAssets(
+  zip: Uint8Array,
+  overrides: string,
+): Record<string, Uint8Array> | null {
+  const root = `${overrides}/kubejs/`;
+  const budget = resourcePackBudget(`${root}assets/`);
+  let found = false;
+  const entries = unzipSync(zip, {
+    filter: (f) => {
+      if (!f.name.startsWith(`${root}assets/`)) return false;
+      found = true;
+      if (!isResourcePackAssetEntry(f.name.slice(root.length))) return false;
+      // Stored entries are copied at their compressed size.
+      budget.charge(Math.max(f.originalSize, f.size));
+      return true;
+    },
+  });
+  if (!found) return null;
+  const files: Record<string, Uint8Array> = {};
+  for (const [name, bytes] of Object.entries(entries)) {
+    files[name.slice(root.length)] = bytes;
+  }
+  return files;
+}
+
 async function readPackZip(
   client: CurseForgeClient,
   project: CurseForgePackProject,
@@ -599,6 +634,17 @@ async function readPackZip(
       return isJar && f.originalSize <= limit;
     },
   });
+  // Read now: the zip is removed before the pack is extracted. An error
+  // (over the budget) surfaces when the assets are asked for.
+  let kubeJsAssets: Record<string, Uint8Array> | null = null;
+  let kubeJsError: unknown = null;
+  if (hasKubeJs) {
+    try {
+      kubeJsAssets = readPackZipKubeJsAssets(zip, manifest.overrides);
+    } catch (err) {
+      kubeJsError = err;
+    }
+  }
   for (const info of oversized) {
     const fileName = info.name.slice(modsPrefix.length);
     mods.push({
@@ -759,6 +805,10 @@ async function readPackZip(
     packFileId: packFile.id,
     mods,
     hasKubeJs,
+    readKubeJsAssets: async () => {
+      if (kubeJsError !== null) throw kubeJsError;
+      return kubeJsAssets;
+    },
     warnings,
   };
 }
