@@ -20,16 +20,28 @@ import {
 } from "./render";
 
 /** One block of the sheet. */
-export interface BlockCard {
+export type BlockCard = DrawnBlockCard | PlaceholderBlockCard;
+
+interface BlockCardText {
   /** The block state (or frame and camo) the card shows. */
   title: string;
   /** Kind, mod and colour, in a line. */
   subtitle: string;
+}
+
+/** A block drawn from its swatches. */
+export interface DrawnBlockCard extends BlockCardText {
+  placeholder?: undefined;
   /** The shape's boxes; undefined for a full cube. */
   boxes: readonly ShapeBox[] | undefined;
   /** Swatches of the faces drawn; any size, usually 16×16. */
   top: RgbaImage;
   side: RgbaImage;
+}
+
+/** A block with no look: one tile with `placeholder` in it, no views. */
+export interface PlaceholderBlockCard extends BlockCardText {
+  placeholder: string;
 }
 
 export interface Rect {
@@ -80,6 +92,9 @@ const COLORS = {
   subtitle: "#6b7280",
   cell: "#ffffff",
   outline: "rgba(0, 0, 0, 0.35)",
+  placeholder: "#e5e7eb",
+  placeholderStripe: "#d1d5db",
+  placeholderText: "#4b5563",
 };
 
 // As the contact sheet: light from the top, then the camera's left, then
@@ -113,6 +128,18 @@ export function blockSheetLayout(count: number): BlockSheetLayout {
     });
   }
   return { width, height, cards };
+}
+
+/** The tile a placeholder card draws over its cells. */
+export function placeholderTileRect(card: BlockCardLayout): Rect {
+  const first = card.cells[0].rect;
+  const last = card.cells[card.cells.length - 1].rect;
+  return {
+    x: first.x,
+    y: first.y,
+    width: last.x + last.width - first.x,
+    height: first.height,
+  };
 }
 
 /** The scale `blockSheetLayout(count)` is drawn at. */
@@ -259,7 +286,7 @@ export function isoCellPoint(
 
 function drawIso(
   ctx: SKRSContext2D,
-  card: BlockCard,
+  card: DrawnBlockCard,
   textures: { top: Canvas; side: Canvas },
   view: "front-left" | "back-right",
   cell: Rect,
@@ -332,6 +359,47 @@ function drawIso(
   }
 }
 
+// A grey, diagonally striped tile with the card's placeholder text in it.
+function drawPlaceholder(
+  ctx: SKRSContext2D,
+  tile: Rect,
+  card: PlaceholderBlockCard,
+  font: string,
+): void {
+  ctx.save();
+  ctx.fillStyle = COLORS.placeholder;
+  ctx.fillRect(tile.x, tile.y, tile.width, tile.height);
+  ctx.beginPath();
+  ctx.rect(tile.x, tile.y, tile.width, tile.height);
+  ctx.clip();
+  ctx.strokeStyle = COLORS.placeholderStripe;
+  ctx.lineWidth = 6;
+  for (let x = tile.x - tile.height; x < tile.x + tile.width; x += 24) {
+    ctx.beginPath();
+    ctx.moveTo(x, tile.y + tile.height);
+    ctx.lineTo(x + tile.height, tile.y);
+    ctx.stroke();
+  }
+  ctx.restore();
+  ctx.font = `600 16px ${font}`;
+  const text = ellipsize(ctx, card.placeholder, tile.width - 4 * CARD_PADDING);
+  const textWidth = ctx.measureText(text).width;
+  const [cx, cy] = [tile.x + tile.width / 2, tile.y + tile.height / 2];
+  // A plain label behind the text, so the stripes don't cross it.
+  ctx.fillStyle = COLORS.cell;
+  ctx.fillRect(
+    cx - textWidth / 2 - CARD_PADDING,
+    cy - 16,
+    textWidth + 2 * CARD_PADDING,
+    32,
+  );
+  ctx.fillStyle = COLORS.placeholderText;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, cx, cy);
+  ctx.textAlign = "start";
+}
+
 /**
  * The cards as one PNG under `title` and `subtitle`, its longest edge at most
  * `MAX_RENDER_EDGE`. No cards draws a one-line "nothing to show" sheet.
@@ -397,6 +465,10 @@ export function renderBlockSheetPng(
       rect.y + 29,
     );
 
+    if (card.placeholder !== undefined) {
+      drawPlaceholder(ctx, placeholderTileRect(layout.cards[i]), card, font);
+      return;
+    }
     const textures = {
       top: imageCanvas(card.top),
       side: imageCanvas(card.side),
