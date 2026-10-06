@@ -14,6 +14,7 @@ import path from "node:path";
 import { BlobNotFoundError, head, put } from "@vercel/blob";
 
 import { blobCredentialsConfigured, vercelBlobClient } from "../mcp/blob.ts";
+import { BLOCK_LIST_MOD_KEY } from "./block-list.ts";
 import type { ModpackExtraction } from "./extract.ts";
 import {
   modFileSwatchesPath,
@@ -191,7 +192,10 @@ export function blobModpackStore(): ModpackStore {
   };
 }
 
-/** Mod count per status, every status listed. */
+/**
+ * Mod count per status, every status listed. The block list's synthetic mod
+ * (`block-list`) isn't one of the pack's mods.
+ */
 export function countModStatuses(data: ModpackData): Record<ModStatus, number> {
   const counts: Record<ModStatus, number> = {
     ok: 0,
@@ -200,6 +204,8 @@ export function countModStatuses(data: ModpackData): Record<ModStatus, number> {
     "skipped-too-large": 0,
     failed: 0,
   };
-  for (const mod of data.mods) counts[mod.status] += 1;
+  for (const mod of data.mods) {
+    if (mod.key !== BLOCK_LIST_MOD_KEY) counts[mod.status] += 1;
+  }
   return counts;
 }

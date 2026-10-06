@@ -221,9 +221,11 @@ export function parseModJar(
   // resource pack does: its blockstates may use the jar's models and
   // textures, and its own replace the jar's.
   const compatPacks: Record<string, CompatPackAssets> = {};
+  const langs = [read.lang];
   for (const modId of [...compatEntries.keys()].sort()) {
     const prefix = `compat_packs/${modId}/`;
     const pack = readAssetEntries(compatEntries.get(modId)!, prefix, warnings);
+    langs.push(pack.lang);
     const packAssets = collectBlockAssets(
       {
         ...pack,
@@ -241,6 +243,28 @@ export function parseModJar(
     };
   }
 
+  // `block.<ns>.<path>` names no block read here uses: the modpack upload
+  // names blocks a server registers without assets by them.
+  const usedNames = new Set(
+    [
+      ...blocks,
+      ...Object.values(compatPacks).flatMap((pack) => pack.blocks),
+    ].map((block) => langBlockKey(block.id)),
+  );
+  const langBlockNames: Record<string, string> = {};
+  for (const lang of langs) {
+    for (const [key, name] of Object.entries(lang)) {
+      if (
+        key.startsWith("block.") &&
+        name.length > 0 &&
+        !usedNames.has(key) &&
+        !Object.hasOwn(langBlockNames, key)
+      ) {
+        langBlockNames[key] = name;
+      }
+    }
+  }
+
   return {
     namespaces: [...read.namespaces].sort(),
     ...assets,
@@ -249,6 +273,7 @@ export function parseModJar(
     modIds: layers[0].modIds,
     nestedJars,
     compatPacks,
+    langBlockNames,
     warnings,
     appearancesComputed: vanilla !== null,
   };
@@ -712,12 +737,21 @@ function titleCase(path: string): string {
     .join(" ");
 }
 
-function displayNameFor(id: string, lang: Record<string, string>): string {
+/** The lang key of a block's name: `create:a/b` → `block.create.a.b`. */
+function langBlockKey(id: string): string {
   const colon = id.indexOf(":");
-  const ns = id.slice(0, colon);
-  const path = id.slice(colon + 1);
-  const name = lang[`block.${ns}.${path.replace(/\//g, ".")}`];
-  return name !== undefined && name.length > 0 ? name : titleCase(path);
+  return `block.${id.slice(0, colon)}.${id.slice(colon + 1).replace(/\//g, ".")}`;
+}
+
+/** A block's English name from `lang`, else its id's path title-cased. */
+export function displayNameFor(
+  id: string,
+  lang: Readonly<Record<string, string>>,
+): string {
+  const name = lang[langBlockKey(id)];
+  return name !== undefined && name.length > 0
+    ? name
+    : titleCase(id.slice(id.indexOf(":") + 1));
 }
 
 /** Collect property → values from `variants` keys and `multipart` conditions. */
