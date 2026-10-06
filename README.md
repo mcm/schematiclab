@@ -88,7 +88,7 @@ pnpm dev          # http://localhost:3000
 Copy `.env.example` to `.env.local`. The CurseForge settings are only needed for the Mods tab:
 
 - `CURSEFORGE_API_KEY`: a key from [console.curseforge.com](https://console.curseforge.com). It is used only on the server and never sent to the browser. Escape each `$` in the key as `\$`. Without a key, the Mods tab is unavailable.
-- `CURSEFORGE_MAX_JAR_BYTES`: the largest mod jar the download proxy will fetch (default 64 MiB).
+- `CURSEFORGE_MAX_JAR_BYTES`: the largest mod jar the download proxy will fetch (default 100 MiB).
 
 The MCP server's settings (`BLOB_STORE_ID`, `CRON_SECRET`) are described in [docs/mcp.md](docs/mcp.md#configuration).
 

@@ -467,6 +467,43 @@ describe("modpack upload extraction", () => {
       }),
     ]);
   });
+
+  it("leaves out block ids Minecraft couldn't register", async () => {
+    const cube = { variants: { "": { model: "minecraft:block/stone" } } };
+    const source: ModpackSource = {
+      name: "Leftovers",
+      displayVersion: "1.0",
+      minecraftVersion: "1.20.1",
+      loader: "forge",
+      curseForgeProjectId: null,
+      packFileId: null,
+      hasKubeJs: false,
+      warnings: [],
+      mods: [
+        {
+          name: "Clockwork",
+          fileName: "clockwork.jar",
+          curseForgeProjectId: 5,
+          curseForgeFileId: 50,
+          size: null,
+          read: async () =>
+            zipSync({
+              "assets/clockwork/blockstates/flap_bearing.json": json(cube),
+              "assets/clockwork/blockstates/OLD_flap_bearing.json": json(cube),
+            }),
+        },
+      ],
+    };
+    const { data, warnings } = await extractModpack(source, {
+      vanilla: null,
+      now: NOW,
+    });
+    expect(data.blocks.map((b) => b.id)).toEqual(["clockwork:flap_bearing"]);
+    expect(warnings).toContain(
+      "clockwork:OLD_flap_bearing in Clockwork isn't a valid block id; it was left out.",
+    );
+    expect(modpackDataSchema.safeParse(data).success).toBe(true);
+  });
 });
 
 describe("helpers", () => {

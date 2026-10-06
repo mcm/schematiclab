@@ -9,7 +9,9 @@
 // (`curseforge/constants.ts`), every redirect hop re-checked, with bounded
 // concurrency and retries of transient failures. A file without a
 // `downloadUrl` (its author disallows distribution) is
-// `skipped-undistributable`, one over the jar size cap `skipped-too-large`.
+// `skipped-undistributable`, one over the jar size cap `skipped-too-large`,
+// unless `localModsDir` (`--mods-dir`, e.g. a server install's `mods/`)
+// holds a jar of the same file name and size, which is read instead.
 //
 // Node only (`node:fs`). Imports carry their `.ts` extension so node's
 // strip-types can load it.
@@ -50,7 +52,7 @@ const MAX_MANIFEST_BYTES = 4 * 1024 * 1024;
 
 /** Told to the operator when mods couldn't be downloaded from CurseForge. */
 export const UNDISTRIBUTABLE_HINT =
-  "Some mods' authors disallow third-party downloads. Install the pack in the CurseForge app and re-run with --instance <instance folder> to include them.";
+  "Some mods' authors disallow third-party downloads. Re-run with --mods-dir <an installed copy's mods folder> to include them.";
 
 export type FetchLike = (
   input: string,
@@ -65,6 +67,11 @@ export interface CurseForgePackOptions {
   fileId?: number;
   /** Mod jars over this many bytes are `skipped-too-large`. */
   maxJarBytes: number;
+  /**
+   * A folder of jars (an installed copy's `mods/`) read for files that
+   * can't be downloaded: undistributable or over `maxJarBytes`.
+   */
+  localModsDir?: string;
   concurrency?: number;
   /** Where the run's temp directory is created (default the OS's). */
   tempRoot?: string;
@@ -464,6 +471,25 @@ function jarFromDisk(
 }
 
 /**
+ * `fileName` in `dir` when it's there with the size CurseForge lists, else
+ * null. File names with a path in them are never looked up.
+ */
+async function localJar(
+  dir: string | undefined,
+  fileName: string,
+  fileLength: number,
+): Promise<string | null> {
+  if (dir === undefined || fileName !== path.basename(fileName)) return null;
+  const file = path.join(dir, fileName);
+  try {
+    const info = await stat(file);
+    return info.isFile() && info.size === fileLength ? file : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Resolves and downloads the pack, calls `run` with it as a `ModpackSource`
  * whose mods read their jars from the run's temp directory, and removes that
  * directory afterwards (also when `run` throws).
@@ -658,23 +684,31 @@ async function readPackZip(
         read: null,
         missingMessage: `CurseForge doesn't list file ${fileId} of project ${projectId}.`,
       });
-    } else if (file.downloadUrl === null) {
-      mods.push({
-        ...base,
-        size: null,
-        read: null,
-        missingStatus: "skipped-undistributable",
-        missingMessage:
-          "The author disallows third-party downloads; upload an installed instance with --instance to include it.",
-      });
-    } else if (file.fileLength > limit) {
-      mods.push({
-        ...base,
-        size: null,
-        read: null,
-        missingStatus: "skipped-too-large",
-        missingMessage: `The jar is ${file.fileLength} bytes, over the ${limit}-byte limit (CURSEFORGE_MAX_JAR_BYTES).`,
-      });
+    } else if (file.downloadUrl === null || file.fileLength > limit) {
+      const local = await localJar(
+        options.localModsDir,
+        file.fileName,
+        file.fileLength,
+      );
+      if (local !== null) {
+        mods.push(jarFromDisk(base, local, file.fileLength));
+      } else if (file.downloadUrl === null) {
+        mods.push({
+          ...base,
+          size: null,
+          read: null,
+          missingStatus: "skipped-undistributable",
+          missingMessage: `The author disallows third-party downloads; re-run with --mods-dir <folder with ${file.fileName}> to include it.`,
+        });
+      } else {
+        mods.push({
+          ...base,
+          size: null,
+          read: null,
+          missingStatus: "skipped-too-large",
+          missingMessage: `The jar is ${file.fileLength} bytes, over the ${limit}-byte limit (CURSEFORGE_MAX_JAR_BYTES); re-run with --mods-dir <folder with ${file.fileName}> to include it.`,
+        });
+      }
     } else {
       toDownload.push({ base, url: file.downloadUrl });
     }

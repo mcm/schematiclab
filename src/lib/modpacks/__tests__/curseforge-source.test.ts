@@ -1,4 +1,10 @@
-import { mkdtempSync, readdirSync, rmSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { strToU8, zipSync } from "fflate";
@@ -292,7 +298,7 @@ describe("CurseForge pack source", () => {
       key: "cf-1201",
       status: "skipped-undistributable",
     });
-    expect(mods["Hidden Mod"].message).toMatch(/--instance/);
+    expect(mods["Hidden Mod"].message).toMatch(/--mods-dir/);
     expect(mods["Huge Mod"]).toMatchObject({ status: "skipped-too-large" });
     expect(mods["Flaky Mod"]).toMatchObject({ status: "ok" });
     expect(sleeps).toEqual([1000]);
@@ -314,6 +320,57 @@ describe("CurseForge pack source", () => {
     expect(fetched.some((u) => u.includes("/files/1301/"))).toBe(false);
     expect(fetched.some((u) => u.includes("evil.example.com"))).toBe(false);
     expect(fetched.some((u) => u.includes("/files/1401/"))).toBe(false);
+  });
+
+  it("reads files it can't download from --mods-dir when name and size match", async () => {
+    const fake = fakeCurseForge();
+    const modsDir = path.join(tempRoot, "server-mods");
+    mkdirSync(modsDir);
+    // Undistributable, listed at 1000 bytes.
+    writeFileSync(path.join(modsDir, "mod-1201.jar"), modJar("hidden"));
+    const hugeJar = modJar("huge");
+    writeFileSync(path.join(modsDir, "mod-1301.jar"), hugeJar);
+    const fetchFile = fake.fetch;
+    const { data } = await withCurseForgePack(
+      options(
+        {
+          ...fake,
+          // List the local jars at their real sizes; 1301 stays over the cap.
+          fetch: async (input, init) => {
+            const res = await fetchFile(input, init);
+            if (!input.endsWith("/v1/mods/files")) return res;
+            const body = (await res.json()) as {
+              data: Record<string, unknown>[];
+            };
+            for (const f of body.data) {
+              if (f.id === 1201) f.fileLength = modJar("hidden").byteLength;
+            }
+            return Response.json(body);
+          },
+        },
+        { localModsDir: modsDir, maxJarBytes: 4096 },
+      ),
+      (source) => extractModpack(source, { vanilla: null }),
+    );
+    const statuses = Object.fromEntries(
+      data.mods.map((m) => [m.name, m.status]),
+    );
+    // Same name and size: read from disk.
+    expect(statuses["Hidden Mod"]).toBe("ok");
+    expect(data.mods.find((m) => m.name === "Hidden Mod")).toMatchObject({
+      key: "cf-1201",
+      curseForgeFileId: 1201,
+    });
+    // CurseForge lists 1301 at 5 MB; the local jar's size differs.
+    expect(statuses["Huge Mod"]).toBe("skipped-too-large");
+    expect(data.blocks.map((b) => b.id)).toContain("hidden:hidden_block");
+    // The temp directory is removed; the mods folder is left alone.
+    expect(readdirSync(tempRoot)).toEqual(["server-mods"]);
+    expect(readdirSync(modsDir).sort()).toEqual([
+      "mod-1201.jar",
+      "mod-1301.jar",
+    ]);
+    expect(hugeJar.byteLength).not.toBe(5 * MB);
   });
 
   it("takes the project by id and a pinned file", async () => {

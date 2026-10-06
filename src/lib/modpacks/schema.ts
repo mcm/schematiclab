@@ -21,6 +21,9 @@ export const MODPACK_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
  */
 export const BLOB_KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 
+/** A namespaced block id Minecraft can register, e.g. `create:brass_block`. */
+export const BLOCK_ID_PATTERN = /^[a-z0-9_.-]+:[a-z0-9_./-]+$/;
+
 const slug = z.string().regex(MODPACK_SLUG_PATTERN);
 const blobKey = z.string().regex(BLOB_KEY_PATTERN);
 const isoDate = z.iso.datetime({ offset: true });
@@ -168,7 +171,7 @@ export const modBlockCamoSchema = z.object({
 
 export const modpackBlockSchema = z.object({
   /** Namespaced block id, e.g. `create:brass_block`. */
-  id: z.string().regex(/^[a-z0-9_.-]+:[a-z0-9_./-]+$/),
+  id: z.string().regex(BLOCK_ID_PATTERN),
   /** Key of the mod in `mods` that ships the block. */
   mod: blobKey,
   displayName: z.string(),

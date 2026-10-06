@@ -1,15 +1,17 @@
 // Uploads a locally installed modpack's block data for the MCP tools.
 //
 //   pnpm modpack:upload --instance <dir> [--slug <slug>] [--version <label>]
-//   pnpm modpack:upload --curseforge <slug|id> [--file <id>] [--slug …]
+//   pnpm modpack:upload --curseforge <slug|id> [--file <id>] [--mods-dir <dir>] [--slug …]
 //   pnpm modpack:upload --instance <dir> --dry-run --out <dir>
 //
 // `--instance` is a CurseForge app instance folder (`minecraftinstance.json`
 // + `mods/`) or an unzipped pack export (`manifest.json` + `overrides/mods/`).
 // `--curseforge` downloads the pack (its latest file, or `--file`) and its
 // mods from CurseForge into a temp directory removed at the end; it needs
-// `CURSEFORGE_API_KEY`. Mods whose authors disallow third-party downloads
-// are skipped: upload an installed copy with `--instance` to include them.
+// `CURSEFORGE_API_KEY`. Mods whose authors disallow third-party downloads,
+// and jars over `CURSEFORGE_MAX_JAR_BYTES`, are skipped unless `--mods-dir`
+// (an installed copy's `mods/`, a server install's will do) has the same
+// file: matched by CurseForge's file name and size.
 // Every jar goes through the browser's jar parser; only derived block data
 // and face swatches are uploaded (see `src/lib/modpacks/extract.ts`), to the
 // private Vercel Blob store under `modpacks/` and `mod-files/`.
@@ -19,7 +21,7 @@
 // `.env.local` when present (also for `CURSEFORGE_API_KEY`). `--dry-run` writes the same files under `--out`
 // instead and needs no credentials.
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { parseArgs } from "node:util";
 
@@ -47,11 +49,13 @@ import {
 import { parseModpackRef } from "../src/lib/modpacks/ref.ts";
 import { MOD_STATUSES, type ModpackData } from "../src/lib/modpacks/schema.ts";
 
-const USAGE = `Usage: pnpm modpack:upload (--instance <dir> | --curseforge <slug|id> [--file <id>]) [--slug <slug>] [--version <label>] [--dry-run --out <dir>]
+const USAGE = `Usage: pnpm modpack:upload (--instance <dir> | --curseforge <slug|id> [--file <id>] [--mods-dir <dir>]) [--slug <slug>] [--version <label>] [--dry-run --out <dir>]
 
   --instance <dir>  CurseForge instance folder or unzipped pack export
   --curseforge <p>  CurseForge modpack slug or project id (needs CURSEFORGE_API_KEY)
   --file <id>       Pack file id with --curseforge (default: the latest file)
+  --mods-dir <dir>  With --curseforge, read files that can't be downloaded
+                    (undistributable or too large) from this mods folder
   --slug <slug>     Pack slug (default: the pack name, slugified)
   --version <label> Display version (default: the pack's own version)
   --dry-run         Write to --out instead of Vercel Blob
@@ -105,6 +109,7 @@ async function main(): Promise<void> {
         instance: { type: "string" },
         curseforge: { type: "string" },
         file: { type: "string" },
+        "mods-dir": { type: "string" },
         slug: { type: "string" },
         version: { type: "string" },
         "dry-run": { type: "boolean", default: false },
@@ -128,6 +133,15 @@ async function main(): Promise<void> {
   }
   if (values.file !== undefined && values.curseforge === undefined) {
     fail("--file is only used with --curseforge.");
+  }
+  const modsDir = values["mods-dir"];
+  if (modsDir !== undefined) {
+    if (values.curseforge === undefined) {
+      fail("--mods-dir is only used with --curseforge.");
+    }
+    if (!existsSync(modsDir) || !statSync(modsDir).isDirectory()) {
+      fail(`--mods-dir ${modsDir} isn't a folder.`);
+    }
   }
   let fileId: number | undefined;
   if (values.file !== undefined) {
@@ -163,6 +177,7 @@ async function main(): Promise<void> {
         apiKey: apiKey as string,
         project: values.curseforge,
         fileId,
+        localModsDir: modsDir === undefined ? undefined : path.resolve(modsDir),
         maxJarBytes: maxJarBytesFromEnv(process.env.CURSEFORGE_MAX_JAR_BYTES),
         log: (line) => console.log(line),
       },
