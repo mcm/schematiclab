@@ -15,6 +15,7 @@ import {
   providerJarEntry,
   type ProviderJarReader,
 } from "./generated/jar-data.ts";
+import { firstJsonValue } from "./lenient-json.ts";
 import { computeModAppearances } from "./mod-appearance.ts";
 import {
   COPYCAT_TEXTURE,
@@ -287,10 +288,25 @@ function parseJson(
   data: Uint8Array,
   warnings: string[],
 ): unknown {
+  // Strip a UTF-8 BOM, which some mod tooling emits.
+  const text = strFromU8(data).replace(/^﻿/, "");
   try {
-    // Strip a UTF-8 BOM, which some mod tooling emits.
-    return JSON.parse(strFromU8(data).replace(/^﻿/, "")) as unknown;
+    return JSON.parse(text) as unknown;
   } catch (err) {
+    // Minecraft reads these files with Gson's lenient reader, which ignores
+    // comments and anything after the first complete value.
+    const lenient = firstJsonValue(text);
+    if (lenient !== null) {
+      try {
+        const json = JSON.parse(lenient) as unknown;
+        warnings.push(
+          `Read ${name} leniently (comments or content after the JSON value ignored)`,
+        );
+        return json;
+      } catch {
+        // Fall through to the strict error.
+      }
+    }
     const reason = err instanceof Error ? err.message : String(err);
     warnings.push(`Skipped malformed JSON ${name}: ${reason}`);
     return undefined;

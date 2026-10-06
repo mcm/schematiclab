@@ -230,6 +230,75 @@ describe("parseModJar", () => {
     );
   });
 
+  describe("lenient JSON, as Minecraft's Gson reads it", () => {
+    const BLOCKSTATE = { variants: { "": { model: "a:block/b" } } };
+    const parseBlockstate = (text: string) =>
+      parseModJar(jar({ "assets/a/blockstates/b.json": text }));
+
+    it("ignores trailing junk after the JSON value", () => {
+      const result = parseBlockstate(`${JSON.stringify(BLOCKSTATE)}r`);
+      expect(result.blockstates["a:b"]).toEqual(BLOCKSTATE);
+      expect(result.blocks.map((b) => b.id)).toEqual(["a:b"]);
+      expect(result.warnings).toHaveLength(1);
+      expect(result.warnings[0]).toContain("assets/a/blockstates/b.json");
+      expect(result.warnings[0]).toContain("leniently");
+    });
+
+    it("ignores a trailing second object", () => {
+      const result = parseBlockstate(
+        `${JSON.stringify(BLOCKSTATE)}\n{"variants":{"x=1":{"model":"a:block/c"}}}`,
+      );
+      expect(result.blockstates["a:b"]).toEqual(BLOCKSTATE);
+      expect(result.warnings).toHaveLength(1);
+    });
+
+    it("ignores line and block comments outside strings", () => {
+      const result = parseBlockstate(
+        [
+          "// header",
+          "{ /* the only variant */",
+          '  "variants": { "": { "model": "a:block/b" } } // trailing',
+          "}",
+        ].join("\n"),
+      );
+      expect(result.blockstates["a:b"]).toEqual(BLOCKSTATE);
+      expect(result.warnings).toHaveLength(1);
+    });
+
+    it("leaves comment markers inside strings alone", () => {
+      const result = parseBlockstate(
+        '{"variants":{"":{"model":"a://block/b/*c*/"}}} // note',
+      );
+      expect(result.blockstates["a:b"]).toEqual({
+        variants: { "": { model: "a://block/b/*c*/" } },
+      });
+      expect(result.warnings).toHaveLength(1);
+    });
+
+    it("parses strict-valid files without a warning", () => {
+      const result = parseBlockstate(JSON.stringify(BLOCKSTATE, null, 2));
+      expect(result.blockstates["a:b"]).toEqual(BLOCKSTATE);
+      expect(result.warnings).toEqual([]);
+    });
+
+    it.each([
+      ["empty", ""],
+      ["whitespace", "  \n"],
+      ["truncated", '{"variants":{"":{"model":"a:block/b"}}'],
+      ["an unterminated string", '{"variants":{"":{"model":"a:block/b}}}'],
+      ["an unterminated comment", '/* {"variants":{}}'],
+      ["junk before the value", 'r{"variants":{}}'],
+    ])("still skips %s input", (_label, text) => {
+      const result = parseBlockstate(text);
+      expect(result.blockstates).toEqual({});
+      expect(result.warnings).toHaveLength(2);
+      expect(result.warnings[0]).toMatch(
+        /^Skipped malformed JSON assets\/a\/blockstates\/b\.json: /,
+      );
+      expect(result.warnings[1]).toBe(NO_BLOCKS_WARNING);
+    });
+  });
+
   it("returns no blocks and a warning for a mod without blockstates", () => {
     const result = parseModJar(
       jar({
