@@ -19,6 +19,11 @@ import {
   type ProviderJarReader,
 } from "./generated/jar-data.ts";
 import { firstJsonValue } from "./lenient-json.ts";
+import {
+  hasModelLoader,
+  loaderTextureRefs,
+  modelChainHasLoader,
+} from "./loader-model.ts";
 import { computeModAppearances } from "./mod-appearance.ts";
 import {
   COPYCAT_TEXTURE,
@@ -178,6 +183,9 @@ export function blockstateAssetRefs(
         if (ref !== null) textures.add(ref);
       }
     }
+    if (modelChainHasLoader(modelId, getModel)) {
+      for (const ref of loaderTextureRefs(model)) textures.add(ref);
+    }
     if (typeof model.parent === "string") {
       visit(normalizeResourceId(model.parent), depth + 1);
     }
@@ -189,7 +197,11 @@ export function blockstateAssetRefs(
   return { models: modelIds, textures };
 }
 
-/** A model's parent id and the literal texture ids it names. */
+/**
+ * A model's parent id and the literal texture ids it names; with a custom
+ * model loader, also the strings elsewhere in it that may be texture ids
+ * (`loaderTextureRefs`).
+ */
 export function modelAssetRefs(model: unknown): {
   parent: string | null;
   textures: string[];
@@ -200,6 +212,11 @@ export function modelAssetRefs(model: unknown): {
     for (const value of Object.values(model.textures)) {
       const ref = textureRefOf(value);
       if (ref !== null) textures.push(ref);
+    }
+  }
+  if (hasModelLoader(model)) {
+    for (const ref of loaderTextureRefs(model)) {
+      if (!textures.includes(ref)) textures.push(ref);
     }
   }
   return {
@@ -217,14 +234,24 @@ export function modelAssetRefs(model: unknown): {
  * have; `minecraft:` ids are never listed. A model name is found in its
  * 1.13+ form or its 1.12 `block/` form (`legacyModelId`); when neither
  * exists, the form its format uses is listed (1.12 for Forge files).
+ *
+ * `loaderTextures` are the strings of custom-loader models (and models
+ * whose parent chain has a loader) that may be texture ids and are missing
+ * (`loaderTextureRefs`): many of them aren't textures, so they are worth
+ * fetching when some jar ships them but are never reported as unresolved.
  */
 export function missingAssetRefs(
   blockstate: unknown,
   getModel: (id: string) => unknown,
   hasTexture: (id: string) => boolean,
-): { models: Set<string>; textures: Set<string> } {
+): {
+  models: Set<string>;
+  textures: Set<string>;
+  loaderTextures: Set<string>;
+} {
   const models = new Set<string>();
   const textures = new Set<string>();
+  const loaderTextures = new Set<string>();
   const vanillaId = (id: string) => id.startsWith("minecraft:");
   const checkTexture = (id: string) => {
     if (!vanillaId(id) && !hasTexture(id)) textures.add(id);
@@ -239,6 +266,11 @@ export function missingAssetRefs(
       for (const value of Object.values(model.textures)) {
         const ref = textureRefOf(value);
         if (ref !== null) checkTexture(ref);
+      }
+    }
+    if (modelChainHasLoader(modelId, getModel)) {
+      for (const ref of loaderTextureRefs(model)) {
+        if (!vanillaId(ref) && !hasTexture(ref)) loaderTextures.add(ref);
       }
     }
     if (typeof model.parent === "string") {
@@ -270,7 +302,8 @@ export function missingAssetRefs(
     else if (!vanillaId(id)) models.add(forge ? legacy : id);
   }
   for (const texture of refs.textures) checkTexture(texture);
-  return { models, textures };
+  for (const texture of textures) loaderTextures.delete(texture);
+  return { models, textures, loaderTextures };
 }
 
 /** Jars nested in a jar (NeoForge / Forge jar-in-jar). */
@@ -811,8 +844,9 @@ function collectBlockAssets(
     }));
 
   // Keep only models reachable from a blockstate, and only textures those
-  // models (or their in-mod parents) reference, plus the camo frame textures
-  // (empty camo slots, and frames whose placeholder model draws nothing).
+  // models (or their in-mod parents) reference, custom-loader models' loose
+  // texture ids included, plus the camo frame textures (empty camo slots,
+  // and frames whose placeholder model draws nothing).
   const models: Record<string, unknown> = {};
   const textureRefs = new Set<string>([
     FRAMED_TEXTURE,
@@ -829,6 +863,13 @@ function collectBlockAssets(
         const ref = textureRefOf(value);
         if (ref !== null) textureRefs.add(ref);
       }
+    }
+    if (
+      modelChainHasLoader(modelId, (id) =>
+        Object.hasOwn(allModels, id) ? allModels[id] : undefined,
+      )
+    ) {
+      for (const ref of loaderTextureRefs(model)) textureRefs.add(ref);
     }
     if (typeof model.parent === "string") {
       visit(normalizeResourceId(model.parent), depth + 1);
@@ -857,6 +898,7 @@ function collectBlockAssets(
   // Ids the blockstates reach that neither the jar nor vanilla has.
   const missingModels = new Set<string>();
   const missingTextures = new Set<string>();
+  const missingLoaderTextures = new Set<string>();
   for (const id of Object.keys(blockstates)) {
     const missing = missingAssetRefs(
       blockstates[id],
@@ -870,6 +912,7 @@ function collectBlockAssets(
     );
     for (const ref of missing.models) missingModels.add(ref);
     for (const ref of missing.textures) missingTextures.add(ref);
+    for (const ref of missing.loaderTextures) missingLoaderTextures.add(ref);
   }
 
   const appearances = computeModAppearances(
@@ -896,6 +939,9 @@ function collectBlockAssets(
     unresolvedRefs: {
       models: [...missingModels].sort(),
       textures: [...missingTextures].sort(),
+      ...(missingLoaderTextures.size > 0 && {
+        loaderTextures: [...missingLoaderTextures].sort(),
+      }),
     },
   };
 }

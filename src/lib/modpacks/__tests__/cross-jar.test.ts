@@ -549,6 +549,90 @@ describe("extractModpack across jars", () => {
   });
 });
 
+describe("custom model loaders", () => {
+  /** A Modular Bees-style block whose loader model names its textures. */
+  function hive(textures: Files = {}): Uint8Array {
+    return jar(["hives"], {
+      ...blockstate("hives:core", "hives:block/core"),
+      ...model("hives:block/core", {
+        loader: "modularbees:connect_model",
+        casing: "hives:steel",
+        north: "hives:block/core_front",
+        particle: "paint:block/hive",
+      }),
+      ...textures,
+    });
+  }
+
+  it("keeps the textures a loader model names in the jar", () => {
+    const parsed = parseModJar(
+      hive({
+        ...texture("hives:block/core_front", RED),
+        ...texture("hives:block/unused", RED),
+      }),
+    );
+    expect(Object.keys(parsed.textures)).toContain("hives:block/core_front");
+    expect(Object.keys(parsed.textures)).not.toContain("hives:block/unused");
+    // Loose strings that may be textures aren't unresolved refs.
+    expect(parsed.unresolvedRefs).toEqual({
+      models: [],
+      textures: [],
+      loaderTextures: ["hives:steel", "paint:block/hive"],
+    });
+  });
+
+  it("describes a loader model's block from its jar's textures", async () => {
+    const { data, crossJar } = await extract([
+      mod("Hives", 1, hive(texture("hives:block/core_front", RED))),
+    ]);
+    const core = blockOf(data.blocks, "hives:core")!;
+    expect(dominantChannel(core.appearance?.hex)).toBe(0);
+    expect(core.swatch?.file).toBe("cf-1");
+    // The loader model's casing name isn't counted as unresolved.
+    expect(crossJar.unresolved.count).toBe(0);
+  });
+
+  it("takes a loader model's texture from another jar", async () => {
+    const { data, crossJar } = await extract([
+      mod("Paint", 1, jar(["paint"], texture("paint:block/hive", GREEN))),
+      mod("Hives", 2, hive()),
+    ]);
+    const core = blockOf(data.blocks, "hives:core")!;
+    expect(dominantChannel(core.appearance?.hex)).toBe(1);
+    expect(core.swatch?.file).toMatch(/^pack-/);
+    expect(crossJar).toMatchObject({ looks: 1, jarsRead: 1 });
+    expect(crossJar.unresolved.count).toBe(0);
+  });
+
+  it("reads the textures of a loader model fetched from another jar", async () => {
+    const tiers = jar(["tiers"], {
+      ...blockstate("tiers:elite_interface", "tiers:block/elite_interface"),
+      ...model("tiers:block/elite_interface", {
+        parent: "storage:block/disk_interface",
+      }),
+    });
+    const storage = jar(["storage"], {
+      ...model("storage:block/disk_interface", {
+        loader: "storage:disk_interface",
+        base_model: { up: "storage:block/interface_top" },
+        particle: "storage:block/interface_side",
+      }),
+      ...texture("storage:block/interface_top", RED),
+      ...texture("storage:block/interface_side", BLUE),
+    });
+    const { data, crossJar } = await extract([
+      mod("Storage", 1, storage),
+      mod("Tiers", 2, tiers),
+    ]);
+    const block = blockOf(data.blocks, "tiers:elite_interface")!;
+    // Four blue sides and a blue bottom against one red top.
+    expect(dominantChannel(block.appearance?.hex)).toBe(2);
+    expect(block.swatch?.file).toMatch(/^pack-/);
+    expect(crossJar).toMatchObject({ looks: 1, jarsRead: 1 });
+    expect(crossJar.unresolved.count).toBe(0);
+  });
+});
+
 describe("packSwatchSheets", () => {
   it("splits sheets over the size limit instead of posterizing", () => {
     // Noise swatches barely compress.

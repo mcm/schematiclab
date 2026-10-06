@@ -236,6 +236,191 @@ describe("describeBlockAppearance", () => {
   });
 });
 
+/** One mod block `test:<name>` whose blockstate uses `test:block/<name>`. */
+function modBlockWithModels(
+  name: string,
+  models: Record<string, unknown>,
+  textures: Record<string, RgbaImage>,
+) {
+  const id = `test:${name}`;
+  return describeModBlocks(
+    {
+      blockIds: [id],
+      blockstates: {
+        [id]: { variants: { "": { model: `test:block/${name}` } } },
+      },
+      models,
+      textures: Object.fromEntries(
+        Object.entries(textures).map(([k, v]) => [k, png(v)]),
+      ),
+      textureMeta: {},
+    },
+    vanillaModelsOnly,
+  )[id];
+}
+
+const GREEN: Rgba = [0, 255, 0, 255];
+
+describe("describeBlockAppearance with custom model loaders", () => {
+  it("maps a connect_model's per-face keys, the rest from particle", () => {
+    const d = modBlock(
+      "hive",
+      {
+        loader: "modularbees:connect_model",
+        parent: "minecraft:block/block",
+        north: "test:block/hive_front",
+        up: "test:block/hive_top",
+        particle: "test:block/hive_side",
+      },
+      {
+        "test:block/hive_front": solid(BLUE),
+        "test:block/hive_top": solid(RED),
+        "test:block/hive_side": solid(GREEN),
+      },
+    )!;
+    expect(d).toBeDefined();
+    expect(everyPixel(d.faces.top!, RED)).toBe(true);
+    // Three sides of particle against one north face.
+    expect(everyPixel(d.faces.side!, GREEN)).toBe(true);
+    expect(everyPixel(d.faces.bottom!, GREEN)).toBe(true);
+    expect(d.dominant.map((c) => c.hex).sort()).toEqual(
+      ["#0000ff", "#00ff00", "#ff0000"].sort(),
+    );
+  });
+
+  it("gives `side` the horizontal faces a direction key doesn't name", () => {
+    const d = modBlock(
+      "frame",
+      {
+        loader: "test:frame",
+        side: "test:block/frame_side",
+        top: "test:block/frame_top",
+        bottom: "test:block/frame_bottom",
+      },
+      {
+        "test:block/frame_side": solid(BLUE),
+        "test:block/frame_top": solid(RED),
+        "test:block/frame_bottom": solid(GREEN),
+      },
+    )!;
+    expect(everyPixel(d.faces.top!, RED)).toBe(true);
+    expect(everyPixel(d.faces.side!, BLUE)).toBe(true);
+    expect(everyPixel(d.faces.bottom!, GREEN)).toBe(true);
+  });
+
+  it("reads nested overlays of an MI-style model, ignoring the casing name", () => {
+    const machine = {
+      loader: "modern_industrialization:machine",
+      casing: "test:steel",
+      default_overlays: {
+        top: "test:block/machine/overlay_top",
+        front: "test:block/machine/overlay_front",
+      },
+    };
+    const textures = {
+      "test:block/machine/overlay_top": solid(RED),
+      "test:block/machine/overlay_front": solid(BLUE),
+    };
+    const d = modBlock("machine", machine, textures)!;
+    expect(d).toBeDefined();
+    expect(everyPixel(d.faces.top!, RED)).toBe(true);
+    // No face key or particle: the first texture, in key order.
+    expect(everyPixel(d.faces.side!, RED)).toBe(true);
+    expect(everyPixel(d.faces.bottom!, RED)).toBe(true);
+
+    // A non-overlay texture wins over every overlay.
+    const hull = modBlock(
+      "machine",
+      { ...machine, base: "test:block/machine/hull" },
+      { ...textures, "test:block/machine/hull": solid(GREEN) },
+    )!;
+    for (const face of [hull.faces.top, hull.faces.side, hull.faces.bottom]) {
+      expect(everyPixel(face!, GREEN)).toBe(true);
+    }
+  });
+
+  it("uses the textures of a loader model's parent chain", () => {
+    const d = modBlockWithModels(
+      "interface",
+      {
+        "test:block/interface": {
+          parent: "test:block/loader_base",
+          up: "test:block/interface_top",
+        },
+        "test:block/loader_base": {
+          loader: "test:disk_interface",
+          particle: "test:block/casing",
+        },
+      },
+      {
+        "test:block/interface_top": solid(RED),
+        "test:block/casing": solid(BLUE),
+      },
+    )!;
+    expect(everyPixel(d.faces.top!, RED)).toBe(true);
+    expect(everyPixel(d.faces.side!, BLUE)).toBe(true);
+  });
+
+  it("keeps the normal path for a loader model whose textures resolve", () => {
+    const d = modBlock(
+      "loaded",
+      {
+        loader: "test:custom",
+        textures: { particle: "test:block/particle" },
+        up: "test:block/up",
+      },
+      { "test:block/particle": solid(BLUE), "test:block/up": solid(RED) },
+    )!;
+    for (const face of [d.faces.top, d.faces.side, d.faces.bottom]) {
+      expect(everyPixel(face!, BLUE)).toBe(true);
+    }
+    expect(d.dominant).toEqual([{ hex: "#0000ff", share: 1 }]);
+  });
+
+  it("keeps the normal path for a loader model with drawn elements", () => {
+    const d = modBlock(
+      "cubed",
+      {
+        loader: "test:custom",
+        parent: "minecraft:block/cube_all",
+        textures: { all: "test:block/all" },
+        up: "test:block/up",
+      },
+      { "test:block/all": solid(BLUE), "test:block/up": solid(RED) },
+    )!;
+    expect(everyPixel(d.faces.top!, BLUE)).toBe(true);
+  });
+
+  it("gives a loader model with no resolvable texture no look", () => {
+    expect(
+      modBlock(
+        "ghost",
+        {
+          loader: "test:custom",
+          casing: "steel",
+          north: "test:block/missing",
+          textures: { particle: "#missing" },
+        },
+        {},
+      ),
+    ).toBeUndefined();
+  });
+
+  it("never reads loose strings of a model without a loader", () => {
+    expect(
+      modBlock(
+        "plain",
+        {
+          parent: "minecraft:block/cube_all",
+          textures: { all: "test:block/missing" },
+          up: "test:block/up",
+        },
+        { "test:block/up": solid(RED) },
+      ),
+    ).toBeUndefined();
+  });
+});
+
 describe("packSwatches", () => {
   it("returns null without swatches", () => {
     expect(packSwatches([{ id: "test:a", faces: { top: null } }])).toBeNull();
