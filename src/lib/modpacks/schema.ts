@@ -233,5 +233,16 @@ export const modpackDataSchema = z.object({
    * jar ships any.
    */
   framedTemplates: z.record(z.string(), z.array(templateCubeSchema)).optional(),
+  /**
+   * The server block list the upload applied (`--block-list`): its id count
+   * and the file's SHA-256. The blocks are then exactly the list's modded
+   * ids; those no jar describes have `kind: "unknown"` and no appearance.
+   */
+  blockList: z
+    .object({
+      blocks: z.number().int().nonnegative(),
+      sha256: z.string().regex(/^[0-9a-f]{64}$/),
+    })
+    .optional(),
 });
 export type ModpackData = z.infer<typeof modpackDataSchema>;

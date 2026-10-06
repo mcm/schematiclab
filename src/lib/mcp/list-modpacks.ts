@@ -39,7 +39,13 @@ export interface ModpackInfo {
   versions: ModpackVersionInfo[];
   /** Of the newest version: mods per status other than `ok`. */
   skipped_mods?: Record<SkippedStatus, number>;
-  /** Of the newest version: blocks registered at runtime, not in the data. */
+  /**
+   * Of the newest version: true when a server block list was applied, so
+   * its blocks are exactly what the server registers (some with unknown
+   * looks).
+   */
+  block_list?: true;
+  /** Of the newest version: blocks registered at runtime, and how they're covered. */
   unsupported_sources?: { kind: string; name: string; message: string }[];
   /** Why the newest version's details couldn't be read. */
   details_error?: string;
@@ -140,6 +146,7 @@ async function packInfo(
       if (mod.status !== "ok") skipped[mod.status] += 1;
     }
     info.skipped_mods = skipped;
+    if (data.blockList !== undefined) info.block_list = true;
     info.unsupported_sources = data.runtimeBlockSources.map((s) => ({
       kind: s.kind,
       name: s.name,
@@ -198,7 +205,7 @@ export const listModpacksTool = defineTool({
   name: "list_modpacks",
   title: "List modpacks",
   description:
-    "List the modpacks uploaded to this server, to find the modpack ref a block-aware tool takes (search_blocks, suggest_palette, show_blocks, inspect/convert/render_schematic, generate_shape, compile_build, check_build). Call it whenever the user names a modpack (e.g. 'a base in ATM10'), then pass the ref as modpack to every one of those tools so only blocks the pack has are used; never guess mod block ids. Mod block names don't say how a block looks: check with show_blocks before building with one. Per pack: slug (the ref for its latest upload), name and versions newest first, each with a pinned ref, its Minecraft version, loader and mod count; for the newest version, how many mods were skipped or failed (their blocks are missing) and the runtime block sources (KubeJS, generated-block mods) whose blocks aren't known. query matches slug, name or initials case-insensitively ('ATM10' finds all-the-mods-10). Packs are added by the server's operator.",
+    "List the modpacks uploaded to this server, to find the modpack ref a block-aware tool takes (search_blocks, suggest_palette, show_blocks, inspect/convert/render_schematic, generate_shape, compile_build, check_build). Call it whenever the user names a modpack (e.g. 'a base in ATM10'), then pass the ref as modpack to every one of those tools so only blocks the pack has are used; never guess mod block ids. Mod block names don't say how a block looks: check with show_blocks before building with one. Per pack: slug (the ref for its latest upload), name and versions newest first, each with a pinned ref, its Minecraft version, loader and mod count; for the newest version, how many mods were skipped or failed (their blocks are missing) block_list: true when the operator applied the server's block list, so the pack's blocks are exactly the ones the server registers (blocks no jar describes have kind unknown and no look; show_blocks can't picture them), and the runtime block sources (KubeJS, generated-block mods), whose blocks are unknown without a block list. query matches slug, name or initials case-insensitively ('ATM10' finds all-the-mods-10). Packs are added by the server's operator.",
   inputSchema: z.object({
     query: z
       .string()
@@ -214,6 +221,7 @@ export const listModpacksTool = defineTool({
         name: z.string(),
         versions: z.array(versionOutput),
         skipped_mods: z.record(z.string(), z.number()).optional(),
+        block_list: z.literal(true).optional(),
         unsupported_sources: z
           .array(
             z.object({

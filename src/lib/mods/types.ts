@@ -65,6 +65,12 @@ export interface ParsedModAssets {
    * them. Packs without blockstates are left out.
    */
   compatPacks: Record<string, CompatPackAssets>;
+  /**
+   * `block.<ns>.<path>` lang key → English name, for the names in the jar's
+   * (and its compat packs') `en_us.json` that no block read from it uses.
+   * Only the modpack upload reads them.
+   */
+  langBlockNames?: Record<string, string>;
   /** Non-fatal problems encountered while parsing (malformed JSON, …). */
   warnings: string[];
   /**

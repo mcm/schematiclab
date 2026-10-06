@@ -3,6 +3,7 @@
 //   pnpm modpack:upload --instance <dir> [--slug <slug>] [--version <label>]
 //   pnpm modpack:upload --curseforge <slug|id> [--file <id>] [--mods-dir <dir>] [--slug …]
 //   pnpm modpack:upload --instance <dir> --dry-run --out <dir>
+//   pnpm modpack:upload (--instance <dir> | --curseforge …) --block-list <file>
 //
 // `--instance` is a CurseForge app instance folder (`minecraftinstance.json`
 // + `mods/`) or an unzipped pack export (`manifest.json` + `overrides/mods/`).
@@ -12,6 +13,12 @@
 // and jars over `CURSEFORGE_MAX_JAR_BYTES`, are skipped unless `--mods-dir`
 // (an installed copy's `mods/`, a server install's will do) has the same
 // file: matched by CurseForge's file name and size.
+// `--block-list` takes a server's block dump: one block id per line, blank
+// lines and `#` comments skipped. The pack data's blocks become exactly its
+// modded ids: blocks it doesn't list are dropped, and listed ids no jar
+// describes are added without a look (`src/lib/modpacks/block-list.ts`).
+// Its `minecraft:` ids are checked against the pack version's vanilla
+// blocks (a warning when they differ; vanilla data isn't changed).
 // Every jar goes through the browser's jar parser; only derived block data
 // and face swatches are uploaded (see `src/lib/modpacks/extract.ts`), to the
 // private Vercel Blob store under `modpacks/` and `mod-files/`.
@@ -25,9 +32,14 @@ import { existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { parseArgs } from "node:util";
 
+import { loadBlockData } from "../src/lib/blockdata/load.ts";
 import { maxJarBytesFromEnv } from "../src/lib/curseforge/constants.ts";
 import { decodePng } from "../src/lib/render/block-appearance.ts";
 import { vanillaDescriptorSources } from "../src/lib/modpacks/appearance.ts";
+import {
+  readBlockList,
+  type BlockList,
+} from "../src/lib/modpacks/block-list.ts";
 import {
   UNDISTRIBUTABLE_HINT,
   withCurseForgePack,
@@ -50,7 +62,7 @@ import {
 import { parseModpackRef } from "../src/lib/modpacks/ref.ts";
 import { MOD_STATUSES, type ModpackData } from "../src/lib/modpacks/schema.ts";
 
-const USAGE = `Usage: pnpm modpack:upload (--instance <dir> | --curseforge <slug|id> [--file <id>] [--mods-dir <dir>]) [--slug <slug>] [--version <label>] [--dry-run --out <dir>]
+const USAGE = `Usage: pnpm modpack:upload (--instance <dir> | --curseforge <slug|id> [--file <id>] [--mods-dir <dir>]) [--slug <slug>] [--version <label>] [--block-list <file>] [--dry-run --out <dir>]
 
   --instance <dir>  CurseForge instance folder or unzipped pack export
   --curseforge <p>  CurseForge modpack slug or project id (needs CURSEFORGE_API_KEY)
@@ -59,6 +71,10 @@ const USAGE = `Usage: pnpm modpack:upload (--instance <dir> | --curseforge <slug
                     (undistributable or too large) from this mods folder
   --slug <slug>     Pack slug (default: the pack name, slugified)
   --version <label> Display version (default: the pack's own version)
+  --block-list <f>  The server's block dump, one block id per line (blank
+                    lines and lines starting with # skipped): the pack's
+                    blocks become exactly its modded ids, and listed blocks
+                    no jar describes are added with unknown looks
   --dry-run         Write to --out instead of Vercel Blob
   --out <dir>       Output folder for --dry-run`;
 
@@ -102,6 +118,31 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+/**
+ * The vanilla block ids of `minecraftVersion` (`blockdata/load.ts`), to
+ * check a block list against; undefined (with a note) when unavailable.
+ */
+async function loadVanillaBlockIds(
+  minecraftVersion: string | null,
+): Promise<string[] | undefined> {
+  if (minecraftVersion === null) return undefined;
+  try {
+    const data = await loadBlockData(minecraftVersion, { fetch });
+    if (data.translateOnExport) {
+      console.warn(
+        `warning: Minecraft ${minecraftVersion}'s own block registry isn't available (only ${data.sourceVersion}'s flattened ids); the block list's minecraft: ids weren't checked.`,
+      );
+      return undefined;
+    }
+    return [...data.blocks.keys()];
+  } catch (err) {
+    console.warn(
+      `warning: Couldn't load Minecraft ${minecraftVersion}'s vanilla blocks to check the block list: ${err instanceof Error ? err.message : String(err)}`,
+    );
+    return undefined;
+  }
+}
+
 async function main(): Promise<void> {
   let values;
   try {
@@ -113,6 +154,7 @@ async function main(): Promise<void> {
         "mods-dir": { type: "string" },
         slug: { type: "string" },
         version: { type: "string" },
+        "block-list": { type: "string" },
         "dry-run": { type: "boolean", default: false },
         out: { type: "string" },
         help: { type: "boolean", short: "h", default: false },
@@ -157,6 +199,21 @@ async function main(): Promise<void> {
     fail("--out is only used with --dry-run.");
   }
 
+  let blockList: BlockList | undefined;
+  const blockListPath = values["block-list"];
+  if (blockListPath !== undefined) {
+    if (!existsSync(blockListPath) || !statSync(blockListPath).isFile()) {
+      fail(`--block-list ${blockListPath} isn't a file.`);
+    }
+    try {
+      blockList = await readBlockList(readFileSync(blockListPath));
+    } catch (err) {
+      fail(
+        `${blockListPath}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
+
   if (existsSync(".env.local")) process.loadEnvFile(".env.local");
   if (!dryRun && !blobUploadCredentialsConfigured(process.env)) {
     fail(MISSING_BLOB_CREDENTIALS);
@@ -182,13 +239,13 @@ async function main(): Promise<void> {
         maxJarBytes: maxJarBytesFromEnv(process.env.CURSEFORGE_MAX_JAR_BYTES),
         log: (line) => console.log(line),
       },
-      (source) => upload(source, store, values, dryRun),
+      (source) => upload(source, store, values, blockList, dryRun),
     );
   } else {
     const source = await readInstanceFolder(
       path.resolve(values.instance as string),
     );
-    await upload(source, store, values, dryRun);
+    await upload(source, store, values, blockList, dryRun);
   }
 }
 
@@ -196,14 +253,21 @@ async function upload(
   source: ModpackSource,
   store: ModpackStore,
   options: { slug?: string; version?: string },
+  blockList: BlockList | undefined,
   dryRun: boolean,
 ): Promise<void> {
   console.log(
     `${source.name}: Minecraft ${source.minecraftVersion ?? "?"} (${source.loader}), ${source.mods.length} mods`,
   );
+  const vanillaBlockIds =
+    blockList === undefined
+      ? undefined
+      : await loadVanillaBlockIds(source.minecraftVersion);
   const extraction = await extractModpack(source, {
     slug: options.slug,
     displayVersion: options.version,
+    blockList,
+    vanillaBlockIds,
     vanilla: loadVanillaSources(),
     onMod: (mod, index, total) => {
       const note = mod.message ? `: ${mod.message}` : "";
@@ -219,7 +283,7 @@ async function upload(
   console.log("");
   for (const warning of extraction.warnings)
     console.warn(`warning: ${warning}`);
-  console.log(`Mods (${data.mods.length}):`);
+  console.log(`Mods (${data.version.modCount}):`);
   for (const status of MOD_STATUSES) {
     if (counts[status] > 0) console.log(`  ${status}: ${counts[status]}`);
   }
@@ -257,6 +321,21 @@ async function upload(
         `  ${d.namespace}:${d.prefix}* (needs ${d.modId}): ${d.count}`,
       );
     }
+  }
+  if (extraction.blockList !== undefined) {
+    const { listed, dropped, added } = extraction.blockList;
+    console.log(`Block list: ${listed} ids`);
+    const total = dropped.reduce((n, d) => n + d.count, 0);
+    if (total > 0) {
+      console.log(`  Blocks not on the list dropped (${total}):`);
+      for (const d of dropped.slice(0, 10)) {
+        console.log(`    ${d.namespace}: ${d.count}`);
+      }
+      if (dropped.length > 10) {
+        console.log(`    …and ${dropped.length - 10} more namespaces`);
+      }
+    }
+    console.log(`  Listed blocks added with unknown looks: ${added}`);
   }
   console.log(`Blocks: ${data.blocks.length}`);
   for (const runtime of data.runtimeBlockSources) {

@@ -28,6 +28,11 @@ import {
   type BlockDescriptor,
   type DescriptorSources,
 } from "./appearance.ts";
+import {
+  applyBlockList,
+  vanillaMismatchWarning,
+  type BlockList,
+} from "./block-list.ts";
 import { classifyModBlock } from "./classify.ts";
 import {
   dropAbsentModCompatBlocks,
@@ -100,6 +105,16 @@ export interface ExtractOptions {
   displayVersion?: string;
   /** Vanilla models and textures for appearances (`vanillaDescriptorSources`). */
   vanilla: DescriptorSources | null;
+  /**
+   * A server's block list (`readBlockList`): the pack data's blocks become
+   * exactly its modded ids (`applyBlockList`).
+   */
+  blockList?: BlockList;
+  /**
+   * The vanilla block ids of the pack's Minecraft version, to check the
+   * block list's `minecraft:` ids against. Not checked when absent.
+   */
+  vanillaBlockIds?: Iterable<string>;
   now?: () => Date;
   /** Called after each mod, for progress output. */
   onMod?: (mod: ModpackMod, index: number, total: number) => void;
@@ -115,6 +130,15 @@ export interface ModpackExtraction {
   compatPacks: { mod: string; modId: string; blocks: number }[];
   /** Compat blocks left out because the pack lacks their mod, per prefix. */
   droppedCompatBlocks: DroppedCompatBlocks[];
+  /** What the block list changed, when one was given. */
+  blockList?: {
+    /** Ids on the list. */
+    listed: number;
+    /** Pack blocks the list doesn't name, per namespace, largest first. */
+    dropped: { namespace: string; count: number }[];
+    /** Listed modded ids added without a look. */
+    added: number;
+  };
   warnings: string[];
 }
 
@@ -231,6 +255,8 @@ interface ExtractedMod {
   /** Compat packs read: mod id → their block count. */
   compatPacks?: Record<string, number>;
   droppedCompatBlocks?: DroppedCompatBlocks[];
+  /** Lang names no block of the jar uses (`ParsedModAssets.langBlockNames`). */
+  langBlockNames?: Record<string, string>;
 }
 
 type JarBlockAssets = Pick<
@@ -388,6 +414,9 @@ async function extractMod(
   );
   const parsed = { ...withPacks, blocks: kept };
   const compat = {
+    ...(jar.langBlockNames !== undefined && {
+      langBlockNames: jar.langBlockNames,
+    }),
     ...(Object.keys(withPacks.read).length > 0 && {
       compatPacks: withPacks.read,
     }),
@@ -465,6 +494,9 @@ async function extractMod(
     return {
       ...ended(key, "failed", errorMessage(err)),
       namespaces: parsed.namespaces,
+      ...(compat.langBlockNames !== undefined && {
+        langBlockNames: compat.langBlockNames,
+      }),
     };
   }
 }
@@ -513,7 +545,8 @@ async function chooseModpackNestedJars(
  * pack's jars only one copy is read (`chooseNestedJars`); its blocks belong
  * to the jar that holds it. A jar's `compat_packs/<modid>/` packs are read
  * when the pack loads `<modid>`, and compat blocks for mods it lacks
- * (`compat-blocks.ts`) are dropped. Throws when the pack's
+ * (`compat-blocks.ts`) are dropped. With a block list, the blocks are the
+ * list's (`applyBlockList`). Throws when the pack's
  * Minecraft version, display version or slug can't be determined.
  */
 export async function extractModpack(
@@ -544,14 +577,19 @@ export async function extractModpack(
   const runtimeBlockSources: RuntimeBlockSource[] = [];
   // Later jars win on the same template, as `mergeTemplates` does.
   const framedTemplates: NonNullable<ModpackData["framedTemplates"]> = {};
+  const { blockList } = options;
   if (source.hasKubeJs) {
     runtimeBlockSources.push({
       kind: "kubejs",
       name: "kubejs",
       message:
-        "The pack has a kubejs/ folder: blocks its startup scripts register aren't in the pack data.",
+        blockList === undefined
+          ? "The pack has a kubejs/ folder: blocks its startup scripts register aren't in the pack data."
+          : "The pack has a kubejs/ folder: a server block list was applied, so blocks its startup scripts register are included, with unknown looks.",
     });
   }
+  // `block.<ns>.<path>` → name, from every jar (the first wins).
+  const langBlockNames: Record<string, string> = {};
   const { decisions: nestedJars, modIds: packModIds } =
     await chooseModpackNestedJars(source.mods);
   const compatPacks: ModpackExtraction["compatPacks"] = [];
@@ -606,6 +644,11 @@ export async function extractModpack(
       }
       blocks.set(block.id, block);
     }
+    for (const [langKey, name] of Object.entries(result.langBlockNames ?? {})) {
+      if (!Object.hasOwn(langBlockNames, langKey)) {
+        langBlockNames[langKey] = name;
+      }
+    }
     if (result.swatches !== null) swatches.set(mod.key, result.swatches);
     Object.assign(framedTemplates, result.templates);
     const provider = RUNTIME_BLOCK_PROVIDERS.find(
@@ -620,10 +663,37 @@ export async function extractModpack(
       runtimeBlockSources.push({
         kind: "generated-block-provider",
         name: provider.name,
-        message: `${provider.name} registers blocks at runtime; they aren't in the pack data.`,
+        message:
+          blockList === undefined
+            ? `${provider.name} registers blocks at runtime; they aren't in the pack data.`
+            : `${provider.name} registers blocks at runtime; a server block list was applied, so they are included, with unknown looks.`,
       });
     }
     options.onMod?.(mod, index, total);
+  }
+
+  const modCount = mods.length;
+  let packBlocks = [...blocks.values()].sort((a, b) =>
+    a.id < b.id ? -1 : a.id > b.id ? 1 : 0,
+  );
+  let blockListResult: ModpackExtraction["blockList"];
+  if (blockList !== undefined) {
+    const applied = applyBlockList(packBlocks, mods, blockList, langBlockNames);
+    packBlocks = applied.blocks;
+    if (applied.blockListMod !== null) mods.push(applied.blockListMod);
+    blockListResult = {
+      listed: blockList.ids.length,
+      dropped: applied.dropped,
+      added: applied.added,
+    };
+    if (options.vanillaBlockIds !== undefined) {
+      const mismatch = vanillaMismatchWarning(
+        blockList,
+        options.vanillaBlockIds,
+        source.minecraftVersion,
+      );
+      if (mismatch !== null) warnings.push(mismatch);
+    }
   }
 
   const packFileId = source.packFileId;
@@ -638,15 +708,16 @@ export async function extractModpack(
       displayVersion,
       minecraftVersion: source.minecraftVersion,
       loader: source.loader,
-      modCount: mods.length,
+      modCount,
       uploadedAt: now().toISOString(),
     },
     mods,
-    blocks: [...blocks.values()].sort((a, b) =>
-      a.id < b.id ? -1 : a.id > b.id ? 1 : 0,
-    ),
+    blocks: packBlocks,
     runtimeBlockSources,
     ...(Object.keys(framedTemplates).length > 0 && { framedTemplates }),
+    ...(blockList !== undefined && {
+      blockList: { blocks: blockList.ids.length, sha256: blockList.sha256 },
+    }),
   };
   return {
     data,
@@ -654,6 +725,7 @@ export async function extractModpack(
     nestedJars,
     compatPacks,
     droppedCompatBlocks: [...droppedCompatBlocks.values()],
+    ...(blockListResult !== undefined && { blockList: blockListResult }),
     warnings,
   };
 }
