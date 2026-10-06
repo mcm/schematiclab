@@ -358,6 +358,8 @@ describe("provider data", () => {
       textures: {},
       textureMeta: {},
       templates: {},
+      modIds: [],
+      nestedJars: [],
       warnings: [],
     };
     expect(toLoadedModAssets(parsed)).not.toHaveProperty("providerData");

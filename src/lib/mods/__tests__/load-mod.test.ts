@@ -50,6 +50,8 @@ function parsed(overrides: Partial<ParsedModAssets> = {}): ParsedModAssets {
     textures: { "create:block/casing": new Uint8Array([1]) },
     textureMeta: {},
     templates: {},
+    modIds: [],
+    nestedJars: [],
     warnings: ["skipped bad.json"],
     appearancesComputed: true,
     ...overrides,

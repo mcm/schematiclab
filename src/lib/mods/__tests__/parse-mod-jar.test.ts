@@ -4,8 +4,10 @@ import { describe, expect, it } from "vitest";
 import {
   extractProperties,
   MAX_ASSET_BYTES,
+  MAX_NESTED_JAR_DEPTH,
   NO_BLOCKS_WARNING,
   parseModJar,
+  readModsTomlModIds,
   textureTransferables,
 } from "../parse-mod-jar";
 
@@ -382,6 +384,8 @@ describe("textureTransferables", () => {
       textures,
       textureMeta: {},
       templates: {},
+      modIds: [],
+      nestedJars: [],
       warnings: [],
     };
 
@@ -395,5 +399,297 @@ describe("textureTransferables", () => {
       expect(buffers).toContain(bytes.buffer);
     }
     expect(result.textures["a:y"]).toEqual(new Uint8Array([4, 5, 6]));
+  });
+});
+
+describe("parseModJar nested jars", () => {
+  const blockstate = (model: string) => ({ variants: { "": { model } } });
+
+  function modsToml(...ids: string[]): string {
+    return [
+      'modLoader="javafml"',
+      'loaderVersion="[4,)"',
+      ...ids.flatMap((id) => [
+        "",
+        "[[mods]]",
+        `modId="${id}" # the mod id`,
+        'version="1.0"',
+      ]),
+      "",
+      "[[dependencies.example]]",
+      'modId="neoforge"',
+    ].join("\n");
+  }
+
+  function metadata(
+    jars: { path: string; group: string; artifact: string; version: string }[],
+  ): object {
+    return {
+      jars: jars.map(({ path, group, artifact, version }) => ({
+        identifier: { group, artifact },
+        version: { range: `[${version},)`, artifactVersion: version },
+        path,
+        isObfuscated: false,
+      })),
+    };
+  }
+
+  it("reads the blocks of nested jars in an outer jar without assets", () => {
+    const aeronautics = jar({
+      "META-INF/neoforge.mods.toml": modsToml("aeronautics"),
+      "assets/aeronautics/blockstates/propeller_bearing.json": blockstate(
+        "aeronautics:block/propeller_bearing",
+      ),
+      "assets/aeronautics/models/block/propeller_bearing.json": {
+        textures: { all: "aeronautics:block/propeller" },
+      },
+      "assets/aeronautics/textures/block/propeller.png": PNG(1),
+      "assets/aeronautics/lang/en_us.json": {
+        "block.aeronautics.propeller_bearing": "Propeller Bearing",
+      },
+    });
+    const simulated = jar({
+      "META-INF/mods.toml": modsToml("simulated"),
+      "assets/simulated/blockstates/steering_wheel.json": blockstate(
+        "simulated:block/steering_wheel",
+      ),
+    });
+    const outer = jar({
+      "META-INF/neoforge.mods.toml": modsToml("create_aeronautics"),
+      "META-INF/jarjar/metadata.json": metadata([
+        {
+          path: "META-INF/jarjar/aeronautics-1.0.jar",
+          group: "dev.eriksonn",
+          artifact: "aeronautics",
+          version: "1.0.2",
+        },
+        {
+          path: "META-INF/jarjar/simulated-1.0.jar",
+          group: "dev.simulated_team",
+          artifact: "simulated",
+          version: "1.0.1",
+        },
+      ]),
+      "META-INF/jarjar/aeronautics-1.0.jar": aeronautics,
+      "META-INF/jarjar/simulated-1.0.jar": simulated,
+      "com/example/Main.class": new Uint8Array([0xca, 0xfe]),
+    });
+
+    const result = parseModJar(outer);
+
+    expect(result.blocks.map((b) => b.id)).toEqual([
+      "aeronautics:propeller_bearing",
+      "simulated:steering_wheel",
+    ]);
+    expect(result.blocks[0].displayName).toBe("Propeller Bearing");
+    expect(result.namespaces).toEqual(["aeronautics", "simulated"]);
+    expect(Object.keys(result.models)).toEqual([
+      "aeronautics:block/propeller_bearing",
+    ]);
+    expect(Object.keys(result.textures)).toEqual([
+      "aeronautics:block/propeller",
+    ]);
+    expect(result.modIds).toEqual(["create_aeronautics"]);
+    expect(result.nestedJars).toEqual([
+      {
+        path: "META-INF/jarjar/aeronautics-1.0.jar",
+        group: "dev.eriksonn",
+        artifact: "aeronautics",
+        version: "1.0.2",
+        modIds: ["aeronautics"],
+        blockIds: ["aeronautics:propeller_bearing"],
+        depth: 1,
+      },
+      {
+        path: "META-INF/jarjar/simulated-1.0.jar",
+        group: "dev.simulated_team",
+        artifact: "simulated",
+        version: "1.0.1",
+        modIds: ["simulated"],
+        blockIds: ["simulated:steering_wheel"],
+        depth: 1,
+      },
+    ]);
+    expect(result.warnings).not.toContain(NO_BLOCKS_WARNING);
+    expect(result.warnings).toEqual([]);
+  });
+
+  it("reads doubly nested jars", () => {
+    const sauce = jar({
+      "META-INF/neoforge.mods.toml": modsToml("sauce"),
+      "assets/sauce/blockstates/pot.json": blockstate("sauce:block/pot"),
+    });
+    const middle = jar({
+      "META-INF/neoforge.mods.toml": modsToml("addon"),
+      "META-INF/jarjar/metadata.json": metadata([
+        {
+          path: "META-INF/jarjar/sauce.jar",
+          group: "com.example",
+          artifact: "sauce",
+          version: "2.0",
+        },
+      ]),
+      "META-INF/jarjar/sauce.jar": sauce,
+      "assets/addon/blockstates/altar.json": blockstate("addon:block/altar"),
+    });
+    const outer = jar({
+      "META-INF/jarjar/addon.jar": middle,
+      "assets/outer/blockstates/base.json": blockstate("outer:block/base"),
+    });
+
+    const result = parseModJar(outer);
+
+    expect(result.blocks.map((b) => b.id)).toEqual([
+      "addon:altar",
+      "outer:base",
+      "sauce:pot",
+    ]);
+    expect(result.modIds).toEqual([]);
+    expect(result.nestedJars).toEqual([
+      {
+        path: "META-INF/jarjar/addon.jar",
+        group: null,
+        artifact: null,
+        version: null,
+        modIds: ["addon"],
+        blockIds: ["addon:altar"],
+        depth: 1,
+      },
+      {
+        path: "META-INF/jarjar/addon.jar!/META-INF/jarjar/sauce.jar",
+        group: "com.example",
+        artifact: "sauce",
+        version: "2.0",
+        modIds: ["sauce"],
+        blockIds: ["sauce:pot"],
+        depth: 2,
+      },
+    ]);
+  });
+
+  it("skips jars nested deeper than the cap with a warning", () => {
+    let inner = jar({
+      "assets/deep4/blockstates/x.json": blockstate("deep4:block/x"),
+    });
+    for (let depth = 3; depth >= 1; depth--) {
+      inner = jar({
+        [`assets/deep${depth}/blockstates/x.json`]: blockstate(
+          `deep${depth}:block/x`,
+        ),
+        "META-INF/jarjar/inner.jar": inner,
+      });
+    }
+    const outer = jar({ "META-INF/jarjar/inner.jar": inner });
+
+    const result = parseModJar(outer);
+
+    expect(MAX_NESTED_JAR_DEPTH).toBe(3);
+    expect(result.blocks.map((b) => b.id)).toEqual([
+      "deep1:x",
+      "deep2:x",
+      "deep3:x",
+    ]);
+    expect(result.nestedJars.map((j) => j.depth)).toEqual([1, 2, 3]);
+    expect(result.warnings).toEqual([
+      "Skipped nested jar META-INF/jarjar/inner.jar!/META-INF/jarjar/inner.jar!/META-INF/jarjar/inner.jar!/META-INF/jarjar/inner.jar: jars nested more than 3 deep are not read",
+    ]);
+  });
+
+  it("charges nested content to the outer jar's budget", () => {
+    const name = "assets/big/textures/block/x.png";
+    const nested = withDeclaredSize(
+      jar({ [name]: PNG(1) }),
+      name,
+      MAX_ASSET_BYTES - 64,
+    );
+    const outer = jar({
+      "META-INF/jarjar/big.jar": nested,
+      "assets/outer/textures/block/y.png": new Uint8Array(128),
+    });
+
+    expect(() => parseModJar(outer)).toThrow(/too large/);
+  });
+
+  it("charges a nested jar's own declared size", () => {
+    const outer = withDeclaredSize(
+      jar({
+        "META-INF/jarjar/big.jar": jar({}),
+        "assets/outer/blockstates/x.json": blockstate("outer:block/x"),
+      }),
+      "META-INF/jarjar/big.jar",
+      MAX_ASSET_BYTES + 1,
+    );
+
+    expect(() => parseModJar(outer)).toThrow(/too large/);
+  });
+
+  it("skips an unreadable nested jar with a warning", () => {
+    const outer = jar({
+      "META-INF/jarjar/broken.jar": new Uint8Array([1, 2, 3, 4]),
+      "assets/outer/blockstates/x.json": blockstate("outer:block/x"),
+    });
+
+    const result = parseModJar(outer);
+
+    expect(result.blocks.map((b) => b.id)).toEqual(["outer:x"]);
+    expect(result.nestedJars).toEqual([]);
+    expect(result.warnings).toHaveLength(1);
+    expect(result.warnings[0]).toMatch(
+      /^Skipped nested jar META-INF\/jarjar\/broken\.jar: /,
+    );
+  });
+
+  it("keeps the outer jar's assets for a block both define", () => {
+    const nested = jar({
+      "assets/shared/blockstates/x.json": blockstate("shared:block/nested_x"),
+      "assets/shared/blockstates/y.json": blockstate("shared:block/y"),
+    });
+    const outer = jar({
+      "META-INF/jarjar/nested.jar": nested,
+      "assets/shared/blockstates/x.json": blockstate("shared:block/outer_x"),
+    });
+
+    const result = parseModJar(outer);
+
+    expect(result.blockstates["shared:x"]).toEqual(
+      blockstate("shared:block/outer_x"),
+    );
+    expect(result.nestedJars[0].blockIds).toEqual(["shared:y"]);
+    expect(result.warnings).toEqual([
+      "Block shared:x is in both the outer jar and nested jar META-INF/jarjar/nested.jar; using the assets of the outer jar",
+    ]);
+  });
+
+  it("reads mod ids from either mods.toml", () => {
+    expect(
+      parseModJar(jar({ "META-INF/mods.toml": modsToml("a", "b") })).modIds,
+    ).toEqual(["a", "b"]);
+    expect(
+      parseModJar(
+        jar({
+          "META-INF/neoforge.mods.toml": modsToml("b"),
+          "META-INF/mods.toml": modsToml("a"),
+        }),
+      ).modIds,
+    ).toEqual(["a", "b"]);
+  });
+});
+
+describe("readModsTomlModIds", () => {
+  it("reads only [[mods]] modId values", () => {
+    const toml = [
+      '# modId="comment"',
+      "modLoader='javafml'",
+      "[[mods]] # first",
+      "  modId = 'first'",
+      "[[mods]]",
+      '"modId"="second"',
+      "[[dependencies.first]]",
+      'modId="minecraft"',
+      "[mods.extra]",
+      'modId="not_a_mod"',
+    ].join("\r\n");
+
+    expect(readModsTomlModIds(toml)).toEqual(["first", "second"]);
   });
 });

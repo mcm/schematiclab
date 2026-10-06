@@ -293,6 +293,9 @@ export async function registerModJar(
 
   onSaving?.();
   const providerDataRead = Object.keys(parsed.providerData ?? {}).sort();
+  // `modIds` and `nestedJars` are dropped on purpose: nested jars' blocks are
+  // already in `blocks`, and only the modpack upload needs to know which jar
+  // each came from.
   const meta: LoadedModMeta = {
     ...info,
     key: loadedModKey(info.modId, info.gameVersion),

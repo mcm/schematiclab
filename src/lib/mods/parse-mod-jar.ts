@@ -26,7 +26,12 @@ import {
   parseFramedTemplate,
   type TemplateCube,
 } from "../render/camo/shape-pack.ts";
-import type { ModBlock, ParsedModAssets, ProviderData } from "./types";
+import type {
+  ModBlock,
+  NestedModJar,
+  ParsedModAssets,
+  ProviderData,
+} from "./types";
 
 const ASSET_PATH_RE =
   /^assets\/([^/]+)\/(blockstates\/.+\.json|models\/.+\.json|textures\/.+\.png(?:\.mcmeta)?|lang\/en_us\.json)$/;
@@ -57,38 +62,67 @@ export function isModAssetEntry(name: string): boolean {
   return match !== null && match[1] !== "minecraft";
 }
 
+/** Jars nested in a jar (NeoForge / Forge jar-in-jar). */
+const NESTED_JAR_RE = /^META-INF\/jarjar\/[^/]+\.jar$/;
+/** Lists each nested jar's maven coordinates and version. */
+const JARJAR_METADATA_PATH = "META-INF/jarjar/metadata.json";
+/** Declare the jar's mod ids (`[[mods]] modId`). */
+const MODS_TOML_PATHS = ["META-INF/neoforge.mods.toml", "META-INF/mods.toml"];
+
+/** Jars nested deeper than this (the outer jar is depth 0) are skipped. */
+export const MAX_NESTED_JAR_DEPTH = 3;
+
 /**
  * Parse a mod jar's bytes into block definitions and render assets.
+ *
+ * Jars nested in `META-INF/jarjar/` are read too, up to
+ * `MAX_NESTED_JAR_DEPTH` deep, and their assets merged in as if they were the
+ * outer jar's; where both define the same asset, the shallower jar's wins.
  *
  * Block appearances resolve vanilla parent models and textures through
  * `vanilla` (see `vanilla-appearance-sources.ts`); without it only what the jar
  * itself defines is used.
  *
- * Malformed JSON entries are skipped with a warning. Throws if the bytes are
- * not a readable zip archive or its assets exceed the size/entry budget.
+ * Malformed JSON entries and unreadable nested jars are skipped with a
+ * warning. Throws if the bytes are not a readable zip archive or its assets,
+ * nested jars included, exceed the size/entry budget.
  */
 export function parseModJar(
   bytes: Uint8Array,
   vanilla: AppearanceSources | null = null,
 ): ParsedModAssets {
-  let entryCount = 0;
-  let totalBytes = 0;
-  const entries = unzipSync(bytes, {
-    filter: (file: UnzipFileInfo) => {
-      if (!isModAssetEntry(file.name)) return false;
-      entryCount += 1;
-      // Stored entries are copied at their compressed size.
-      totalBytes += Math.max(file.originalSize, file.size);
-      if (entryCount > MAX_ASSET_ENTRIES || totalBytes > MAX_ASSET_BYTES) {
-        throw new Error(
-          `Mod jar is too large to read: its assets exceed ${MAX_ASSET_ENTRIES} files or ${MAX_ASSET_BYTES / (1024 * 1024)} MB uncompressed`,
-        );
-      }
-      return true;
-    },
-  });
-
   const warnings: string[] = [];
+  const layers: JarLayer[] = [];
+  readJarLayers(
+    bytes,
+    { path: "", depth: 0, metadata: null },
+    { entries: 0, bytes: 0 },
+    layers,
+    warnings,
+  );
+
+  // Merge the layers' assets; the first layer (outer jar first, each jar
+  // before the jars nested in it) to define an entry wins.
+  const entries: Record<string, Uint8Array> = {};
+  const entryLayer = new Map<string, number>();
+  for (const [index, layer] of layers.entries()) {
+    for (const name of Object.keys(layer.entries).sort()) {
+      const winner = entryLayer.get(name);
+      if (winner !== undefined) {
+        const blockstate = ASSET_PATH_RE.exec(name);
+        if (blockstate !== null && blockstate[2].startsWith("blockstates/")) {
+          const id = `${blockstate[1]}:${blockstate[2].slice("blockstates/".length, -".json".length)}`;
+          warnings.push(
+            `Block ${id} is in both ${describeLayer(layers[winner])} and ${describeLayer(layer)}; using the assets of ${describeLayer(layers[winner])}`,
+          );
+        }
+        continue;
+      }
+      entries[name] = layer.entries[name];
+      entryLayer.set(name, index);
+    }
+  }
+
   const namespaces = new Set<string>();
   const blockstates: Record<string, unknown> = {};
   const allModels: Record<string, unknown> = {};
@@ -172,6 +206,22 @@ export function parseModJar(
       properties: extractProperties(blockstates[id]),
     }));
 
+  const nestedBlockIds = layers.map((): string[] => []);
+  for (const block of blocks) {
+    const colon = block.id.indexOf(":");
+    const entry = `assets/${block.id.slice(0, colon)}/blockstates/${block.id.slice(colon + 1)}.json`;
+    nestedBlockIds[entryLayer.get(entry) ?? 0].push(block.id);
+  }
+  const nestedJars: NestedModJar[] = layers.slice(1).map((layer, i) => ({
+    path: layer.path,
+    group: layer.metadata?.group ?? null,
+    artifact: layer.metadata?.artifact ?? null,
+    version: layer.metadata?.version ?? null,
+    modIds: layer.modIds,
+    blockIds: nestedBlockIds[i + 1],
+    depth: layer.depth,
+  }));
+
   const providerData: ProviderData = {};
   for (const [reader, readerEntries] of providerEntries) {
     providerData[reader.namespace] = reader.read(readerEntries, warnings);
@@ -250,6 +300,8 @@ export function parseModJar(
     textureMeta,
     templates,
     ...(providerEntries.size > 0 ? { providerData } : {}),
+    modIds: layers[0].modIds,
+    nestedJars,
     warnings,
     appearancesComputed: vanilla !== null,
   };
@@ -275,6 +327,169 @@ export function textureTransferables(result: ParsedModAssets): ArrayBuffer[] {
     seen.add(view.buffer as ArrayBuffer);
   }
   return [...seen];
+}
+
+// ── Nested jars ───────────────────────────────────────────────────────────
+
+/** One jar's inflated entries: the outer jar or a nested one. */
+interface JarLayer {
+  /** "" for the outer jar; see `NestedModJar.path`. */
+  path: string;
+  depth: number;
+  metadata: NestedJarMetadata | null;
+  modIds: string[];
+  /** Asset entries only (`isModAssetEntry`). */
+  entries: Record<string, Uint8Array>;
+}
+
+interface NestedJarMetadata {
+  group: string | null;
+  artifact: string | null;
+  version: string | null;
+}
+
+/** Inflated entries and bytes so far, shared by a jar and every nested jar. */
+interface AssetBudget {
+  entries: number;
+  bytes: number;
+}
+
+/** Over the asset budget: never caught as an unreadable nested jar. */
+class AssetBudgetError extends Error {}
+
+/**
+ * Inflate `bytes`' asset, mods.toml and jar-in-jar entries into `layers`
+ * (this jar, then each nested jar's layers in path order), charging `budget`.
+ */
+function readJarLayers(
+  bytes: Uint8Array,
+  jar: { path: string; depth: number; metadata: NestedJarMetadata | null },
+  budget: AssetBudget,
+  layers: JarLayer[],
+  warnings: string[],
+): void {
+  const entries = unzipSync(bytes, {
+    filter: (file: UnzipFileInfo) => {
+      const nested = NESTED_JAR_RE.test(file.name);
+      if (
+        !nested &&
+        !isModAssetEntry(file.name) &&
+        file.name !== JARJAR_METADATA_PATH &&
+        !MODS_TOML_PATHS.includes(file.name)
+      ) {
+        return false;
+      }
+      if (nested && jar.depth >= MAX_NESTED_JAR_DEPTH) {
+        warnings.push(
+          `Skipped nested jar ${nestedPath(jar.path, file.name)}: jars nested more than ${MAX_NESTED_JAR_DEPTH} deep are not read`,
+        );
+        return false;
+      }
+      budget.entries += 1;
+      // Stored entries are copied at their compressed size.
+      budget.bytes += Math.max(file.originalSize, file.size);
+      if (
+        budget.entries > MAX_ASSET_ENTRIES ||
+        budget.bytes > MAX_ASSET_BYTES
+      ) {
+        throw new AssetBudgetError(
+          `Mod jar is too large to read: its assets exceed ${MAX_ASSET_ENTRIES} files or ${MAX_ASSET_BYTES / (1024 * 1024)} MB uncompressed`,
+        );
+      }
+      return true;
+    },
+  });
+
+  const modIds = new Set<string>();
+  for (const name of MODS_TOML_PATHS) {
+    if (!(name in entries)) continue;
+    for (const id of readModsTomlModIds(strFromU8(entries[name]))) {
+      modIds.add(id);
+    }
+    delete entries[name];
+  }
+  const metadata =
+    JARJAR_METADATA_PATH in entries
+      ? readJarJarMetadata(entries[JARJAR_METADATA_PATH], warnings)
+      : new Map<string, NestedJarMetadata>();
+  delete entries[JARJAR_METADATA_PATH];
+
+  const nestedNames = Object.keys(entries)
+    .filter((name) => NESTED_JAR_RE.test(name))
+    .sort();
+  const nestedBytes = nestedNames.map((name) => entries[name]);
+  for (const name of nestedNames) delete entries[name];
+
+  layers.push({ ...jar, modIds: [...modIds].sort(), entries });
+
+  for (const [i, name] of nestedNames.entries()) {
+    const path = nestedPath(jar.path, name);
+    try {
+      readJarLayers(
+        nestedBytes[i],
+        { path, depth: jar.depth + 1, metadata: metadata.get(name) ?? null },
+        budget,
+        layers,
+        warnings,
+      );
+    } catch (err) {
+      if (err instanceof AssetBudgetError) throw err;
+      const reason = err instanceof Error ? err.message : String(err);
+      warnings.push(`Skipped nested jar ${path}: ${reason}`);
+    }
+  }
+}
+
+function nestedPath(parent: string, name: string): string {
+  return parent === "" ? name : `${parent}!/${name}`;
+}
+
+function describeLayer(layer: JarLayer): string {
+  return layer.depth === 0 ? "the outer jar" : `nested jar ${layer.path}`;
+}
+
+/** `META-INF/jarjar/metadata.json`: nested jar path → coordinates. */
+function readJarJarMetadata(
+  data: Uint8Array,
+  warnings: string[],
+): Map<string, NestedJarMetadata> {
+  const byPath = new Map<string, NestedJarMetadata>();
+  const json = parseJson(JARJAR_METADATA_PATH, data, warnings);
+  if (!isRecord(json) || !Array.isArray(json.jars)) return byPath;
+  const text = (value: unknown): string | null =>
+    typeof value === "string" && value.length > 0 ? value : null;
+  for (const jar of json.jars) {
+    if (!isRecord(jar) || typeof jar.path !== "string") continue;
+    const identifier = isRecord(jar.identifier) ? jar.identifier : {};
+    const version = isRecord(jar.version) ? jar.version : {};
+    byPath.set(jar.path, {
+      group: text(identifier.group),
+      artifact: text(identifier.artifact),
+      version: text(version.artifactVersion),
+    });
+  }
+  return byPath;
+}
+
+/**
+ * The `modId` values of a mods.toml's `[[mods]]` tables. A minimal reader:
+ * one `key = "string"` per line, as every mod's toml writes them.
+ */
+export function readModsTomlModIds(toml: string): string[] {
+  const ids: string[] = [];
+  let inMods = false;
+  for (const raw of toml.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (line.startsWith("[")) {
+      inMods = /^\[\[\s*mods\s*\]\]/.test(line);
+      continue;
+    }
+    if (!inMods) continue;
+    const match = /^["']?modId["']?\s*=\s*(?:"([^"]*)"|'([^']*)')/.exec(line);
+    const id = match?.[1] ?? match?.[2];
+    if (id !== undefined && id.length > 0 && !ids.includes(id)) ids.push(id);
+  }
+  return ids;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────
