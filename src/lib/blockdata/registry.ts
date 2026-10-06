@@ -6,7 +6,9 @@
 // 1.21.4 list.
 //
 // Every id this module returns is `minecraft:`-prefixed. Mod blocks are not
-// covered: an id in another namespace never exists here.
+// covered: an id in another namespace never exists here. A registry over one
+// mod namespace's blocks (`options.namespace`) works the same way for that
+// namespace; `modpacks/registry.ts` layers those over a vanilla registry.
 //
 // Imports carry their `.ts` extension so node's strip-types can load this
 // file (see `load.ts`).
@@ -239,10 +241,10 @@ export function normalizeBlockName(raw: string): string {
   return s.replace(/[\s-]+/g, "_");
 }
 
-// The block path of a `minecraft:` id (or a bare path), or null for another
-// namespace.
-function pathOf(id: string): string | null {
-  if (id.startsWith(NAMESPACE)) return id.slice(NAMESPACE.length);
+// The block path of an id in `namespace` (or a bare path), or null for
+// another namespace.
+function pathOf(id: string, namespace = NAMESPACE): string | null {
+  if (id.startsWith(namespace)) return id.slice(namespace.length);
   return id.includes(":") ? null : id;
 }
 
@@ -365,23 +367,42 @@ function matchedChars(
   );
 }
 
-const STATE_PATTERN = /^([a-z0-9_.-]+:)?([a-z0-9_./-]+)(?:\[([^\]]*)\])?$/;
+export const STATE_PATTERN =
+  /^([a-z0-9_.-]+:)?([a-z0-9_./-]+)(?:\[([^\]]*)\])?$/;
+
+export interface BlockRegistryOptions {
+  /** The namespace of the registry's ids, with its colon (`minecraft:`). */
+  namespace?: string;
+  /** Where the blocks come from, for errors (`Minecraft <version>`). */
+  source?: string;
+  /** A block's shape kind, used instead of the name rules when it returns one. */
+  kind?: (id: string) => BlockKind | undefined;
+}
 
 export function createBlockRegistry(
   data: BlockData,
   version: string = data.sourceVersion,
+  options: BlockRegistryOptions = {},
 ): BlockRegistry {
   const { blocks } = data;
-  const paths = [...blocks.keys()].flatMap((id) => pathOf(id) ?? []);
+  const ns = options.namespace ?? NAMESPACE;
+  const vanilla = ns === NAMESPACE;
+  const source = options.source ?? `Minecraft ${version}`;
+  const paths = [...blocks.keys()].flatMap((id) => pathOf(id, ns) ?? []);
   const known = new Set(paths);
   const families = new Map<string, Family>();
 
   const info = (id: string) => {
-    const path = pathOf(id.trim());
-    return path === null ? undefined : blocks.get(NAMESPACE + path);
+    const path = pathOf(id.trim(), ns);
+    return path === null ? undefined : blocks.get(ns + path);
   };
   const has = (path: string) => known.has(path);
-  const full = (path: string) => NAMESPACE + path;
+  const full = (path: string) => ns + path;
+  // `normalizeBlockName`, also dropping this registry's own namespace.
+  const normalize = (raw: string) => {
+    const s = normalizeBlockName(raw);
+    return s.startsWith(ns) ? s.slice(ns.length) : s;
+  };
 
   // `similarity` is at most 2·min/(a + b), so a name more than 7/3 times the
   // longest path can't reach 0.6; skip scoring it (its cost grows with the
@@ -389,7 +410,7 @@ export function createBlockRegistry(
   const longestPath = Math.max(0, ...paths.map((path) => path.length));
 
   function suggest(name: string, n = 3): string[] {
-    const target = normalizeBlockName(name);
+    const target = normalize(name);
     if (target.length * 3 > longestPath * 7) return [];
     return paths
       .map((path) => ({ path, score: similarity(target, path) }))
@@ -402,7 +423,7 @@ export function createBlockRegistry(
   function unknownBlock(id: string): string {
     const hints = suggest(id);
     const hint = hints.length > 0 ? ` Did you mean: ${hints.join(", ")}?` : "";
-    return `Unknown block "${id}" in Minecraft ${version}.${hint}`;
+    return `Unknown block "${id}" in ${source}.${hint}`;
   }
 
   function validateState(raw: string): StateValidation {
@@ -414,9 +435,9 @@ export function createBlockRegistry(
         error: `Cannot parse block state "${raw}"; expected namespace:id[property=value,...].`,
       };
     }
-    const [, namespace = NAMESPACE, path, list] = match;
+    const [, namespace = ns, path, list] = match;
     const id = namespace + path;
-    const block = namespace === NAMESPACE ? blocks.get(id) : undefined;
+    const block = namespace === ns ? blocks.get(id) : undefined;
     if (!block) return { ok: false, error: unknownBlock(id) };
 
     const properties: Record<string, string> = {};
@@ -464,6 +485,8 @@ export function createBlockRegistry(
   }
 
   function kind(id: string): BlockKind {
+    const override = options.kind?.(id);
+    if (override) return override;
     const path = id.trim().replace(/^[^:]*:/, "");
     const axis = info(id)?.properties.axis;
     // Logs and pillars stand upright; nether portals and chains only take
@@ -473,7 +496,7 @@ export function createBlockRegistry(
   }
 
   function family(rawBase: string): Family {
-    const base = normalizeBlockName(rawBase);
+    const base = normalize(rawBase);
     const cached = families.get(base);
     if (cached) return cached;
     const fam: Family = {};
@@ -512,7 +535,7 @@ export function createBlockRegistry(
   }
 
   function variant(rawBase: string, rawVariant: string): VariantResult | null {
-    const base = normalizeBlockName(rawBase);
+    const base = normalize(rawBase);
     const name = normalizeBlockName(rawVariant);
     // "planks" is how people ask for a wood's full block.
     const v = name === "planks" ? "block" : name;
@@ -521,7 +544,7 @@ export function createBlockRegistry(
     const hit = fam[v];
     if (hit) return { id: hit };
 
-    if (Object.keys(fam).length === 0 && WOODS.has(base)) {
+    if (vanilla && Object.keys(fam).length === 0 && WOODS.has(base)) {
       // A wood this version doesn't have yet: use an older one.
       const older = WOOD_FALLBACKS[base] ?? "oak";
       const result = variant(older, v);
@@ -551,7 +574,7 @@ export function createBlockRegistry(
   }
 
   function repair(raw: string): RepairResult {
-    const s = normalizeBlockName(raw);
+    const s = normalize(raw);
     if (has(s)) {
       const id = full(s);
       return raw === s || raw === id
@@ -562,7 +585,11 @@ export function createBlockRegistry(
       id: full(path),
       note: `repaired '${raw}' -> '${full(path)}'${why}`,
     });
-    if (Object.prototype.hasOwnProperty.call(ALIASES, s) && has(ALIASES[s])) {
+    if (
+      vanilla &&
+      Object.prototype.hasOwnProperty.call(ALIASES, s) &&
+      has(ALIASES[s])
+    ) {
       return repaired(ALIASES[s]);
     }
     // Plural and singular slips.

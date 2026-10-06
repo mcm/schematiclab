@@ -7,6 +7,7 @@
 
 import { z } from "zod";
 import { fetchImportUrl, normalizeImportUrl } from "../import-url";
+import { MODPACK_REF_FORM } from "../modpacks/ref";
 import { MAX_INPUT_BYTES, formatMegabytes } from "./limits";
 import { OUTPUT_PREFIX, OUTPUT_TTL_MS } from "./output";
 import type { McpDeps } from "./types";
@@ -37,6 +38,17 @@ export const schematicInputShape = {
       "The file's name, used to name outputs (the format is detected from the bytes). Required with base64.",
     ),
 };
+
+/**
+ * The shared `modpack` input of block-aware tools, resolved with
+ * `resolveToolBlocks` (`tool-blocks.ts`).
+ */
+export const modpackInput = z
+  .string()
+  .optional()
+  .describe(
+    `A modpack uploaded to this server, as ${MODPACK_REF_FORM}; list_modpacks lists them. The bare slug is the latest upload. With a modpack, only the pack's blocks are accepted (vanilla blocks of its Minecraft version plus its mods' blocks), and version may be left out: it is the pack's Minecraft version.`,
+  );
 
 export interface SchematicInputArgs {
   url?: string;
