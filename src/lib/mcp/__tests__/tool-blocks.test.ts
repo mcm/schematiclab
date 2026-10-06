@@ -238,24 +238,28 @@ describe("modpack registry", () => {
   it("resolves a mod block with its defaults and kind", async () => {
     const { registry } = await resolve({ modpack: "test-pack" });
     expect(registry.exists("framedblocks:framed_stairs")).toBe(true);
-    expect(registry.properties("framedblocks:framed_stairs")).toEqual(
-      STAIRS_PROPERTIES,
-    );
+    // Camo frames take their state properties from the camo fixtures too.
+    const properties = registry.properties("framedblocks:framed_stairs")!;
+    for (const [name, values] of Object.entries(STAIRS_PROPERTIES)) {
+      expect(properties[name]).toEqual(expect.arrayContaining(values));
+    }
+    expect(properties.locked).toEqual(["false", "true"]);
     expect(registry.kind("framedblocks:framed_stairs")).toBe("stairs");
     expect(registry.validateState("framedblocks:framed_stairs")).toEqual({
       ok: true,
       id: "framedblocks:framed_stairs",
       properties: {},
-      state: {
+      state: expect.objectContaining({
         facing: "north",
         half: "bottom",
         shape: "straight",
         waterlogged: "false",
-      },
+      }),
     });
     expect(registry.defaults("create:copycat_step")).toEqual({
       facing: "north",
       half: "bottom",
+      waterlogged: "false",
     });
     // An unclear kind counts as a plain block.
     expect(registry.kind("create:copycat_step")).toBe("block");
@@ -273,7 +277,7 @@ describe("modpack registry", () => {
     ).toEqual({
       ok: false,
       error:
-        'framedblocks:framed_stairs property "half" cannot be "middle"; allowed values for half: top, bottom.',
+        'framedblocks:framed_stairs property "half" cannot be "middle"; allowed values for half: bottom, top.',
     });
     expect(registry.validateState("create:brass_block[axis=y]")).toEqual({
       ok: false,

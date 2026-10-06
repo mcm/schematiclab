@@ -15,6 +15,7 @@ import {
   DOUBLE_CAMO_BLOCK_IDS,
 } from "../camo/camo-blocks.generated";
 import { isCamoCapableBlockId } from "../camo/extract";
+import { CAMO_FRAME_KINDS, camoFrameKind } from "../camo/frame-kinds";
 import { camoWriteReason } from "../camo/write-versions";
 import { isInvisibleBlockId } from "../invisible-blocks";
 import type { ModpackBlocks } from "../modpacks/registry";
@@ -35,52 +36,8 @@ export const CAMO_MATERIAL_RULE = "approximate";
 export const CAMO_MATERIAL_NOTE =
   "Camo materials are approximate: full-cube blocks that aren't camo frames or known block-entity blocks. The mods' own checks (tags, config) may refuse some.";
 
-/**
- * The vanilla shape a camo frame takes, for the frames that are a camo
- * version of a vanilla shape. Other frames (slopes, panels, pillars...) are
- * never offered for a shape.
- */
-const FRAME_KINDS: Readonly<Record<string, string>> = {
-  "framedblocks:framed_cube": "block",
-  "copycats:copycat_block": "block",
-  "framedblocks:framed_stairs": "stairs",
-  "copycats:copycat_stairs": "stairs",
-  "framedblocks:framed_slab": "slab",
-  "copycats:copycat_slab": "slab",
-  "framedblocks:framed_wall": "wall",
-  "copycats:copycat_wall": "wall",
-  "framedblocks:framed_fence": "fence",
-  "copycats:copycat_fence": "fence",
-  "framedblocks:framed_fence_gate": "fence_gate",
-  "copycats:copycat_fence_gate": "fence_gate",
-  "framedblocks:framed_pane": "pane",
-  "framedblocks:framed_bars": "pane",
-  "copycats:copycat_pane": "pane",
-  "framedblocks:framed_door": "door",
-  "framedblocks:framed_iron_door": "door",
-  "copycats:copycat_door": "door",
-  "copycats:copycat_iron_door": "door",
-  "framedblocks:framed_trapdoor": "trapdoor",
-  "framedblocks:framed_iron_trapdoor": "trapdoor",
-  "copycats:copycat_trapdoor": "trapdoor",
-  "copycats:copycat_iron_trapdoor": "trapdoor",
-  "framedblocks:framed_button": "button",
-  "framedblocks:framed_stone_button": "button",
-  "copycats:copycat_stone_button": "button",
-  "copycats:copycat_wooden_button": "button",
-  "framedblocks:framed_pressure_plate": "pressure_plate",
-  "framedblocks:framed_stone_pressure_plate": "pressure_plate",
-  "framedblocks:framed_gold_pressure_plate": "pressure_plate",
-  "framedblocks:framed_iron_pressure_plate": "pressure_plate",
-  "framedblocks:framed_obsidian_pressure_plate": "pressure_plate",
-  "copycats:copycat_stone_pressure_plate": "pressure_plate",
-  "copycats:copycat_wooden_pressure_plate": "pressure_plate",
-  "copycats:copycat_light_weighted_pressure_plate": "pressure_plate",
-  "copycats:copycat_heavy_weighted_pressure_plate": "pressure_plate",
-};
-
 /** The shape-bearing frame ids, for tests. */
-export const CAMO_FRAME_IDS: readonly string[] = Object.keys(FRAME_KINDS);
+export const CAMO_FRAME_IDS: readonly string[] = Object.keys(CAMO_FRAME_KINDS);
 
 // Vanilla blocks with a block entity (chests, furnaces, spawners...): not
 // offered as camo materials, since the mods don't take most of them.
@@ -245,7 +202,7 @@ export function modpackCamoFrames(
     frames.push({
       id,
       namespace,
-      kind: Object.hasOwn(FRAME_KINDS, id) ? FRAME_KINDS[id] : "unknown",
+      kind: camoFrameKind(id) ?? "unknown",
       slots: DOUBLE_CAMO_BLOCKS.has(id) ? 2 : 1,
       writable: reason === undefined,
       ...(reason !== undefined && { reason }),
