@@ -4,20 +4,31 @@
 // bundled Geist font (SIL OFL 1.1, `fonts/OFL.txt`). Vanilla colours come from
 // `public/minecraft-assets/block-colors.json`, read from disk; both files are
 // traced into the MCP route by `outputFileTracingIncludes` in
-// `next.config.ts`.
+// `next.config.ts`. With a modpack (`modpackRenderSource`), mod blocks take
+// their pack colour and, when their shape `kind` is confident, the boxes of
+// that kind.
 
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { GlobalFonts, createCanvas } from "@napi-rs/canvas";
 import type { ParsedSchematicProjection } from "../convert";
+import type { ModpackBlocks } from "../modpacks/registry";
 import type { BlockAppearance } from "../render/block-appearance";
+import {
+  blockShape,
+  blockShapeOfKind,
+  type ShapeBox,
+} from "../render/block-shapes";
 import {
   contactSheetLayout,
   drawContactSheet,
   type ContactSheetOptions,
 } from "../render/contact-sheet";
 import { toDisplayProjection } from "../render/display-translation";
-import { staticRenderColors } from "../render/static-render-colors";
+import {
+  staticRenderColors,
+  type RenderAppearance,
+} from "../render/static-render-colors";
 import { buildVoxelModel } from "../render/static-views";
 
 /** Longest edge of a rendered PNG (the largest image Claude takes unscaled). */
@@ -70,12 +81,68 @@ export interface RenderedPng {
   height: number;
 }
 
-export type RenderOptions = Partial<ContactSheetOptions>;
+/** Colours and shapes of the blocks the vanilla bundle doesn't know. */
+export interface RenderAppearanceSource {
+  /** A block's colour, or undefined for the vanilla colour or fallback. */
+  appearance(blockId: string): RenderAppearance | undefined;
+  /** A block state's boxes, or undefined for a full cube. */
+  shape(
+    blockId: string,
+    properties: Record<string, string>,
+  ): readonly ShapeBox[] | undefined;
+}
+
+/**
+ * The block states of `projection`'s palette whose block `modpack` lacks
+ * (neither a vanilla block of its Minecraft version nor one of its mod
+ * blocks), in palette order.
+ */
+export function statesNotInModpack(
+  projection: ParsedSchematicProjection,
+  modpack: ModpackBlocks,
+): string[] {
+  return projection.palette
+    .filter((entry) => !modpack.registry.exists(entry.blockId))
+    .map((entry) => entry.blockState);
+}
+
+export type RenderOptions = Partial<ContactSheetOptions> & {
+  /** Mod block colours and shapes, e.g. `modpackRenderSource(pack)`. */
+  appearance?: RenderAppearanceSource;
+};
+
+const sources = new WeakMap<ModpackBlocks, RenderAppearanceSource>();
+
+/**
+ * A modpack's mod blocks as a render source: their pack colour, and the boxes
+ * of their `kind` when it's confident (not `unknown`); full cubes otherwise,
+ * whatever their name. Blocks the pack doesn't have keep the name-based
+ * shapes.
+ */
+export function modpackRenderSource(
+  modpack: ModpackBlocks,
+): RenderAppearanceSource {
+  let source = sources.get(modpack);
+  if (source === undefined) {
+    source = {
+      appearance: (blockId) => modpack.modBlock(blockId)?.appearance,
+      shape: (blockId, properties) => {
+        const block = modpack.modBlock(blockId);
+        if (block === undefined) return blockShape(blockId, properties);
+        return block.kind === "unknown"
+          ? undefined
+          : blockShapeOfKind(block.kind, properties);
+      },
+    };
+    sources.set(modpack, source);
+  }
+  return source;
+}
 
 /**
  * A contact sheet of `projection` as a PNG, scaled down so its longest edge
- * is at most `MAX_RENDER_EDGE`. Blocks without colour data get
- * `fallbackBlockColor`.
+ * is at most `MAX_RENDER_EDGE`. Blocks without colour data (vanilla, or
+ * `options.appearance`) get `fallbackBlockColor`.
  */
 export function renderProjectionPng(
   projection: ParsedSchematicProjection,
@@ -85,10 +152,18 @@ export function renderProjectionPng(
   const colorsById = vanillaBlockColors();
   // Legacy and renamed ids are translated to the colour bundle's version.
   const display = toDisplayProjection(projection);
+  const source = options.appearance;
   const colors = staticRenderColors(display, (blockId) =>
-    Object.hasOwn(colorsById, blockId) ? colorsById[blockId] : undefined,
+    Object.hasOwn(colorsById, blockId)
+      ? colorsById[blockId]
+      : source?.appearance(blockId),
   );
-  const model = buildVoxelModel(display, colors.colorFor, colors.colorAt);
+  const model = buildVoxelModel(
+    display,
+    colors.colorFor,
+    colors.colorAt,
+    source && ((blockId, properties) => source.shape(blockId, properties)),
+  );
   const [sx, sy, sz] = model.size;
   if (Math.max(sx * sy, sy * sz, sx * sz) > MAX_RENDER_FACE_CELLS) {
     throw new Error(

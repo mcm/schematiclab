@@ -12,7 +12,14 @@ import { placedCamoSlots, isCamoCapableBlockId } from "../camo/extract";
 import type { BlockAppearance } from "./block-appearance";
 import { fallbackBlockColor, oklabToHex } from "./static-views";
 
-export type AppearanceLookup = (blockId: string) => BlockAppearance | undefined;
+/** A block's average colour: OKLab, and its `#rrggbb` when known exactly. */
+export type RenderAppearance = Pick<BlockAppearance, "oklab"> & {
+  hex?: string;
+};
+
+export type AppearanceLookup = (
+  blockId: string,
+) => RenderAppearance | undefined;
 
 export interface StaticRenderColors {
   colorFor: (paletteIndex: number) => string;
@@ -53,7 +60,7 @@ export function staticRenderColors(
     if (color === undefined) {
       const appearance = appearanceOf(blockId);
       color = appearance
-        ? oklabToHex(appearance.oklab)
+        ? (appearance.hex ?? oklabToHex(appearance.oklab))
         : fallbackBlockColor(blockId);
       byId.set(blockId, color);
     }

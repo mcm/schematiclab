@@ -12,6 +12,7 @@ import {
 } from "../convert";
 import { translateBlockState } from "../schemlib/data/translate";
 import { BlockState } from "../schemlib/blocks";
+import type { ModpackBlocks } from "../modpacks/registry";
 import { SchematicTooLargeError } from "../schemlib/schematic-formats/abstract";
 import { DecompressedTooLargeError } from "../schemlib/nbt";
 import {
@@ -21,6 +22,7 @@ import {
   versionsEqual,
 } from "../schemlib/schematic-formats/version-mapping";
 import {
+  modpackInput,
   resolveSchematicInput,
   schematicInputShape,
   type SchematicInput,
@@ -33,7 +35,12 @@ import {
   tooManyBlocksMessage,
 } from "./limits";
 import { assertBlobConfigured, publishFile } from "./output";
-import { renderProjectionPng } from "./render";
+import {
+  modpackRenderSource,
+  renderProjectionPng,
+  statesNotInModpack,
+} from "./render";
+import { resolveToolBlocks } from "./tool-blocks";
 import { type McpDeps, defineTool, jsonResult } from "./types";
 
 const SCHEMATIC_TIMEOUT_HINT = "Try a smaller schematic.";
@@ -300,25 +307,51 @@ export const convertSchematicTool = defineTool({
   },
 });
 
+const MISSING_EXAMPLES = 5;
+
+// "N block states not in <ref>" with a few of them, or that none are.
+function missingFromPackSummary(
+  projection: ParsedSchematicProjection,
+  modpack: ModpackBlocks,
+): string {
+  const missing = statesNotInModpack(projection, modpack);
+  if (missing.length === 0) {
+    return `Every block state is in ${modpack.ref}.`;
+  }
+  const shown = missing.slice(0, MISSING_EXAMPLES).join(", ");
+  const more = missing.length > MISSING_EXAMPLES ? ", …" : "";
+  return `${missing.length} block state${missing.length === 1 ? "" : "s"} not in ${modpack.ref} (${shown}${more}).`;
+}
+
 export const renderSchematicTool = defineTool({
   name: "render_schematic",
   title: "Render a schematic",
   description:
-    "Render a schematic as a PNG contact sheet: four isometric views, front/side/top elevations, two plan slices and a cutaway, with flat-coloured blocks. Use it to see what a build looks like.",
-  inputSchema: z.object(schematicInputShape),
+    "Render a schematic as a PNG contact sheet: four isometric views, front/side/top elevations, two plan slices and a cutaway, with flat-coloured blocks. Use it to see what a build looks like. With a modpack, mod blocks take the pack's colours and shapes, and the summary counts the block states the pack lacks.",
+  inputSchema: z.object({ ...schematicInputShape, modpack: modpackInput }),
   annotations: { readOnlyHint: true, openWorldHint: true },
   timeoutHint: SCHEMATIC_TIMEOUT_HINT,
   handler: async (args, deps) => {
-    const { input, projection } = await loadSchematic(args, deps);
+    const [{ input, projection }, blocks] = await Promise.all([
+      loadSchematic(args, deps),
+      args.modpack?.trim()
+        ? resolveToolBlocks({ modpack: args.modpack }, deps)
+        : null,
+    ]);
+    const modpack = blocks?.modpack ?? null;
     const name = projection.name.trim() || input.filename;
-    const { png, width, height } = renderProjectionPng(projection, { name });
+    const { png, width, height } = renderProjectionPng(projection, {
+      name,
+      ...(modpack && { appearance: modpackRenderSource(modpack) }),
+    });
     const info = inspectProjection(projection);
     const [x, y, z] = info.size;
-    const summary =
+    let summary =
       `Contact sheet of ${name}: ${projection.inputFormat}, Minecraft ` +
       `${versionName(projection.minecraftVersion)}, ${x}×${y}×${z}, ` +
       `${info.total_blocks} blocks in ${info.palette_size} block states ` +
       `(${width}×${height} PNG).`;
+    if (modpack) summary += ` ${missingFromPackSummary(projection, modpack)}`;
     return {
       content: [
         {

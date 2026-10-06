@@ -162,6 +162,48 @@ function trapdoor(properties: Record<string, string>): ShapeBox[] | undefined {
 
 const CARPET: ShapeBox[] = [px(0, 0, 0, 16, 1, 16)];
 
+const SHAPES_BY_KIND: ReadonlyMap<
+  string,
+  (properties: Record<string, string>) => ShapeBox[] | undefined
+> = new Map([
+  ["stairs", stairs],
+  ["slab", slab],
+  ["fence", fence],
+  ["pane", pane],
+  ["wall", wall],
+  ["door", door],
+  ["trapdoor", trapdoor],
+  ["carpet", () => CARPET],
+]);
+
+/**
+ * The boxes a block of shape `kind` (the block registry's vocabulary:
+ * `stairs`, `slab`, `fence`, `pane`, `wall`, `door`, `trapdoor`, `carpet`)
+ * with `properties` is drawn as, or `undefined` for a full cube (any other
+ * kind, or properties its shape can't use). For mod blocks, whose names say
+ * nothing reliable.
+ */
+export function blockShapeOfKind(
+  kind: string,
+  properties: Record<string, string>,
+): readonly ShapeBox[] | undefined {
+  return SHAPES_BY_KIND.get(kind)?.(properties);
+}
+
+/** The shape kind a block's name gives away, by its suffix. */
+function kindOfName(blockId: string): string | undefined {
+  const name = blockId.slice(blockId.indexOf(":") + 1);
+  if (name.endsWith("_stairs")) return "stairs";
+  if (name.endsWith("_slab")) return "slab";
+  if (name.endsWith("_fence")) return "fence";
+  if (name.endsWith("_pane") || name.endsWith("_bars")) return "pane";
+  if (name.endsWith("_wall")) return "wall";
+  if (name.endsWith("_door")) return "door";
+  if (name.endsWith("trapdoor")) return "trapdoor";
+  if (name.endsWith("carpet")) return "carpet";
+  return undefined;
+}
+
 /**
  * The boxes `blockId` with `properties` is drawn as in the static renders, or
  * `undefined` for a full cube (every block that isn't one of the shapes
@@ -171,14 +213,6 @@ export function blockShape(
   blockId: string,
   properties: Record<string, string>,
 ): readonly ShapeBox[] | undefined {
-  const name = blockId.slice(blockId.indexOf(":") + 1);
-  if (name.endsWith("_stairs")) return stairs(properties);
-  if (name.endsWith("_slab")) return slab(properties);
-  if (name.endsWith("_fence")) return fence(properties);
-  if (name.endsWith("_pane") || name.endsWith("_bars")) return pane(properties);
-  if (name.endsWith("_wall")) return wall(properties);
-  if (name.endsWith("_door")) return door(properties);
-  if (name.endsWith("trapdoor")) return trapdoor(properties);
-  if (name.endsWith("carpet")) return CARPET;
-  return undefined;
+  const kind = kindOfName(blockId);
+  return kind === undefined ? undefined : blockShapeOfKind(kind, properties);
 }

@@ -90,7 +90,8 @@ function voxelLookup(
 /**
  * The visible blocks of `projection` as one voxel model. `colorFor` gives a
  * palette entry's colour (`#rrggbb`); `colorAt` may override it per block
- * (camo blocks take their camo's colour). Later regions win where regions
+ * (camo blocks take their camo's colour). `shapeOf` gives a block state's
+ * boxes (`undefined` for a full cube). Later regions win where regions
  * overlap.
  */
 export function buildVoxelModel(
@@ -101,6 +102,10 @@ export function buildVoxelModel(
     pos: [number, number, number],
     paletteIndex: number,
   ) => string | undefined,
+  shapeOf: (
+    blockId: string,
+    properties: Record<string, string>,
+  ) => readonly ShapeBox[] | undefined = blockShape,
 ): VoxelModel {
   const visible = projection.palette.map(
     (entry) => !isInvisibleBlockId(entry.blockId),
@@ -170,10 +175,10 @@ export function buildVoxelModel(
   const shapes: (readonly ShapeBox[])[] = [];
   const shapeIndex = new Map<string, number>();
   const paletteShapes = new Map<number, number | undefined>();
-  const shapeOf = (paletteIndex: number) => {
+  const paletteShape = (paletteIndex: number) => {
     if (paletteShapes.has(paletteIndex)) return paletteShapes.get(paletteIndex);
     const { blockId, properties } = projection.palette[paletteIndex];
-    const boxes = blockShape(blockId, properties);
+    const boxes = shapeOf(blockId, properties);
     let index: number | undefined;
     if (boxes !== undefined) {
       const key = JSON.stringify(boxes);
@@ -206,7 +211,7 @@ export function buildVoxelModel(
         z: pos[2] - min[2],
         color,
       };
-      const shape = shapeOf(paletteIndex);
+      const shape = paletteShape(paletteIndex);
       if (shape !== undefined) voxel.shape = shape;
       return voxel;
     },
