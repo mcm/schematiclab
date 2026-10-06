@@ -37,6 +37,7 @@ import {
   type ModpackSource,
 } from "../src/lib/modpacks/extract.ts";
 import { readInstanceFolder } from "../src/lib/modpacks/instance-folder.ts";
+import { nestedJarLabel } from "../src/lib/modpacks/nested-mods.ts";
 import {
   blobModpackStore,
   blobUploadCredentialsConfigured,
@@ -221,6 +222,23 @@ async function upload(
   console.log(`Mods (${data.mods.length}):`);
   for (const status of MOD_STATUSES) {
     if (counts[status] > 0) console.log(`  ${status}: ${counts[status]}`);
+  }
+  // Plain libraries (no mods.toml) aren't listed as read: there are many.
+  const nestedRead = extraction.nestedJars.filter(
+    (jar) => jar.kept && jar.modIds.length > 0,
+  );
+  const nestedSkipped = extraction.nestedJars.filter((jar) => !jar.kept);
+  if (nestedRead.length > 0) {
+    console.log(`Nested mods read (${nestedRead.length}):`);
+    for (const jar of nestedRead) {
+      console.log(`  ${nestedJarLabel(jar)} from ${jar.outer}`);
+    }
+  }
+  if (nestedSkipped.length > 0) {
+    console.log(`Nested copies skipped (${nestedSkipped.length}):`);
+    for (const jar of nestedSkipped) {
+      console.log(`  ${nestedJarLabel(jar)} in ${jar.outer}: ${jar.reason}`);
+    }
   }
   console.log(`Blocks: ${data.blocks.length}`);
   for (const runtime of data.runtimeBlockSources) {
