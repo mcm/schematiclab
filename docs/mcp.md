@@ -84,6 +84,13 @@ The Minecraft versions and output formats the other tools accept.
 - Input: none.
 - Output: `versions` (every known Minecraft Java version id, oldest first) and `formats` (`{ id, extension }` for each writable format: `Litematic`, `Sponge[v1]`, `Sponge[v2]`, `Sponge[v3]`, `Structure`, `BuildingGadgets[1.12]`, `BuildingGadgets[1.14.4-1.19.3]`, `BuildingGadgets2[1.20+]`, `StructurizeBlueprint`). See [FORMATS.md](../FORMATS.md).
 
+### `list_modpacks`
+
+The modpacks the operator uploaded with `pnpm modpack:upload`, with the refs the block-aware tools take as `modpack`.
+
+- Input: `query` (optional), matched case-insensitively against the slug, the name and their initials (`ATM10` finds `all-the-mods-10`).
+- Output: `packs`, each with `slug` (the ref of its latest upload), `name`, `versions` newest first (`{ ref, display_version, minecraft_version, loader, mod_count, uploaded_at }`, `ref` pinned by pack file id, else display version) and, for the newest version, `skipped_mods` (mods per status other than `ok`) and `unsupported_sources` (KubeJS, generated-block mods), or `details_error` when its data can't be read. When nothing is uploaded or nothing matches, `packs` is empty and `note` says so; that isn't a tool error.
+
 ### `inspect_schematic`
 
 Reads a schematic and reports what is in it.
