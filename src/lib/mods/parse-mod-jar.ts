@@ -304,13 +304,18 @@ export function parseModJar(
   }
 
   const read = readAssetEntries(outerEntries, "", warnings);
+  const inferred = inferLangModelBlockstates(read);
   const assets = collectBlockAssets(read, vanilla);
   const { blocks } = assets;
 
   const nestedBlockIds = layers.map((): string[] => []);
   for (const block of blocks) {
     const colon = block.id.indexOf(":");
-    const entry = `assets/${block.id.slice(0, colon)}/blockstates/${block.id.slice(colon + 1)}.json`;
+    const ns = block.id.slice(0, colon);
+    const path = block.id.slice(colon + 1);
+    const entry = inferred.has(block.id)
+      ? `assets/${ns}/models/block/${path}.json`
+      : `assets/${ns}/blockstates/${path}.json`;
     nestedBlockIds[entryLayer.get(entry) ?? 0].push(block.id);
   }
   const nestedJars: NestedModJar[] = layers.slice(1).map((layer, i) => ({
@@ -498,6 +503,30 @@ function readAssetEntries(
     templates,
     providerEntries,
   };
+}
+
+const LANG_BLOCK_KEY_RE = /^block\.([^.]+)\.([a-z0-9_/-]+)$/;
+
+/**
+ * Adds to `read.blockstates` the blocks a jar names (`block.<ns>.<path>` in
+ * its lang) and ships a block model for (`<ns>:block/<path>`) but gives no
+ * blockstate, as a single-variant blockstate using that model. Mods that
+ * build their blockstates in code (Modular Bees) ship only those. Returns the
+ * ids added.
+ */
+function inferLangModelBlockstates(read: ReadAssets): Set<string> {
+  const inferred = new Set<string>();
+  for (const key of Object.keys(read.lang).sort()) {
+    const match = LANG_BLOCK_KEY_RE.exec(key);
+    if (match === null) continue;
+    const id = `${match[1]}:${match[2]}`;
+    const model = `${match[1]}:block/${match[2]}`;
+    if (Object.hasOwn(read.blockstates, id)) continue;
+    if (!Object.hasOwn(read.allModels, model)) continue;
+    read.blockstates[id] = { variants: { "": { model } } };
+    inferred.add(id);
+  }
+  return inferred;
 }
 
 /**

@@ -10,6 +10,7 @@ import {
   readModsTomlModIds,
   textureTransferables,
 } from "../parse-mod-jar";
+import { encodeRgbaPng } from "@/lib/modpacks/png";
 
 // Minimal bytes standing in for PNGs — the parser never decodes them.
 const PNG = (tag: number) => new Uint8Array([0x89, 0x50, 0x4e, 0x47, tag]);
@@ -365,6 +366,134 @@ describe("parseModJar", () => {
     const result = parseModJar(lying);
 
     expect(result.textures["testmod:block/x"].byteLength).toBe(16);
+  });
+});
+
+describe("parseModJar blocks without a blockstate", () => {
+  // A solid 16×16 texture and a full-cube model of its own, so the block
+  // gets an appearance without vanilla models.
+  const red = (() => {
+    const data = new Uint8Array(16 * 16 * 4);
+    for (let i = 0; i < data.length; i += 4) data.set([200, 30, 30, 255], i);
+    return encodeRgbaPng(16, 16, data);
+  })();
+  const cubeModel = (texture: string) => ({
+    textures: { all: texture, particle: texture },
+    elements: [
+      {
+        from: [0, 0, 0],
+        to: [16, 16, 16],
+        faces: Object.fromEntries(
+          ["down", "up", "north", "south", "west", "east"].map((face) => [
+            face,
+            { texture: "#all" },
+          ]),
+        ),
+      },
+    ],
+  });
+
+  const modularBees = () =>
+    jar({
+      "assets/modularbees/lang/en_us.json": {
+        "block.modularbees.modular_beehive_core": "Modular Beehive Core",
+        "block.modularbees.dotted.path": "Dotted",
+        "block.modularbees.no_model": "No Model",
+        "block.modularbees.plain": "Plain",
+        "item.modularbees.frame": "Frame",
+      },
+      "assets/modularbees/models/block/modular_beehive_core.json": cubeModel(
+        "modularbees:block/core",
+      ),
+      "assets/modularbees/models/block/dotted.path.json": cubeModel(
+        "modularbees:block/core",
+      ),
+      "assets/modularbees/models/block/dotted/path.json": cubeModel(
+        "modularbees:block/core",
+      ),
+      "assets/modularbees/models/block/frame.json": cubeModel(
+        "modularbees:block/core",
+      ),
+      "assets/modularbees/models/block/plain.json": cubeModel(
+        "modularbees:block/core",
+      ),
+      "assets/modularbees/blockstates/plain.json": {
+        variants: {
+          "lit=false": { model: "modularbees:block/plain" },
+          "lit=true": { model: "modularbees:block/plain" },
+        },
+      },
+      "assets/modularbees/textures/block/core.png": red,
+    });
+
+  it("infers a block from its lang name and block model", () => {
+    const result = parseModJar(modularBees());
+
+    const core = result.blocks.find(
+      (b) => b.id === "modularbees:modular_beehive_core",
+    );
+    expect(core).toMatchObject({
+      displayName: "Modular Beehive Core",
+      properties: {},
+    });
+    expect(core?.appearance).toBeDefined();
+    expect(result.blockstates["modularbees:modular_beehive_core"]).toEqual({
+      variants: { "": { model: "modularbees:block/modular_beehive_core" } },
+    });
+    expect(result.models).toHaveProperty(
+      "modularbees:block/modular_beehive_core",
+    );
+    expect(result.textures).toHaveProperty("modularbees:block/core");
+    expect(result.langBlockNames).not.toHaveProperty(
+      "block.modularbees.modular_beehive_core",
+    );
+    expect(result.warnings).toEqual([]);
+  });
+
+  it("ignores lang keys with a dot in their path or without a block model", () => {
+    const result = parseModJar(modularBees());
+
+    expect(result.blocks.map((b) => b.id)).toEqual([
+      "modularbees:modular_beehive_core",
+      "modularbees:plain",
+    ]);
+    // Still offered as display names.
+    expect(result.langBlockNames).toMatchObject({
+      "block.modularbees.dotted.path": "Dotted",
+      "block.modularbees.no_model": "No Model",
+    });
+  });
+
+  it("doesn't duplicate or replace a block that has a blockstate", () => {
+    const result = parseModJar(modularBees());
+
+    const plain = result.blocks.filter((b) => b.id === "modularbees:plain");
+    expect(plain).toHaveLength(1);
+    expect(plain[0].properties).toEqual({ lit: ["false", "true"] });
+    expect(
+      Object.keys(
+        (result.blockstates["modularbees:plain"] as { variants: object })
+          .variants,
+      ),
+    ).toEqual(["lit=false", "lit=true"]);
+  });
+
+  it("infers blocks of nested jars", () => {
+    const outer = jar({
+      "META-INF/neoforge.mods.toml": '[[mods]]\nmodId="outer"\n',
+      "META-INF/jarjar/modularbees.jar": modularBees(),
+    });
+
+    const result = parseModJar(outer);
+
+    expect(result.blocks.map((b) => b.id)).toEqual([
+      "modularbees:modular_beehive_core",
+      "modularbees:plain",
+    ]);
+    expect(result.nestedJars[0].blockIds).toEqual([
+      "modularbees:modular_beehive_core",
+      "modularbees:plain",
+    ]);
   });
 });
 
