@@ -49,11 +49,14 @@ import {
 } from "../../mcp/schematic-tools";
 import { searchBlocksTool, suggestPaletteTool } from "../../mcp/block-tools";
 import { createMcpRequestHandler } from "../../mcp/server";
+import { modpackCamoFrames } from "../../mcp/camo-options";
+import { modpackRenderSource } from "../../mcp/render";
 import { showBlocksTool } from "../../mcp/show-blocks";
 import { resolveToolBlocks } from "../../mcp/tool-blocks";
 import { runTool, TOOLS } from "../../mcp/tools";
 import type { McpDeps } from "../../mcp/types";
 import { createFakeBlob, type FakeBlob } from "../../mcp/__tests__/fake-blob";
+import { blockShapeOfKind } from "../../render/block-shapes";
 import {
   decodePng,
   srgbToOklab,
@@ -1081,6 +1084,181 @@ describe("FR-12: camo options", () => {
       shape: ["stairs"],
     });
     expect(plain.camo_options).toBeUndefined();
+  });
+
+  it("finds camo frames whose jar blockstates name no properties", async () => {
+    // Like the real jars: every frame state points at one placeholder model.
+    const placeholderJar = (namespace: string, names: string[]) => {
+      const files: Record<string, Uint8Array> = {
+        [`assets/${namespace}/textures/block/frame.png`]: solidPng([
+          150, 150, 150, 255,
+        ]),
+        [`assets/${namespace}/models/block/frame.json`]: json({
+          parent: "minecraft:block/cube_all",
+          textures: { all: `${namespace}:block/frame` },
+        }),
+      };
+      for (const name of names) {
+        files[`assets/${namespace}/blockstates/${name}.json`] = json({
+          variants: { "": { model: `${namespace}:block/frame` } },
+        });
+      }
+      return zipSync(files);
+    };
+    const dir = path.join(tmp, "camo-instance");
+    mkdirSync(path.join(dir, "mods"), { recursive: true });
+    const jars: [number, string, Uint8Array][] = [
+      [
+        1,
+        "create",
+        placeholderJar("create", [
+          "brass_block",
+          "copycat_step",
+          "copycat_panel",
+        ]),
+      ],
+      [
+        2,
+        "copycats",
+        placeholderJar("copycats", ["copycat_stairs", "copycat_slab"]),
+      ],
+      [
+        3,
+        "framedblocks",
+        placeholderJar("framedblocks", [
+          "framed_stairs",
+          "framed_slab",
+          "framed_pane",
+          "framed_door",
+          "framed_fence_gate",
+        ]),
+      ],
+    ];
+    for (const [, name, bytes] of jars) {
+      writeFileSync(path.join(dir, "mods", `${name}.jar`), bytes);
+    }
+    writeFileSync(
+      path.join(dir, "minecraftinstance.json"),
+      JSON.stringify({
+        name: "Camo Frames",
+        gameVersion: "1.21.1",
+        baseModLoader: { name: "neoforge-21.1.77", type: 6 },
+        installedModpack: { addonID: 9100, installedFile: { id: 888 } },
+        manifest: { version: "1.0" },
+        installedAddons: jars.map(([id, name]) =>
+          addon(id, name, id, `${name}.jar`),
+        ),
+      }),
+    );
+    const extraction = await extractModpack(await readInstanceFolder(dir), {
+      vanilla,
+      now: () => NOW,
+    });
+    // Stored as uploaded: no state properties on the frames.
+    const stored = extraction.data.blocks.find(
+      (b) => b.id === "framedblocks:framed_stairs",
+    );
+    expect(stored?.properties).toEqual({});
+    await publishModpack(fakeBlobStore(blob), extraction);
+    clearModpackCache();
+    const ref = "camo-frames";
+
+    const blocks = await resolveToolBlocks({ modpack: ref }, makeDeps());
+    const frames = new Map(
+      modpackCamoFrames(blocks.modpack!).map((f) => [f.id, f]),
+    );
+    for (const id of [
+      "framedblocks:framed_stairs",
+      "framedblocks:framed_slab",
+      "copycats:copycat_stairs",
+      "copycats:copycat_slab",
+      "create:copycat_step",
+      "create:copycat_panel",
+    ]) {
+      expect(frames.get(id)?.writable, id).toBe(true);
+    }
+
+    const search = await call<CamoResult>(searchBlocksTool, {
+      query: "brass_stairs",
+      modpack: ref,
+    });
+    expect(search.camo_options).toContainEqual(
+      expect.objectContaining({
+        frame: "framedblocks:framed_stairs",
+        kind: "stairs",
+        camo: "create:brass_block",
+        writable: true,
+      }),
+    );
+
+    // Frames take the kind of the vanilla shape they copy.
+    const kinds = await call<{
+      results: { id: string; kind: string; full_cube: boolean }[];
+    }>(searchBlocksTool, { query: "framedblocks:", modpack: ref });
+    expect(
+      Object.fromEntries(
+        kinds.results.map((r) => [r.id, [r.kind, r.full_cube]]),
+      ),
+    ).toEqual({
+      "framedblocks:framed_door": ["door", false],
+      "framedblocks:framed_fence_gate": ["fence_gate", false],
+      "framedblocks:framed_pane": ["pane", false],
+      "framedblocks:framed_slab": ["slab", false],
+      "framedblocks:framed_stairs": ["stairs", false],
+    });
+    const stairs = { facing: "north", half: "bottom", shape: "straight" };
+    expect(
+      modpackRenderSource(blocks.modpack!).shape?.(
+        "framedblocks:framed_stairs",
+        stairs,
+      ),
+    ).toEqual(blockShapeOfKind("stairs", stairs));
+
+    const shown = await call<{
+      blocks: { writable?: boolean; reason?: string }[];
+    }>(showBlocksTool, {
+      blocks: [
+        { frame: "framedblocks:framed_stairs", camo: "create:brass_block" },
+      ],
+      modpack: ref,
+    });
+    expect(shown.blocks[0]).toMatchObject({ writable: true });
+    expect(shown.blocks[0].reason).toBeUndefined();
+
+    const material =
+      "framedblocks:framed_stairs[facing=east,half=top]{camo=create:brass_block}";
+    const compiled = await runTool(
+      compileBuildTool,
+      {
+        program: {
+          name: "Frames",
+          size: [1, 1, 1],
+          build: [{ block: { material } }],
+        },
+        modpack: ref,
+        version: "1.21.1",
+        output_format: "Litematic",
+        render: false,
+      },
+      makeDeps(),
+    );
+    expect(compiled.isError, text(compiled)).toBeFalsy();
+    expect(compiled.structuredContent).toMatchObject({ errors: 0 });
+    const shape = await runTool(
+      generateShapeTool,
+      {
+        shape: "cuboid",
+        width: 1,
+        height: 1,
+        depth: 1,
+        material,
+        modpack: ref,
+        version: "1.21.1",
+        output_format: "Structure",
+      },
+      makeDeps(),
+    );
+    expect(shape.isError, text(shape)).toBeFalsy();
   });
 });
 
