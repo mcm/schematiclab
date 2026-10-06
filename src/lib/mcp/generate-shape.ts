@@ -14,10 +14,12 @@ import {
 import { MAX_DIMENSION, MAX_THICKNESS, SHAPE_KINDS } from "../shapes/shapes";
 import { KNOWN_VERSIONS } from "../schemlib/schematic-formats/known-versions";
 import { versionName } from "../schemlib/schematic-formats/version-mapping";
+import { modpackInput } from "./input";
 import { assertProjectionBlocks, resolveLimits } from "./limits";
 import { assertBlobConfigured, publishFile } from "./output";
-import { renderProjectionPng } from "./render";
+import { modpackRenderSource, renderProjectionPng } from "./render";
 import { OUTPUT_FORMATS } from "./schematic-tools";
+import { resolveToolBlocks } from "./tool-blocks";
 import { defineTool, jsonResult } from "./types";
 
 // Ranges are described but not enforced by the schema, so out-of-range
@@ -57,6 +59,7 @@ const generateShapeInput = z.object({
   version: z
     .string()
     .describe("The Minecraft version, as listed by list_versions."),
+  modpack: modpackInput,
   output_format: z
     .enum(OUTPUT_FORMATS as [string, ...string[]])
     .describe("The output format id, as listed by list_versions."),
@@ -92,6 +95,16 @@ export const generateShapeTool = defineTool({
         `Unknown Minecraft version '${versionId}'. Call list_versions for the supported versions.`,
       );
     }
+    // The pack's colours and shapes for the render; its Minecraft version
+    // must be `version`.
+    const modpack = args.modpack?.trim()
+      ? (
+          await resolveToolBlocks(
+            { version: versionId, modpack: args.modpack },
+            deps,
+          )
+        ).modpack
+      : null;
     const outputFormat = args.output_format as SchematicFormatId;
     const spec: ShapeSpec = {
       shape: args.shape,
@@ -125,7 +138,10 @@ export const generateShapeTool = defineTool({
 
     // Rendered before the upload, so a render failure leaves no file behind.
     const png = args.render
-      ? renderProjectionPng(projection, { name: projection.name }).png
+      ? renderProjectionPng(projection, {
+          name: projection.name,
+          ...(modpack && { appearance: modpackRenderSource(modpack) }),
+        }).png
       : undefined;
 
     const file = await publishFile(

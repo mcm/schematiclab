@@ -340,6 +340,7 @@ describe("over MCP", () => {
     expect(Object.keys(compile?.inputSchema.properties ?? {})).toEqual([
       "program",
       "version",
+      "modpack",
       "output_format",
       "render",
     ]);

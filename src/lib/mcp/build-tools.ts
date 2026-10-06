@@ -15,13 +15,20 @@ import type {
   McpServer,
 } from "@modelcontextprotocol/server";
 import { z } from "zod";
-import { type BuildResult, compileProgram } from "../buildlang/build";
+import {
+  type BuildResult,
+  compileForRegistry,
+  compileProgram,
+} from "../buildlang/build";
+import type { ModpackBlocks } from "../modpacks/registry";
 import { MAX_BUILD_SIZE } from "../buildlang/program";
 import { serializeSchematic, type SchematicFormatId } from "../convert";
 import { KNOWN_VERSIONS } from "../schemlib/schematic-formats/known-versions";
+import { modpackInput } from "./input";
 import { assertBlobConfigured, publishFile } from "./output";
-import { renderProjectionPng } from "./render";
+import { modpackRenderSource, renderProjectionPng } from "./render";
 import { OUTPUT_FORMATS } from "./schematic-tools";
+import { resolveToolBlocks } from "./tool-blocks";
 import { defineTool, type McpDeps } from "./types";
 
 export const BUILDLANG_SPEC_URI = "schematiclab://buildlang/spec";
@@ -115,14 +122,30 @@ function summary(
   };
 }
 
+interface CompiledArgs {
+  built: BuildResult;
+  versionId: string;
+  program: unknown;
+  /** The pack compiled against, null without `modpack`. */
+  modpack: ModpackBlocks | null;
+}
+
 async function compileArgs(
-  args: { program: unknown; version: string },
+  args: { program: unknown; version: string; modpack?: string },
   deps: McpDeps,
-): Promise<{ built: BuildResult; versionId: string; program: unknown }> {
+): Promise<CompiledArgs> {
   const versionId = checkVersion(args.version);
   const program = parseProgramArg(args.program);
+  if (args.modpack?.trim()) {
+    const blocks = await resolveToolBlocks(
+      { version: versionId, modpack: args.modpack },
+      deps,
+    );
+    const built = compileForRegistry(program, versionId, blocks.registry);
+    return { built, versionId, program, modpack: blocks.modpack };
+  }
   const built = await compileProgram(program, versionId, { fetch: deps.fetch });
-  return { built, versionId, program };
+  return { built, versionId, program, modpack: null };
 }
 
 /** `name` as a file name stem: runs of anything but letters, digits, `-` and `_` become `_`. */
@@ -138,7 +161,11 @@ export const checkBuildTool = defineTool({
   name: "check_build",
   title: "Check a build program",
   description: `Compile a build-language program for a Minecraft version and return only its report: errors, warnings and notes at their program paths, then geometry (floating pieces, sealed rooms), features (doors, windows, blocked doors), symmetry and materials. No render and no file. The language is the resource ${BUILDLANG_SPEC_URI}.`,
-  inputSchema: z.object({ program: programInput, version: versionInput }),
+  inputSchema: z.object({
+    program: programInput,
+    version: versionInput,
+    modpack: modpackInput,
+  }),
   outputSchema: buildSummary,
   annotations: { readOnlyHint: true, openWorldHint: false },
   timeoutHint: "Try a smaller build.",
@@ -158,6 +185,7 @@ export const compileBuildTool = defineTool({
   inputSchema: z.object({
     program: programInput,
     version: versionInput,
+    modpack: modpackInput,
     output_format: z
       .enum(OUTPUT_FORMATS as [string, ...string[]])
       .optional()
@@ -186,7 +214,10 @@ export const compileBuildTool = defineTool({
   handler: async (args, deps): Promise<CallToolResult> => {
     const outputFormat = args.output_format as SchematicFormatId | undefined;
     if (outputFormat) assertBlobConfigured(deps);
-    const { built, versionId, program } = await compileArgs(args, deps);
+    const { built, versionId, program, modpack } = await compileArgs(
+      args,
+      deps,
+    );
     const data: Record<string, unknown> = summary(built, versionId, program);
     const content: CallToolResult["content"] = [
       { type: "text", text: built.report },
@@ -213,7 +244,10 @@ export const compileBuildTool = defineTool({
           text: "Nothing was rendered: the build is empty.",
         });
       } else {
-        png = renderProjectionPng(projection, { name: projection.name }).png;
+        png = renderProjectionPng(projection, {
+          name: projection.name,
+          ...(modpack && { appearance: modpackRenderSource(modpack) }),
+        }).png;
       }
     }
 
