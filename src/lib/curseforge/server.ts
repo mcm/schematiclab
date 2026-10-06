@@ -14,9 +14,13 @@ import {
   type ModLoader,
 } from "./types";
 
-export const CURSEFORGE_API_BASE = "https://api.curseforge.com";
-export const MINECRAFT_GAME_ID = 432;
-export const MODS_CLASS_ID = 6;
+import { CURSEFORGE_API_BASE } from "./constants";
+
+export {
+  CURSEFORGE_API_BASE,
+  MINECRAFT_GAME_ID,
+  MODS_CLASS_ID,
+} from "./constants";
 const FETCH_TIMEOUT_MS = 10_000;
 
 const CACHE_HEADERS = {

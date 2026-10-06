@@ -353,6 +353,7 @@ describe("modpack upload extraction", () => {
         manifestType: "minecraftModpack",
         name: "Exported",
         version: "4.0",
+        projectID: 4242,
         files: [{ projectID: 5, fileID: 55, required: true }],
         overrides: "overrides",
       }),
@@ -362,15 +363,29 @@ describe("modpack upload extraction", () => {
       name: "Exported",
       displayVersion: "4.0",
       loader: "neoforge",
+      curseForgeProjectId: 4242,
       packFileId: null,
       hasKubeJs: false,
     });
-    const { data } = await extractModpack(source, { vanilla, now: NOW });
+    const extraction = await extractModpack(source, { vanilla, now: NOW });
+    const { data } = extraction;
     expect(data.version.key).toBe("v-4.0");
     expect(data.mods.map((m) => [m.name, m.status])).toEqual([
       ["brass-1.0", "ok"],
       ["CurseForge project 5", "failed"],
     ]);
+    // The manifest's project id is recorded in the index.
+    const out = path.join(dir, "out");
+    await publishModpack(directoryModpackStore(out), extraction);
+    const index = modpackIndexSchema.parse(
+      JSON.parse(
+        readFileSync(path.join(out, "modpacks", "index.json"), "utf8"),
+      ),
+    );
+    expect(index.packs[0]).toMatchObject({
+      slug: "exported",
+      curseForgeProjectId: 4242,
+    });
   });
 
   it("gives every mod a status", async () => {

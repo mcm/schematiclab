@@ -16,13 +16,15 @@ import {
   parseNonNegativeInt,
   parsePositiveInt,
 } from "@/lib/curseforge/server";
+import {
+  DEFAULT_MAX_JAR_BYTES,
+  MAX_CDN_REDIRECTS as MAX_REDIRECTS,
+  isAllowedCdnUrl as isAllowedUrl,
+} from "@/lib/curseforge/constants";
 
 export const maxDuration = 60;
 
 const TIMEOUT_MS = 60_000;
-const DEFAULT_MAX_JAR_BYTES = 64 * 1024 * 1024;
-const MAX_REDIRECTS = 5;
-const ALLOWED_HOSTS = new Set(["edge.forgecdn.net", "mediafilez.forgecdn.net"]);
 
 class DownloadError extends Error {
   constructor(
@@ -31,10 +33,6 @@ class DownloadError extends Error {
   ) {
     super(code);
   }
-}
-
-function isAllowedUrl(url: URL): boolean {
-  return url.protocol === "https:" && ALLOWED_HOSTS.has(url.hostname);
 }
 
 function maxJarBytes(): number {
