@@ -131,8 +131,11 @@ export function scopeNote(scope: SearchScope): string | undefined {
   }
   const runtime = scope.modpack?.data.runtimeBlockSources ?? [];
   if (runtime.length > 0) {
+    const sources = runtime.map((r) => r.name).join(", ");
     notes.push(
-      `This pack also registers blocks at runtime, which aren't listed: ${runtime.map((r) => r.name).join(", ")}.`,
+      scope.modpack?.data.blockList === undefined
+        ? `This pack also registers blocks at runtime, which aren't listed: ${sources}.`
+        : `A server block list was applied, so blocks this pack registers at runtime (${sources}) are included; those with visual_info: false have no visual information.`,
     );
   }
   return notes.length > 0 ? notes.join(" ") : undefined;
