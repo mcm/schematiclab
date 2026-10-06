@@ -88,9 +88,9 @@ function packData(key: string): ModpackData {
         kind: "block",
         fullCube: true,
         appearance: {
-          average: "#c8a046",
+          hex: "#c8a046",
           oklab: [0.74, 0.02, 0.12],
-          dominant: [{ color: "#d0a848", share: 0.7 }],
+          dominant: [{ hex: "#d0a848", share: 0.7 }],
           variance: 0.1,
         },
         swatch: { file: "cf-6000001", faces: { side: [0, 0, 16, 16] } },

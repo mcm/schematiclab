@@ -411,7 +411,9 @@ describe("worker safety", () => {
       for (const spec of specs) {
         if (spec.includes("render/")) {
           const target = path.resolve(path.dirname(full), spec);
-          expect(target, `${file}: ${spec}`).toBe(ALLOWED_RENDER);
+          expect(target.replace(/\.ts$/, ""), `${file}: ${spec}`).toBe(
+            ALLOWED_RENDER,
+          );
         }
       }
       expect(source, file).not.toMatch(/\b(document|window)\./);
