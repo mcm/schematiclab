@@ -207,6 +207,8 @@ interface ExtractedMod {
   swatches: Uint8Array | null;
   /** Asset namespaces, for spotting runtime-block providers. */
   namespaces: string[];
+  /** FramedBlocks geometry templates the jar ships. */
+  templates?: ModpackData["framedTemplates"];
 }
 
 async function extractMod(
@@ -334,6 +336,7 @@ async function extractMod(
       blocks,
       swatches: sheet?.png ?? null,
       namespaces: parsed.namespaces,
+      templates: parsed.templates,
     };
   } catch (err) {
     return {
@@ -374,6 +377,8 @@ export async function extractModpack(
   const blocks = new Map<string, ModpackBlock>();
   const swatches = new Map<string, Uint8Array>();
   const runtimeBlockSources: RuntimeBlockSource[] = [];
+  // Later jars win on the same template, as `mergeTemplates` does.
+  const framedTemplates: NonNullable<ModpackData["framedTemplates"]> = {};
   if (source.hasKubeJs) {
     runtimeBlockSources.push({
       kind: "kubejs",
@@ -407,6 +412,7 @@ export async function extractModpack(
       blocks.set(block.id, block);
     }
     if (result.swatches !== null) swatches.set(mod.key, result.swatches);
+    Object.assign(framedTemplates, result.templates);
     const provider = RUNTIME_BLOCK_PROVIDERS.find(
       (p) =>
         p.namespaces.some((ns) => result.namespaces.includes(ns)) ||
@@ -445,6 +451,7 @@ export async function extractModpack(
       a.id < b.id ? -1 : a.id > b.id ? 1 : 0,
     ),
     runtimeBlockSources,
+    ...(Object.keys(framedTemplates).length > 0 && { framedTemplates }),
   };
   return { data, swatches, warnings };
 }

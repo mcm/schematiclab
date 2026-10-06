@@ -29,6 +29,15 @@ import { translateBlockState } from "../schemlib/data/translate";
 import { materialForVersion } from "../shapes/generate";
 import { KNOWN_VERSIONS } from "../schemlib/schematic-formats/known-versions";
 import type { MinecraftVersion } from "../schemlib/schematic-formats/version-mapping";
+import {
+  CAMO_MATERIAL_NOTE,
+  CAMO_MATERIAL_RULE,
+  camoOptions,
+  framesOfShapes,
+  modpackCamoFrames,
+  modpackCamoMaterials,
+  type CamoOption,
+} from "./camo-options";
 import { modpackInput } from "./input";
 import { vanillaBlockColors } from "./render";
 import { resolveToolBlocks } from "./tool-blocks";
@@ -284,6 +293,77 @@ const lookOutputShape = {
   variance: z.number().optional(),
 };
 
+// ── Camo options ───────────────────────────────────────────────────────────
+
+/** Most camo materials one search or palette pairs with the frames. */
+const MAX_CAMO_MATERIALS = 3;
+
+const camoOptionOutput = z.object({
+  frame: z.string(),
+  kind: z.string(),
+  slots: z.number(),
+  writable: z.boolean(),
+  reason: z.string().optional(),
+  camo: z.string().optional(),
+  camo_hex: z.string().optional(),
+  distance: z.number().optional(),
+});
+
+// Fields both tools add when they return camo options.
+const camoOutputShape = {
+  camo_options: z.array(camoOptionOutput).optional(),
+  camo_material_rule: z.literal(CAMO_MATERIAL_RULE).optional(),
+};
+
+// A query's trailing shape word (`brass_stairs`), with the shape it names.
+const SHAPE_WORDS: readonly [string, Shape][] = [
+  ["pressure_plates", "pressure_plate"],
+  ["pressure_plate", "pressure_plate"],
+  ["fence_gates", "fence_gate"],
+  ["fence_gate", "fence_gate"],
+  ["trapdoors", "trapdoor"],
+  ["trapdoor", "trapdoor"],
+  ["buttons", "button"],
+  ["button", "button"],
+  ["stairs", "stairs"],
+  ["stair", "stairs"],
+  ["slabs", "slab"],
+  ["slab", "slab"],
+  ["walls", "wall"],
+  ["wall", "wall"],
+  ["fences", "fence"],
+  ["fence", "fence"],
+  ["panes", "pane"],
+  ["pane", "pane"],
+  ["doors", "door"],
+  ["door", "door"],
+];
+
+/**
+ * The material part of a search query and the shape its last word names:
+ * `brass_stairs` → `brass` and `stairs`; `brass` → `brass` alone.
+ */
+export function splitShapeQuery(query: string): {
+  material: string;
+  shape?: Shape;
+} {
+  const raw = query.trim().toLowerCase();
+  const colon = raw.indexOf(":");
+  const prefix = raw.slice(0, colon + 1);
+  const name = normalizeBlockName(raw.slice(colon + 1));
+  for (const [word, shape] of SHAPE_WORDS) {
+    if (name.endsWith(`_${word}`)) {
+      return { material: prefix + name.slice(0, -word.length - 1), shape };
+    }
+  }
+  return { material: prefix + name };
+}
+
+/** The pack's camo materials with their colours. */
+function camoMaterialsOf(scope: SearchScope & { modpack: ModpackBlocks }) {
+  return modpackCamoMaterials(scope.modpack, blockColorsForVersion(scope.data));
+}
+
 // ── search_blocks ──────────────────────────────────────────────────────────
 
 export interface BlockSearchHit {
@@ -379,7 +459,7 @@ export const searchBlocksTool = defineTool({
   name: "search_blocks",
   title: "Search blocks",
   description:
-    "Find block ids that exist in a Minecraft version, or in a modpack (its version's vanilla blocks plus its mods' blocks), by name and optionally shape. Prefix matches come before other matches. Each result has its kind (block, stairs, slab, wall, log, pane, ..., or unknown for mod blocks whose shape is unclear) with shape_confidence, the mod it comes from (minecraft for vanilla), whether it is a full cube, and when its textures are known its average colour (hex), up to 3 dominant colours with their shares and texture variance (0 flat to 1 busy). When nothing matches, returns close names instead.",
+    "Find block ids that exist in a Minecraft version, or in a modpack (its version's vanilla blocks plus its mods' blocks), by name and optionally shape. Prefix matches come before other matches. Each result has its kind (block, stairs, slab, wall, log, pane, ..., or unknown for mod blocks whose shape is unclear) with shape_confidence, the mod it comes from (minecraft for vanilla), whether it is a full cube, and when its textures are known its average colour (hex), up to 3 dominant colours with their shares and texture variance (0 flat to 1 busy). When nothing matches, returns close names instead. With a modpack that has camo blocks (FramedBlocks, Copycats+, Create copycats) and a shape (or a query ending in one, like brass_stairs, when no plain block matches), camo_options also lists camo frames of that shape, each holding a camo material whose name matches the query (camo, camo_hex), with writable false and a reason where the server can't write that camo for the pack's Minecraft version.",
   inputSchema: searchBlocksInput,
   outputSchema: z.object({
     version: z.string(),
@@ -394,6 +474,7 @@ export const searchBlocksTool = defineTool({
     ),
     total_matches: z.number(),
     did_you_mean: z.array(z.string()).optional(),
+    ...camoOutputShape,
     note: z.string().optional(),
   }),
   annotations: { readOnlyHint: true, openWorldHint: false },
@@ -426,6 +507,43 @@ export const searchBlocksTool = defineTool({
         `${named.length} block${named.length === 1 ? "" : "s"} match the name, but none has shape ${[...shapes].join(" or ")}.`,
       );
     }
+
+    // Camo frames of the shape asked for, or of the shape the query names
+    // when no plain block has it (`brass_stairs` → stairs).
+    const split = splitShapeQuery(args.query);
+    let camoShapes: ReadonlySet<string> | undefined = shapes;
+    if (
+      !camoShapes &&
+      split.shape &&
+      !matches.some(({ look }) => look.kind === split.shape)
+    ) {
+      camoShapes = new Set([split.shape]);
+    }
+    let camo: CamoOption[] | undefined;
+    if (scope.modpack && camoShapes) {
+      const frames = framesOfShapes(
+        modpackCamoFrames(scope.modpack),
+        camoShapes,
+      );
+      if (frames.length > 0) {
+        const materials = camoMaterialsOf({ ...scope, modpack: scope.modpack });
+        const materialIds = searchBlockIds(materials.keys(), split.material, {
+          anyNamespace: true,
+        })
+          .slice(0, MAX_CAMO_MATERIALS)
+          .map((id) => materials.get(id)!);
+        camo = camoOptions(
+          frames,
+          materialIds,
+          args.limit ?? DEFAULT_SEARCH_LIMIT,
+        );
+        notes.push(
+          materialIds.length > 0
+            ? `camo_options are camo frames of the shape holding a matching material (camo). ${CAMO_MATERIAL_NOTE}`
+            : `camo_options are camo frames of the shape; no camo material matches "${split.material}", so pick one (a full-cube block) with search_blocks or suggest_palette. ${CAMO_MATERIAL_NOTE}`,
+        );
+      }
+    }
     return jsonResult({
       version: scope.versionId,
       ...(scope.modpack ? { modpack: scope.modpack.ref } : {}),
@@ -434,6 +552,9 @@ export const searchBlocksTool = defineTool({
       total_matches: matches.length,
       ...(named.length === 0
         ? { did_you_mean: scope.registry.suggest(args.query) }
+        : {}),
+      ...(camo
+        ? { camo_options: camo, camo_material_rule: CAMO_MATERIAL_RULE }
         : {}),
       ...(notes.length > 0 ? { note: notes.join(" ") } : {}),
     });
@@ -647,7 +768,7 @@ export const suggestPaletteTool = defineTool({
   name: "suggest_palette",
   title: "Suggest a palette",
   description:
-    "Suggest blocks of a Minecraft version, or of a modpack (its version's vanilla blocks plus its mods' blocks), whose average colour is closest to a hex colour or to another block, ranked by OKLab distance (smaller is closer), optionally only of some shapes. Each colour is listed once (a material's stairs, slabs and walls share its colour, so find those with search_blocks or a shape filter). Each result has its kind with shape_confidence, its mod (minecraft for vanilla), hex colour, up to 3 dominant colours with their shares, texture variance (0 flat to 1 busy) and whether it is a full cube.",
+    "Suggest blocks of a Minecraft version, or of a modpack (its version's vanilla blocks plus its mods' blocks), whose average colour is closest to a hex colour or to another block, ranked by OKLab distance (smaller is closer), optionally only of some shapes. Each colour is listed once (a material's stairs, slabs and walls share its colour, so find those with search_blocks or a shape filter). Each result has its kind with shape_confidence, its mod (minecraft for vanilla), hex colour, up to 3 dominant colours with their shares, texture variance (0 flat to 1 busy) and whether it is a full cube. With a modpack that has camo blocks and a shape, camo_options also lists camo frames of that shape holding the camo materials nearest the colour (camo, camo_hex, distance), with writable false and a reason where the server can't write that camo for the pack's Minecraft version.",
   inputSchema: suggestPaletteInput,
   outputSchema: z.object({
     version: z.string(),
@@ -664,6 +785,7 @@ export const suggestPaletteTool = defineTool({
         distance: z.number(),
       }),
     ),
+    ...camoOutputShape,
     note: z.string().optional(),
   }),
   annotations: { readOnlyHint: true, openWorldHint: false },
@@ -702,13 +824,39 @@ export const suggestPaletteTool = defineTool({
       target = look.oklab;
     }
 
+    const n = args.n ?? DEFAULT_PALETTE_SIZE;
+    const shapes = args.shape
+      ? new Set(args.shape)
+      : args.full_cube_only
+        ? new Set<Shape>(["full_cube"])
+        : undefined;
     const blocks = rankPalette(target, colors, scope.registry, {
-      n: args.n ?? DEFAULT_PALETTE_SIZE,
-      fullCubeOnly: args.full_cube_only,
-      shapes: args.shape ? new Set(args.shape) : undefined,
+      n,
+      shapes,
       exclude: reference,
     });
-    const note = scopeNote(scope);
+
+    // Camo frames of the shape, holding the materials nearest the target.
+    let camo: CamoOption[] | undefined;
+    if (scope.modpack && shapes) {
+      const frames = framesOfShapes(modpackCamoFrames(scope.modpack), shapes);
+      if (frames.length > 0) {
+        const materials = rankPalette(
+          target,
+          camoMaterialsOf({ ...scope, modpack: scope.modpack }),
+          scope.registry,
+          { n: MAX_CAMO_MATERIALS, exclude: reference },
+        );
+        camo = camoOptions(frames, materials, n);
+      }
+    }
+    const notes = [scopeNote(scope)];
+    if (camo) {
+      notes.push(
+        `camo_options are camo frames of the shape holding the camo materials nearest the colour. ${CAMO_MATERIAL_NOTE}`,
+      );
+    }
+    const note = notes.filter(Boolean).join(" ");
     return jsonResult({
       version: scope.versionId,
       ...(scope.modpack ? { modpack: scope.modpack.ref } : {}),
@@ -717,6 +865,9 @@ export const suggestPaletteTool = defineTool({
         ...(reference ? { reference_block: reference } : {}),
       },
       blocks,
+      ...(camo
+        ? { camo_options: camo, camo_material_rule: CAMO_MATERIAL_RULE }
+        : {}),
       ...(note ? { note } : {}),
     });
   },
