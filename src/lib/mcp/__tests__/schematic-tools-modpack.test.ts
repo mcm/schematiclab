@@ -27,6 +27,7 @@ import {
   MAX_WARNINGS,
   convertSchematicTool,
   inspectSchematicTool,
+  renderSchematicTool,
   type InspectResult,
 } from "../schematic-tools";
 import { runTool } from "../tools";
@@ -426,6 +427,32 @@ describe("convert_schematic with a modpack", () => {
       "othermod:thing: not in modpack 'test-pack' (1 block).",
     ]);
     expect(result.note).toContain(
+      "compared with the pack after translation to 1.21.4",
+    );
+  });
+});
+
+describe("render_schematic with a modpack", () => {
+  it("counts missing states after translation, as inspect_schematic does", async () => {
+    const projection = projectionOf(
+      [
+        { blockId: "minecraft:air" },
+        { blockId: "minecraft:grass" },
+        { blockId: "othermod:thing" },
+      ],
+      KNOWN_VERSIONS["1.20.1"],
+    );
+    const result = await runTool(
+      renderSchematicTool,
+      { ...schematicArgs(projection, "1.20.1"), modpack: "test-pack" },
+      makeDeps(),
+    );
+    expect(result.isError).toBeFalsy();
+    const summary = result.content.find((c) => c.type === "text");
+    const text = summary?.type === "text" ? summary.text : "";
+    // grass is short_grass in the pack's 1.21.4; air never counts.
+    expect(text).toContain("1 block state not in test-pack (othermod:thing).");
+    expect(text).toContain(
       "compared with the pack after translation to 1.21.4",
     );
   });

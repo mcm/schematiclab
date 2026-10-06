@@ -35,11 +35,7 @@ import {
   tooManyBlocksMessage,
 } from "./limits";
 import { assertBlobConfigured, publishFile } from "./output";
-import {
-  modpackRenderSource,
-  renderProjectionPng,
-  statesNotInModpack,
-} from "./render";
+import { modpackRenderSource, renderProjectionPng } from "./render";
 import { resolveToolBlocks } from "./tool-blocks";
 import { type McpDeps, defineTool, jsonResult } from "./types";
 
@@ -507,18 +503,24 @@ export const convertSchematicTool = defineTool({
 
 const MISSING_EXAMPLES = 5;
 
-// "N block states not in <ref>" with a few of them, or that none are.
+// "N block states not in <ref>" with a few of them, or that none are,
+// compared as inspect_schematic does (after translation to the pack's
+// version, air left out), plus its version note.
 function missingFromPackSummary(
   projection: ParsedSchematicProjection,
   modpack: ModpackBlocks,
 ): string {
-  const missing = statesNotInModpack(projection, modpack);
+  const comparison = compareWithModpack(projection, modpack);
+  const missing = missingStates(projection, comparison).map(
+    (m) => m.block_state,
+  );
+  const note = comparison.note !== undefined ? ` ${comparison.note}` : "";
   if (missing.length === 0) {
-    return `Every block state is in ${modpack.ref}.`;
+    return `Every block state is in ${modpack.ref}.${note}`;
   }
   const shown = missing.slice(0, MISSING_EXAMPLES).join(", ");
   const more = missing.length > MISSING_EXAMPLES ? ", …" : "";
-  return `${missing.length} block state${missing.length === 1 ? "" : "s"} not in ${modpack.ref} (${shown}${more}).`;
+  return `${missing.length} block state${missing.length === 1 ? "" : "s"} not in ${modpack.ref} (${shown}${more}).${note}`;
 }
 
 export const renderSchematicTool = defineTool({

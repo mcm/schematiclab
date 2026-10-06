@@ -28,11 +28,7 @@ import {
 import { fallbackBlockColor, shadeHex } from "../../render/static-views";
 import { compileBuildTool } from "../build-tools";
 import { generateShapeTool } from "../generate-shape";
-import {
-  modpackRenderSource,
-  renderProjectionPng,
-  statesNotInModpack,
-} from "../render";
+import { modpackRenderSource, renderProjectionPng } from "../render";
 import { renderSchematicTool } from "../schematic-tools";
 import { runTool } from "../tools";
 import type { McpDeps } from "../types";
@@ -326,19 +322,6 @@ describe("renderProjectionPng with a modpack", () => {
     const cube = east({ facing: "north" });
     expect(east(north)).toBeGreaterThan(0);
     expect(east(north)).toBeLessThan(cube);
-  });
-
-  it("lists the block states the pack lacks", () => {
-    const projection = projectionOf([
-      { blockId: "create:brass_block" },
-      { blockId: "minecraft:stone" },
-      { blockId: "create:not_a_block" },
-      { blockId: "othermod:thing" },
-    ]);
-    expect(statesNotInModpack(projection, packBlocks())).toEqual([
-      "create:not_a_block",
-      "othermod:thing",
-    ]);
   });
 });
 

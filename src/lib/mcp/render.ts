@@ -94,20 +94,6 @@ export interface RenderAppearanceSource {
   ): readonly ShapeBox[] | undefined;
 }
 
-/**
- * The block states of `projection`'s palette whose block `modpack` lacks
- * (neither a vanilla block of its Minecraft version nor one of its mod
- * blocks), in palette order.
- */
-export function statesNotInModpack(
-  projection: ParsedSchematicProjection,
-  modpack: ModpackBlocks,
-): string[] {
-  return projection.palette
-    .filter((entry) => !modpack.registry.exists(entry.blockId))
-    .map((entry) => entry.blockState);
-}
-
 export type RenderOptions = Partial<ContactSheetOptions> & {
   /** Mod block colours and shapes, e.g. `modpackRenderSource(pack)`. */
   appearance?: RenderAppearanceSource;
