@@ -21,7 +21,8 @@ const nextConfig: NextConfig = {
   // Native module; load it from node_modules rather than bundling it.
   serverExternalPackages: ["@napi-rs/canvas"],
   // Files the MCP renderer (`src/lib/mcp/render.ts`), vanilla appearance
-  // descriptors (`src/lib/mcp/vanilla-appearance.ts`) and the build language
+  // descriptors (`src/lib/mcp/vanilla-appearance.ts`), camo shape packs
+  // (`src/lib/mcp/camo-options.ts`) and the build language
   // spec resource (`src/lib/mcp/build-tools.ts`) read from disk.
   outputFileTracingIncludes: {
     // A glob, so "[transport]" can't be written literally.
@@ -31,6 +32,7 @@ const nextConfig: NextConfig = {
       "./public/minecraft-assets/atlas-uvs.json",
       "./public/minecraft-assets/blockstates.json",
       "./public/minecraft-assets/models.json",
+      "./public/camo-shapes/*.json",
       "./src/lib/mcp/fonts/*.ttf",
       "./src/lib/buildlang/SPEC.md",
     ],

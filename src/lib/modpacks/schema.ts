@@ -195,6 +195,23 @@ export const runtimeBlockSourceSchema = z.object({
 });
 export type RuntimeBlockSource = z.infer<typeof runtimeBlockSourceSchema>;
 
+const vec3 = z.tuple([z.number(), z.number(), z.number()]);
+const templateDirection = z.enum([
+  "down",
+  "up",
+  "north",
+  "south",
+  "west",
+  "east",
+]);
+
+/** One cube of a FramedBlocks geometry template (`TemplateCube`). */
+export const templateCubeSchema = z.object({
+  box: z.object({ from: vec3, to: vec3 }),
+  /** Face → cullable; faces not listed aren't part of the cube. */
+  faces: z.partialRecord(templateDirection, z.boolean()),
+});
+
 export const modpackDataSchema = z.object({
   formatVersion: z.number().int(),
   slug,
@@ -205,5 +222,12 @@ export const modpackDataSchema = z.object({
   /** Every mod block, sorted by id. */
   blocks: z.array(modpackBlockSchema),
   runtimeBlockSources: z.array(runtimeBlockSourceSchema),
+  /**
+   * FramedBlocks geometry templates the pack's jars ship
+   * (`framedblocks:<name>` → cubes), replacing the shape pack's pieces of
+   * the same template (`render/camo/template-overrides.ts`). Absent when no
+   * jar ships any.
+   */
+  framedTemplates: z.record(z.string(), z.array(templateCubeSchema)).optional(),
 });
 export type ModpackData = z.infer<typeof modpackDataSchema>;

@@ -111,6 +111,9 @@ function framedJar(): Uint8Array {
     "assets/framedblocks/textures/block/framed_block.png": solidPng([
       120, 90, 60, 255,
     ]),
+    "assets/framedblocks/framed_templates/slab.json": json({
+      elements: [{ from: [0, 0, 0], to: [16, 8, 16], faces: { down: true } }],
+    }),
   });
 }
 
@@ -213,6 +216,11 @@ describe("modpack upload extraction", () => {
         uploadedAt: "2026-10-06T12:00:00.000Z",
       },
       runtimeBlockSources: [{ kind: "kubejs", name: "kubejs" }],
+    });
+    expect(data.framedTemplates).toEqual({
+      "framedblocks:slab": [
+        { box: { from: [0, 0, 0], to: [16, 8, 16] }, faces: { down: true } },
+      ],
     });
 
     const mods = Object.fromEntries(data.mods.map((m) => [m.name, m]));
