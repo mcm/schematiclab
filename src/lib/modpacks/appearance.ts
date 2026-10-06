@@ -40,6 +40,11 @@ import {
 } from "../render/block-appearance.ts";
 import { modernizeLegacyModAssets } from "../mods/generated/legacy-blockstate.ts";
 import { modernVanillaTextureId } from "../mods/generated/legacy-textures.ts";
+import {
+  loaderTextureCandidates,
+  modelChainHasLoader,
+  type LoaderTextureCandidate,
+} from "../mods/loader-model.ts";
 import type { ModAppearanceInput } from "../mods/mod-appearance.ts";
 import type { ModBlockAppearance } from "./schema.ts";
 import { encodeRgbaPng } from "./png.ts";
@@ -196,10 +201,71 @@ function faceArea(element: Record<string, unknown>, direction: Direction) {
   return Math.max(area, 1);
 }
 
+/** Loader-model keys naming the faces they texture. */
+const LOADER_FACE_KEYS: Readonly<Record<string, readonly Direction[]>> = {
+  up: ["up"],
+  top: ["up"],
+  down: ["down"],
+  bottom: ["down"],
+  north: ["north"],
+  south: ["south"],
+  east: ["east"],
+  west: ["west"],
+  side: HORIZONTAL,
+};
+
+/**
+ * Faces of a model drawn by a custom model loader, from the strings its
+ * model JSON (and its parents') names that are textures: keys naming a face
+ * (`up`/`top`, `down`/`bottom`, a direction, `side` for all four) give that
+ * face, a direction key winning over `side`; the other faces get `particle`,
+ * else the first texture in key order. Keys under an `overlay`-like name are
+ * used only when no other string is a texture.
+ */
+function loaderFaces(modelId: string, sources: DescriptorSources): DrawnFace[] {
+  const candidates: LoaderTextureCandidate[] = [];
+  const seen = new Set<string>();
+  for (let id: string | null = modelId; id !== null && !seen.has(id); ) {
+    seen.add(id);
+    const model = sources.getModel(id);
+    if (!isRecord(model)) break;
+    candidates.push(...loaderTextureCandidates(model));
+    id =
+      typeof model.parent === "string"
+        ? normalizeResourceId(model.parent)
+        : null;
+  }
+  const resolvable = candidates.filter(
+    (candidate) => sources.getTexture(candidate.id) !== null,
+  );
+  const plain = resolvable.filter((candidate) => !candidate.overlay);
+  const pool = plain.length > 0 ? plain : resolvable;
+  if (pool.length === 0) return [];
+  const byDirection = new Map<Direction, string>();
+  for (const exact of [true, false]) {
+    for (const { id, key } of pool) {
+      if (!Object.hasOwn(LOADER_FACE_KEYS, key)) continue;
+      if ((key === "side") === exact) continue;
+      for (const direction of LOADER_FACE_KEYS[key]) {
+        if (!byDirection.has(direction)) byDirection.set(direction, id);
+      }
+    }
+  }
+  const rest = (pool.find(({ key }) => key === "particle") ?? pool[0]).id;
+  return DIRECTIONS.map((direction) => ({
+    direction,
+    texture: byDirection.get(direction) ?? rest,
+    tinted: false,
+    area: 1,
+  }));
+}
+
 /**
  * Every face the default state draws. Models without elements (block
  * entities, fluids) draw each of their texture variables on every side, so
- * their `particle` texture still gives them a colour and swatches.
+ * their `particle` texture still gives them a colour and swatches. A model
+ * with a custom model loader (or a parent that has one) whose elements and
+ * texture variables give no texture falls back to `loaderFaces`.
  */
 function drawnFaces(
   blockstate: unknown,
@@ -208,43 +274,67 @@ function drawnFaces(
 ): DrawnFace[] {
   const out: DrawnFace[] = [];
   for (const placed of defaultPlacedModels(blockstate, defaults)) {
-    const model = resolveModel(placed.id, sources.getModel);
-    if (model === null) continue;
-    let drew = false;
-    for (const element of model.elements ?? []) {
-      if (!isRecord(element) || !isRecord(element.faces)) continue;
-      for (const direction of DIRECTIONS) {
-        const face = element.faces[direction];
-        if (!isRecord(face)) continue;
-        drew = true;
-        // Face textures always name a variable; the `#` is optional.
-        const variable =
-          typeof face.texture === "string" && !face.texture.startsWith("#")
-            ? `#${face.texture}`
-            : face.texture;
-        const texture = resolveTextureRef(variable, model.textures);
-        if (texture === null) continue;
+    const start = out.length;
+    drawModelFaces(placed, sources, out);
+    if (
+      !out
+        .slice(start)
+        .some((face) => sources.getTexture(face.texture) !== null) &&
+      modelChainHasLoader(placed.id, sources.getModel)
+    ) {
+      out.length = start;
+      for (const face of loaderFaces(placed.id, sources)) {
         out.push({
-          direction: rotateX(direction, placed.xTurns),
-          texture,
-          tinted: typeof face.tintindex === "number",
-          area: faceArea(element, direction),
+          ...face,
+          direction: rotateX(face.direction, placed.xTurns),
         });
-      }
-    }
-    if (drew) continue;
-    const refs = Object.hasOwn(model.textures, "particle")
-      ? [model.textures.particle]
-      : Object.values(model.textures);
-    for (const ref of refs) {
-      const texture = resolveTextureRef(ref, model.textures);
-      if (texture === null) continue;
-      for (const direction of DIRECTIONS) {
-        out.push({ direction, texture, tinted: false, area: 1 });
       }
     }
   }
   return out;
+}
+
+/** The faces one placed model draws the normal way, onto `out`. */
+function drawModelFaces(
+  placed: PlacedModel,
+  sources: DescriptorSources,
+  out: DrawnFace[],
+): void {
+  const model = resolveModel(placed.id, sources.getModel);
+  if (model === null) return;
+  let drew = false;
+  for (const element of model.elements ?? []) {
+    if (!isRecord(element) || !isRecord(element.faces)) continue;
+    for (const direction of DIRECTIONS) {
+      const face = element.faces[direction];
+      if (!isRecord(face)) continue;
+      drew = true;
+      // Face textures always name a variable; the `#` is optional.
+      const variable =
+        typeof face.texture === "string" && !face.texture.startsWith("#")
+          ? `#${face.texture}`
+          : face.texture;
+      const texture = resolveTextureRef(variable, model.textures);
+      if (texture === null) continue;
+      out.push({
+        direction: rotateX(direction, placed.xTurns),
+        texture,
+        tinted: typeof face.tintindex === "number",
+        area: faceArea(element, direction),
+      });
+    }
+  }
+  if (drew) return;
+  const refs = Object.hasOwn(model.textures, "particle")
+    ? [model.textures.particle]
+    : Object.values(model.textures);
+  for (const ref of refs) {
+    const texture = resolveTextureRef(ref, model.textures);
+    if (texture === null) continue;
+    for (const direction of DIRECTIONS) {
+      out.push({ direction, texture, tinted: false, area: 1 });
+    }
+  }
 }
 
 // ── Pixels ────────────────────────────────────────────────────────────────

@@ -109,6 +109,11 @@ export interface CompatPackAssets {
 export interface UnresolvedAssetRefs {
   models: string[];
   textures: string[];
+  /**
+   * Strings of custom-loader models that may be texture ids the jar lacks
+   * (`missingAssetRefs`); absent when there are none.
+   */
+  loaderTextures?: string[];
 }
 
 /** One jar nested in a mod jar's `META-INF/jarjar/` (see `ParsedModAssets`). */

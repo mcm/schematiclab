@@ -613,7 +613,9 @@ function crossJarPending(
         ? kubejs.blockstates[block.id]
         : parsed.blockstates[block.id];
     const missing = missingAssetRefs(blockstate, getModel, hasTexture);
-    if (missing.models.size + missing.textures.size === 0) continue;
+    const count =
+      missing.models.size + missing.textures.size + missing.loaderTextures.size;
+    if (count === 0) continue;
     const refs = blockstateAssetRefs(blockstate, getModel);
     blocks.push(changed.get(block.id) ?? block);
     assets.blockstates[block.id] = blockstate;
@@ -758,7 +760,11 @@ async function extractMod(
       ),
     ].some(
       (refs) =>
-        refs !== undefined && refs.models.length + refs.textures.length > 0,
+        refs !== undefined &&
+        refs.models.length +
+          refs.textures.length +
+          (refs.loaderTextures?.length ?? 0) >
+          0,
     );
     const crossJar =
       unresolved || kubejs !== null
@@ -985,7 +991,9 @@ async function resolveCrossJarLooks(
       look.model,
     );
   };
-  const missing = (r: number): Set<string> => {
+  // Custom-loader models' loose strings are fetched when a jar ships them,
+  // but many aren't textures, so they are never reported unresolved.
+  const missing = (r: number, withLoaderTextures = true): Set<string> => {
     const look = lookup(r);
     const out = new Set<string>();
     for (const block of requesters[r].blocks) {
@@ -996,6 +1004,8 @@ async function resolveCrossJarLooks(
       );
       for (const id of refs.models) out.add(`model:${id}`);
       for (const id of refs.textures) out.add(`texture:${id}`);
+      if (!withLoaderTextures) continue;
+      for (const id of refs.loaderTextures) out.add(`texture:${id}`);
     }
     return out;
   };
@@ -1074,7 +1084,7 @@ async function resolveCrossJarLooks(
     descriptors: Record<string, BlockDescriptor>;
   }[] = [];
   for (const [r, requester] of requesters.entries()) {
-    for (const ref of missing(r)) unresolved.add(ref);
+    for (const ref of missing(r, false)) unresolved.add(ref);
     if (resolution[r].size === 0) continue;
     const look = lookup(r);
     const merged: DescribeAssets = {
