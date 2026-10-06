@@ -142,6 +142,15 @@ const PACK: ModpackData = {
     }),
     // No texture data.
     block("create:shaft", { kind: "unknown", fullCube: false }),
+    // Only a block list names it: a bare full cube.
+    block("create:bare_casing", { kind: "unknown" }),
+    // Face swatches but no colour: it has visual information.
+    block("create:swatch_only_casing", {
+      swatch: {
+        file: "cf-1",
+        faces: { top: [0, 0, 16, 16], side: [0, 0, 16, 16] },
+      },
+    }),
   ],
   runtimeBlockSources: [
     {
@@ -184,6 +193,7 @@ interface Look {
   mod: string;
   shape_confidence: "high" | "low";
   full_cube: boolean;
+  visual_info?: false;
   hex?: string;
   dominant?: { hex: string; share: number }[];
   variance?: number;
@@ -311,7 +321,39 @@ describe("search_blocks with a modpack", () => {
       mod: "Create",
       shape_confidence: "low",
       full_cube: false,
+      visual_info: false,
     });
+  });
+
+  it("says visual_info: false only for mod blocks with no appearance and no swatch", async () => {
+    const data = await search({ query: "casing", modpack: "test-pack" });
+    const byId = new Map(data.results.map((r) => [r.id, r]));
+    expect(byId.get("create:bare_casing")).toEqual({
+      id: "create:bare_casing",
+      kind: "unknown",
+      mod: "Create",
+      shape_confidence: "low",
+      full_cube: true,
+      visual_info: false,
+    });
+    expect(byId.get("create:swatch_only_casing")).not.toHaveProperty(
+      "visual_info",
+    );
+    expect(byId.get("create:andesite_casing")).not.toHaveProperty(
+      "visual_info",
+    );
+    expect(byId.get("create:andesite_casing")!.hex).toBeDefined();
+    expect(data.note).toContain(
+      "Blocks with visual_info: false have no visual information",
+    );
+
+    const coloured = await search({ query: "brass", modpack: "test-pack" });
+    for (const r of coloured.results)
+      expect(r).not.toHaveProperty("visual_info");
+    expect(coloured.note ?? "").not.toContain("visual_info");
+    const vanilla = await search({ query: "stone", version: "1.21.4" });
+    for (const r of vanilla.results)
+      expect(r).not.toHaveProperty("visual_info");
   });
 
   it('returns only stairs for shape: ["stairs"]', async () => {
@@ -508,6 +550,26 @@ describe("suggest_palette with a modpack", () => {
       { reference_block: "create:shaft", modpack: "test-pack" },
       makeDeps(),
     );
-    expect(text(noColour)).toMatch(/^create:shaft has no colour data/);
+    expect(text(noColour)).toMatch(
+      /^create:shaft has no visual information \(visual_info: false\)/,
+    );
+  });
+
+  it("never picks a block without visual information", async () => {
+    for (const color of ["#000000", "#7a7a7a", "#ff00ff", "#ffffff"]) {
+      for (const shape of [undefined, ["full_cube"]]) {
+        const data = await palette({
+          color,
+          modpack: "test-pack",
+          n: 16,
+          ...(shape && { shape }),
+        });
+        const ids = data.blocks.map((b) => b.id);
+        expect(ids).not.toContain("create:bare_casing");
+        expect(ids).not.toContain("create:shaft");
+        for (const b of data.blocks)
+          expect(b).not.toHaveProperty("visual_info");
+      }
+    }
   });
 });

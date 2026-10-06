@@ -183,11 +183,23 @@ export interface BlockLook {
   /** `low` for mod blocks whose shape evidence was unclear (kind `unknown`). */
   shapeConfidence: "high" | "low";
   fullCube: boolean;
+  /**
+   * False for a pack mod block with no look at all (no appearance, no
+   * swatch: a block only a server's block list names); absent otherwise.
+   */
+  visualInfo?: false;
   oklab?: Oklab;
   hex?: string;
   dominant?: DominantColor[];
   variance?: number;
 }
+
+/**
+ * What results say about a block without visual information: its name
+ * doesn't say how it looks.
+ */
+export const NO_VISUAL_INFO_NOTE =
+  "Blocks with visual_info: false have no visual information (no textures or colours were found for them); don't assume their look from their name.";
 
 /** A vanilla block's colour data. */
 export interface VanillaColor extends BlockAppearance {
@@ -267,6 +279,7 @@ export function lookOf(scope: SearchScope, id: string): BlockLook {
       mod: mod.mod.name,
       shapeConfidence: mod.kind === "unknown" ? "low" : "high",
       fullCube: mod.fullCube,
+      ...(!appearance && !mod.swatch && { visualInfo: false as const }),
       ...(appearance && {
         oklab: appearance.oklab,
         hex: appearance.hex,
@@ -300,6 +313,7 @@ const lookOutputShape = {
   mod: z.string(),
   shape_confidence: z.enum(["high", "low"]),
   full_cube: z.boolean(),
+  visual_info: z.literal(false).optional(),
   dominant: dominantOutput,
   variance: z.number().optional(),
 };
@@ -387,6 +401,7 @@ export interface BlockSearchHit {
   mod: string;
   shape_confidence: "high" | "low";
   full_cube: boolean;
+  visual_info?: false;
   hex?: string;
   dominant?: DominantColor[];
   variance?: number;
@@ -474,7 +489,7 @@ export const searchBlocksTool = defineTool({
   name: "search_blocks",
   title: "Search blocks",
   description:
-    "Find block ids that exist in a Minecraft version, or in a modpack (its version's vanilla blocks plus its mods' blocks), by name and optionally shape. Prefix matches come before other matches. Each result has its kind (block, stairs, slab, wall, log, pane, ..., or unknown for mod blocks whose shape is unclear) with shape_confidence, the mod it comes from (minecraft for vanilla), whether it is a full cube, and when its textures are known its average colour (hex), up to 3 dominant colours with their shares and texture variance (0 flat to 1 busy). When nothing matches, returns close names instead. With a modpack that has camo blocks (FramedBlocks, Copycats+, Create copycats) and a shape (or a query ending in one, like brass_stairs, when no plain block matches), camo_options also lists camo frames of that shape, each holding a camo material whose name matches the query (camo, camo_hex), with writable false and a reason where the server can't write that camo for the pack's Minecraft version. When the user names a modpack, pass its ref (from list_modpacks) as modpack. Names don't say how a block looks: check candidates with show_blocks.",
+    "Find block ids that exist in a Minecraft version, or in a modpack (its version's vanilla blocks plus its mods' blocks), by name and optionally shape. Prefix matches come before other matches. Each result has its kind (block, stairs, slab, wall, log, pane, ..., or unknown for mod blocks whose shape is unclear) with shape_confidence, the mod it comes from (minecraft for vanilla), whether it is a full cube, and when its textures are known its average colour (hex), up to 3 dominant colours with their shares and texture variance (0 flat to 1 busy). Some modpack blocks have no visual information at all (visual_info: false, no colour fields): the server only knows they exist, so don't assume their look from their name. When nothing matches, returns close names instead. With a modpack that has camo blocks (FramedBlocks, Copycats+, Create copycats) and a shape (or a query ending in one, like brass_stairs, when no plain block matches), camo_options also lists camo frames of that shape, each holding a camo material whose name matches the query (camo, camo_hex), with writable false and a reason where the server can't write that camo for the pack's Minecraft version. When the user names a modpack, pass its ref (from list_modpacks) as modpack. Names don't say how a block looks: check candidates with show_blocks.",
   inputSchema: searchBlocksInput,
   outputSchema: z.object({
     version: z.string(),
@@ -517,6 +532,9 @@ export const searchBlocksTool = defineTool({
     const notes: string[] = [];
     const versionNote = scopeNote(scope);
     if (versionNote) notes.push(versionNote);
+    if (results.some((hit) => hit.visual_info === false)) {
+      notes.push(NO_VISUAL_INFO_NOTE);
+    }
     if (shapes && named.length > 0 && matches.length === 0) {
       notes.push(
         `${named.length} block${named.length === 1 ? "" : "s"} match the name, but none has shape ${[...shapes].join(" or ")}.`,
@@ -583,6 +601,7 @@ function searchHit(id: string, look: BlockLook): BlockSearchHit {
     mod: look.mod,
     shape_confidence: look.shapeConfidence,
     full_cube: look.fullCube,
+    ...(look.visualInfo === false && { visual_info: false }),
     ...(look.hex !== undefined && { hex: look.hex }),
     ...(look.dominant !== undefined && { dominant: look.dominant }),
     ...(look.variance !== undefined && { variance: look.variance }),
@@ -783,7 +802,7 @@ export const suggestPaletteTool = defineTool({
   name: "suggest_palette",
   title: "Suggest a palette",
   description:
-    "Suggest blocks of a Minecraft version, or of a modpack (its version's vanilla blocks plus its mods' blocks), whose average colour is closest to a hex colour or to another block, ranked by OKLab distance (smaller is closer), optionally only of some shapes. Each colour is listed once (a material's stairs, slabs and walls share its colour, so find those with search_blocks or a shape filter). Each result has its kind with shape_confidence, its mod (minecraft for vanilla), hex colour, up to 3 dominant colours with their shares, texture variance (0 flat to 1 busy) and whether it is a full cube. With a modpack that has camo blocks and a shape, camo_options also lists camo frames of that shape holding the camo materials nearest the colour (camo, camo_hex, distance), with writable false and a reason where the server can't write that camo for the pack's Minecraft version. When the user names a modpack, pass its ref (from list_modpacks) as modpack. Check the picks with show_blocks before building with them.",
+    "Suggest blocks of a Minecraft version, or of a modpack (its version's vanilla blocks plus its mods' blocks), whose average colour is closest to a hex colour or to another block, ranked by OKLab distance (smaller is closer), optionally only of some shapes. Each colour is listed once (a material's stairs, slabs and walls share its colour, so find those with search_blocks or a shape filter). Each result has its kind with shape_confidence, its mod (minecraft for vanilla), hex colour, up to 3 dominant colours with their shares, texture variance (0 flat to 1 busy) and whether it is a full cube. Modpack blocks without visual information (visual_info: false in search_blocks and show_blocks) are never suggested and can't be a reference_block; don't assume their look from their name. With a modpack that has camo blocks and a shape, camo_options also lists camo frames of that shape holding the camo materials nearest the colour (camo, camo_hex, distance), with writable false and a reason where the server can't write that camo for the pack's Minecraft version. When the user names a modpack, pass its ref (from list_modpacks) as modpack. Check the picks with show_blocks before building with them.",
   inputSchema: suggestPaletteInput,
   outputSchema: z.object({
     version: z.string(),
@@ -831,6 +850,11 @@ export const suggestPaletteTool = defineTool({
       if (!checked.ok) throw new Error(checked.error);
       reference = checked.id;
       const look = colors.get(reference) ?? lookOf(scope, reference);
+      if ("visualInfo" in look && look.visualInfo === false) {
+        throw new Error(
+          `${reference} has no visual information (visual_info: false), so it has no colour to match; pick another reference_block or give a color. Don't assume its look from its name.`,
+        );
+      }
       if (!look.oklab) {
         throw new Error(
           `${reference} has no colour data (it may be invisible or have no texture); pick another reference_block or give a color.`,

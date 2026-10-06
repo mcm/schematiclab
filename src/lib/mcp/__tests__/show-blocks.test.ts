@@ -26,12 +26,14 @@ import {
   blockSheetLayout,
   blockSheetScale,
   isoCellPoint,
+  placeholderTileRect,
   type Rect,
   type Vec3,
 } from "../block-sheet";
 import { MAX_RENDER_EDGE } from "../render";
 import {
   MAX_SHOW_BLOCKS,
+  NO_VISUAL_INFO_LABEL,
   clearSwatchSheetCache,
   showBlocksTool,
 } from "../show-blocks";
@@ -195,6 +197,8 @@ const PACK: ModpackData = {
       appearance: appearance(TEAL),
       swatch: swatch("cf-3", 0),
     }),
+    // Only a block list names it: no appearance, no swatch.
+    block("teal:bare_machine", "cf-3", { kind: "unknown", fullCube: false }),
   ],
   runtimeBlockSources: [],
 };
@@ -226,11 +230,18 @@ interface Shown {
     id: string;
     mod: string;
     kind: string;
+    visual_info?: false;
     hex?: string;
     dominant?: { hex: string; share: number }[];
     variance?: number;
     properties?: Record<string, string>;
-    camo?: { id: string; mod: string; kind: string; hex?: string };
+    camo?: {
+      id: string;
+      mod: string;
+      kind: string;
+      visual_info?: false;
+      hex?: string;
+    };
     writable?: boolean;
     reason?: string;
   }[];
@@ -389,6 +400,90 @@ describe("show_blocks with a modpack", () => {
       `#${[r, g, b].map((c) => c.toString(16).padStart(2, "0")).join("")}`,
     ).toBe(hex);
     expect(data.note).toContain("No face swatches for create:no_swatch");
+  });
+
+  it("draws a block without visual information as a labelled placeholder tile", async () => {
+    const { png, data } = await show({
+      blocks: ["teal:bare_machine", "create:brass_block"],
+      modpack: "camo-pack",
+    });
+    expect(NO_VISUAL_INFO_LABEL).toBe("no visual information");
+    expect(data.blocks).toEqual([
+      {
+        id: "teal:bare_machine",
+        mod: "Teal Blocks",
+        kind: "unknown",
+        visual_info: false,
+      },
+      expect.objectContaining({
+        id: "create:brass_block",
+        hex: expect.any(String),
+      }),
+    ]);
+    expect(data.blocks[1]).not.toHaveProperty("visual_info");
+    expect(data.note).toContain(
+      "Blocks with visual_info: false have no visual information",
+    );
+    expect(data.note).toContain(`"${NO_VISUAL_INFO_LABEL}" tiles`);
+    expect(data.note ?? "").not.toContain(
+      "No face swatches for teal:bare_machine",
+    );
+
+    const tile = placeholderTileRect(blockSheetLayout(2).cards[0]);
+    const cells = blockSheetLayout(2).cards[0].cells.map((c) => c.rect);
+    // The tile covers the gap between the first two cells, which a drawn
+    // card leaves panel-coloured, in grey stripes.
+    const gap: [number, number] = [
+      cells[0].x +
+        cells[0].width +
+        (cells[1].x - cells[0].x - cells[0].width) / 2,
+      tile.y + 8,
+    ];
+    const greys = [
+      [0xe5, 0xe7, 0xeb, 255],
+      [0xd1, 0xd5, 0xdb, 255],
+    ];
+    const striped = [gap, [tile.x + 6, tile.y + 6] as [number, number]].map(
+      (p) => pixel(png, at(2, p)),
+    );
+    for (const p of striped) {
+      expect(
+        greys.some((g) => g.every((c, i) => Math.abs(c - p[i]) <= 24)),
+      ).toBe(true);
+    }
+    // No isometric view: the front-left cell's middle isn't a white cell.
+    expect(
+      pixel(png, at(2, [cells[0].x + 20, centre(cells[0])[1] + 30])),
+    ).not.toEqual([255, 255, 255, 255]);
+    // The label sits on a white plate in the tile's middle, with dark text.
+    const row = Math.floor(at(2, centre(tile))[1]);
+    const [x0, x1] = [
+      Math.floor(at(2, [tile.x, 0])[0]),
+      Math.floor(at(2, [tile.x + tile.width, 0])[0]),
+    ];
+    const dark: number[] = [];
+    for (let x = x0; x < x1; x++) {
+      const [r] = pixel(png, [x, row]);
+      if (r < 140) dark.push(x);
+    }
+    expect(dark.length).toBeGreaterThan(10);
+    // The other card is still drawn from its swatches.
+    expect(pixel(png, at(2, centre(cell(2, 1, 2))))).toEqual([...BRASS, 255]);
+  });
+
+  it("draws a camo pair whose camo has no visual information as a placeholder", async () => {
+    const { data } = await show({
+      blocks: [{ frame: "copycats:copycat_block", camo: "teal:bare_machine" }],
+      modpack: "camo-pack",
+    });
+    expect(data.blocks).toMatchObject([
+      {
+        id: "copycats:copycat_block",
+        camo: { id: "teal:bare_machine", kind: "unknown", visual_info: false },
+      },
+    ]);
+    expect(data.blocks[0]).not.toHaveProperty("visual_info");
+    expect(data.note).toContain("visual_info: false");
   });
 
   it("draws camo pairs as the frame's shape in the camo's swatches", async () => {

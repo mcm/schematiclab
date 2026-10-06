@@ -1,6 +1,7 @@
 // `show_blocks`: up to `MAX_SHOW_BLOCKS` blocks of a Minecraft version or a
 // modpack as one picture (`block-sheet.ts`), with their kind, mod and colours.
-// Camo pairs draw the frame's shape in the camo material's swatches.
+// Camo pairs draw the frame's shape in the camo material's swatches. A pack
+// block with no visual information is a placeholder tile.
 //
 // Vanilla swatches come from the asset bundle on disk
 // (`vanilla-appearance.ts`); mod swatches from the mod file's swatch sheet
@@ -31,6 +32,7 @@ import {
 import {
   camoMaterialsOf,
   lookOf,
+  NO_VISUAL_INFO_NOTE,
   scopeNote,
   searchScope,
   vanillaBundleId,
@@ -43,6 +45,9 @@ import { defineTool } from "./types";
 import { vanillaBlockDescriptors } from "./vanilla-appearance";
 
 export const MAX_SHOW_BLOCKS = 16;
+
+/** The placeholder tile's text for a block with no visual information. */
+export const NO_VISUAL_INFO_LABEL = "no visual information";
 
 /** Most bytes of one swatch sheet (`MAX_SWATCH_SHEET_BYTES`, with room). */
 const MAX_SWATCH_SHEET_READ_BYTES = 8 * 1024 * 1024;
@@ -231,6 +236,7 @@ const lookOutput = {
   properties: z.record(z.string(), z.string()).optional(),
   mod: z.string(),
   kind: z.string(),
+  visual_info: z.literal(false).optional(),
   hex: z.string().optional(),
   dominant: z
     .array(z.object({ hex: z.string(), share: z.number() }))
@@ -243,6 +249,7 @@ interface ShownLook {
   properties?: Record<string, string>;
   mod: string;
   kind: string;
+  visual_info?: false;
   hex?: string;
   dominant?: { hex: string; share: number }[];
   variance?: number;
@@ -257,6 +264,7 @@ function shownLook(block: ResolvedState, kind = block.look.kind): ShownLook {
     }),
     mod: look.mod,
     kind,
+    ...(look.visualInfo === false && { visual_info: false }),
     ...(look.hex !== undefined && { hex: look.hex }),
     ...(look.dominant !== undefined && { dominant: look.dominant }),
     ...(look.variance !== undefined && { variance: look.variance }),
@@ -278,7 +286,7 @@ type Entry =
 export const showBlocksTool = defineTool({
   name: "show_blocks",
   title: "Show blocks",
-  description: `See up to ${MAX_SHOW_BLOCKS} blocks of a Minecraft version or a modpack as one PNG: per block, two textured isometric views (front-left and back-right) of its shape and its flat top and side faces, built from the blocks' face swatches. Give block states, or { frame, camo } pairs to see a camo frame (FramedBlocks, Copycats+, Create copycats) holding a camo material. Also returns each block's mod, kind, average colour (hex), dominant colours and texture variance; ids the version or pack lacks are listed under not_found with close names and aren't drawn. Use it to check a block looks right before building with it: block names (black_terracotta, brass_block) don't reliably say how a block looks, least of all mod blocks. When the user names a modpack, pass its ref (from list_modpacks) as modpack.`,
+  description: `See up to ${MAX_SHOW_BLOCKS} blocks of a Minecraft version or a modpack as one PNG: per block, two textured isometric views (front-left and back-right) of its shape and its flat top and side faces, built from the blocks' face swatches. Give block states, or { frame, camo } pairs to see a camo frame (FramedBlocks, Copycats+, Create copycats) holding a camo material. Also returns each block's mod, kind, average colour (hex), dominant colours and texture variance. Some modpack blocks have no visual information (visual_info: false, no colour fields): they are drawn as a "${NO_VISUAL_INFO_LABEL}" tile, and their look can't be assumed from their name. Ids the version or pack lacks are listed under not_found with close names and aren't drawn. Use it to check a block looks right before building with it: block names (black_terracotta, brass_block) don't reliably say how a block looks, least of all mod blocks. When the user names a modpack, pass its ref (from list_modpacks) as modpack.`,
   inputSchema: showBlocksInput,
   outputSchema: z.object({
     version: z.string(),
@@ -391,11 +399,22 @@ export const showBlocksTool = defineTool({
     const cards: BlockCard[] = [];
     const shown: Record<string, unknown>[] = [];
     let camoShown = false;
+    let noVisualInfo = false;
     for (const entry of entries) {
       if (entry.type === "block") {
         const { block } = entry;
-        const { top, side } = swatchesOf(block);
         const look = block.look;
+        if (look.visualInfo === false) {
+          noVisualInfo = true;
+          cards.push({
+            title: stateText(block),
+            subtitle: [look.kind, look.mod].join(" · "),
+            placeholder: NO_VISUAL_INFO_LABEL,
+          });
+          shown.push({ ...shownLook(block) });
+          continue;
+        }
+        const { top, side } = swatchesOf(block);
         cards.push({
           title: stateText(block),
           subtitle: [look.kind, look.mod, look.hex].filter(Boolean).join(" · "),
@@ -408,25 +427,26 @@ export const showBlocksTool = defineTool({
       }
       camoShown = true;
       const { frame, camo, kind } = entry;
-      const { top, side } = swatchesOf(camo);
-      const boxes =
-        kind === "block" || kind === "unknown"
-          ? undefined
-          : blockShapeOfKind(kind, frame.state);
-      cards.push({
-        title: `${stateText(frame)} + ${camo.id}`,
-        subtitle: [
-          `${kind} frame`,
-          `camo ${camo.look.mod}`,
-          camo.look.hex,
-          entry.writable ? undefined : "not writable",
-        ]
-          .filter(Boolean)
-          .join(" · "),
-        boxes,
-        top,
-        side,
-      });
+      const title = `${stateText(frame)} + ${camo.id}`;
+      const subtitle = [
+        `${kind} frame`,
+        `camo ${camo.look.mod}`,
+        camo.look.hex,
+        entry.writable ? undefined : "not writable",
+      ]
+        .filter(Boolean)
+        .join(" · ");
+      if (camo.look.visualInfo === false) {
+        noVisualInfo = true;
+        cards.push({ title, subtitle, placeholder: NO_VISUAL_INFO_LABEL });
+      } else {
+        const { top, side } = swatchesOf(camo);
+        const boxes =
+          kind === "block" || kind === "unknown"
+            ? undefined
+            : blockShapeOfKind(kind, frame.state);
+        cards.push({ title, subtitle, boxes, top, side });
+      }
       shown.push({
         ...shownLook(frame, kind),
         camo: shownLook(camo),
@@ -448,6 +468,11 @@ export const showBlocksTool = defineTool({
     if (flat.length > 0) {
       notes.push(
         `No face swatches for ${flat.join(", ")}; drawn in a flat colour.`,
+      );
+    }
+    if (noVisualInfo) {
+      notes.push(
+        `${NO_VISUAL_INFO_NOTE} They are drawn as "${NO_VISUAL_INFO_LABEL}" tiles.`,
       );
     }
     if (camoShown) notes.push(CAMO_MATERIAL_NOTE);
