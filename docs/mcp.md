@@ -305,7 +305,7 @@ With a list, the pack's modded blocks are exactly the list's modded ids. Listed 
 | `skipped-too-large`       | The jar is over the size limit (`CURSEFORGE_MAX_JAR_BYTES` for downloads, default 100 MiB; `--mods-dir` reads it from disk instead).                                                          |
 | `failed`                  | The jar is missing or couldn't be read or parsed; the message says why.                                                                                                                       |
 
-The summary also lists blocks registered at runtime that the upload can't see without a block list (a `kubejs/` folder, Every Compat, Unlimited Chisel Works), what a block list changed (the blocks it dropped, in total and for the ten largest namespaces, and the blocks it added), the block count, the bytes written and the ref to use.
+The summary also lists the nested mods read (`<artifact> <version> from <jar>`) and the nested copies skipped with the reason, the `compat_packs/<modid>/` packs read and the compat blocks dropped per prefix because the pack lacks their mod, blocks registered at runtime that the upload can't see without a block list (a `kubejs/` folder, Every Compat, Unlimited Chisel Works), what a block list changed (the blocks it dropped, in total and for the ten largest namespaces, and the blocks it added), what `kubejs/assets/` changed (blocks overridden, blocks added, and without a block list the blockstates of blocks no jar has that it ignored), the block count, the bytes written and the ref to use.
 
 **Storage.** Everything goes to the server's private Blob store:
 
