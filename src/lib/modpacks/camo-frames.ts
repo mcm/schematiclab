@@ -7,11 +7,20 @@
 // merged with the jar's, completes their defaults, and takes their kind from
 // the vanilla shape they copy. Packs uploaded before this need no re-upload.
 //
+// Frames whose placeholder model gives them no look take it from their frame
+// texture (`withCamoFrameLooks`): the upload describes it when the frame's
+// own jar ships it (FramedBlocks, Create), and Copycats+ frames, which show
+// Create's `copycat_base`, take the look of the block that is a cube of it.
+//
 // Imports carry their `.ts` extension so node's strip-types can load it.
 
 import type { BlockRegistry } from "../blockdata/registry.ts";
 import { CAMO_BLOCK_PROPERTIES } from "../camo/block-properties.generated.ts";
 import { camoFrameKind } from "../camo/frame-kinds.ts";
+import {
+  CAMO_FRAME_TEXTURE_BLOCKS,
+  camoFrameTexture,
+} from "../camo/frame-textures.ts";
 import { completePropertyValues } from "../mods/property-domains.ts";
 import type { ModpackBlock } from "./schema.ts";
 
@@ -88,4 +97,32 @@ export function withCamoFrameState(
     kind: kind ?? "unknown",
     fullCube: kind === "block",
   };
+}
+
+/**
+ * `blocks` with each camo frame that has no appearance or no swatch given
+ * those of the pack block that is a cube of its frame texture
+ * (`create:copycat_base` for Copycats+ frames). The swatch keeps pointing at
+ * that block's mod file, so `show_blocks` reads Create's sheet for it.
+ */
+export function withCamoFrameLooks(
+  blocks: readonly ModpackBlock[],
+): ModpackBlock[] {
+  const byId = new Map(blocks.map((block) => [block.id, block]));
+  return blocks.map((block) => {
+    if (block.camo === undefined) return block;
+    if (block.appearance !== undefined && block.swatch !== undefined) {
+      return block;
+    }
+    const lookId = CAMO_FRAME_TEXTURE_BLOCKS[camoFrameTexture(block.id)];
+    const look = lookId === undefined ? undefined : byId.get(lookId);
+    if (look === undefined) return block;
+    const appearance = block.appearance ?? look.appearance;
+    const swatch = block.swatch ?? look.swatch;
+    return {
+      ...block,
+      ...(appearance !== undefined ? { appearance } : {}),
+      ...(swatch !== undefined ? { swatch } : {}),
+    };
+  });
 }
