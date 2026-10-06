@@ -88,6 +88,14 @@ describe("withCamoFrameState", () => {
         kind === "block",
       ]);
     }
+    // A copycat step has no vanilla block, but its own `step` kind.
+    expect(
+      withCamoFrameState(placeholder("create:copycat_step"), vanilla),
+    ).toMatchObject({
+      kind: "step",
+      fullCube: false,
+      defaults: { facing: "north", half: "bottom" },
+    });
     // Frames without a vanilla shape are `unknown`.
     expect(
       withCamoFrameState(placeholder("framedblocks:framed_slope"), vanilla),

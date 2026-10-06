@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { blockShape, type ShapeBox } from "../block-shapes";
+import { blockShape, blockShapeOfKind, type ShapeBox } from "../block-shapes";
 
 const ASSETS = path.resolve(__dirname, "../../../../public/minecraft-assets");
 const readJson = (file: string) =>
@@ -170,6 +170,41 @@ describe("blockShape", () => {
       [0, 0, 0, 1, 0.5, 1],
       [0, 0.5, 0, 1, 1, 0.5],
     ]);
+  });
+
+  it("draws a step as the copycat step's shape-pack pieces", () => {
+    const pack = JSON.parse(
+      readFileSync(path.resolve(ASSETS, "../camo-shapes/create.json"), "utf8"),
+    ) as {
+      blocks: Record<
+        string,
+        {
+          when: Record<string, string>;
+          pieces: {
+            select: { from: number[]; to: number[] };
+            offset?: number[];
+          }[];
+        }[]
+      >;
+    };
+    const rules = pack.blocks["create:copycat_step"];
+    expect(rules).toHaveLength(8);
+    for (const { when, pieces } of rules) {
+      const boxes = pieces.map(({ select, offset = [0, 0, 0] }) => {
+        const [x0, y0, z0] = select.from.map((v, i) => (v + offset[i]) / 16);
+        const [x1, y1, z1] = select.to.map((v, i) => (v + offset[i]) / 16);
+        return [x0, y0, z0, x1, y1, z1] as const;
+      });
+      const shape = blockShapeOfKind("step", when);
+      expect(shape, JSON.stringify(when)).toBeDefined();
+      expect([...occupancy(shape!)].sort(), JSON.stringify(when)).toEqual(
+        [...occupancy(boxes)].sort(),
+      );
+    }
+    expect(
+      blockShapeOfKind("step", { facing: "south", half: "bottom" }),
+    ).toEqual([[0, 0, 0.5, 1, 0.5, 1]]);
+    expect(blockShapeOfKind("step", { facing: "south" })).toBeUndefined();
   });
 
   it("reads slabs, pre-1.13 slabs and double slabs", () => {

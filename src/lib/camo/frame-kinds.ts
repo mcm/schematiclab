@@ -1,6 +1,8 @@
 // The vanilla shape each camo frame takes, for the frames that are a camo
-// version of a vanilla shape. Other frames (slopes, panels, pillars...) take
-// no vanilla shape and are never offered for one.
+// version of a vanilla shape, plus Create's copycat step, which takes the
+// `step` kind (a quarter block) that no vanilla block has. Other frames
+// (slopes, panels, pillars...) take no vanilla shape and are never offered
+// for one.
 //
 // Worker-safe: no DOM access. Must not import from src/lib/render/.
 
@@ -13,6 +15,7 @@ export const CAMO_FRAME_KINDS: Readonly<Record<string, BlockKind>> = {
   "copycats:copycat_stairs": "stairs",
   "framedblocks:framed_slab": "slab",
   "copycats:copycat_slab": "slab",
+  "create:copycat_step": "step",
   "framedblocks:framed_wall": "wall",
   "copycats:copycat_wall": "wall",
   "framedblocks:framed_fence": "fence",
