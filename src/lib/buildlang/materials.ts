@@ -15,6 +15,12 @@ import {
   normalizeBlockName,
   type BlockRegistry,
 } from "../blockdata/registry";
+import {
+  camoFrameError,
+  splitCamoMaterial,
+  type CamoKey,
+} from "../camo/material-syntax";
+import type { CamoTarget } from "../camo/write";
 import { BuildError } from "./errors";
 import { pathKey, type MaterialSpec, type ProgramError } from "./program";
 import { LOCAL_DIRECTIONS } from "./scope";
@@ -27,6 +33,25 @@ export interface MaterialEntry {
   id: string;
   /** Block states as written (directions still local). */
   states: Record<string, string>;
+  /** A camo frame's camo (`{camo=...}`), its states complete. */
+  camo?: CamoSpec;
+}
+
+/** The camo of a camo material: `camo`, and `camo_two` when written. */
+export interface CamoSpec {
+  camo: CamoTarget;
+  camo_two?: CamoTarget;
+}
+
+/**
+ * What a modpack allows as camo (`{camo=...}` materials). Without it, camo
+ * materials are errors.
+ */
+export interface CamoRules {
+  /** Why camo can't be written on frame `id`, or null. */
+  frame(id: string): string | null;
+  /** Why block `id` can't be a camo, or null. */
+  material(id: string): string | null;
 }
 
 export interface Material {
@@ -161,6 +186,7 @@ export class MaterialResolver {
   constructor(
     readonly registry: BlockRegistry,
     private readonly palette: Readonly<Record<string, MaterialSpec>> = {},
+    private readonly camoRules?: CamoRules,
   ) {}
 
   /**
@@ -201,7 +227,9 @@ export class MaterialResolver {
         `material must be a string or {"mix": {...}}, got ${JSON.stringify(spec) ?? String(spec)}`,
       );
     }
-    const parsed = parseMaterial(spec, path, this.registry);
+    const split = splitCamoMaterial(spec);
+    if (!split.ok) throw new BuildError(path, split.error);
+    const parsed = parseMaterial(split.value.frame, path, this.registry);
     const want = parsed.variant ?? variant;
     let entries: MaterialEntry[];
     if (parsed.role) {
@@ -214,7 +242,58 @@ export class MaterialResolver {
       entries = [{ weight: 1, id, states: parsed.states }];
     }
     for (const entry of entries) this.checkStates(entry, path);
+    const camo = split.value.camo;
+    if (camo !== undefined) {
+      const keys: CamoKey[] =
+        camo.camo_two === undefined ? ["camo"] : ["camo", "camo_two"];
+      for (const entry of entries) this.checkFrame(entry, keys, path);
+      const resolved = this.camo(camo, path);
+      entries = entries.map((e) => ({ ...e, camo: resolved }));
+    }
     return { entries };
+  }
+
+  // The camo blocks of a `{camo=...}` suffix, with complete states.
+  private camo(
+    camo: { camo: string; camo_two?: string },
+    path: string,
+  ): CamoSpec {
+    const rules = this.camoRules;
+    if (rules === undefined) throw this.noCamoRules(path);
+    const target = (text: string): CamoTarget => {
+      const parsed = parseMaterial(text, path, this.registry);
+      if (parsed.role) {
+        throw new BuildError(
+          path,
+          `a camo must be a block, not '@${parsed.base}'`,
+        );
+      }
+      const id = this.block(parsed.base, path, parsed.variant);
+      if (id === AIR) throw new BuildError(path, "air can't be a camo");
+      const ruleError = rules.material(id);
+      if (ruleError) throw new BuildError(path, ruleError);
+      const states = { ...this.registry.defaults(id), ...parsed.states };
+      const error = validatePlacedState(this.registry, id, states);
+      if (error) throw new BuildError(path, error);
+      return { blockId: id, properties: states };
+    };
+    return {
+      camo: target(camo.camo),
+      ...(camo.camo_two !== undefined && { camo_two: target(camo.camo_two) }),
+    };
+  }
+
+  // Whether `entry` is a frame that takes the camo `keys` in this version.
+  private checkFrame(entry: MaterialEntry, keys: CamoKey[], path: string) {
+    if (entry.id === AIR) throw new BuildError(path, "air can't hold a camo");
+    if (this.camoRules === undefined) throw this.noCamoRules(path);
+    const error =
+      camoFrameError(
+        entry.id,
+        { ...this.registry.defaults(entry.id), ...entry.states },
+        keys,
+      ) ?? this.camoRules.frame(entry.id);
+    if (error) throw new BuildError(path, error);
   }
 
   private mix(
@@ -342,6 +421,13 @@ export class MaterialResolver {
         `${shortId(entry.id)} state '${name}' cannot be '${value}'; allowed: ${allowedValues(name, domains[name]).join(", ")}`,
       );
     }
+  }
+
+  private noCamoRules(path: string) {
+    return new BuildError(
+      path,
+      "camo materials ({camo=...}) need a modpack with camo frames",
+    );
   }
 
   private unknown(path: string, base: string, suggestions?: string[]) {

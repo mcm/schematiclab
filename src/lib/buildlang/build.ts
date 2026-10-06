@@ -9,7 +9,11 @@
 
 import { type BlockDataDeps } from "../blockdata/load";
 import { type BlockRegistry, loadBlockRegistry } from "../blockdata/registry";
+import { camoChoiceForFrame } from "../camo/material-syntax";
+import { withCamoMaterials } from "../camo/materials";
+import { camoWriteOptionsFor, writeCamoChoice } from "../camo/write";
 import type {
+  ParsedSchematicBlockEntity,
   ParsedSchematicPaletteEntry,
   ParsedSchematicProjection,
 } from "../convert";
@@ -114,7 +118,8 @@ interface PaletteSlot {
  * Block states are written in full (the block's defaults overlaid with what
  * the build set). 1.12.2 blocks with no Forge 1.12 state are dropped (listed
  * in `dropped`), with an error at the operation that placed the first of them
- * in program order.
+ * in program order. Camo frames get the block entity of their camo
+ * (`writeCamoChoice`).
  */
 export function toProjection(
   result: CompileResult,
@@ -130,6 +135,11 @@ export function toProjection(
   const palette: ParsedSchematicPaletteEntry[] = [];
   const slots = new Map<string, PaletteSlot>();
   const blocks: ParsedSchematicProjection["regions"][number]["blocks"] = [];
+  const blockEntities: ParsedSchematicBlockEntity[] = [];
+  const version = getVersion(versionId);
+  const writeOptions = camoWriteOptionsFor(version);
+  // Block-entity NBT per palette slot and camo, shared by its placements.
+  const camoNbt = new Map<string, ParsedSchematicBlockEntity["nbt"] | null>();
 
   for (const [pos, block] of result.blocks.entries()) {
     const properties = { ...registry.defaults(block.id), ...block.states };
@@ -168,6 +178,23 @@ export function toProjection(
     }
     palette[slot.index].count++;
     blocks.push({ pos: [pos[0], pos[1], pos[2]], paletteIndex: slot.index });
+    if (block.camo) {
+      const entry = palette[slot.index];
+      const nbtKey = JSON.stringify([slot.index, block.camo]);
+      let nbt = camoNbt.get(nbtKey);
+      if (nbt === undefined) {
+        nbt =
+          writeCamoChoice(
+            entry.blockId,
+            entry.properties,
+            undefined,
+            camoChoiceForFrame(entry.blockId, entry.properties, block.camo),
+            writeOptions,
+          ) ?? null;
+        camoNbt.set(nbtKey, nbt);
+      }
+      if (nbt) blockEntities.push({ pos: [pos[0], pos[1], pos[2]], nbt });
+    }
   }
 
   for (const { dropped: d } of slots.values()) {
@@ -178,6 +205,14 @@ export function toProjection(
   // Same-state Forge 1.12 entries (two flattened states can share one legacy
   // state) are merged so the palette has no duplicates.
   const merged = mergePalette(palette, blocks);
+  const regions: ParsedSchematicProjection["regions"] = [
+    {
+      origin: [0, 0, 0],
+      size: [result.size[0], result.size[1], result.size[2]],
+      blocks,
+      blockEntities,
+    },
+  ];
 
   return {
     projection: {
@@ -185,17 +220,11 @@ export function toProjection(
       // A compiled build was never read from a file. The projection still
       // needs a format; export ignores it.
       inputFormat: "Litematic",
-      minecraftVersion: getVersion(versionId),
+      minecraftVersion: version,
       totalBlocks: blocks.length,
-      palette: merged,
-      regions: [
-        {
-          origin: [0, 0, 0],
-          size: [result.size[0], result.size[1], result.size[2]],
-          blocks,
-          blockEntities: [],
-        },
-      ],
+      palette:
+        blockEntities.length > 0 ? withCamoMaterials(merged, regions) : merged,
+      regions,
     },
     errors,
     dropped,

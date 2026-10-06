@@ -275,6 +275,16 @@ or just a list of options.
 - With a `modpack`, a mod block is written with its namespace (`"create:brass_casing"`,
   `"create:brass_casing[axis=x]"`; `"mod:block:stairs"` for a variant) and must be one of the
   pack's blocks. A bare name only one mod has (`"brass_casing"`) is repaired to its id.
+- **Camo blocks** (with a `modpack`): a FramedBlocks or copycat frame takes its look from a
+  camo block, written after the frame's states:
+  `"framedblocks:framed_stairs[half=top]{camo=create:brass_block}"`. FramedBlocks double
+  blocks take two: `"framedblocks:framed_double_slab{camo=create:brass_block,camo_two=stone}"`
+  (without `camo_two`, `camo` fills both). A camo is one block state (no roles or mixes; its
+  states are world values) and must be one of the pack's camo materials: full-cube blocks
+  that aren't frames or known block-entity blocks (an approximation of the mods' own rules).
+  Camo is written only for Minecraft versions it has been checked on (FramedBlocks 1.21.1 and
+  26.1.2, Create and Copycats+ 1.21.1); elsewhere a camo material is an error saying so. The
+  report's materials list a frame per camo (`framedblocks:framed_stairs{camo=create:brass_block}`).
 - If a variant or block doesn't exist in the target version, a sensible fallback is used and
   noted in the report (for example a wood that is newer than the version). Misspelt names are
   repaired when the intent is clear, and noted; otherwise they are errors with suggestions.

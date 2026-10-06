@@ -24,6 +24,7 @@ import type { ModpackBlocks } from "../modpacks/registry";
 import { MAX_BUILD_SIZE } from "../buildlang/program";
 import { serializeSchematic, type SchematicFormatId } from "../convert";
 import { KNOWN_VERSIONS } from "../schemlib/schematic-formats/known-versions";
+import { modpackCamoRules } from "./camo-materials";
 import { modpackInput } from "./input";
 import { assertBlobConfigured, publishFile } from "./output";
 import { modpackRenderSource, renderProjectionPng } from "./render";
@@ -141,7 +142,9 @@ async function compileArgs(
       { version: versionId, modpack: args.modpack },
       deps,
     );
-    const built = compileForRegistry(program, versionId, blocks.registry);
+    const built = compileForRegistry(program, versionId, blocks.registry, {
+      camo: modpackCamoRules(blocks.modpack!, blocks.data),
+    });
     return { built, versionId, program, modpack: blocks.modpack };
   }
   const built = await compileProgram(program, versionId, { fetch: deps.fetch });

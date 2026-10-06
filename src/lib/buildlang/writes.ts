@@ -13,7 +13,7 @@
 //   the writes applied before it.
 
 import type { BlockKind, BlockRegistry } from "../blockdata/registry";
-import { AIR, type MaterialResolver } from "./materials";
+import { AIR, type CamoSpec, type MaterialResolver } from "./materials";
 import type { ProgramError, ReplaceSpec } from "./program";
 
 export type Pos = readonly [number, number, number];
@@ -85,6 +85,8 @@ export interface PlacedBlock {
   id: string;
   /** World block states. */
   states: Record<string, string>;
+  /** A camo frame's camo, written into its block entity. */
+  camo?: CamoSpec;
 }
 
 export interface Write extends Layer {
