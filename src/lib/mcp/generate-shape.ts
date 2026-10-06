@@ -5,10 +5,12 @@
 import type { CallToolResult } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { serializeSchematic, type SchematicFormatId } from "../convert";
+import type { ModpackBlocks } from "../modpacks/registry";
 import {
   buildShapeProjection,
   defaultShapeName,
   MAX_SHAPE_BLOCKS,
+  parseMaterial,
   type ShapeSpec,
 } from "../shapes/generate";
 import { MAX_DIMENSION, MAX_THICKNESS, SHAPE_KINDS } from "../shapes/shapes";
@@ -54,7 +56,7 @@ const generateShapeInput = z.object({
   material: z
     .string()
     .describe(
-      "Block state, e.g. minecraft:oak_log[axis=x]; minecraft: may be left off. Use flattened (1.13+) ids for every version: 1.12.2 shapes are written as the material's Forge 1.12 state.",
+      "Block state, e.g. minecraft:oak_log[axis=x]; minecraft: may be left off. Use flattened (1.13+) ids for every version: 1.12.2 shapes are written as the material's Forge 1.12 state. With modpack, a mod block must be one of the pack's blocks; without it, mod ids are written as typed.",
     ),
   version: z
     .string()
@@ -68,6 +70,24 @@ const generateShapeInput = z.object({
     .optional()
     .describe("Also return a PNG contact sheet of the shape."),
 });
+
+/**
+ * Throws unless a mod `material` is a block of the pack with valid states
+ * (the error names close pack ids). Vanilla ids and unparseable materials
+ * are left to the Shape Generator's own checks.
+ */
+function assertModpackMaterial(material: string, modpack: ModpackBlocks) {
+  const parsed = parseMaterial(material);
+  if (!parsed.ok || parsed.material.blockId.startsWith("minecraft:")) return;
+  const { blockId, properties } = parsed.material;
+  const list = Object.entries(properties)
+    .map(([name, value]) => `${name}=${value}`)
+    .join(",");
+  const result = modpack.registry.validateState(
+    list ? `${blockId}[${list}]` : blockId,
+  );
+  if (!result.ok) throw new Error(result.error);
+}
 
 export const generateShapeTool = defineTool({
   name: "generate_shape",
@@ -95,8 +115,8 @@ export const generateShapeTool = defineTool({
         `Unknown Minecraft version '${versionId}'. Call list_versions for the supported versions.`,
       );
     }
-    // The pack's colours and shapes for the render; its Minecraft version
-    // must be `version`.
+    // The pack's blocks (the material must be one) and its colours and
+    // shapes for the render; its Minecraft version must be `version`.
     const modpack = args.modpack?.trim()
       ? (
           await resolveToolBlocks(
@@ -118,6 +138,7 @@ export const generateShapeTool = defineTool({
       versionId,
     };
 
+    if (modpack) assertModpackMaterial(args.material, modpack);
     const built = buildShapeProjection(spec);
     if (!built.ok) throw new Error(built.error);
     const { projection } = built;

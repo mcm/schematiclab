@@ -23,7 +23,7 @@ export const AIR = "minecraft:air";
 
 export interface MaterialEntry {
   weight: number;
-  /** `minecraft:`-prefixed block id; `AIR` erases. */
+  /** Namespaced block id (`minecraft:` or a modpack's mod); `AIR` erases. */
   id: string;
   /** Block states as written (directions still local). */
   states: Record<string, string>;
@@ -39,6 +39,11 @@ const MAX_ROLE_DEPTH = 8;
 const NAMESPACE = "minecraft:";
 const WORLD_FACINGS = new Set(["north", "south", "east", "west", "up", "down"]);
 
+/** A normalized block name as a full id: `minecraft:` unless namespaced. */
+function qualify(name: string): string {
+  return name.includes(":") ? name : NAMESPACE + name;
+}
+
 /** Material names, with their states, as the language writes them. */
 function shortId(id: string): string {
   return id.startsWith(NAMESPACE) ? id.slice(NAMESPACE.length) : id;
@@ -53,8 +58,14 @@ interface ParsedMaterial {
 
 // `@role`, `@role:variant`, `base`, `base:variant`, each with optional
 // `[k=v,...]`. A leading `minecraft:` on a block id is a namespace, not a
-// family.
-function parseMaterial(spec: string, path: string): ParsedMaterial {
+// family. With a modpack registry (`hasNamespace`), `ns:path` is a mod block
+// id unless `path` is a variant name and `ns:path` isn't a block, and
+// `ns:path:variant` is a mod block's variant.
+function parseMaterial(
+  spec: string,
+  path: string,
+  registry: BlockRegistry,
+): ParsedMaterial {
   let text = spec.trim();
   const fail = () =>
     new BuildError(path, `cannot parse material ${JSON.stringify(spec)}`);
@@ -70,14 +81,39 @@ function parseMaterial(spec: string, path: string): ParsedMaterial {
   else if (text.toLowerCase().startsWith(NAMESPACE)) {
     text = text.slice(NAMESPACE.length);
   }
-  const parts = text.split(":");
+  const parts = text.split(":").map((part) => part.trim());
+  if (!role && registry.hasNamespace && isModBlockId(parts, registry)) {
+    const [namespace, blockPath, variant] = parts;
+    if (
+      !/^[A-Za-z0-9_.-]+$/.test(namespace) ||
+      !/^[A-Za-z0-9_./-]+$/.test(blockPath) ||
+      variant === "" ||
+      (variant !== undefined && !/^[A-Za-z_\- ]+$/.test(variant))
+    ) {
+      throw fail();
+    }
+    return { role, base: `${namespace}:${blockPath}`, variant, states };
+  }
   if (parts.length > 2) throw fail();
-  const base = parts[0].trim();
-  const variant = parts[1]?.trim();
+  const base = parts[0];
+  const variant = parts[1];
   if (!base || variant === "") throw fail();
   if (!role && !/^[A-Za-z0-9_\- ]+$/.test(base)) throw fail();
   if (variant !== undefined && !/^[A-Za-z_\- ]+$/.test(variant)) throw fail();
   return { role, base, variant, states };
+}
+
+// Whether `ns:path` or `ns:path:variant` (split on colons) names a mod block
+// rather than `family:variant`.
+function isModBlockId(parts: string[], registry: BlockRegistry): boolean {
+  if (parts.length === 3) return true;
+  if (parts.length !== 2) return false;
+  const [namespace, second] = parts;
+  if (!VARIANT_NAMES.has(normalizeBlockName(second))) return true;
+  return (
+    registry.hasNamespace?.(namespace.toLowerCase()) === true &&
+    registry.exists(normalizeBlockName(`${namespace}:${second}`))
+  );
 }
 
 function parseStates(list: string, path: string): Record<string, string> {
@@ -165,7 +201,7 @@ export class MaterialResolver {
         `material must be a string or {"mix": {...}}, got ${JSON.stringify(spec) ?? String(spec)}`,
       );
     }
-    const parsed = parseMaterial(spec, path);
+    const parsed = parseMaterial(spec, path, this.registry);
     const want = parsed.variant ?? variant;
     let entries: MaterialEntry[];
     if (parsed.role) {
@@ -252,7 +288,7 @@ export class MaterialResolver {
     }
     if (v !== undefined && v !== "block" && v !== "planks") {
       // Already the variant asked for ("@roof:stairs" with roof "oak_stairs").
-      if (reg.exists(name) && reg.kind(name) === v) return NAMESPACE + name;
+      if (reg.exists(name) && reg.kind(name) === v) return qualify(name);
       let result = reg.variant(name, v);
       if (!result) {
         const fixed = reg.repair(name);
@@ -265,7 +301,7 @@ export class MaterialResolver {
       if (result.note) this.note(path, result.note);
       return result.id;
     }
-    if (v === undefined && reg.exists(name)) return NAMESPACE + name;
+    if (v === undefined && reg.exists(name)) return qualify(name);
     // A family base ("dark_oak") is its full block; a wood the version lacks
     // falls back to an older one.
     const full = reg.variant(name, "block");
@@ -273,7 +309,7 @@ export class MaterialResolver {
       if (full.note) this.note(path, full.note);
       return full.id;
     }
-    if (reg.exists(name)) return NAMESPACE + name;
+    if (reg.exists(name)) return qualify(name);
     const fixed = reg.repair(base);
     if (fixed.id === null) throw this.unknown(path, base, fixed.suggestions);
     if (fixed.note) this.note(path, fixed.note);
