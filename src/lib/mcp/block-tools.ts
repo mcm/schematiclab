@@ -340,6 +340,8 @@ const SHAPE_WORDS: readonly [string, Shape][] = [
   ["stair", "stairs"],
   ["slabs", "slab"],
   ["slab", "slab"],
+  ["steps", "step"],
+  ["step", "step"],
   ["walls", "wall"],
   ["wall", "wall"],
   ["fences", "fence"],

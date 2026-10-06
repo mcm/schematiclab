@@ -304,6 +304,34 @@ describe("camo options in search_blocks", () => {
     expect(oak.camo_options).toBeUndefined();
   });
 
+  it("offers a copycat step for the step shape", async () => {
+    const data = await call(searchBlocksTool, {
+      query: "brass",
+      modpack: "camo-pack",
+      shape: ["step"],
+    });
+    expect(data.camo_options?.[0]).toEqual({
+      frame: "create:copycat_step",
+      kind: "step",
+      slots: 1,
+      writable: true,
+      camo: "create:brass_block",
+      camo_hex: BRASS.hex,
+    });
+    expect(
+      data.camo_options!.every((o) => o.frame === "create:copycat_step"),
+    ).toBe(true);
+    // From the query alone.
+    const named = await call(searchBlocksTool, {
+      query: "brass_step",
+      modpack: "camo-pack",
+    });
+    expect(named.camo_options?.[0]).toMatchObject({
+      frame: "create:copycat_step",
+      camo: "create:brass_block",
+    });
+  });
+
   it("lists bare frames when no material matches", async () => {
     const data = await call(searchBlocksTool, {
       query: "zzz",
@@ -369,6 +397,21 @@ describe("camo options in suggest_palette", () => {
     expect(
       data.camo_options!.some((o) => o.camo === "create:brass_funnel"),
     ).toBe(false);
+  });
+
+  it("pairs copycat steps with the nearest materials", async () => {
+    const data = await call(suggestPaletteTool, {
+      color: BRASS.hex,
+      modpack: "camo-pack",
+      shape: ["step"],
+    });
+    expect(data.camo_options?.[0]).toMatchObject({
+      frame: "create:copycat_step",
+      kind: "step",
+      writable: true,
+      camo: "create:brass_block",
+      distance: 0,
+    });
   });
 
   it("offers nothing without a shape or camo mods", async () => {
@@ -458,6 +501,10 @@ describe("camo frames and materials", () => {
     expect(splitShapeQuery("create:Brass Slab")).toEqual({
       material: "create:brass",
       shape: "slab",
+    });
+    expect(splitShapeQuery("brass_steps")).toEqual({
+      material: "brass",
+      shape: "step",
     });
     expect(splitShapeQuery("brass")).toEqual({ material: "brass" });
     expect(splitShapeQuery("stairs")).toEqual({ material: "stairs" });

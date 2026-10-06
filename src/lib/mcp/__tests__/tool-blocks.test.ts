@@ -118,6 +118,7 @@ const PACK: ModpackData = {
       swatch: { file: "cf-1", faces: { side: [0, 0, 16, 16] } },
     }),
     block("create:brass_casing", "cf-1"),
+    block("create:brass_funnel", "cf-1", { kind: "unknown", fullCube: false }),
     block("create:copycat_step", "cf-1", {
       properties: {
         facing: ["north", "south", "west", "east"],
@@ -261,8 +262,10 @@ describe("modpack registry", () => {
       half: "bottom",
       waterlogged: "false",
     });
-    // An unclear kind counts as a plain block.
-    expect(registry.kind("create:copycat_step")).toBe("block");
+    // A copycat step takes the step shape; an unclear kind counts as a
+    // plain block.
+    expect(registry.kind("create:copycat_step")).toBe("step");
+    expect(registry.kind("create:brass_funnel")).toBe("block");
   });
 
   it("validates mod states against the pack's property domains", async () => {
@@ -346,7 +349,10 @@ describe("modpack registry", () => {
       swatch: PACK.blocks[1].swatch,
     });
     expect(modpack?.modBlock("create:copycat_step")).toEqual(
-      expect.objectContaining({ kind: "unknown", camo: { slots: 1 } }),
+      expect.objectContaining({ kind: "step", camo: { slots: 1 } }),
+    );
+    expect(modpack?.modBlock("create:brass_funnel")).toEqual(
+      expect.objectContaining({ kind: "unknown" }),
     );
     expect(modpack?.modBlock("minecraft:stone")).toBeUndefined();
     expect(modpack?.modBlocks().map((b) => b.id)).toEqual(

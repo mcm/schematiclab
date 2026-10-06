@@ -105,6 +105,7 @@ export const MOD_BLOCK_KINDS = [
   "block",
   "stairs",
   "slab",
+  "step",
   "wall",
   "fence",
   "fence_gate",

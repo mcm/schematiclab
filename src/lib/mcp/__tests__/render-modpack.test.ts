@@ -97,6 +97,7 @@ function block(id: string, extra: Partial<ModpackBlock> = {}): ModpackBlock {
 
 const BRASS = appearance(201, 161, 71);
 const PLATE = appearance(31, 151, 171);
+const STEP = appearance(90, 90, 90);
 const SLAB_PROPERTIES = {
   type: ["top", "bottom", "double"],
   waterlogged: ["true", "false"],
@@ -129,7 +130,7 @@ const PACK: ModpackData = {
       },
       kind: "unknown",
       fullCube: false,
-      appearance: appearance(90, 90, 90),
+      appearance: STEP,
       camo: { slots: 1 },
     }),
     // Named like nothing in `blockShape`, but confidently a slab.
@@ -305,6 +306,26 @@ describe("renderProjectionPng with a modpack", () => {
     expect(slab).toBeGreaterThan(0);
     expect(slab / cube).toBeLessThan(0.9);
     expect(count("create:odd_slab")).toBe(cube);
+  });
+
+  it("draws a copycat step as a step", () => {
+    const appearance = modpackRenderSource(packBlocks());
+    const north = { facing: "north", half: "bottom" };
+    expect(appearance.shape?.("create:copycat_step", north)).toEqual([
+      [0, 0, 0, 1, 0.5, 0.5],
+    ]);
+    // Pixels of the iso views' shaded east faces, as above.
+    const east = (properties: Record<string, string>) =>
+      colorCounts(
+        renderProjectionPng(
+          projectionOf([{ blockId: "create:copycat_step", properties }]),
+          { appearance },
+        ).png,
+      ).get(hexToInt(shadeHex(STEP.hex, 0.62))) ?? 0;
+    // Without `half` it has no step shape: a full cube.
+    const cube = east({ facing: "north" });
+    expect(east(north)).toBeGreaterThan(0);
+    expect(east(north)).toBeLessThan(cube);
   });
 
   it("lists the block states the pack lacks", () => {

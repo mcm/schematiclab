@@ -170,6 +170,13 @@ const PACK: ModpackData = {
       swatch: swatch("cf-2", 0),
       camo: { slots: 1 },
     }),
+    block("create:copycat_step", "cf-1", {
+      kind: "unknown",
+      fullCube: false,
+      appearance: appearance(GREY),
+      swatch: swatch("cf-1", 0),
+      camo: { slots: 1 },
+    }),
     block("create:brass_block", "cf-1", {
       appearance: appearance(BRASS),
       swatch: swatch("cf-1", 0),
@@ -415,6 +422,30 @@ describe("show_blocks with a modpack", () => {
     const point: Vec3 = [0.5, 1, 0.8];
     expect(isoPixel(png, 2, 0, point)).toEqual([...BRASS, 255]);
     expect(isoPixel(png, 2, 1, point)).not.toEqual([...BRASS, 255]);
+  });
+
+  it("draws a copycat step as a step", async () => {
+    const { png, data } = await show({
+      blocks: [
+        { frame: "copycats:copycat_block", camo: "create:brass_block" },
+        { frame: "create:copycat_step", camo: "create:brass_block" },
+      ],
+      modpack: "camo-pack",
+    });
+    expect(data.blocks).toMatchObject([
+      { id: "copycats:copycat_block", kind: "block" },
+      {
+        id: "create:copycat_step",
+        kind: "step",
+        writable: true,
+      },
+    ]);
+    // A bottom step facing north: the cube's top above its empty south
+    // half, the step's top over its north half.
+    const above: Vec3 = [0.5, 1, 0.8];
+    expect(isoPixel(png, 2, 0, above)).toEqual([...BRASS, 255]);
+    expect(isoPixel(png, 2, 1, above)).not.toEqual([...BRASS, 255]);
+    expect(isoPixel(png, 2, 1, [0.5, 0.5, 0.25])).toEqual([...BRASS, 255]);
   });
 
   it("rejects a frame that isn't camo-capable", async () => {

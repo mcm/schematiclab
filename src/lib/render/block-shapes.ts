@@ -1,7 +1,8 @@
 // Sub-block shapes for the static renders: stairs, slabs, fences, panes,
 // walls, doors, trapdoors and carpets as the boxes of their vanilla models
 // (`public/minecraft-assets/models.json`; `__tests__/block-shapes.test.ts`
-// checks them against it). Every other block is a full cube.
+// checks them against it), plus steps (quarter blocks, a camo frame shape
+// with no vanilla model). Every other block is a full cube.
 //
 // Pure: no DOM.
 
@@ -97,6 +98,17 @@ function slab(properties: Record<string, string>): ShapeBox[] | undefined {
   return undefined;
 }
 
+// A step (`create:copycat_step`, no vanilla block): the half of a slab
+// toward `facing`.
+function step(properties: Record<string, string>): ShapeBox[] | undefined {
+  const { facing, half } = properties;
+  if (!isFacing(facing) || (half !== "bottom" && half !== "top")) {
+    return undefined;
+  }
+  const y = half === "bottom" ? 0 : 0.5;
+  return [turn([0.5, y, 0, 1, y + 0.5, 1], TURNS[facing])];
+}
+
 function connected(
   properties: Record<string, string>,
   post: ShapeBox[],
@@ -168,6 +180,7 @@ const SHAPES_BY_KIND: ReadonlyMap<
 > = new Map([
   ["stairs", stairs],
   ["slab", slab],
+  ["step", step],
   ["fence", fence],
   ["pane", pane],
   ["wall", wall],
@@ -178,7 +191,7 @@ const SHAPES_BY_KIND: ReadonlyMap<
 
 /**
  * The boxes a block of shape `kind` (the block registry's vocabulary:
- * `stairs`, `slab`, `fence`, `pane`, `wall`, `door`, `trapdoor`, `carpet`)
+ * `stairs`, `slab`, `step`, `fence`, `pane`, `wall`, `door`, `trapdoor`, `carpet`)
  * with `properties` is drawn as, or `undefined` for a full cube (any other
  * kind, or properties its shape can't use). For mod blocks, whose names say
  * nothing reliable.

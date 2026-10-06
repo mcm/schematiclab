@@ -21,6 +21,9 @@ export type BlockKind =
   | "block"
   | "stairs"
   | "slab"
+  // A quarter block (half a slab, against `facing`): no vanilla block has
+  // it, only camo frames such as `create:copycat_step`.
+  | "step"
   | "wall"
   | "fence"
   | "fence_gate"
