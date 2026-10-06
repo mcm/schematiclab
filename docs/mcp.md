@@ -128,7 +128,7 @@ Draws a schematic as a PNG contact sheet: four isometric views, front, side and 
 
 - Input: a [schematic input](#schematic-inputs) and an optional `modpack` ref.
 - Output: an `image/png` image content block (longest edge at most 1568 px) and a one-line text summary (name, format, version, size, block and block-state counts, image size).
-- Without a `modpack`, mod blocks get a stable colour hashed from their id. With one, mod blocks take the pack's average colour and, when their `kind` isn't `unknown`, that kind's shape (stairs, slabs, fences…); camo blocks take their camo's colour. The summary adds how many block states the pack lacks, with a few examples. States aren't translated to the pack's version here.
+- Without a `modpack`, mod blocks get a stable colour hashed from their id. With one, mod blocks take the pack's average colour and, when their `kind` isn't `unknown`, that kind's shape (stairs, slabs, fences…); camo blocks take their camo's colour. The summary adds how many block states the pack lacks, with a few examples, compared as `inspect_schematic` does (after translation to the pack's Minecraft version, air left out), and the same note when the versions differ.
 
 ### `generate_shape`
 
