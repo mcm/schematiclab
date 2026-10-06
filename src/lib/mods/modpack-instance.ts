@@ -12,7 +12,7 @@ import {
   isModLoader,
   splitGameVersionTags,
   type ModLoader,
-} from "../curseforge/types";
+} from "../curseforge/types.ts";
 
 export const MODPACK_MANIFEST_NAME = "minecraftinstance.json";
 
